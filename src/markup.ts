@@ -31,6 +31,7 @@ export const MARKUP = `${BOARD_MARKUP}
          button that moves them (design 13d). boot's refreshHomeChip fills it. -->
     <button class="pplate anon" id="homeChip">NOT SIGNED IN</button>
     <button class="btn primary play-cta" id="btnOnline"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">${chromeIcon('play', 25)}</span><span class="btn-label" data-i18n="game:home.playRanked">Play ranked match</span></button>
+    <button class="btn weekly-cta" id="btnWeekly" hidden><span aria-hidden="true">✦</span><span class="btn-label" id="weeklyHomeLabel"></span></button>
     <div class="hrow">
       <button class="btn" id="btnBoardHome" data-i18n="game:home.ladder">Ladder</button>
       <button class="btn" id="btnSettingsHome" data-i18n="game:home.settings">Settings</button>

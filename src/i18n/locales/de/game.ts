@@ -39,6 +39,8 @@ export const deGame = {
   home: {
     notSignedIn: 'NICHT ANGEMELDET',
     playRanked: 'Ranglistenspiel',
+    weeklyChallenge: 'Wochen-Challenge · {{mode}}',
+    weeklyChallengeComplete: 'Woche geschafft ✓ · {{mode}}',
     ladder: 'Rangliste',
     settings: 'Einstellungen',
     practiceOffline: 'Offline üben',
@@ -209,6 +211,7 @@ export const deGame = {
   },
   modeLock: {
     reachBone: 'Erreiche KNOCHEN, um diesen Modus gegen die KI freizuschalten.',
+    reachGold: 'Erreiche GOLD, um diesen Modus gegen die KI freizuschalten.',
   },
   runeTrial: {
     choosePrompt: 'Wähle eine Rune — dein Gegner kann sie nicht sehen',
@@ -222,6 +225,9 @@ export const deGame = {
     revealPair: 'Beide Runen stehen fest',
     revealed: 'Runen aufgedeckt',
     pickClock: 'SEKUNDEN ZUR WAHL',
+    claim: 'CLAIM',
+    claimOwned: 'IM BESITZ',
+    claimNew: 'NEU',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Festgelegt — markierte Spalte wählen.',

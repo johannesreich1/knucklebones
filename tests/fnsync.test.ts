@@ -152,6 +152,37 @@ for (const slug of ['pvp-join', 'pvp-rune-select', 'pvp-action']) {
     `${slug}'s deploy closure lost the shared authoritative ranked bot-turn builder`);
 }
 
+/* A match keeps the curve it started on throughout the staged v1 -> v2
+   rollout. Bot policy is authoritative gameplay, so every production entry
+   must carry that persisted/runtime curve into the shared decision helpers;
+   letting core default to the new curve would change dormant-v1 matches. */
+const botCurveOwners = [
+  {
+    owner: 'pvp-join/start.ts',
+    source: readFileSync(path.join(FN_DIR, 'pvp-join/start.ts'), 'utf8'),
+    contract: /botMove\([\s\S]{0,300}input\.curveVersion,\s*Math\.random/,
+  },
+  {
+    owner: 'pvp-move/operation.ts',
+    source: readFileSync(path.join(FN_DIR, 'pvp-move/operation.ts'), 'utf8'),
+    contract: /const curveVersion = match\.curve_version;[\s\S]{0,6000}botMove\([\s\S]{0,300}curveVersion,\s*Math\.random/,
+  },
+  {
+    owner: 'pvp-action/operation.ts',
+    source: readFileSync(path.join(FN_DIR, 'pvp-action/operation.ts'), 'utf8'),
+    contract: /const curveVersion = match\.curve_version;[\s\S]{0,9000}appendRankedBotTurn\(\{[\s\S]{0,500}curveVersion,[\s\S]{0,120}random: Math\.random/,
+  },
+  {
+    owner: '_shared/rune-trial-bot-opening.ts',
+    source: readFileSync(path.join(FN_DIR, '_shared/rune-trial-bot-opening.ts'), 'utf8'),
+    contract: /const curveVersion = match\.curve_version;[\s\S]{0,4000}appendRankedBotTurn\(\{[\s\S]{0,500}curveVersion,[\s\S]{0,120}random: Math\.random/,
+  },
+] as const;
+for (const { owner, source, contract } of botCurveOwners) {
+  check(contract.test(source),
+    `${owner} does not pass its authoritative match/runtime curve into bot policy`);
+}
+
 /* Rune Trial is the first ranked protocol that ships the spell layer. Keep it
    visible in the report because those shared sources now participate in the
    authoritative replay closure and must deploy with action/join/claim/select. */

@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(20);
+select plan(22);
 
 select has_index(
   'public', 'matches', 'matches_p1_history_idx',
@@ -87,10 +87,41 @@ values
     21, 8, 20, -10, 1, '2026-08-23 11:31:00+00'
   );
 
+select set_config('knucklebones.progression_v2_start', '1', true);
+update public.matches
+   set curve_version = 2, scoring_version = 2,
+       p1_base_rating_delta = 25, p2_base_rating_delta = -15,
+       p1_finish_rating_delta = 5, p2_finish_rating_delta = -5
+ where id = '40000000-0000-0000-0000-000000000001';
+update public.matches
+   set curve_version = 2, scoring_version = 2,
+       p1_base_rating_delta = -6, p2_base_rating_delta = 36,
+       p1_finish_rating_delta = -4, p2_finish_rating_delta = 4
+ where id = '40000000-0000-0000-0000-000000000003';
+
 select set_config(
   'request.jwt.claim.sub',
   '30000000-0000-0000-0000-000000000001',
   true
+);
+
+select is(
+  (select jsonb_build_object(
+      'base', base_delta, 'finish', finish_delta, 'version', scoring_version
+    )
+     from public.match_history(10, null, null)
+    where id = '40000000-0000-0000-0000-000000000001'),
+  '{"base":25,"finish":5,"version":2}'::jsonb,
+  'history returns p1 formula-v2 components in the existing RPC row'
+);
+select is(
+  (select jsonb_build_object(
+      'base', base_delta, 'finish', finish_delta, 'version', scoring_version
+    )
+     from public.match_history(10, null, null)
+    where id = '40000000-0000-0000-0000-000000000003'),
+  '{"base":36,"finish":4,"version":2}'::jsonb,
+  'history swaps formula-v2 components for the p2 participant'
 );
 
 -- Keep the query-plan requirement durable without depending on the current

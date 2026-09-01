@@ -6,6 +6,8 @@ export type SettlementScore = 0 | 0.5 | 1;
 export interface SettledRows {
   da: number;
   db: number;
+  aDelta?: { base: number; finish: number; total: number };
+  bDelta?: { base: number; finish: number; total: number };
   a: LadderRow;
   b: LadderRow;
 }
@@ -14,6 +16,7 @@ export type LadderSettlement = (
   p1: LadderRow,
   p2: LadderRow,
   p1Result: SettlementScore,
+  options?: { finish?: { kind: "normal"; aScore: number; bScore: number } | { kind: "forced" } },
 ) => SettledRows;
 
 export interface TerminalMatch {
@@ -75,8 +78,14 @@ export interface SettlementSnapshot {
   p2_delta: number;
   expected_p1: LadderRow;
   expected_p2: LadderRow;
-  next_p1: LadderRow;
-  next_p2: LadderRow;
+  next_p1: LadderRow & SettlementMetadata;
+  next_p2: LadderRow & SettlementMetadata;
+}
+
+interface SettlementMetadata {
+  _scoring_version: 1 | 2;
+  _base_rating_delta: number;
+  _finish_rating_delta: number;
 }
 
 /**
@@ -96,7 +105,18 @@ export async function buildSettlementSnapshot(
     loadLadderRow(service, season, match.p1),
     loadLadderRow(service, season, match.p2),
   ]);
-  const next = calculate(p1, p2, terminal.p1Result);
+  const scoringVersion = match.scoring_version ?? 1;
+  const finish = scoringVersion === 2
+    ? (terminal.status === "done"
+      ? { kind: "normal" as const, aScore: terminal.p1Score, bScore: terminal.p2Score }
+      : { kind: "forced" as const })
+    : undefined;
+  const next = calculate(p1, p2, terminal.p1Result, finish ? { finish } : undefined);
+  const p1Components = next.aDelta ?? { base: next.da, finish: 0, total: next.da };
+  const p2Components = next.bDelta ?? { base: next.db, finish: 0, total: next.db };
+  if (p1Components.total !== next.da || p2Components.total !== next.db) {
+    throw new Error("ladder settlement component totals do not match signed deltas");
+  }
   return {
     status: terminal.status,
     winner: terminal.winner,
@@ -106,8 +126,18 @@ export async function buildSettlementSnapshot(
     p2_delta: next.db,
     expected_p1: p1,
     expected_p2: p2,
-    next_p1: next.a,
-    next_p2: next.b,
+    next_p1: {
+      ...next.a,
+      _scoring_version: scoringVersion,
+      _base_rating_delta: p1Components.base,
+      _finish_rating_delta: p1Components.finish,
+    },
+    next_p2: {
+      ...next.b,
+      _scoring_version: scoringVersion,
+      _base_rating_delta: p2Components.base,
+      _finish_rating_delta: p2Components.finish,
+    },
   };
 }
 
@@ -144,6 +174,17 @@ function payload(value: unknown): SettlementResult | null {
   }
   const match = candidate.match as Partial<MatchRow>;
   if (typeof match.id !== "string") return null;
+  if (match.scoring_version === 2
+    && (!Number.isInteger(match.p1_rating_delta)
+      || !Number.isInteger(match.p2_rating_delta)
+      || !Number.isInteger(match.p1_base_rating_delta)
+      || !Number.isInteger(match.p2_base_rating_delta)
+      || !Number.isInteger(match.p1_finish_rating_delta)
+      || !Number.isInteger(match.p2_finish_rating_delta)
+      || match.p1_rating_delta !== match.p1_base_rating_delta! + match.p1_finish_rating_delta!
+      || match.p2_rating_delta !== match.p2_base_rating_delta! + match.p2_finish_rating_delta!
+      || match.p1_finish_rating_delta !== -match.p2_finish_rating_delta!
+      || Math.abs(match.p1_finish_rating_delta!) > 7)) return null;
   const reward = (value as { reward?: unknown }).reward;
   if (reward !== undefined) {
     if (!reward || typeof reward !== "object" || Array.isArray(reward)

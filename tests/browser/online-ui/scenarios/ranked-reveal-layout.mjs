@@ -51,6 +51,8 @@ export async function runRankedRevealLayoutScenarios({ visit, out, check }) {
             player: { name: () => 'YOU', hue: 'var(--p1)' },
             deadline: () => new Date(Date.now() + 10_000).toISOString(),
             versus: pairing,
+            claim: { rewardVersion: 2, slot: 1, rune: 'ward' },
+            claimOwned: false,
           });
           await new Promise((resolve) => setTimeout(resolve, 400));
           read.choice = box('#trialSelectWho');
@@ -58,6 +60,13 @@ export async function runRankedRevealLayoutScenarios({ visit, out, check }) {
           read.viewportMid = window.innerHeight / 2;
           read.names = [...document.querySelectorAll('#trialSelectWho .dnm')]
             .map((n) => n.textContent);
+          read.claims = [...document.querySelectorAll('#trialSelectCards [data-claim="true"]')]
+            .map((card) => ({
+              rune: card.dataset.rune,
+              claim: card.querySelector('.trial-select__claim')?.textContent?.trim(),
+              ownership: card.querySelector('.trial-select__claim-owned')?.textContent?.trim(),
+              badge: box('.trial-select__claim'),
+            }));
           document.querySelector('#trialSelectCards button')?.click();
           await chosen;
           /* Null abandons the sequence, which the shell handles — the measuring
@@ -76,6 +85,10 @@ export async function runRankedRevealLayoutScenarios({ visit, out, check }) {
     'the ranked reveal painted no pairing, so nothing below is measuring it', r);
   check(!!r && !!r.choice && r.names.join('|') === 'BadRandolf|BoldFox762',
     'the choice sheet lost the pairing the reveal was showing', r);
+  check(!!r && r.claims.length === 1 && r.claims[0].rune === 'ward'
+      && r.claims[0].claim === 'CLAIM' && r.claims[0].ownership === 'NEW'
+      && !!r.claims[0].badge,
+    'ranked Rune Ritual did not visibly mark exactly its snapshotted CLAIM card before choice', r);
   /* THE assertion. One pixel for rounding; the fault this was written for was
      a fixed offset sitting ~50px above the reveal's own line. */
   check(!!r && !!r.reveal && !!r.choice && Math.abs(r.choice.top - r.reveal.top) <= 1,

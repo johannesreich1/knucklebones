@@ -4,7 +4,7 @@
 // interval, so changing state can never leave two tickers repainting one
 // readout, and the stall timeout that rescues a wait with no answer belongs
 // to the same owner as the clock it is watching.
-import { formatNumber, t } from '../../i18n/index.ts';
+import { formatNumber, modeCopy, t } from '../../i18n/index.ts';
 import { $ } from '../../ui/dom.ts';
 import { showOnlinePanel } from './shell.ts';
 import { RUNE_TRIAL_PICK_SECS } from '../../core/rune-trial-offer.ts';
@@ -14,7 +14,7 @@ export interface QueueWaitingPorts {
 }
 
 export interface QueueWaiting {
-  showSearching(): void;
+  showSearching(weeklyModifier?: string | null): void;
   trialWaiting(
     note: (text: string | null) => void,
     deadline: string | null,
@@ -83,7 +83,7 @@ export function createQueueWaiting(ports: QueueWaitingPorts): QueueWaiting {
      running clock rather than restarting it. Matchmaking policy never reads
      this clock: the bot backfill threshold (docs/LADDER.md) is measured in the
      join loop. */
-  function showSearching(): void {
+  function showSearching(weeklyModifier: string | null = null): void {
     searchShownAt ??= Date.now();
     const shownAt = searchShownAt;
     showOnlinePanel('onQueue');
@@ -91,15 +91,19 @@ export function createQueueWaiting(ports: QueueWaitingPorts): QueueWaiting {
     const message = $('#onQueue .qmsg');
     message.setAttribute('data-i18n', 'online:matchmaking.looking');
     message.textContent = t('online', 'matchmaking.looking');
+    const weeklyLabel = (): string | null => weeklyModifier
+      ? t('game', 'home.weeklyChallenge', { mode: modeCopy(weeklyModifier).name })
+      : null;
     $('#qSub').removeAttribute('data-i18n');
-    $('#qSub').innerHTML = '&nbsp;';
     const paint = (): void => {
       const seconds = Math.floor((Date.now() - shownAt) / 1000);
       $('#qTime').textContent = queueTime(seconds);
+      const weekly = weeklyLabel();
       if (seconds >= 7) {
-        $('#qSub').setAttribute('data-i18n', 'online:matchmaking.inviting');
-        $('#qSub').textContent = t('online', 'matchmaking.inviting');
-      }
+        $('#qSub').textContent = weekly
+          ? `${weekly} · ${t('online', 'matchmaking.inviting')}`
+          : t('online', 'matchmaking.inviting');
+      } else $('#qSub').textContent = weekly ?? '\u00a0';
     };
     paint();
     if (tick) clearInterval(tick);

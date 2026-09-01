@@ -12,8 +12,10 @@ import {
   type RuneCollectionRefresh,
 } from '../runes/rune-collection.ts';
 import type { ConnectionIssue } from './connection-sheet.ts';
+import { refreshRankedProgressionStatus } from '../api/progression-status-api.ts';
+import { verifyRankedEntryContract } from './ranked-entry-contract.ts';
 
-export type OnlineView = 'play' | 'ladder' | 'account';
+export type OnlineView = 'play' | 'weekly' | 'ladder' | 'account';
 type IdentityFailure = Exclude<IdentityEntry, { readonly kind: 'authenticated' }>;
 
 interface ResultEntryPorts<Options> {
@@ -35,7 +37,7 @@ interface ResultEntryPorts<Options> {
 }
 
 export interface ResultEntry<Options> {
-  nextDuel(): void;
+  nextDuel(entryKind?: 'ordinary' | 'weekly'): void;
   openFromResult(view: OnlineView, onReturn: () => void, options?: Options): void;
 }
 
@@ -59,16 +61,17 @@ export function createResultEntry<Options>(ports: ResultEntryPorts<Options>): Re
     void ports.route(view, options);
   }
 
-  function nextDuel(): void {
+  function nextDuel(entryKind: 'ordinary' | 'weekly' = 'ordinary'): void {
+    const view: OnlineView = entryKind === 'weekly' ? 'weekly' : 'play';
     if (navigator.onLine === false) {
-      ports.presentConnectionIssue('play', 'offline');
+      ports.presentConnectionIssue(view, 'offline');
       return;
     }
     const revision = ports.incrementRevision();
     ports.setExit(ports.goHome);
     ports.closeRuneReward();
     closeEnd();
-    ports.showEntryWait('play');
+    ports.showEntryWait(view);
     show('#ovOnline');
     ports.focusOnlineTitle();
     /* Verify durable unseen rows again before matchmaking; queueing never
@@ -76,20 +79,32 @@ export function createResultEntry<Options>(ports: ResultEntryPorts<Options>): Re
     void ensureIdentity().then(async (identity) => {
       if (!ports.isCurrent(revision)) return;
       if (identity.kind !== 'authenticated') {
-        ports.handleIdentityFailure('play', identity);
+        ports.handleIdentityFailure(view, identity);
         return;
       }
-      const collection = await refreshRuneCollection(identity.user.id);
+      const [collection, progression] = await Promise.all([
+        refreshRuneCollection(identity.user.id),
+        refreshRankedProgressionStatus(),
+      ]);
       if (!ports.isCurrent(revision)) return;
+      /* A weekly replay must name the CURRENT persisted rotation before it
+         queues. If the Monday-boundary refresh is uncertain, keep the action
+         retryable rather than silently entering a different mode. */
+      if (!await verifyRankedEntryContract(view, progression)) {
+        if (!ports.isCurrent(revision)) return;
+        ports.presentConnectionIssue(view);
+        return;
+      }
+      ports.showEntryWait(view);
       const ownsCollection = await runeCollectionMatchesActiveAccount(collection);
       if (!ports.isCurrent(revision)) return;
       if (!ownsCollection) {
-        ports.presentConnectionIssue('play');
+        ports.presentConnectionIssue(view);
         return;
       }
-      await ports.routeWithRuneReward('play', collection, revision);
+      await ports.routeWithRuneReward(view, collection, revision);
     }).catch(() => {
-      if (ports.isCurrent(revision)) ports.presentConnectionIssue('play');
+      if (ports.isCurrent(revision)) ports.presentConnectionIssue(view);
     });
   }
 

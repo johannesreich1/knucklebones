@@ -182,6 +182,9 @@ export async function runOfflineRuneTrialScenarios({ page, out, check, t }) {
   await page.waitForSelector('#ovTrialSelect.on.handoff');
   await page.tap('#trialSelectReady');
   await page.waitForSelector('#ovTrialSelect.on:not(.handoff) #trialSelectCards button');
+  out.localClaimMarks = await page.locator('#trialSelectCards [data-claim="true"]').count();
+  check(out.localClaimMarks === 0,
+    'offline Rune Ritual invented a ranked CLAIM reward mark', out.localClaimMarks);
   const first = await page.getAttribute('#trialSelectCards button', 'data-rune');
   await page.tap(`#trialSelectCards button[data-rune="${first}"]`);
   await page.waitForSelector('#ovTrialSelect.on.handoff');

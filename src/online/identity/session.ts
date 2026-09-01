@@ -10,14 +10,10 @@ import {
   resetGuestGameCenterLink, restoreGameCenterAutomatically,
 } from './identity.ts';
 import { gameCenterState, waitForGameCenter } from '../../native/game-center.ts';
-import {
-  clearRuneCollectionSnapshot,
-  readRuneCollectionSnapshot,
-} from '../../rune-collection-cache.ts';
-import { invalidateRuneCollectionRefreshes } from '../runes/rune-collection.ts';
 import { resetProfileAppIcon } from '../../native/app-icon.ts';
 import { clearProfileCache, readProfileCache } from '../../profile-cache.ts';
 import { readAuthSession, type AuthSessionRead } from './session-read.ts';
+import { clearSessionSnapshots, reconcileSessionSnapshots } from './session-snapshots.ts';
 
 /* ---- auth ----
 
@@ -93,8 +89,7 @@ function resetProfilePresentation(): void {
 }
 
 export async function signOut(): Promise<void> {
-  invalidateRuneCollectionRefreshes();
-  clearRuneCollectionSnapshot();
+  clearSessionSnapshots();
   await supa().auth.signOut();
   acceptedGameCenterRevision = null;
   resetGuestGameCenterLink();
@@ -131,8 +126,7 @@ export async function startFreshGuest(): Promise<string | null> {
   if (error) return localizedAuthError(error);
   if (!data.user || !data.session) return onlineMessage('errors.generic');
 
-  invalidateRuneCollectionRefreshes();
-  clearRuneCollectionSnapshot();
+  clearSessionSnapshots();
   acceptedGameCenterRevision = null;
   resetGuestGameCenterLink();
   resetProfilePresentation();
@@ -150,14 +144,10 @@ function remember(u: Me | null): Me | null {
 function userFromSessionRead(read: AuthSessionRead): Me | null {
   if (read.kind === 'unavailable') return null;
   const user = remember(me(read.kind === 'authenticated' ? read.session.user : null));
-  const runes = readRuneCollectionSnapshot();
   /* Supabase may replace a session directly during account recovery/sign-in.
-     Never leave the preceding account's confirmed collection active while
+     Never leave the preceding account's confirmed progression active while
      the new account's refresh is still in flight. */
-  if (!user || (runes && runes.accountId !== user.id.toLowerCase())) {
-    invalidateRuneCollectionRefreshes();
-    clearRuneCollectionSnapshot();
-  }
+  reconcileSessionSnapshots(user?.id ?? null);
   /* A provider restore can replace the session without passing through the
      explicit sign-out door. Account-scoped presentation from the previous
      user must become primary while the new profile row is fetched. */

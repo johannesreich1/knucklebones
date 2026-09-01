@@ -5,7 +5,7 @@
 // Run: mise exec -- node --experimental-strip-types tests/rune-bot-fairness.test.ts
 import { searchRoot } from '../src/core/ai.ts';
 import { randStream } from '../src/core/dice.ts';
-import { GROUPS } from '../src/core/ladder.ts';
+import { GROUPS, LADDER_CURVE_V2 } from '../src/core/ladder.ts';
 import {
   appendRankedAction,
   rankedActionTotal,
@@ -130,6 +130,7 @@ function play(groupIndex: number, humanFirst: boolean, game: number): number {
         mode: CLASSIC,
         dealt,
         rating: GROUPS[groupIndex].floor,
+        curveVersion: LADDER_CURVE_V2,
         random: botRandom,
       });
       if (!turn) throw new Error('production bot could not append a Rune turn');

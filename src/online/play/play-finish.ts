@@ -45,8 +45,15 @@ export function finishOnlineMatch(options: {
     ?? totalOf(S.boards[online.you], bountyOf(online.you), S.scoring, S.charm.wards[online.you]);
   const theirs = (meIsP1 ? match.p2_score : match.p1_score)
     ?? totalOf(S.boards[opponent], bountyOf(opponent), S.scoring, S.charm.wards[opponent]);
-  const delta = (meIsP1 ? (match as any).p1_rating_delta : (match as any).p2_rating_delta) as number | null;
-  const opponentDelta = (meIsP1 ? (match as any).p2_rating_delta : (match as any).p1_rating_delta) as number | null;
+  const delta = (meIsP1 ? match.p1_rating_delta : match.p2_rating_delta) ?? null;
+  const baseDelta = (meIsP1
+    ? match.p1_base_rating_delta
+    : match.p2_base_rating_delta);
+  const finishDelta = (meIsP1
+    ? match.p1_finish_rating_delta
+    : match.p2_finish_rating_delta);
+  const scoringVersion = match.scoring_version ?? 1;
+  const opponentDelta = meIsP1 ? match.p2_rating_delta : match.p1_rating_delta;
   const won = match.winner !== null
     && ((meIsP1 && match.winner === match.p1) || (!meIsP1 && match.winner === match.p2));
 
@@ -60,7 +67,11 @@ export function finishOnlineMatch(options: {
     forfeit: match.status === 'forfeit',
     my: mine,
     their: theirs,
-    delta,
+    delta: delta ?? null,
+    baseDelta,
+    finishDelta,
+    scoringVersion,
+    entryKind: match.entry_kind === 'weekly' ? 'weekly' : 'ordinary',
     opp: options.opponentName(),
     opponentName: options.opponentName,
     oppAvatar: online.names.avatars?.[options.opponentSeat] ?? null,

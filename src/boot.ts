@@ -97,10 +97,29 @@ export function boot(embed: boolean): void {
   if (!embed) void Promise.all([
     import('./online/preferences.ts'),
     import('./online/identity/profile.ts'),
-  ]).then(async ([{ syncAccountPreferences }, { myProfile }]) => {
-    await Promise.all([
-      syncAccountPreferences(startupPreferenceRevision),
-      myProfile(),
-    ]);
+    import('./online/identity/session.ts'),
+    import('./online/api/ranked-curve-verification.ts'),
+  ]).then(async ([
+    { syncAccountPreferences },
+    { myProfile },
+    { currentUser },
+    { refreshVerifiedRankedCurveVersion },
+  ]) => {
+    const preferences = syncAccountPreferences(startupPreferenceRevision);
+    /* Never let a freshly read/remapped profile rating outrun the contract
+       which classifies it. Signed-out boot stays fully offline; an authenticated
+       boot first tries the exact account status, then the public scalar needed
+       for old-server v1 compatibility. Unknown keeps the cached chip's points
+       hidden and is retried by the next online entry. */
+    const user = await currentUser();
+    if (!user) {
+      await preferences;
+      return;
+    }
+    const curveVersion = await refreshVerifiedRankedCurveVersion();
+    await preferences;
+    if (curveVersion === null) return;
+    await myProfile();
+    refreshHomeChip();
   }).catch(() => undefined);
 }

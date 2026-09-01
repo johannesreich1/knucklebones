@@ -40,6 +40,11 @@
 @media (max-width:340px){
   :where(#kbroot) .quiet .hrow .btn{font-size:9px;line-height:12px;letter-spacing:0;white-space:nowrap}
 }
+:where(#kbroot) .weekly-cta{display:flex;align-items:center;justify-content:center;gap:9px;
+  border-color:color-mix(in srgb,var(--g-obsidian) 52%,rgba(255,255,255,.12));
+  background:linear-gradient(135deg,color-mix(in srgb,var(--g-obsidian) 14%,transparent),rgba(255,255,255,.025))}
+:where(#kbroot) .weekly-cta>span:first-child{color:var(--g-obsidian);filter:drop-shadow(0 0 7px var(--g-obsidian))}
+:where(#kbroot) .weekly-cta.complete{opacity:.72}
 /* Pinned to the bottom. #ovStart centres its content between two auto-margin
    spacers (:259-260); the empty Home foot preserves that balance while legal
    placeholder doors live in Settings, out of the game's way. */

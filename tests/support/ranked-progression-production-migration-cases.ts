@@ -35,6 +35,9 @@ const ABSENT = Object.freeze({
   historicalRuneComments: false,
   historicalRuneMatchStartPolicy: false,
   historicalSettleMatchEventBody: false,
+  progressionV2TableColumns: false,
+  progressionV2TableConstraints: false,
+  progressionV2SettleMatchEventBody: false,
 });
 
 const BASE_COMPLETE = Object.freeze({
@@ -65,6 +68,16 @@ const COMPLETE = Object.freeze({
   historicalSettleMatchEventBody: true,
 });
 
+const PROGRESSION_V2 = Object.freeze({
+  ...BASE_COMPLETE,
+  historicalRuneComments: true,
+  historicalRuneMatchStartPolicy: true,
+  historicalSettleMatchEventBody: true,
+  progressionV2TableColumns: true,
+  progressionV2TableConstraints: true,
+  progressionV2SettleMatchEventBody: true,
+});
+
 export const RANKED_PROGRESSION_ABSENT_SCHEMA_ROW = Object.freeze({
   table_contract: false,
   table_columns: false,
@@ -82,6 +95,9 @@ export const RANKED_PROGRESSION_ABSENT_SCHEMA_ROW = Object.freeze({
   historical_rune_comments: false,
   historical_rune_match_start_policy: false,
   historical_settle_match_event_body: false,
+  progression_v2_table_columns: false,
+  progression_v2_table_constraints: false,
+  progression_v2_settle_match_event_body: false,
   settle_match_contract: true,
 });
 
@@ -95,6 +111,7 @@ const schemaRow = (metadata: Readonly<Record<string, boolean>>) => Object.freeze
 
 export const RANKED_PROGRESSION_LEGACY_SCHEMA_ROW = schemaRow(LEGACY);
 export const RANKED_PROGRESSION_COMPLETE_SCHEMA_ROW = schemaRow(COMPLETE);
+export const RANKED_PROGRESSION_V2_SCHEMA_ROW = schemaRow(PROGRESSION_V2);
 
 export async function runRankedProgressionProductionMigrationCases(options: {
   readonly check: Check;
@@ -167,10 +184,11 @@ export async function runRankedProgressionProductionMigrationCases(options: {
     ]);
   });
 
-  check('ranked-progression metadata accepts only absent, applied, or corrected state', () => {
+  check('ranked-progression metadata accepts only absent, applied, corrected, or v2 state', () => {
     assert.equal(validateRankedProgressionSchemaStage(ABSENT), 0);
     assert.equal(validateRankedProgressionSchemaStage(LEGACY), 1);
     assert.equal(validateRankedProgressionSchemaStage(COMPLETE), 2);
+    assert.equal(validateRankedProgressionSchemaStage(PROGRESSION_V2), 3);
     guarded(
       () => validateRankedProgressionSchemaStage({
         ...ABSENT,
@@ -201,6 +219,13 @@ export async function runRankedProgressionProductionMigrationCases(options: {
     );
     guarded(
       () => validateRankedProgressionSchemaStage({
+        ...PROGRESSION_V2,
+        progressionV2TableConstraints: false,
+      }),
+      /partial/,
+    );
+    guarded(
+      () => validateRankedProgressionSchemaStage({
         ...ABSENT,
         unexpected: false,
       } as never),
@@ -220,11 +245,15 @@ export async function runRankedProgressionProductionMigrationCases(options: {
       "c.relname = 'ranked_progression_events'",
       "(1, 'id', 'uuid'",
       "(18, 'seen_at', 'timestamp with time zone'",
+      "(23, 'neon_medal_granted', 'boolean'",
       "'ranked_progression_events_match_player_key'",
       "'ranked_progression_events_player_id_fkey'",
       "'ranked_progression_events_rune_live_before_check'",
       "'ranked_progression_events_rune_live_after_check'",
       "'ranked_progression_events_rune_unlock_monotonic_check'",
+      "'ranked_progression_events_curve_version_check'",
+      "'ranked_progression_events_outcome_grants_check'",
+      "'ranked_progression_events_weekly_monotonic_check'",
       "'ranked_progression_events_player_created_idx'",
       "'ranked_progression_events_season_idx'",
       'One owner-only before/after snapshot per settled human participant',
@@ -275,7 +304,7 @@ export async function runRankedProgressionProductionMigrationCases(options: {
     }
   });
 
-  await checkAsync('ranked-progression audit distinguishes absent, applied, and corrected states', async () => {
+  await checkAsync('ranked-progression audit distinguishes absent, applied, corrected, and v2 states', async () => {
     const absent = await auditRankedProgression(async (sql) => {
       assert.equal(sql, RANKED_PROGRESSION_SCHEMA);
       return [RANKED_PROGRESSION_ABSENT_SCHEMA_ROW];
@@ -294,13 +323,20 @@ export async function runRankedProgressionProductionMigrationCases(options: {
     });
     assert.equal(complete.schemaStage, 2);
     assert.deepEqual(complete.evidence, COMPLETE);
+
+    const progressionV2 = await auditRankedProgression(async (sql) => {
+      assert.equal(sql, RANKED_PROGRESSION_SCHEMA);
+      return [RANKED_PROGRESSION_V2_SCHEMA_ROW];
+    });
+    assert.equal(progressionV2.schemaStage, 3);
+    assert.deepEqual(progressionV2.evidence, PROGRESSION_V2);
   });
 
   await checkAsync('ranked-progression audit fails closed on partial or changed settlement state', async () => {
     await assert.rejects(
       auditRankedProgression(async () => [{
-        ...RANKED_PROGRESSION_COMPLETE_SCHEMA_ROW,
-        table_rls_policy: false,
+        ...RANKED_PROGRESSION_V2_SCHEMA_ROW,
+        progression_v2_settle_match_event_body: false,
       }]),
       /partial/,
     );

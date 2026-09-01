@@ -7,6 +7,8 @@ import {
   validateRuneTrialSchemaStage,
 } from '../../tools/database/production-rollout-core.mjs';
 import {
+  EQUIPPED_RANKED_SCHEMA,
+  RANKED_PROGRESSION_SCHEMA,
   RUNE_TRIAL_FUNCTIONS,
   RUNE_TRIAL_JOB,
   RUNE_TRIAL_MIGRATION_SHA256,
@@ -16,6 +18,18 @@ import {
 
 type Check = (name: string, run: () => void) => void;
 type Guarded = (run: () => unknown, pattern: RegExp) => void;
+
+function migrationFunctionBodyMd5(source: string, declaration: string): string {
+  const declarationAt = source.indexOf(declaration);
+  assert.notEqual(declarationAt, -1, `missing migration function ${declaration}`);
+  const bodyMarker = 'as $function$';
+  const bodyAt = source.indexOf(bodyMarker, declarationAt);
+  assert.notEqual(bodyAt, -1, `missing body for ${declaration}`);
+  const bodyStart = bodyAt + bodyMarker.length;
+  const bodyEnd = source.indexOf('$function$;', bodyStart);
+  assert.notEqual(bodyEnd, -1, `missing body terminator for ${declaration}`);
+  return createHash('md5').update(source.slice(bodyStart, bodyEnd)).digest('hex');
+}
 
 export function runRuneTrialProductionMigrationCases(options: {
   readonly check: Check;
@@ -133,6 +147,30 @@ export function runRuneTrialProductionMigrationCases(options: {
       RUNE_TRIAL_POST_APPLY_DATA,
       /select count\(\*\) from public\.player_runes/,
     );
+  });
+
+  check('successor progression bodies remain exact accepted compatibility closures', () => {
+    const progression = readFileSync(
+      new URL(
+        '../../supabase/migrations/20260901162456_progression_v2.sql',
+        import.meta.url,
+      ),
+      'utf8',
+    );
+    const payloadBody = migrationFunctionBodyMd5(
+      progression,
+      'create or replace function private.rune_trial_payload(',
+    );
+    const settleBody = migrationFunctionBodyMd5(
+      progression,
+      'create or replace function public.settle_match(',
+    );
+    assert.equal(payloadBody, '7ead896c6cf9b63e4dcdc7fb79551e48');
+    assert.equal(settleBody, 'cf1b7d0b30fd61e0b3e467e4abc7378c');
+    assert.ok(RUNE_TRIAL_FUNCTIONS.includes(payloadBody));
+    assert.ok(RUNE_TRIAL_FUNCTIONS.includes(settleBody));
+    assert.ok(EQUIPPED_RANKED_SCHEMA.includes(settleBody));
+    assert.ok(RANKED_PROGRESSION_SCHEMA.includes(settleBody));
   });
 
   check('Rune Trial is an explicit CLI selection and help remains read-only', () => {

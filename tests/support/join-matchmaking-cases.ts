@@ -54,9 +54,10 @@ export function verifyJoinMatchmakingPolicy(check: Check): void {
   check(startSource.includes('rankedSeatOrder(input.underdog, input.favourite)')
       && !startSource.includes('p1 = input.requester'),
     'ranked start still forces a human opener instead of preserving underdog p1');
-  check(startSource.includes('svc.rpc("start_ranked_match_v3"')
+  check(startSource.includes('input.curveVersion === 2 ? "start_ranked_match_v4" : "start_ranked_match_v3"')
+      && startSource.includes('svc.rpc(startRpc')
       && startSource.includes('p_equipped_rune_protocol: equippedRuneProtocol'),
-    'ranked start does not pass the negotiated equipped-rune protocol into v3 atomically');
+    'ranked start does not pass the negotiated equipped-rune protocol through the versioned start RPC atomically');
   const compatibleTrial = {
     format: 'rune_trial', protocol_version: 2, rune_rules_version: 1,
   } as MatchRow;

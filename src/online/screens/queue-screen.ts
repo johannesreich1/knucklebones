@@ -17,18 +17,24 @@ import {
   trialRevealSides,
 } from './queue-reveal.ts';
 import { resolveRankedTrial } from '../runes/trial-offer.ts';
+import {
+  activeWeeklyChallenge,
+  readProgressionStatusSnapshot,
+  type RankedEntryKind,
+} from '../../progression-status-cache.ts';
 
 export interface QueueScreen {
   bind(): void;
-  showSearching(): void;
-  start(): Promise<void>;
+  showSearching(entryKind?: RankedEntryKind): void;
+  start(entryKind?: RankedEntryKind): Promise<void>;
   stop(): void;
 }
 
 export interface QueueScreenPorts {
   goHome: () => void;
   startTutorial: () => void;
-  connectionUnavailable: () => void;
+  connectionUnavailable: (entryKind: RankedEntryKind) => void;
+  updateRequired: (entryKind: RankedEntryKind) => void;
 }
 
 export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
@@ -38,6 +44,13 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
   let pendingJoin: Promise<JoinAttempt | null> | null = null;
   let queueMayExist = false;
 
+  const showSearching = (entryKind: RankedEntryKind = 'ordinary'): void => {
+    const status = readProgressionStatusSnapshot();
+    const modifier = entryKind === 'weekly'
+      ? activeWeeklyChallenge(status)?.modifier ?? null : null;
+    waiting.showSearching(modifier);
+  };
+
   function stop(): void {
     runs.cancel();
     cancelTrialSelection();
@@ -46,7 +59,12 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
     if (queueMayExist) void cancellation.cleanup();
   }
 
-  async function start(): Promise<void> {
+  async function start(entryKind: RankedEntryKind = 'ordinary'): Promise<void> {
+    if (entryKind === 'weekly'
+        && !activeWeeklyChallenge(readProgressionStatusSnapshot())) {
+      ports.connectionUnavailable(entryKind);
+      return;
+    }
     const previousJoin = pendingJoin;
     const hadRemoteRun = queueMayExist;
     const run = runs.begin();
@@ -68,7 +86,7 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
       ports.startTutorial();
       return;
     }
-    waiting.showSearching();
+    showSearching(entryKind);
     /* The join clock is matchmaking POLICY, not display: the visible timer may
        have been running since entry painted the search, but the bot-backfill
        threshold counts how long this run has actually been enqueued. */
@@ -78,7 +96,7 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
       queueMayExist = true;
       const request = (async (): Promise<JoinAttempt | null> => {
         try {
-          const settled = await join(waited > 7000);
+          const settled = await join(waited > 7000, entryKind);
           if (!runs.owns(run)) {
             await cancellation.cleanup(settled);
             queueMayExist = false;
@@ -104,13 +122,13 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
       if (!runs.owns(run)) return;
       if (result?.status === 'unavailable') {
         waiting.clear();
-        ports.connectionUnavailable();
+        ports.connectionUnavailable(entryKind);
         return;
       }
       if (result?.status === 'incompatible') {
         queueMayExist = false;
         waiting.clear();
-        ports.goHome();
+        ports.updateRequired(entryKind);
         return;
       }
       if (result?.status === 'matched') {
@@ -193,5 +211,5 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
     });
   }
 
-  return { bind, showSearching: () => waiting.showSearching(), start, stop };
+  return { bind, showSearching, start, stop };
 }

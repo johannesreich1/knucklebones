@@ -14,11 +14,17 @@ import { Sfx } from '../ui/audio.ts';
 import { $, hide, show } from '../ui/dom.ts';
 import { loaderWait } from '../ui/loader.ts';
 import { tap } from '../ui/tap.ts';
+import { modeCopy, subscribeLocale, t } from '../i18n/index.ts';
+import {
+  activeWeeklyChallenge,
+  readProgressionStatusSnapshot,
+  subscribeProgressionStatus,
+} from '../progression-status-cache.ts';
 
 /* The Home-side names for the lazy chunk's entry views. Kept structural rather
    than imported so Home's bindings never pull the online module in eagerly;
    openOnline's own OnlineView checks the pairing at the call site below. */
-type OnlineDoorView = 'play' | 'ladder' | 'account';
+type OnlineDoorView = 'play' | 'weekly' | 'ladder' | 'account';
 type OnlineChunk = typeof import('../online/screens/ui.ts');
 
 /** Cross-flow actions online borrows from local play; injected, never imported. */
@@ -28,6 +34,7 @@ export interface OnlineDoorPorts {
 
 export function bindOnlineDoors(ports: OnlineDoorPorts): void {
   let onlineBusy = false;
+  let weeklyExpiry: ReturnType<typeof setTimeout> | null = null;
   /* One module promise for the whole session. Touching an online control starts
      the chunk before the tap completes, so the load die is usually skipped
      entirely; a player who never reaches for online never pays for it. */
@@ -98,6 +105,29 @@ export function bindOnlineDoors(ports: OnlineDoorPorts): void {
     tap(control, () => goOnline(view));
   };
   door('#btnOnline', 'play');
+  door('#btnWeekly', 'weekly');
   door('#btnBoardHome', 'ladder');
   door('#homeChip', 'account');
+
+  const paintWeekly = (): void => {
+    if (weeklyExpiry) clearTimeout(weeklyExpiry);
+    weeklyExpiry = null;
+    const button = $('#btnWeekly') as HTMLButtonElement;
+    const status = readProgressionStatusSnapshot();
+    const challenge = activeWeeklyChallenge(status);
+    button.hidden = !challenge;
+    if (!challenge) return;
+    $('#weeklyHomeLabel').textContent = t('game', challenge.completed
+      ? 'home.weeklyChallengeComplete' : 'home.weeklyChallenge', {
+      mode: modeCopy(challenge.modifier).name,
+    });
+    button.classList.toggle('complete', challenge.completed);
+    /* A tab can stay open across Monday. Retire the old label at the exact
+       half-open boundary even when no storage/locale event happens there. */
+    weeklyExpiry = setTimeout(paintWeekly,
+      Math.max(1, Date.parse(challenge.endsAt) - Date.now() + 1));
+  };
+  paintWeekly();
+  subscribeProgressionStatus(paintWeekly);
+  subscribeLocale(paintWeekly);
 }

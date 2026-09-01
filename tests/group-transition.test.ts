@@ -6,26 +6,13 @@
 // Red-first owner for src/online/screens/group-transition-model.ts.
 // Run: mise exec -- node --experimental-strip-types tests/group-transition.test.ts
 import assert from 'node:assert/strict';
-import { RANKED_POOL_TIERS, type RankedPoolTier } from '../src/core/ranked-outcomes.ts';
 import type { LadderGroupId } from '../src/i18n/display.ts';
-import { rankedProgressionFromRow } from '../src/online/api/ranked-progression-api.ts';
+import type { GroupTransitionEvent } from '../src/online/api/ranked-progression-api.ts';
 import { groupTransitionSlides } from '../src/online/screens/group-transition-model.ts';
+import { runGroupTransitionV2Cases } from './support/group-transition-v2-cases.ts';
+import { runRankedProgressionEventCases } from './support/ranked-progression-event-cases.ts';
 
-type TransitionEvent = {
-  eventId: string;
-  matchId: string;
-  beforePoints: number;
-  afterPoints: number;
-  beforeGroup: LadderGroupId;
-  afterGroup: LadderGroupId;
-  beforePoolTier: RankedPoolTier;
-  afterPoolTier: RankedPoolTier;
-  equippedRune: string | null;
-  randomRuneMode: boolean;
-  runeSeatUnlockedBefore: boolean;
-  runeSeatUnlockedAfter: boolean;
-  seenAt: string | null;
-};
+type TransitionEvent = GroupTransitionEvent;
 
 const base: TransitionEvent = {
   eventId: '20000000-0000-4000-8000-000000000001',
@@ -41,6 +28,11 @@ const base: TransitionEvent = {
   runeSeatUnlockedBefore: false,
   runeSeatUnlockedAfter: false,
   seenAt: null,
+  curveVersion: 1,
+  outcomeGrants: [],
+  weeklyUnlockedBefore: false,
+  weeklyUnlockedAfter: false,
+  neonMedalGranted: false,
 };
 
 const event = (overrides: Partial<TransitionEvent> = {}): TransitionEvent => ({
@@ -54,17 +46,9 @@ const group = (
   to: LadderGroupId,
 ) => ({ kind: 'group', direction, from, to });
 
-const tier = (id: RankedPoolTier) => {
-  const found = RANKED_POOL_TIERS.find((candidate) => candidate.id === id);
-  assert.ok(found, `missing ranked pool tier ${id}`);
-  return found;
-};
-const additions = (before: RankedPoolTier, after: RankedPoolTier) =>
-  tier(after).outcomeIds.filter((id) => !tier(before).outcomeIds.includes(id));
-
 /* The first BONE crossing teaches precisely the permanent additions, in the
-   registry's presentation order. There is no copied mode-name list here. */
-const boneAdditions = additions('stone', 'bone');
+   order curve v1 had already shipped. */
+const boneAdditions = ['rowswitch', 'rowmult', 'bounty'];
 assert.deepEqual(boneAdditions, ['rowswitch', 'rowmult', 'bounty']);
 assert.deepEqual(groupTransitionSlides(event()), [
   group('promotion', 'stone', 'bone'),
@@ -88,7 +72,7 @@ assert.deepEqual(groupTransitionSlides(event({
 
 /* IVORY adds the Classic-backed Rune Ritual outcome once, through the same
    stable outcome vocabulary as ordinary modes. */
-const ivoryAdditions = additions('bone', 'ivory');
+const ivoryAdditions = ['rune_trial'];
 assert.deepEqual(ivoryAdditions, ['rune_trial']);
 assert.deepEqual(groupTransitionSlides(event({
   beforePoints: 701,
@@ -295,6 +279,10 @@ assert.deepEqual(groupTransitionSlides(event({
   afterPoolTier: 'stone',
 })), []);
 assert.deepEqual(groupTransitionSlides(event({
+  matchId: null,
+})), groupTransitionSlides(event()),
+  'an orphaned durable event could not display after its match was deleted');
+assert.deepEqual(groupTransitionSlides(event({
   seenAt: '2026-08-30T12:00:00.000Z',
 })), []);
 
@@ -321,7 +309,9 @@ const invalidEvents: readonly unknown[] = [
     afterPoolTier: 'bone',
   }),
   { ...event(), beforeGroup: 'diamond' },
-  { ...event(), afterPoolTier: 'gold' },
+  { ...event(), afterPoolTier: 'diamond' },
+  { ...event(), curveVersion: 3 },
+  { ...event(), outcomeGrants: ['rowmult', 'rowmult'] },
 ];
 for (const [index, candidate] of invalidEvents.entries()) {
   let slides: unknown;
@@ -331,59 +321,10 @@ for (const [index, candidate] of invalidEvents.entries()) {
   assert.deepEqual(slides, [], `invalid transition ${index + 1} fabricated slides`);
 }
 
-/* The transport parser derives the exact display group from the settlement's
-   points + historical apex flags. In particular, 5,000 points remain
-   OBSIDIAN without the positional flag and become NEON with it. */
-const apexRow = {
-  id: base.eventId,
-  source_match_id: base.matchId,
-  points_before: 5000,
-  points_after: 5000,
-  apex_before: false,
-  apex_after: true,
-  pool_tier_before: 'ivory',
-  pool_tier_after: 'ivory',
-  equipped_rune_before: 'ward',
-  equipped_rune_after: 'ward',
-  random_rune_mode_before: false,
-  random_rune_mode_after: false,
-  rune_seat_active_before: true,
-  rune_seat_active_after: true,
-  seen_at: null,
-};
-const parsedApex = rankedProgressionFromRow(apexRow);
-assert.deepEqual(parsedApex, event({
-  beforePoints: 5000,
-  afterPoints: 5000,
-  beforeGroup: 'obsidian',
-  afterGroup: 'neon',
-  beforePoolTier: 'ivory',
-  afterPoolTier: 'ivory',
-  equippedRune: 'ward',
-  runeSeatUnlockedBefore: true,
-  runeSeatUnlockedAfter: true,
-}));
-assert.equal(rankedProgressionFromRow({ ...apexRow, source_match_id: null }), null);
-assert.equal(rankedProgressionFromRow({
-  id: base.eventId,
-  source_match_id: base.matchId,
-  points_before: 287,
-  points_after: 333,
-  apex_before: false,
-  apex_after: false,
-  pool_tier_before: 'diamond',
-  pool_tier_after: 'bone',
-  equipped_rune_before: null,
-  equipped_rune_after: null,
-  random_rune_mode_before: false,
-  random_rune_mode_after: false,
-  rune_seat_active_before: false,
-  rune_seat_active_after: false,
-  seen_at: null,
-}), null);
-
+const v2Cases = runGroupTransitionV2Cases();
+const parserCases = runRankedProgressionEventCases();
 console.log(JSON.stringify({
-  cases: 21 + invalidEvents.length,
+  cases: 21 + invalidEvents.length + v2Cases + parserCases,
   boneAdditions,
   ivoryAdditions,
 }, null, 2));

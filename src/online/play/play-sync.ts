@@ -10,7 +10,9 @@ import { handTurnTo } from '../../flow/turn.ts';
 import { S } from '../../state.ts';
 import { renderAll } from '../../ui/game/board.ts';
 import { supa } from '../api/client.ts';
+import { isMissingPostgrestColumn } from '../api/postgrest-compat.ts';
 import type { MatchRow } from '../api/match-api.ts';
+import { confirmedLadderCurveVersion } from '../../progression-status-cache.ts';
 import { newerMatchProjection, readMatchSyncSnapshot } from './match-sync.ts';
 import { animateOnlineMove } from './play-motion.ts';
 import { projectionRecoveryVersionReached } from './play-recovery.ts';
@@ -34,15 +36,50 @@ export interface OnlineSyncPorts {
 
 const pause = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
+export const PLAY_SYNC_LEGACY_MATCH_COLUMNS = [
+  'id', 'p1', 'p2', 'status', 'turn', 'winner', 'p1_score', 'p2_score',
+  'p1_rating_delta', 'p2_rating_delta', 'next_die', 'last_move_at', 'modifier',
+  'format', 'protocol_version', 'rune_rules_version', 'pool_tier', 'phase',
+  'p1_rune', 'p2_rune', 'action_version', 'pending_aim',
+].join(',');
+export const PLAY_SYNC_V2_MATCH_COLUMNS = Object.freeze([
+  'p1_base_rating_delta', 'p2_base_rating_delta',
+  'p1_finish_rating_delta', 'p2_finish_rating_delta',
+  'scoring_version', 'curve_version', 'entry_kind', 'weekly_rotation_id',
+  'outcome_roster',
+]);
+export const PLAY_SYNC_MATCH_COLUMNS = [
+  PLAY_SYNC_LEGACY_MATCH_COLUMNS,
+  ...PLAY_SYNC_V2_MATCH_COLUMNS,
+].join(',');
+
+interface PlaySyncMatchRead {
+  readonly data: MatchRow | null;
+  readonly error: unknown | null;
+}
+
+async function readPlaySyncMatch(matchId: string): Promise<PlaySyncMatchRead> {
+  /* Dynamic DRY select fragments cannot be inferred by supabase-js's literal
+     parser. The runtime row is still validated by the synchronizer below; name
+     the narrow transport shape here instead of spreading GenericStringError. */
+  const read = async (columns: string): Promise<PlaySyncMatchRead> => {
+    const result = await supa().from('matches')
+      .select(columns).eq('id', matchId).maybeSingle();
+    return result as unknown as PlaySyncMatchRead;
+  };
+  const result = await read(PLAY_SYNC_MATCH_COLUMNS);
+  if (!result.error || confirmedLadderCurveVersion() === 2
+      || !isMissingPostgrestColumn(result.error, PLAY_SYNC_V2_MATCH_COLUMNS)) return result;
+  return read(PLAY_SYNC_LEGACY_MATCH_COLUMNS);
+}
+
 async function readActionSnapshot(online: OnlineState): Promise<TrialSnapshot | null> {
   return retryCoherentTrialSnapshot(async () => {
     const [actionsResult, matchResult] = await Promise.all([
       supa().from('match_actions')
         .select('idx, move_idx, who, kind, rune_id, target_col, placed_col, die_before, die_after, created_at')
         .eq('match_id', online.matchId).order('idx'),
-      supa().from('matches')
-        .select('id, p1, p2, status, turn, winner, p1_score, p2_score, p1_rating_delta, p2_rating_delta, next_die, last_move_at, modifier, format, protocol_version, rune_rules_version, pool_tier, phase, p1_rune, p2_rune, action_version, pending_aim')
-        .eq('id', online.matchId).maybeSingle(),
+      readPlaySyncMatch(online.matchId),
     ]);
     if (actionsResult.error || matchResult.error || !matchResult.data
         || !Array.isArray(actionsResult.data)) return null;
@@ -232,9 +269,7 @@ async function syncStandard(
   >({
     moves: async () => await supa().from('match_moves').select('idx, who, col, die')
       .eq('match_id', online.matchId).order('idx'),
-    match: async () => await supa().from('matches')
-      .select('id, p1, p2, status, turn, winner, p1_score, p2_score, p1_rating_delta, p2_rating_delta, next_die, last_move_at, modifier')
-      .eq('id', online.matchId).maybeSingle(),
+    match: async () => await readPlaySyncMatch(online.matchId),
   });
   if (!ports.isCurrent(online) || !snapshot || online.animating) return false;
   const fresh = snapshot.moves.filter((row) => row.idx >= online.applied);

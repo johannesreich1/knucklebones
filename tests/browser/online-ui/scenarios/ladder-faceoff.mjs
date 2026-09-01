@@ -177,6 +177,57 @@ export async function runLadderFaceoffScenarios(suite) {
     'the near-bottom player row was not clamped fully visible at the list end',
     opening['bottom-clamped']);
 
+  /* POSITIONAL NEON IS THE VIEWER'S GROUP TOO. The public board row already
+     carries apex=true, while the owner-only season row carries only points.
+     Using points alone for `myGroup` painted the signed-in player's own row as
+     NEON but put “your league” on BONE and dealt their side of every face-off
+     as BONE until another surface refreshed it. Read the actual labels and
+     computed material colour the player sees on both affected surfaces. */
+  const apexSelf = await visit({
+    door: 'chip',
+    named: true,
+    ladderBoard: { population: 100, myRank: 1 },
+    standingPoints: 609,
+    returnAfterProbe: true,
+    skipStandardProbes: true,
+    probe: async (page) => {
+      await page.click('#btnRank');
+      await page.waitForSelector('#onLadderList .lrow.me');
+      const ladder = await page.evaluate(() => {
+        const me = document.querySelector('#onLadderList .lrow.me');
+        const ownLabel = me?.querySelector('.mesub b');
+        const marked = [...document.querySelectorAll('#onLadderList .ghor')]
+          .filter((horizon) => horizon.querySelector('.gf')?.textContent?.includes('your league'));
+        return {
+          rowGroup: ownLabel?.textContent?.trim() ?? null,
+          rowColor: ownLabel ? getComputedStyle(ownLabel).color : null,
+          markedGroups: marked.map((horizon) => horizon.dataset.g),
+        };
+      });
+      await page.click('#onLadderList .lrow:not(.me):not([aria-hidden="true"])');
+      await page.waitForFunction(() =>
+        document.querySelector('.faceoff .focol.you .gpill')?.textContent?.includes('#1'));
+      const faceoff = await page.evaluate(() => {
+        const pill = document.querySelector('.faceoff .focol.you .gpill');
+        return {
+          group: pill?.textContent?.trim() ?? null,
+          color: pill ? getComputedStyle(pill).color : null,
+        };
+      });
+      return { ladder, faceoff };
+    },
+  });
+  out.ladderApexSelf = apexSelf.probeResult;
+  check(apexSelf.probeResult?.ladder?.rowGroup === 'NEON'
+      && apexSelf.probeResult.ladder.markedGroups.join() === 'neon',
+    'the positional-NEON player marker is attached to the wrong ladder league',
+    apexSelf.probeResult?.ladder);
+  check(apexSelf.probeResult?.faceoff?.group === 'NEON · #1'
+      && apexSelf.probeResult.faceoff.color === apexSelf.probeResult.ladder.rowColor,
+    'the signed-in side of the face-off lost its positional NEON label or material colour',
+    apexSelf.probeResult);
+  check(apexSelf.errs.length === 0, 'page errors while rendering positional NEON for self', apexSelf.errs);
+
   // the tap: a row deals the face-off, one-column for a signed-out reader
   check(board.faceoff?.visible === true, 'tapping a row does not deal the face-off', board.faceoff);
   check(board.faceoff?.solo === true && board.faceoff?.vsShown === false,

@@ -1,14 +1,12 @@
 import {
-  boardGroup,
-  groupFill,
-  groupRingFill,
-  groupRingPeakState,
-  inApex,
-} from '../../core/ladder.ts';
+  currentGroupFill,
+  currentGroupRingFill,
+  currentGroupRingPeakState,
+  currentInApex,
+} from '../../ladder-presentation.ts';
 import {
   formatDate,
   formatNumber,
-  ladderGroupName,
   subscribeLocale,
   t,
 } from '../../i18n/index.ts';
@@ -21,9 +19,11 @@ import {
   myLadder,
   myStanding,
 } from '../api/ladder-api.ts';
+import { refreshVerifiedRankedCurveVersion } from '../api/ranked-curve-verification.ts';
 import { currentUser, identityStatus } from '../identity/session.ts';
 import { myProfile } from '../identity/profile.ts';
 import { cacheStanding, readProfileCache } from '../../profile-cache.ts';
+import { cachedLadderCurveVersion } from '../../progression-status-cache.ts';
 import { historyRow } from './history-screen.ts';
 import {
   acknowledgeRuneReward,
@@ -36,10 +36,7 @@ import {
   type RuneRewardPresentation,
 } from '../runes/rune-reward-presentation.ts';
 import { fillAccountRing } from './account-ring.ts';
-import {
-  paintAccountRunes,
-  paintEquippedSeat,
-} from './account-runes.ts';
+import { paintAccountRunes, paintEquippedSeat } from './account-runes.ts';
 import { isOnlinePanelCurrent, showOnlineLoading, showOnlinePanel } from './shell.ts';
 import type { AuthMode, AuthOrigin } from './auth-screen.ts';
 import type { Ladder, Standing } from '../api/ladder-api.ts';
@@ -53,6 +50,11 @@ import {
   startAccountRuneGuide,
   type AccountRuneGuideRequest,
 } from './account-rune-guide.ts';
+import {
+  accountProgressionSnapshot,
+  paintAccountAchievements,
+} from './account-achievements.ts';
+import { accountRankText, paintAccountGroup } from './account-ladder.ts';
 
 interface AccountPorts {
   showAuth(mode: AuthMode, origin: AuthOrigin, notice?: string | null): void;
@@ -93,6 +95,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     standing: Standing | null;
     streak: number;
     identity: IdentityStatus | null;
+    progression: ReturnType<typeof accountProgressionSnapshot>;
     runes: readonly string[];
     runeRows: RuneCollectionRefresh['rows'];
   } | null = null;
@@ -115,22 +118,6 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     nickError = render;
     $('#onNickErr').textContent = render();
   };
-  const paintGroup = (points: number, apex = false): void => {
-    /* The profile and ladder speak the same league language. In particular,
-       NEON is positional and a high-points non-apex player stays OBSIDIAN. */
-    const group = boardGroup(points, apex);
-    const label = $('#accGroup') as HTMLElement;
-    const material = `var(--g-${group.id})`;
-    label.textContent = ladderGroupName(group.id);
-    label.style.setProperty('--gc', material);
-    ($('#accRing') as HTMLElement).style.setProperty('--lr-material', material);
-  };
-  /* League and ladder position are different facts. NEON already names the
-     positional league above the player; the RANK tile keeps the exact ordinal
-     just as it does for every bounded league. */
-  const rankText = (standing: Standing | null, games: number): string =>
-    standing && games ? '#' + formatNumber(standing.rank) : '–';
-
   /* THREE, NEWEST FIRST, ON EVERY DEVICE (user call 2026-08-28). The strip used
      to paint three rows and then remove them one at a time while the shared
      .pbody overflowed, which made the section's length a property of the
@@ -148,7 +135,17 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
 
   const paintAccount = (): void => {
     if (!lastAccount) return;
-    const { profile, user, ladder, standing, streak, identity, runes, runeRows } = lastAccount;
+    const {
+      profile,
+      user,
+      ladder,
+      standing,
+      streak,
+      identity,
+      progression,
+      runes,
+      runeRows,
+    } = lastAccount;
     $('#accSince').textContent = !user?.guest && profile?.created_at
       ? t('online', 'profile.memberSince', {
         date: formatDate(new Date(profile.created_at), { month: 'long', year: 'numeric' }),
@@ -157,17 +154,18 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     const points = ladder?.points ?? 0;
     const peak = ladder?.peak ?? 0;
     const games = ladder ? ladder.wins + ladder.losses + ladder.draws : 0;
-    const apex = standing ? inApex(points, standing.rank, standing.population) : false;
+    const apex = standing ? currentInApex(points, standing.rank, standing.population) : false;
     $('#accPoints').textContent = formatNumber(points);
-    paintGroup(points, apex);
+    paintAccountGroup(points, apex);
     $('#accPeak').textContent = formatNumber(peak);
     $('#accGames').textContent = games
       ? t('online', 'profile.gamesLink', { count: games, formatted: formatNumber(games) })
       : t('online', 'profile.noneYet');
-    $('#accRank').textContent = rankText(standing, games);
+    $('#accRank').textContent = accountRankText(standing, games);
     $('#accStreak').textContent = formatNumber(streak);
     paintAccountProviders(user, identity);
     paintAccountRunes(runes, runeRows);
+    paintAccountAchievements(progression);
     /* The ring and PEAK label stay current-season. The rune seat instead uses
        the all-season SILVER fact; mutable profile rating is not evidence that
        this permanent achievement happened. */
@@ -181,7 +179,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     if (lastAccount) paintAccount();
     else if (pendingCachedRating !== null) {
       $('#accPoints').textContent = formatNumber(pendingCachedRating);
-      paintGroup(pendingCachedRating);
+      paintAccountGroup(pendingCachedRating);
     }
     repaintAccountRuneGuide();
     if (nickError) $('#onNickErr').textContent = nickError();
@@ -198,7 +196,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     clearNickError();
     $('#accSince').textContent = '';
     $('#accPoints').textContent = formatNumber(0);
-    paintGroup(0);
+    paintAccountGroup(0);
     $('#accPeak').textContent = formatNumber(0);
     $('#accGames').textContent = t('online', 'profile.noneYet');
     $('#accRank').textContent = '–';
@@ -210,6 +208,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     $('#accClaim').hidden = true;
     paintAvatar($('#accDie'), DEFAULT_AVATAR);
     paintAccountRunes([]);
+    paintAccountAchievements(null);
     paintEquippedSeat(null);
     paintRecent();
     const ring = $('#accRing') as HTMLElement;
@@ -218,20 +217,26 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     // A forgetful host simply reads as nothing cached; the fresh row below
     // paints everything anyway.
     const cached = readProfileCache()?.rating;
-    if (typeof cached === 'number') {
+    if (typeof cached === 'number' && cachedLadderCurveVersion() !== null) {
       pendingCachedRating = cached;
-      fillAccountRing(ring, groupFill(cached));
+      fillAccountRing(ring, currentGroupFill(cached));
       $('#accPoints').textContent = formatNumber(cached);
-      paintGroup(cached);
+      paintAccountGroup(cached);
     }
+    /* Resolve the server's curve before accepting a freshly mapped points row.
+       A v2 rating may never be classified through cached v1 floors; an older
+       server simply answers no status and myLadder retains its public-v1
+       fallback. The shared die still holds the view throughout. */
+    const curveVersion = await refreshVerifiedRankedCurveVersion();
+    if (!ownsRun() || curveVersion === null) return null;
     /* Nothing on the profile is useful half-painted. Fetch every independent
-       answer together while the shared die holds the view, then reveal one
-       coherent card (recent matches included) in a single rendering turn. */
+       answer together, then reveal one coherent card (recent matches included)
+       in a single rendering turn. */
     const [profile, user, ladder, standing, streak, recent, identity, refreshedRunes]
       = await Promise.all([
       myProfile(),
       currentUser(),
-      myLadder(),
+      myLadder(curveVersion),
       myStanding(),
       bestStreak(),
       matchHistory(3),
@@ -253,6 +258,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     if (!ownsCollection || !ownsRun()) return null;
     if (options.runeGuide && options.expectedAccountId
         && collectionAccountId !== options.expectedAccountId.toLowerCase()) return null;
+    const progression = accountProgressionSnapshot(collectionAccountId);
     refreshHomeChip();
     $('#accGuest').hidden = !user?.guest;
     ($('#btnSignOut') as HTMLElement).hidden = !!user?.guest;
@@ -266,7 +272,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     paintAvatar($('#accDie'), profile?.avatar ?? DEFAULT_AVATAR);
     const points = ladder?.points ?? 0;
     const peak = ladder?.peak ?? 0;
-    const apex = standing ? inApex(points, standing.rank, standing.population) : false;
+    const apex = standing ? currentInApex(points, standing.rank, standing.population) : false;
     lastAccount = {
       profile,
       user,
@@ -274,6 +280,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       standing,
       streak,
       identity,
+      progression,
       runes: runeCollection.collected,
       runeRows: runeCollection.rows,
     };
@@ -283,8 +290,8 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     cacheStanding(standing?.rank ?? null, apex);
     refreshHomeChip();
 
-    const peakPosition = groupRingPeakState(points, peak, apex);
-    fillAccountRing(ring, groupRingFill(points, apex));
+    const peakPosition = currentGroupRingPeakState(points, peak, apex);
+    fillAccountRing(ring, currentGroupRingFill(points, apex));
     ring.classList.toggle('haspeak', peakPosition.kind !== 'at');
     if (peakPosition.kind === 'ahead') ring.style.setProperty('--pk', String(peakPosition.fill));
     if (peakPosition.kind === 'above') ring.style.setProperty('--pk', '1');

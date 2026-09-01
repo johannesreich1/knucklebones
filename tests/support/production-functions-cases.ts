@@ -17,6 +17,8 @@ import {
   FUNCTION_ROLLOUT_SLUGS,
   HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_NAME,
   HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_VERSION,
+  PROGRESSION_V2_MIGRATION_NAME,
+  PROGRESSION_V2_MIGRATION_VERSION,
   RANKED_RUNES_MIGRATION_NAME,
   RANKED_RUNES_MIGRATION_VERSION,
   RANDOM_RUNE_MODE_MIGRATION_NAME,
@@ -163,10 +165,13 @@ export function readyProductionRead(
     legacy_table_constraints: false,
     legacy_rune_comments: false,
     legacy_settle_match_event_body: false,
-    historical_table_constraints: true,
+    historical_table_constraints: false,
     historical_rune_comments: true,
     historical_rune_match_start_policy: true,
     historical_settle_match_event_body: true,
+    progression_v2_table_columns: true,
+    progression_v2_table_constraints: true,
+    progression_v2_settle_match_event_body: true,
     settle_match_contract: true,
     ...overrides.progression,
   };
@@ -182,6 +187,8 @@ export function readyProductionRead(
         RANKED_PROGRESSION_MIGRATION_NAME,
         HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_VERSION,
         HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_NAME,
+        PROGRESSION_V2_MIGRATION_VERSION,
+        PROGRESSION_V2_MIGRATION_NAME,
       ]);
       return [{ migration_history: overrides.history ?? true }];
     }

@@ -14,6 +14,7 @@ import {
   type RankedRuneDeal,
 } from '../../src/core/ranked-actions.ts';
 import { appendRankedBotTurn } from '../../src/core/ranked-bot-turn.ts';
+import { LADDER_CURVE_V1, LADDER_CURVE_V2 } from '../../src/core/ladder.ts';
 import { AI, CLASSIC, LIMITED, ME, legalCols, type Player } from '../../src/core/rules.ts';
 
 type Check = (condition: boolean, message: string, detail?: unknown) => void;
@@ -97,13 +98,14 @@ function runCastSlipCase(check: Check, testCase: CastSlipCase): void {
   check(state.turn === seat && state.nextDie === 1,
     `${fixture} fixture did not reach the intended bot FATE turn`, state);
   const skippedCast = appendRankedBotTurn({
-    seed, rows, state, mode: CLASSIC, dealt, rating: 800, random: () => 0,
+    seed, rows, state, mode: CLASSIC, dealt, rating: 800,
+    curveVersion: LADDER_CURVE_V2, random: () => 0,
   });
   // A counter per case: a shared one would leak draw state between fixtures.
   let castDraw = 0;
   const keptCast = appendRankedBotTurn({
     seed, rows, state, mode: CLASSIC, dealt, rating: 800,
-    random: () => castDraw++ === 0 ? 0.99 : 0.5,
+    curveVersion: LADDER_CURVE_V2, random: () => castDraw++ === 0 ? 0.99 : 0.5,
   });
   check(skippedCast?.actions.length === 1 && skippedCast.actions[0].kind === 'place'
     && skippedCast.state.charges[seat].fate === 2,
@@ -112,6 +114,37 @@ function runCastSlipCase(check: Check, testCase: CastSlipCase): void {
     && keptCast.actions.some(({ kind, rune_id }) => kind === 'cast' && rune_id === 'fate')
     && keptCast.state.charges[seat].fate === 1,
     testCase.kept, keptCast);
+
+  /* During the dormant v2 rollout the same rating belongs to different
+     groups on the two curves. Keep the match-owned curve observable here:
+     720 is IVORY on v1 (0.60 slip) and BONE on v2 (0.70 slip), so the same
+     0.65 draw must preserve the cast on v1 and skip it on v2. This catches a
+     caller or either half of this helper silently falling back to v2. */
+  if (fixture === 'cast-slip') {
+    const stagedTurn = (curveVersion: typeof LADDER_CURVE_V1 | typeof LADDER_CURVE_V2) => {
+      let draw = 0;
+      const values = [0.65, 0.99, 0.5];
+      return appendRankedBotTurn({
+        seed,
+        rows,
+        state,
+        mode: CLASSIC,
+        dealt,
+        rating: 720,
+        curveVersion,
+        random: () => values[draw++] ?? 0.5,
+      });
+    };
+    const v1Turn = stagedTurn(LADDER_CURVE_V1);
+    const v2Turn = stagedTurn(LADDER_CURVE_V2);
+    check(v1Turn !== null
+      && v1Turn.actions.some(({ kind, rune_id }) => kind === 'cast' && rune_id === 'fate')
+      && v1Turn.state.charges[seat].fate === 1
+      && v2Turn?.actions.length === 1 && v2Turn.actions[0].kind === 'place'
+      && v2Turn.state.charges[seat].fate === 2,
+    'ranked bot turn ignored the match-owned ladder curve during staged rollout',
+    { v1Turn, v2Turn });
+  }
 }
 
 export function runRankedBotTurnCases(harness: RankedBotTurnCaseHarness): void {
@@ -127,6 +160,7 @@ export function runRankedBotTurnCases(harness: RankedBotTurnCaseHarness): void {
     mode: CLASSIC,
     dealt,
     rating: 800,
+    curveVersion: LADDER_CURVE_V2,
     random: () => 0,
   });
   check(botOpening !== null && botOpening.actions.at(-1)?.kind === 'place'
@@ -144,6 +178,7 @@ export function runRankedBotTurnCases(harness: RankedBotTurnCaseHarness): void {
     mode: CLASSIC,
     dealt,
     rating: 800,
+    curveVersion: LADDER_CURVE_V2,
     random: () => 0,
   }) === null, 'ranked bot opener accepted a state/version mismatch');
 
@@ -175,6 +210,7 @@ export function runRankedBotTurnCases(harness: RankedBotTurnCaseHarness): void {
     mode: LIMITED,
     dealt: limitedBotDeal,
     rating: 800,
+    curveVersion: LADDER_CURVE_V2,
     random: () => 0,
   });
   check(finalLimitedTurn !== null && finalLimitedTurn.actions.length === 1

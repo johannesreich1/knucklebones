@@ -18,7 +18,11 @@ import {
   pickLocalOutcome,
   runePickAvailable,
 } from '../local-options.ts';
-import { collectedRuneIds, confirmedRankedPoolTier } from '../rune-collection-cache.ts';
+import { readRuneCollectionSnapshot } from '../rune-collection-cache.ts';
+import {
+  confirmedLadderCurveVersion,
+  confirmedRankedOutcomeEntitlements,
+} from '../progression-status-cache.ts';
 import { S, type LocalRuneTrial } from '../state.ts';
 import { colorOf, nameOf } from '../ui/identity.ts';
 import { hide, show } from '../ui/dom.ts';
@@ -83,11 +87,18 @@ const trialSides = (picked: LocalRuneTrial) => [
 
 /** Resolve a local setup into one immutable duel deal; null means selection was cancelled. */
 export async function resolveLocalStart(): Promise<ResolvedLocalStart | null> {
-  const collected = collectedRuneIds();
+  const collection = readRuneCollectionSnapshot();
+  const collected = collection?.collected ?? [];
   const candidates = availableRuneSpecs(S.mode, collected);
   /* ONE roster decides everything a local setup may land on: the dial's ring
      below, the RANDOM draw, and whether the stored pick is still legal. */
-  const access = localPoolAccess(S.mode, collected, confirmedRankedPoolTier());
+  const access = localPoolAccess(
+    S.mode,
+    collected,
+    collection?.poolTier ?? null,
+    confirmedRankedOutcomeEntitlements(collection?.accountId),
+    confirmedLadderCurveVersion(),
+  );
   const selectedMode = modePickAvailable(S.localMode, access) ? S.localMode : CLASSIC;
   const seed = Math.random().toString(36).slice(2);
   const outcome = selectedMode === RANDOM ? pickLocalOutcome(seed, access)

@@ -119,10 +119,16 @@ const RANKED_PROGRESSION_HISTORICAL_SILVER_FIELDS = Object.freeze([
   'historicalRuneMatchStartPolicy',
   'historicalSettleMatchEventBody',
 ]);
+const RANKED_PROGRESSION_V2_FIELDS = Object.freeze([
+  'progressionV2TableColumns',
+  'progressionV2TableConstraints',
+  'progressionV2SettleMatchEventBody',
+]);
 const RANKED_PROGRESSION_FIELDS = Object.freeze([
   ...RANKED_PROGRESSION_BASE_FIELDS,
   ...RANKED_PROGRESSION_LEGACY_FIELDS,
   ...RANKED_PROGRESSION_HISTORICAL_SILVER_FIELDS,
+  ...RANKED_PROGRESSION_V2_FIELDS,
 ]);
 
 export class ProductionRolloutGuardError extends Error {
@@ -606,9 +612,10 @@ export function validateLadderStreakBaselineSchemaStage(metadata) {
 
 /**
  * Validate the durable ranked-progression event surface as absent, deployed
- * with its original live-rune facts, or corrected to historical SILVER.
+ * with its original live-rune facts, corrected to historical SILVER, or
+ * upgraded additively for progression v2.
  * The caller separately requires the pre-existing settle_match RPC to retain
- * its exact eleven-argument service boundary in both stages; only its reviewed
+ * its exact eleven-argument service boundary in every stage; only its reviewed
  * event-writing body belongs to this migration-owned all-or-nothing surface.
  */
 export function validateRankedProgressionSchemaStage(metadata) {
@@ -629,14 +636,27 @@ export function validateRankedProgressionSchemaStage(metadata) {
   const historical = RANKED_PROGRESSION_HISTORICAL_SILVER_FIELDS.map(
     field => metadata[field],
   );
+  const progressionV2 = RANKED_PROGRESSION_V2_FIELDS.map(
+    field => metadata[field],
+  );
   if (base.every(value => value === false)
       && legacy.every(value => value === false)
-      && historical.every(value => value === false)) return 0;
+      && historical.every(value => value === false)
+      && progressionV2.every(value => value === false)) return 0;
   if (base.every(value => value === true)
       && legacy.every(value => value === true)
-      && historical.every(value => value === false)) return 1;
+      && historical.every(value => value === false)
+      && progressionV2.every(value => value === false)) return 1;
   if (base.every(value => value === true)
       && legacy.every(value => value === false)
-      && historical.every(value => value === true)) return 2;
+      && historical.every(value => value === true)
+      && progressionV2.every(value => value === false)) return 2;
+  if (base.every(value => value === true)
+      && legacy.every(value => value === false)
+      && metadata.historicalTableConstraints === false
+      && metadata.historicalRuneComments === true
+      && metadata.historicalRuneMatchStartPolicy === true
+      && metadata.historicalSettleMatchEventBody === true
+      && progressionV2.every(value => value === true)) return 3;
   fail('Ranked-progression table, owner boundary, acknowledgement, or settlement body is partial.');
 }

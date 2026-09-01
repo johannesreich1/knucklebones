@@ -4,7 +4,7 @@
 import { t } from '../../i18n/index.ts';
 import { ask } from '../../ui/askcard.ts';
 
-export type ConnectionIssue = 'offline' | 'unavailable';
+export type ConnectionIssue = 'offline' | 'unavailable' | 'updateRequired';
 
 export const detectedConnectionIssue = (): ConnectionIssue =>
   typeof navigator !== 'undefined' && navigator.onLine === false

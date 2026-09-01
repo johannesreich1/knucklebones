@@ -52,6 +52,11 @@ async function accountSwitchProbe(page, routes) {
     random_rune_mode_after: false,
     rune_seat_active_before: false,
     rune_seat_active_after: true,
+    curve_version: 1,
+    outcome_grants: [],
+    weekly_unlocked_before: false,
+    weekly_unlocked_after: false,
+    neon_medal_granted: false,
     seen_at: null,
   });
   await showTransitionResult(page, {

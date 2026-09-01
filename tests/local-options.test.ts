@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { CLASSIC, BOUNTY, ROWMULT, ROWSWITCH } from '../src/core/rules.ts';
+import { CLASSIC, BOUNTY, LIMITED, ROWMULT, ROWSWITCH } from '../src/core/rules.ts';
 import { RANDOM } from '../src/core/modes.ts';
 import { RUNE_TRIAL_FORMAT } from '../src/core/ranked-outcomes.ts';
 import { RANDOM_DUAL_SPELL, RANDOM_SPELL, SPELLS } from '../src/core/spells.ts';
@@ -36,13 +36,51 @@ assert.deepEqual(localPoolAccess('cpu', three, null), stone,
   'an unknown pool tier was treated as something other than STONE');
 
 assert.equal(modePickAvailable(CLASSIC, stone), true);
+assert.equal(modePickAvailable(LIMITED, stone), true,
+  'a fresh unknown curve did not retain the old-server v1 STONE promise');
 assert.equal(modePickAvailable(BOUNTY, stone), false,
-  'STONE offered a mode the ladder has not unlocked yet');
+  'the v1 STONE fallback lost its shipped mode locks');
 assert.equal(modePickAvailable(ROWSWITCH, stone), false);
 assert.equal(modePickAvailable(ROWMULT, bone), true);
 assert.equal(modePickAvailable(BOUNTY, bone), true);
 /* The promise to spin is always offered; only what it may land on narrows. */
 assert.equal(modePickAvailable(RANDOM, stone), true);
+
+/* Once the public v2 curve is confirmed, missing account-owned exact grants
+   fail closed to clean v2 STONE. In particular, never resurrect v1 STONE's
+   Limited promise after sign-out or during an entitlement refresh failure. */
+const signedOutV2 = localPoolAccess('cpu', [], null, null, 2);
+const missingV2Entitlements = localPoolAccess('cpu', three, 'ivory', null, 2);
+for (const access of [signedOutV2, missingV2Entitlements]) {
+  assert.equal(modePickAvailable(BOUNTY, access), true);
+  assert.equal(modePickAvailable(LIMITED, access), false,
+    'v2 without exact entitlements exposed legacy Limited');
+  assert.equal(modePickAvailable(ROWMULT, access), false,
+    'v2 without exact entitlements inferred a higher cached tier');
+}
+
+/* A confirmed v2 status owns per-outcome access. It can be non-tier-shaped
+   after grandfathering, so neither locks nor RANDOM may infer it from tier. */
+const v2Stone = localPoolAccess('cpu', three, 'stone', [
+  'classic', 'singlestrike', 'colshield', 'bounty',
+]);
+assert.equal(modePickAvailable(BOUNTY, v2Stone), true,
+  'confirmed v2 STONE did not consume its Bounty entitlement');
+assert.equal(modePickAvailable(ROWSWITCH, v2Stone), false,
+  'confirmed v2 STONE inferred a later mode from its tier');
+const grandfathered = localPoolAccess('cpu', three, 'stone', [
+  'limited', 'classic', 'bounty',
+]);
+assert.equal(modePickAvailable(BOUNTY, grandfathered), true);
+assert.equal(modePickAvailable(LIMITED, grandfathered), true,
+  'an explicitly grandfathered Limited entitlement was discarded');
+assert.deepEqual(
+  Array.from({ length: 300 }, (_, index) => pickLocalOutcome(`grandfathered-${index}`, grandfathered).id)
+    .filter((id, index, all) => all.indexOf(id) === index)
+    .sort(),
+  ['bounty', 'classic', 'limited'],
+  'offline RANDOM inferred a tier roster instead of using explicit v2 entitlements',
+);
 
 /* Rune Ritual needs BOTH halves: the IVORY tier and three collected runes. */
 assert.equal(modePickAvailable(RUNE_TRIAL_PICK, ivory), true);
@@ -55,6 +93,8 @@ assert.equal(modePickAvailable(RUNE_TRIAL_PICK, localPoolAccess('cpu', ids.slice
    exception availableRuneSpecs already makes for runes. */
 const duo = localPoolAccess('duo', [], null);
 assert.equal(modePickAvailable(BOUNTY, duo), true);
+assert.equal(modePickAvailable(ROWSWITCH, duo), true,
+  'full local two-player did not expose the complete successor catalog');
 assert.equal(modePickAvailable(RUNE_TRIAL_PICK, duo), true);
 for (const id of ['', ...ids, RANDOM_SPELL, RANDOM_DUAL_SPELL]) {
   assert.equal(runePickAvailable('duo', id, []), true, `duo unexpectedly locked ${id || 'NONE'}`);

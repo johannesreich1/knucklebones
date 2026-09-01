@@ -5,6 +5,8 @@ import type { JoinInput, MatchRow, ProfileSummary } from "../_shared/types.ts";
    source, so its protocol wire literals stay local just as the v1 literal did. */
 const RUNE_TRIAL_CAPABILITY = "rune_trial_v1";
 const EQUIPPED_RUNE_CAPABILITY = "equipped_rune_v1";
+const CURVE_V2_CAPABILITY = "curve_v2";
+const RUNE_TRIAL_CLAIM_CAPABILITY = "rune_trial_claim_v2";
 const usesRankedActionProtocol = (match: MatchRow): boolean =>
   match.protocol_version === 2 && match.rune_rules_version === 1;
 
@@ -15,6 +17,9 @@ export interface QueueCandidate {
   protocol_version?: 1 | 2;
   capabilities?: string[];
   pool_tier?: "stone" | "bone" | "ivory";
+  curve_version?: 1 | 2;
+  entry_kind?: "ordinary" | "weekly";
+  weekly_rotation_id?: string | null;
 }
 
 interface RatingRow {
@@ -66,9 +71,16 @@ export function rankedClientCompatibilityError(
   if (match.rune_rules_version != null && match.rune_rules_version !== 1) {
     return "unsupported-rune-rules";
   }
+  if (match.curve_version === 2
+      && (input.protocolVersion !== 2 || !input.capabilities.includes(CURVE_V2_CAPABILITY))) {
+    return "incompatible-client";
+  }
   if (match.format === "rune_trial") {
     if (!usesRankedActionProtocol(match)) return "unsupported-rune-rules";
-    return input.protocolVersion === 2 && input.capabilities.includes(RUNE_TRIAL_CAPABILITY)
+    return input.protocolVersion === 2
+      && input.capabilities.includes(RUNE_TRIAL_CAPABILITY)
+      && (match.reward_version !== 2
+        || input.capabilities.includes(RUNE_TRIAL_CLAIM_CAPABILITY))
       ? null : "incompatible-client";
   }
   if (!usesRankedActionProtocol(match)) return null;
@@ -104,10 +116,19 @@ export async function findOldestEligiblePartner(
   playerId: string,
   playerRating: number,
   band: number,
+  curveVersion: 1 | 2 = 1,
+  entryKind: "ordinary" | "weekly" = "ordinary",
+  weeklyRotationId: string | null = null,
 ): Promise<QueueCandidate | null> {
-  const { data: queueData, error: queueError } = await svc.from("matchmaking_queue")
-    .select("player_id, created_at, protocol_version, capabilities, pool_tier")
+  let queueQuery = svc.from("matchmaking_queue")
+    .select("player_id, created_at, protocol_version, capabilities, pool_tier, curve_version, entry_kind, weekly_rotation_id")
     .neq("player_id", playerId)
+    .eq("curve_version", curveVersion)
+    .eq("entry_kind", entryKind);
+  if (weeklyRotationId !== null) {
+    queueQuery = queueQuery.eq("weekly_rotation_id", weeklyRotationId);
+  }
+  const { data: queueData, error: queueError } = await queueQuery
     .order("created_at", { ascending: true });
   if (queueError) throw new Error(`queue read failed: ${queueError.message}`);
   const queue = (queueData ?? []) as QueueCandidate[];

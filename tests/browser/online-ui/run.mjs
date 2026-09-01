@@ -53,6 +53,10 @@ import { runRankedRevealLayoutScenarios } from './scenarios/ranked-reveal-layout
 import { runFlyingDieColourScenarios } from './scenarios/flying-die-colour.mjs';
 import { runTrialCastLatencyScenarios } from './scenarios/trial-cast-latency.mjs';
 import { runBotOpeningBeatScenarios } from './scenarios/bot-opening-beat.mjs';
+import { runRowSwitchOpeningScenarios } from './scenarios/row-switch-opening.mjs';
+import {
+  runAccountAchievementsWeeklyScenarios,
+} from './scenarios/account-achievements-weekly.mjs';
 import { runGroupTransitionScenarios } from './scenarios/group-transition.mjs';
 import {
   runGroupTransitionDemotionScenarios,
@@ -98,6 +102,8 @@ const SCENARIOS = Object.freeze([
   { id: 'flying-die-colour', run: runFlyingDieColourScenarios },
   { id: 'trial-cast-latency', run: runTrialCastLatencyScenarios },
   { id: 'bot-opening-beat', run: runBotOpeningBeatScenarios },
+  { id: 'row-switch-opening', run: runRowSwitchOpeningScenarios },
+  { id: 'account-achievements-weekly', run: runAccountAchievementsWeeklyScenarios },
   { id: 'group-transition', run: runGroupTransitionScenarios },
   { id: 'group-transition-demotion', run: runGroupTransitionDemotionScenarios },
   { id: 'group-transition-responsive', run: runGroupTransitionResponsiveScenarios },

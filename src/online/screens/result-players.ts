@@ -1,4 +1,4 @@
-import { inApex } from '../../core/ladder.ts';
+import { currentInApex } from '../../ladder-presentation.ts';
 import { t } from '../../i18n/index.ts';
 import { cacheStanding, readProfileCache } from '../../profile-cache.ts';
 import type { EndPlate } from '../../ui/endscreen-plates.ts';
@@ -99,7 +99,8 @@ export function createResultPlayers(
             rating: profile.rating };
         }
         const points = standing?.points ?? profile?.rating ?? cachedRating;
-        const apex = standing ? inApex(points ?? 0, standing.rank, standing.population) : false;
+        const apex = standing
+          ? currentInApex(points ?? 0, standing.rank, standing.population) : false;
         cacheStanding(standing?.rank ?? null, apex);
         refreshHomeChip();
         visiblePoints = points;
@@ -107,7 +108,7 @@ export function createResultPlayers(
         visibleApex = apex;
         visibleFoe = foe;
         visibleMine = profile && ladder
-          ? { name: profile.nickname, avatar: profile.avatar ?? null, lad: ladder }
+          ? { name: profile.nickname, avatar: profile.avatar ?? null, lad: ladder, apex }
           : null;
         setPlates(plates());
       }).catch(() => undefined);

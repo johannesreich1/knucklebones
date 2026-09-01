@@ -42,6 +42,10 @@ export async function ensureRankedActionBotOpening<T extends { match: MatchRow }
   const current = (): T => ({ ...payload, match } as T);
   if (match.status !== "active" || !usesRankedActionProtocol(match)
       || match.phase !== "playing" || match.action_version > 0) return current();
+  if (match.curve_version !== 1 && match.curve_version !== 2) {
+    throw new Error("ranked action bot opener found an invalid curve version");
+  }
+  const curveVersion = match.curve_version;
   if (match.next_die === null) {
     throw new Error("ranked action bot opener received no opening die");
   }
@@ -87,6 +91,7 @@ export async function ensureRankedActionBotOpening<T extends { match: MatchRow }
     mode: outcome.mode,
     dealt,
     rating: profile.rating ?? 0,
+    curveVersion,
     random: Math.random,
   });
   const requestedAction = turn && rankedIntentOf(turn.actions[0]);

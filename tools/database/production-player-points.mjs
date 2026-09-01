@@ -12,10 +12,10 @@ import {
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { GROUPS, MIN_GAIN } from '../../src/core/ladder.ts';
+import { GROUPS_V1 as GROUPS, LADDER_CURVE_V1, MIN_GAIN } from '../../src/core/ladder.ts';
 import {
   highestRankedPoolTier,
-  rankedPoolTierForPeak,
+  rankedCompatibilityPoolTierForPeak,
 } from '../../src/core/ranked-outcomes.ts';
 import { productionRead } from '../debug/production-read.mjs';
 import { createCliRunner } from './cli-runner.mjs';
@@ -37,6 +37,7 @@ import {
   productionTestDataQueryArgs,
 } from './production-test-data-core.mjs';
 import {
+  auditProductionRankedCurve,
   verifyProductionTestDataEnvironment,
 } from './production-test-data.mjs';
 
@@ -133,6 +134,7 @@ async function readPlayerAudit(read) {
  *   resetHighWater?: boolean,
  *   optIn?: string,
  *   read?: (sql: string, parameters?: readonly unknown[]) => Promise<unknown[]>,
+ *   rankedCurve?: (read: (sql: string, parameters?: readonly unknown[]) => Promise<unknown[]>) => Promise<number>,
  *   verifyEnvironment?: () => unknown,
  *   execute?: (sql: string, before: ReturnType<typeof assertProductionPlayerPointsReady>, requestedPoints: number, options: { readonly resetHighWater: boolean }) => void,
  *   log?: (message: string) => void,
@@ -144,6 +146,7 @@ export async function rolloutProductionPlayerPoints({
   resetHighWater = false,
   optIn,
   read = productionRead,
+  rankedCurve = auditProductionRankedCurve,
   verifyEnvironment = () => { verifyProductionPlayerPointsEnvironment(); },
   execute = executeProductionPlayerPointsSql,
   log = message => console.log(message),
@@ -161,13 +164,18 @@ export async function rolloutProductionPlayerPoints({
   );
   verifyEnvironment();
 
+  const curveVersion = await rankedCurve(read);
+  if (curveVersion !== 1) {
+    throw new Error('Production player-points is disabled after curve-v2 activation; the legacy helper cannot maintain durable v2 progression.');
+  }
+
   const before = assertProductionPlayerPointsReady(await readPlayerAudit(read));
   const nextPeak = resetHighWater ? requested : Math.max(before.peak, requested);
   const nextPool = resetHighWater
-    ? rankedPoolTierForPeak(nextPeak)
+    ? rankedCompatibilityPoolTierForPeak(nextPeak, LADDER_CURVE_V1)
     : highestRankedPoolTier(
       before.rankedPoolTier,
-      rankedPoolTierForPeak(nextPeak),
+      rankedCompatibilityPoolTierForPeak(nextPeak, LADDER_CURVE_V1),
     );
   const operation = resetHighWater ? ' HIGH-WATER RESET:' : ':';
   log(`${PRODUCTION_PLAYER_NICKNAME}${operation} season ${before.currentSeason}, ${before.points} → ${requested} points; peak ${before.peak} → ${nextPeak}; permanent pool ${before.rankedPoolTier} → ${nextPool}.`);

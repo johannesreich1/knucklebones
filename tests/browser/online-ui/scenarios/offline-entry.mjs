@@ -176,6 +176,21 @@ async function offlineDoorsProbe(page, routes) {
     signupCalls: routes.signupCalls(),
   };
 
+  const joinsBeforeIncompatible = routes.joinCalls();
+  routes.setJoinIncompatible(true);
+  const incompatibleDeadline = Date.now() + 7000;
+  while (routes.joinCalls() === joinsBeforeIncompatible && Date.now() < incompatibleDeadline) {
+    await page.waitForTimeout(50);
+  }
+  await waitForOfflineOutcome(page);
+  const incompatibleClient = {
+    ...await readOutcome(page, routes),
+    joinsBeforeIncompatible,
+    joinsAfterIncompatible: routes.joinCalls(),
+  };
+  routes.setJoinIncompatible(false);
+  if (incompatibleClient.askVisible) await page.click('#btnAskNo');
+
   return {
     initialSignupCalls,
     homeEntry,
@@ -186,6 +201,7 @@ async function offlineDoorsProbe(page, routes) {
     transientRetry,
     queueFailure,
     queueRetry,
+    incompatibleClient,
   };
 }
 
@@ -208,6 +224,21 @@ function isConnectionSheet(state, expectedSignupCalls) {
   return state?.askVisible === true
     && state.title === 'CAN\u2019T CONNECT'
     && state.body === 'Online play is unavailable right now. Check your connection, then try again.'
+    && state.retry === 'Try again'
+    && state.close === 'Close'
+    && state.painted === true
+    && state.centreHit === true
+    && state.modal === 'true'
+    && state.authVisible === false
+    && state.queueVisible === false
+    && state.homeOn === true
+    && state.signupCalls === expectedSignupCalls;
+}
+
+function isUpdateRequiredSheet(state, expectedSignupCalls) {
+  return state?.askVisible === true
+    && state.title === 'UPDATE REQUIRED'
+    && state.body === 'This build cannot play the active ranked rules. Update Knucklebones, then try again.'
     && state.retry === 'Try again'
     && state.close === 'Close'
     && state.painted === true
@@ -259,5 +290,10 @@ export async function runOfflineEntryScenarios(suite) {
     && result.queueRetry.signupCalls === result.initialSignupCalls,
   'Retry after a matchmaking connection failure did not reuse the stored session',
   result?.queueRetry);
+  check(isUpdateRequiredSheet(result?.incompatibleClient, result?.initialSignupCalls)
+    && result.incompatibleClient.joinsAfterIncompatible
+      > result.incompatibleClient.joinsBeforeIncompatible,
+  'an incompatible ranked client silently bounced Home instead of explaining the required update',
+  result?.incompatibleClient);
   check(offline.errs.length === 0, 'page errors during offline ranked entry', offline.errs);
 }

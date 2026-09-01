@@ -13,7 +13,7 @@ import { nameOf } from '../ui/identity.ts';
 import { setStageDie } from '../ui/die.ts';
 import { clearHints } from '../ui/game/hints.ts';
 import { updateRecord } from '../ui/game/hud.ts';
-import { setTutorialPresentation } from '../ui/game/root-state.ts';
+import { setScoringPresentation, setTutorialPresentation } from '../ui/game/root-state.ts';
 import { applySides, setActivePlate, setStatus } from '../ui/game/turn-state.ts';
 import { fit } from '../ui/layout.ts';
 import { stopTimer, showClock } from './timer.ts';
@@ -46,6 +46,7 @@ export function dealNewGame(opts: NewGameOptions): NewGameDeal {
   // opts.spell remains the shared-rune convenience used by focused helpers.
   S.scoring = tutorial ? CLASSIC
     : (opts.scoring ?? (S.localMode >= CLASSIC ? S.localMode as Mode : CLASSIC));
+  setScoringPresentation(S.scoring);
   S.localTrial = tutorial || !opts.trial ? null : {
     offer: [...opts.trial.offer] as [string, string, string],
     spells: [...opts.trial.spells] as [string, string],

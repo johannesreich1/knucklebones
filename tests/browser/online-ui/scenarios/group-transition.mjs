@@ -5,7 +5,10 @@
 // backdrop, and a touch-pointer swipe. It deliberately does not call a deck
 // method or mutate its index. The feature-slide shape also pins the owner's
 // simplification: icon, title, text — no second explanatory illustration.
-import { assertPromotionTransition } from './group-transition-assertions.mjs';
+import {
+  assertPromotionTransition,
+  assertV2MilestoneTransition,
+} from './group-transition-assertions.mjs';
 import { RESOURCES } from '../../../../src/i18n/catalogs.ts';
 import {
   bounded,
@@ -16,6 +19,7 @@ import {
   readLivingRing,
   readModeShape,
   REPORT,
+  V2_CATCH_UP_PROGRESSION,
   swipe,
 } from './group-transition-fixtures.mjs';
 import {
@@ -106,6 +110,32 @@ async function promotionProbe(page) {
   };
 }
 
+async function v2MilestoneProbe(page) {
+  const routes = await installProgressionRoutes(page, V2_CATCH_UP_PROGRESSION);
+  await showTransitionResult(page, {
+    ...REPORT,
+    matchId: V2_CATCH_UP_PROGRESSION.source_match_id,
+    delta: V2_CATCH_UP_PROGRESSION.points_after - V2_CATCH_UP_PROGRESSION.points_before,
+  });
+  const opened = await readDeck(page);
+  const slides = [];
+  for (let index = 0; index < opened.dots.count; index++) {
+    slides.push({ deck: await readDeck(page), shape: await readModeShape(page) });
+    if (index < opened.dots.count - 1) await page.click('#gtNext');
+  }
+  const acknowledgementsBeforeContinue = routes.acknowledgements.length;
+  await page.click('#gtNext');
+  await bounded(routes.acknowledged,
+    'the v2 milestone deck did not acknowledge on its final NEON medal');
+  await page.waitForFunction(() =>
+    !document.getElementById('ovGroupTransition')?.classList.contains('on'));
+  return {
+    slides,
+    acknowledgementsBeforeContinue,
+    acknowledgements: routes.acknowledgements,
+  };
+}
+
 async function reducedMotionProbe(page) {
   const matchId = '90000000-0000-4000-8000-000000000002';
   const profileRing = await readLivingRing(page, '#accRing');
@@ -151,12 +181,14 @@ async function apexProfileProbe(page) {
 async function compactLayoutProbe(page) {
   const matchId = '90000000-0000-4000-8000-000000000003';
   await installProgressionRoutes(page, {
-    ...PROGRESSION,
+    ...V2_CATCH_UP_PROGRESSION,
     id: '91000000-0000-4000-8000-000000000003',
     source_match_id: matchId,
   });
   await showTransitionResult(page, { ...REPORT, matchId });
-  await page.click('#gtNext');
+  /* The longest new translated milestone is the actual pressure case: reach
+     OBSIDIAN's weekly slide in the same multi-boundary deck. */
+  for (let index = 0; index < 6; index++) await page.click('#gtNext');
   await page.waitForFunction(() =>
     document.getElementById('gtBody')?.querySelector('h2')?.textContent?.trim());
   return page.evaluate(() => {
@@ -181,7 +213,9 @@ async function compactLayoutProbe(page) {
       bodyOverflow: body ? body.scrollHeight - body.clientHeight : null,
       icon: rect(body?.querySelector('.gt-feature-icon')),
       title: rect(body?.querySelector('h2')),
+      titleLabel: body?.querySelector('h2')?.textContent?.trim() ?? '',
       paragraph: rect(body?.querySelector('p')),
+      paragraphLabel: body?.querySelector('p')?.textContent?.trim() ?? '',
       actions: rect(actions),
       swipe: {
         label: swipe?.textContent?.trim() ?? '',
@@ -211,6 +245,20 @@ export async function runGroupTransitionScenarios({ visit, out, check }) {
     errs: promotion.errs,
     eventId: EVENT_ID,
     matchId: MATCH_ID,
+  });
+
+  const v2Milestones = await visit({
+    named: true,
+    motion: 'reduce',
+    skipStandardProbes: true,
+    probe: v2MilestoneProbe,
+  });
+  out.groupTransitionV2Milestones = v2Milestones.probeResult;
+  assertV2MilestoneTransition({
+    check,
+    seen: v2Milestones.probeResult,
+    errs: v2Milestones.errs,
+    eventId: V2_CATCH_UP_PROGRESSION.id,
   });
 
   const reduced = await visit({
@@ -303,6 +351,8 @@ export async function runGroupTransitionScenarios({ visit, out, check }) {
       && c.deck.right <= c.viewport.width && c.deck.bottom <= c.viewport.height
       && c.deckOverflow <= 1 && c.bodyOverflow <= 1
       && c.icon.top >= c.body.top && c.paragraph.bottom <= c.body.bottom
+      && c.titleLabel === RESOURCES.de.online.groupTransition.weeklyUnlockedTitle
+      && c.paragraphLabel === RESOURCES.de.online.groupTransition.weeklyUnlockedBody
       && c.actions.bottom <= c.deck.bottom
       && c.swipe.visible
       && c.swipe.label === RESOURCES.de.online.groupTransition.swipeExplore

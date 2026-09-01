@@ -37,8 +37,10 @@ import {
   runeStage,
 } from './support/production-test-data-cases.ts';
 import {
+  assertCurveV2ProductionTestDataRefusal,
   assertExactRuneTrialPrerequisite,
   assertHumanWipeOverride,
+  assertProductionRankedCurveAudit,
   assertSeedOrchestration,
   assertWipeOrchestration,
 } from './support/production-test-data-orchestration-cases.ts';
@@ -213,6 +215,8 @@ check('wipe SQL is one bounded transaction with pre/postchecks and explicit safe
   assert.match(WIPE_PRODUCTION_ACCOUNTS_SQL, /commit;\s*$/);
   assert.match(WIPE_PRODUCTION_ACCOUNTS_SQL, /lock_timeout = '10s'/);
   assert.match(WIPE_PRODUCTION_ACCOUNTS_SQL, /authOwned|storage\.objects|owner_id/);
+  assert.match(WIPE_PRODUCTION_ACCOUNTS_SQL,
+    /active_ranked_curve_version\(\)[\s\S]*legacy production account wipe is disabled after curve-v2 activation/);
   assert.ok(WIPE_PRODUCTION_ACCOUNTS_SQL.indexOf('delete from public.matches;')
     < WIPE_PRODUCTION_ACCOUNTS_SQL.indexOf('delete from auth.users;'));
   assert.doesNotMatch(WIPE_PRODUCTION_ACCOUNTS_SQL, /\btruncate\b/i);
@@ -334,6 +338,14 @@ check('BadRandolf executor accepts only the exact generated program and a privat
 
 await checkAsync('exact Rune prerequisite reuses full schema, body, grant, RLS, publication, cron, and baseline audits', async () => {
   await assertExactRuneTrialPrerequisite();
+});
+
+await checkAsync('runtime-curve audit is backward-compatible before install and exact after install', async () => {
+  await assertProductionRankedCurveAudit();
+});
+
+await checkAsync('every production test-data preview and apply fails closed after curve-v2 activation', async () => {
+  await assertCurveV2ProductionTestDataRefusal();
 });
 
 await checkAsync('exact streak-baseline prerequisite reuses catalog, ACL, body, and data audits', async () => {

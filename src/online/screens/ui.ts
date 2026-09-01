@@ -1,7 +1,6 @@
 // Lazy online composition and navigation. Screen markup/rendering lives with
 // its owner; this module owns only the shared overlay stack and route ports.
 import '../online.css';
-import { t } from '../../i18n/index.ts';
 import { Sfx } from '../../ui/audio.ts';
 import { $, byId, hide, show } from '../../ui/dom.ts';
 import { closeEnd } from '../../ui/endscreen.ts';
@@ -10,12 +9,7 @@ import { refreshHomeChip } from '../../ui/homechip.ts';
 import { S } from '../../state.ts';
 import { saveStats } from '../../persist.ts';
 import { createAccountScreen, type AccountShowOptions } from './account-screen.ts';
-import {
-  showAuth,
-  setSessionless,
-  type AuthMode,
-  type AuthOrigin,
-} from './auth-screen.ts';
+import { showAuth, setSessionless, type AuthMode, type AuthOrigin } from './auth-screen.ts';
 import { createAvatarScreen } from './avatar-screen.ts';
 import { showHistory } from './history-screen.ts';
 import { createLadderScreen } from './ladder-screen.ts';
@@ -29,15 +23,19 @@ import {
   runeCollectionMatchesActiveAccount,
   type RuneCollectionRefresh,
 } from '../runes/rune-collection.ts';
+import { refreshRankedProgressionStatus } from '../api/progression-status-api.ts';
 import {
-  firstCollectedRuneReward,
-} from '../runes/rune-reward-presentation.ts';
+  activeWeeklyChallenge,
+  readProgressionStatusSnapshot,
+} from '../../progression-status-cache.ts';
+import { verifyRankedEntryContract } from './ranked-entry-contract.ts';
 import {
   installOnlineShell,
   showOnlineLoading,
 } from './shell.ts';
 import { setFinishHandler, type FinishReport } from '../play/play.ts';
 import { createEntryRuneRewardPresenter } from './entry-rune-reward.ts';
+import { createEntryRuneRewardRouter } from './entry-rune-route.ts';
 import { createEntryRecovery } from './entry-recovery.ts';
 import {
   createResultEntry,
@@ -56,12 +54,20 @@ let accountRouteRevision = 0;
 let exitOnline: () => void = goHome;
 let onlinePorts: OnlinePorts | null = null;
 const runeReward = createEntryRuneRewardPresenter();
+const routeWithRuneReward = createEntryRuneRewardRouter(runeReward, {
+  currentRevision: (revision) => revision === entryRevision,
+  ownsOverlay: (revision) => revision === entryRevision
+    && $('#ovOnline').classList.contains('on'),
+  routeAccount,
+  route,
+});
 const { presentConnectionIssue, handleIdentityFailure } =
   createEntryRecovery<OnlineView, OnlinePorts>({
     retryContext: () => onlinePorts,
     goHome: () => { pendingView = null; goHome(); },
     opener: (view) => byId(view === 'ladder' ? 'btnBoardHome'
-      : view === 'account' ? 'homeChip' : 'btnOnline'),
+      : view === 'account' ? 'homeChip'
+        : view === 'weekly' ? 'btnWeekly' : 'btnOnline'),
     retry: (view, ports) => { void openOnline(view, ports); },
     restore: (view, sessionless) => {
       pendingView = view;
@@ -71,7 +77,12 @@ const { presentConnectionIssue, handleIdentityFailure } =
 
 const queue = createQueueScreen({
   goHome,
-  connectionUnavailable: () => presentConnectionIssue('play'),
+  connectionUnavailable: (entryKind) => presentConnectionIssue(
+    entryKind === 'weekly' ? 'weekly' : 'play',
+  ),
+  updateRequired: (entryKind) => presentConnectionIssue(
+    entryKind === 'weekly' ? 'weekly' : 'play', 'updateRequired',
+  ),
   startTutorial: () => {
     if (!onlinePorts) throw new Error('online flow was opened without composition ports');
     onlinePorts.startTutorial();
@@ -202,47 +213,16 @@ async function route(view: OnlineView, accountOptions?: AccountShowOptions): Pro
   }
   if (view === 'ladder') return ladder.show();
   if (view === 'account') return routeAccount(accountOptions);
+  if (view === 'weekly' && !activeWeeklyChallenge(readProgressionStatusSnapshot())) {
+    presentConnectionIssue(view);
+    return;
+  }
   const identity = await ensureIdentity();
   if (identity.kind !== 'authenticated') {
     handleIdentityFailure(view, identity);
     return;
   }
-  return queue.start();
-}
-
-async function routeWithRuneReward(
-  view: OnlineView,
-  collection: RuneCollectionRefresh,
-  revision: number,
-): Promise<void> {
-  /* Account paints one coherent profile first and presents from its own fresh
-     collection response. Entry's verified collection is a fail-closed backup
-     only when that immediate second read is unavailable. */
-  if (view === 'account') {
-    await routeAccount({ verifiedRuneFallback: collection });
-    return;
-  }
-  const current = (): boolean => revision === entryRevision
-    && $('#ovOnline').classList.contains('on');
-  const firstRune = firstCollectedRuneReward(collection);
-  const firstRuneGuide: AccountShowOptions = {
-    runeGuide: { complete: () => undefined, cancel: () => undefined },
-    ...(firstRune ? { expectedAccountId: firstRune.accountId } : {}),
-    ...(firstRune ? { deferredRuneReward: firstRune } : {}),
-  };
-  const resume = (): void => {
-    if (revision !== entryRevision) return;
-    show('#ovOnline');
-    void route(firstRune ? 'account' : view, firstRune ? firstRuneGuide : undefined);
-  };
-  if (runeReward.present(
-    collection,
-    current,
-    resume,
-    firstRune ? () => t('online', 'profile.equipRune') : undefined,
-    !!firstRune,
-  )) return;
-  await route(view);
+  return queue.start(view === 'weekly' ? 'weekly' : 'ordinary');
 }
 
 function showEntryWait(view: OnlineView | null): void {
@@ -252,7 +232,7 @@ function showEntryWait(view: OnlineView | null): void {
      shows nothing account-derived, so it need not wait for identity. Only
      newcomers keep the die — the tutorial offer may still route them away. */
   if (isNewcomer()) return showOnlineLoading('onQueue');
-  queue.showSearching();
+  queue.showSearching(view === 'weekly' ? 'weekly' : 'ordinary');
 }
 
 async function entered(): Promise<void> {
@@ -262,13 +242,22 @@ async function entered(): Promise<void> {
   showEntryWait(view);
   show('#ovOnline');
   focusOnlineTitle();
-  const [, collection] = await Promise.all([myProfile(), refreshRuneCollection()]);
+  const [, collection, progression] = await Promise.all([
+    myProfile(), refreshRuneCollection(), refreshRankedProgressionStatus(),
+  ]);
   if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
   await syncAccountPreferences();
   if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
   const ownsCollection = await runeCollectionMatchesActiveAccount(collection);
   if (!ownsCollection || revision !== entryRevision
       || !$('#ovOnline').classList.contains('on')) return;
+  const entryView = view ?? 'play';
+  if (!await verifyRankedEntryContract(entryView, progression)) {
+    if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
+    presentConnectionIssue(entryView);
+    return;
+  }
+  showEntryWait(view);
   refreshHomeChip();
   await routeWithRuneReward(view ?? 'play', collection, revision);
 }
@@ -333,15 +322,21 @@ export async function openOnline(view: OnlineView, ports: OnlinePorts): Promise<
   {
     /* Hydration stays behind the current hold — the searching queue for play,
        the die otherwise; partial account data never paints either way. */
-    const [, collection] = await Promise.all([
+    const [, collection, , progression] = await Promise.all([
       syncAccountPreferences(),
-      refreshRuneCollection(user.id), myProfile(),
+      refreshRuneCollection(user.id), myProfile(), refreshRankedProgressionStatus(),
     ]);
     if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
     if (collection.accountId?.toLowerCase() !== user.id.toLowerCase()) return;
     const ownsCollection = await runeCollectionMatchesActiveAccount(collection);
     if (!ownsCollection || revision !== entryRevision
         || !$('#ovOnline').classList.contains('on')) return;
+    if (!await verifyRankedEntryContract(view, progression)) {
+      if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
+      presentConnectionIssue(view);
+      return;
+    }
+    showEntryWait(view);
     return routeWithRuneReward(view, collection, revision);
   }
 }

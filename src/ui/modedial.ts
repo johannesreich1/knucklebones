@@ -8,7 +8,8 @@
 // Pure theatre aimed at a server-decided result — the odds live in the weighted
 // server pick (core/modes.ts), never here. The dial draws every mode as an equal
 // node on a ring, so the hunt is honest even though its answer is not random.
-// Built from the MODES registry: a new mode becomes a new node for free.
+// Candidate inclusion belongs to the caller; their display order is always
+// the ranked-outcome registry's canonical teaching order.
 //
 // The one rule this beat obeys is that it must not SPOIL ITSELF. Everything
 // that could name the answer early is withheld until the comet stops:
@@ -19,6 +20,7 @@
 //   · the name and the blurb below are the SHELL's to write, and it writes
 //     them only once this beat's `run` has resolved.
 import { MODES } from '../core/modes.ts';
+import { orderRankedOutcomes } from '../core/ranked-outcomes.ts';
 import { modeCopy, t } from '../i18n/index.ts';
 import { modeIcon, modeHue } from './modeicons.ts';
 import { $ } from './dom.ts';
@@ -47,8 +49,9 @@ export interface DialBeatOptions {
 }
 
 export const dialNodes = (found?: string, candidates: readonly DialModeChoice[] = MODES): string => {
-  const segment = 360 / candidates.length;
-  return candidates.map((m, i) =>
+  const ordered = orderRankedOutcomes(candidates);
+  const segment = 360 / ordered.length;
+  return ordered.map((m, i) =>
   `<i class="dnode${m.id === found ? ' on' : ''}" data-mode="${m.id}"`
   + ` style="--a:${(i * segment).toFixed(2)}deg;color:${modeHue(m.id)}">${modeIcon(m.id, 24)}</i>`).join('');
 };
@@ -100,7 +103,7 @@ let restingAt = 0;
 
 /** hunt the ring and land on the pick the caller was already handed */
 export function dialBeat(spec: DialModeChoice, options: DialBeatOptions = {}): Beat {
-  const candidates = options.candidates?.length ? options.candidates : MODES;
+  const candidates = orderRankedOutcomes(options.candidates?.length ? options.candidates : MODES);
   const segment = 360 / candidates.length;
   const i = Math.max(0, candidates.findIndex((m) => m.id === spec.id));
   const foundHue = modeHue(spec.id);

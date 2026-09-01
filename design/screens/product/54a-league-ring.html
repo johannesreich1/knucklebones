@@ -1,4 +1,4 @@
-<!-- meta name="LG1 — The living ladder ring" group="3m · Group transitions" subtitle="SELECTED FOR PRODUCT · OWNER CALL 2026-08-30 · REVISED 2026-08-31 — STONE becomes BONE by shedding one finished ring and growing the next; the same living object settles downward on demotion, while a one-card crossing hides its redundant counter and centers its dot and action" width=430 height=3670 sizes="md" links="Match result, Ladder, Profile, Mode icons" -->
+<!-- meta name="LG1 — The living ladder ring" group="3m · Group transitions" subtitle="SELECTED FOR PRODUCT · OWNER CALL 2026-08-30 · REVISED 2026-09-01 — curve-v2 events acknowledge the new league first, then teach exact server-granted outcomes and SILVER/GOLD/OBSIDIAN/NEON milestones in ascending order; legacy events retain their shipped fallback deck" width=430 height=3300 sizes="md" links="Match result, Ladder, Profile, Mode icons" -->
 <style>
   /* Card-local names only (l54a*). The large progress object wears the app's
      real .ringwrap/.lring geometry, while every die and mode mark
@@ -69,8 +69,8 @@
   .l54a-step b{color:var(--l54a-tier);font-size:10px}
   .l54a-step i{font-style:normal;color:#8dffcf}
 
-  /* The production ring is the visual anchor. Its progress stays truthful:
-     333 is 7.9% through BONE; 1,211 is 90.9% through IVORY. The extra outer
+  /* The production ring is the visual anchor. Its curve-v2 progress stays
+     truthful: 370 is 2.1% through BONE; 1,480 is 98.5% through IVORY. The extra outer
      band is material identity, not another progress value. */
   .l54a-ring{--p:0;--lr-fill:var(--l54a-tier);--lr-material:var(--l54a-tier);
     --lr-previous:var(--g-stone);
@@ -151,6 +151,19 @@
     font-size:10px;line-height:1.45;text-align:center}
   .l54a-feature .l54a-swipe{margin-top:auto}
 
+  /* The complete successor schedule is compact reference material, not seven
+     simultaneous cards. Runtime renders each granted row as the same feature
+     slide above and interleaves multi-boundary jumps by these milestones. */
+  .l54a-plan{display:grid;gap:7px;width:100%}
+  .l54a-planrow{--l54a-plan:var(--g-stone);display:grid;grid-template-columns:82px 1fr;
+    align-items:center;gap:10px;box-sizing:border-box;padding:10px 11px;border-radius:13px;
+    border:1px solid color-mix(in srgb,var(--l54a-plan) 28%,rgba(255,255,255,.08));
+    background:linear-gradient(100deg,color-mix(in srgb,var(--l54a-plan) 10%,transparent),rgba(255,255,255,.025))}
+  .l54a-planrow>span{color:var(--l54a-plan);font-size:8px;font-weight:950;letter-spacing:.14em}
+  .l54a-planrow>div{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .l54a-planrow b{color:var(--txt);font-size:9px;letter-spacing:.11em;text-transform:uppercase}
+  .l54a-planrow small{color:#c6d3ee;font-size:8.5px;line-height:1.35}
+
   /* Demotion uses the same ring and the same deck, but gravity reverses the
      event: the SILVER skin sheds downward, IVORY catches the avatar, and the
      final ring remains almost full at 1,211 points. No shatter or failure-red. */
@@ -177,7 +190,7 @@
   .l54a-reduced{display:flex;align-items:center;gap:14px;width:100%;box-sizing:border-box;
     padding:13px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.09);
     background:rgba(255,255,255,.028)}
-  .l54a-proofring{--l54a-tier:var(--g-bone);--p:.079;--lr-fill:var(--l54a-tier);
+  .l54a-proofring{--l54a-tier:var(--g-bone);--p:.021;--lr-fill:var(--l54a-tier);
     --lr-material:var(--l54a-tier);width:74px;margin:0;flex:0 0 auto}
   .l54a-proofring .lring{filter:none}
   .l54a-proofring .l54a-tierhalo{inset:-4px}
@@ -193,67 +206,57 @@
   }
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr l54a-scr">
-  <div class="cap2">Selected for product · owner call 30 August · revised 31 August 2026</div>
+  <div class="cap2">Selected for product · owner call 30 August · revised 1 September 2026</div>
   <h1 class="l54a-title">LIVING LADDER</h1>
   <p class="l54a-lede">The ring the player already reads after every match becomes the transition itself: one group skin releases, the next catches, and the deck teaches only what changed.</p>
 
-  <div class="l54a-phase"><span>Promotion · slide 1 of 4</span><b>STONE <i>→</i> BONE</b></div>
+  <div class="l54a-phase"><span>Curve v2 · slide 1 of 2</span><b>STONE <i>→</i> BONE</b></div>
   <div class="l54a-scene">
     <div class="l54a-underlay" aria-hidden="true">
       <small>Ranked result</small><strong>VICTORY</strong>
       <div class="l54a-under-score"><span>41</span><i>VS</i><span>38</span></div>
       <div class="l54a-under-row"></div><div class="l54a-under-row"></div>
     </div>
-    <section class="l54a-deck" style="--l54a-tier:var(--g-bone)" aria-label="Promotion deck, slide one of four">
-      <div class="l54a-slidehead"><span class="l54a-kicker">New group</span><span class="l54a-page">1 / 4</span></div>
+    <section class="l54a-deck" style="--l54a-tier:var(--g-bone)" aria-label="Promotion deck, slide one of two">
+      <div class="l54a-slidehead"><span></span><span class="l54a-page">1 / 2</span></div>
       <div class="l54a-hero">
-        <div class="ringwrap l54a-ring l54a-promote" style="--p:.079;--l54a-tier:var(--g-bone)">
+        <div class="ringwrap l54a-ring l54a-promote" style="--p:.021;--l54a-tier:var(--g-bone)">
           <i class="lring"></i><i class="lhalo l54a-tierhalo"></i><i class="loldarc l54a-oldarc"></i><i class="lorbit l54a-orbit"></i>
           <span class="l54a-avatar dice-static">{{die:5:p1:72}}</span>
           <i class="l54a-mote"></i><i class="l54a-mote"></i><i class="l54a-mote"></i>
           <i class="l54a-mote"></i><i class="l54a-mote"></i><i class="l54a-mote"></i>
         </div>
         <span class="l54a-overline">Promoted to</span><strong class="l54a-group">BONE</strong>
-        <p class="l54a-copy">A new material and a wider ring. Your climb continues.</p>
-        <div class="l54a-step"><span>287 STONE</span><i>+46</i><b>333 BONE</b></div>
+        <p class="l54a-copy">Your climb continues.</p>
       </div>
       <div class="l54a-swipe">Swipe to explore</div>
-      <div class="l54a-dots" aria-label="Slide one of four"><i aria-current="true"></i><i></i><i></i><i></i></div>
+      <div class="l54a-dots" aria-label="Slide one of two"><i aria-current="true"></i><i></i></div>
       <div class="l54a-actions"><button type="button" class="btn primary l54a-button">Next</button></div>
     </section>
   </div>
 
-  <div class="l54a-phase"><span>First BONE visit · slides 2–4</span><b>Three permanent modes</b></div>
-
-  <section class="l54a-feature" style="--l54a-accent:{{mhue:rowswitch}}" aria-label="Promotion deck, Row Switch slide">
-    <div class="l54a-slidehead"><span class="l54a-kicker">New mode</span><span class="l54a-page">2 / 4</span></div>
-    <div class="l54a-modecrest">{{mico:rowswitch:42}}</div>
-    <h2>ROW SWITCH</h2>
-    <p class="l54a-featurecopy">Scoring turns sideways — only rows count.</p>
-    <div class="l54a-swipe">Swipe to explore</div>
-    <div class="l54a-dots" aria-label="Slide two of four"><i></i><i aria-current="true"></i><i></i><i></i></div>
-    <div class="l54a-actions"><button type="button" class="btn soft l54a-button">Back</button><button type="button" class="btn primary l54a-button">Next</button></div>
-  </section>
+  <div class="l54a-phase"><span>Exact grant · slide 2 of 2</span><b>BONE adds one mode</b></div>
 
   <section class="l54a-feature" style="--l54a-accent:{{mhue:rowmult}}" aria-label="Promotion deck, Row Multiply slide">
-    <div class="l54a-slidehead"><span class="l54a-kicker">New mode</span><span class="l54a-page">3 / 4</span></div>
+    <div class="l54a-slidehead"><span class="l54a-kicker">New mode</span><span class="l54a-page">2 / 2</span></div>
     <div class="l54a-modecrest">{{mico:rowmult:42}}</div>
     <h2>ROW MULTIPLY</h2>
     <p class="l54a-featurecopy">Rows pay a bonus on top of columns.</p>
     <div class="l54a-swipe">Swipe to explore</div>
-    <div class="l54a-dots" aria-label="Slide three of four"><i></i><i></i><i aria-current="true"></i><i></i></div>
-    <div class="l54a-actions"><button type="button" class="btn soft l54a-button">Back</button><button type="button" class="btn primary l54a-button">Next</button></div>
-  </section>
-
-  <section class="l54a-feature" style="--l54a-accent:{{mhue:bounty}}" aria-label="Promotion deck, Bounty slide">
-    <div class="l54a-slidehead"><span class="l54a-kicker">New mode</span><span class="l54a-page">4 / 4</span></div>
-    <div class="l54a-modecrest">{{mico:bounty:42}}</div>
-    <h2>BOUNTY</h2>
-    <p class="l54a-featurecopy">Every die you destroy banks +1. Forever.</p>
-    <div class="l54a-swipe">Swipe to explore</div>
-    <div class="l54a-dots" aria-label="Slide four of four"><i></i><i></i><i></i><i aria-current="true"></i></div>
+    <div class="l54a-dots" aria-label="Slide two of two"><i></i><i aria-current="true"></i></div>
     <div class="l54a-actions"><button type="button" class="btn soft l54a-button">Back</button><button type="button" class="btn primary l54a-button">Continue</button></div>
   </section>
+
+  <div class="l54a-phase"><span>Clean successor schedule</span><b>Ascending milestones</b></div>
+  <div class="l54a-plan" aria-label="Curve v2 ranked unlock milestones">
+    <div class="l54a-planrow" style="--l54a-plan:var(--g-stone)"><span>STONE</span><div><b>Classic · Single Strike · Column Shield · Bounty</b><small>The starting ranked pool; no promotion slide is fabricated at account creation.</small></div></div>
+    <div class="l54a-planrow" style="--l54a-plan:var(--g-bone)"><span>BONE</span><div><b>Row Multiply</b><small>One exact ordinary-outcome grant.</small></div></div>
+    <div class="l54a-planrow" style="--l54a-plan:var(--g-ivory)"><span>IVORY</span><div><b>Rune Ritual</b><small>The Classic-backed ritual outcome joins the pool.</small></div></div>
+    <div class="l54a-planrow" style="--l54a-plan:var(--g-silver)"><span>SILVER</span><div><b>Equipped rune seat</b><small>A separate permanent equipment capability, not an outcome.</small></div></div>
+    <div class="l54a-planrow" style="--l54a-plan:var(--g-gold)"><span>GOLD</span><div><b>Row Switch · Limited</b><small>Two ordinary outcomes, in canonical display order.</small></div></div>
+    <div class="l54a-planrow" style="--l54a-plan:var(--g-obsidian)"><span>OBSIDIAN</span><div><b>Weekly challenge access</b><small>A separate rotating entry appears only when the settlement grants it.</small></div></div>
+    <div class="l54a-planrow" style="--l54a-plan:var(--g-neon)"><span>NEON</span><div><b>Cosmetic medal</b><small>The earned medal remains visible on the player's profile.</small></div></div>
+  </div>
 
   <div class="l54a-phase"><span>Demotion · one slide</span><b>SILVER <i>→</i> IVORY</b></div>
   <div class="l54a-scene">
@@ -265,7 +268,7 @@
     <section class="l54a-deck l54a-demote l54a-single" aria-label="Demotion deck, slide one of one">
       <div class="l54a-slidehead" aria-hidden="true"></div>
       <div class="l54a-hero">
-        <div class="ringwrap l54a-ring l54a-demote" style="--p:.909;--l54a-tier:var(--g-ivory)">
+        <div class="ringwrap l54a-ring l54a-demote" style="--p:.985;--l54a-tier:var(--g-ivory)">
           <i class="lring"></i><i class="lhalo l54a-tierhalo"></i><i class="loldarc l54a-oldarc"></i><i class="lorbit l54a-orbit"></i>
           <span class="l54a-avatar dice-static">{{die:5:p1:72}}</span>
           <i class="l54a-mote"></i><i class="l54a-mote"></i><i class="l54a-mote"></i>
@@ -273,7 +276,6 @@
         </div>
         <span class="l54a-overline">Demoted to</span><strong class="l54a-group">IVORY</strong>
         <p class="l54a-copy">Your current place moved down. What you earned on the climb remains yours.</p>
-        <div class="l54a-step"><span>1,274 SILVER</span><i>−63</i><b>1,211 IVORY</b></div>
       </div>
       <div class="l54a-dots" aria-label="Slide one of one"><i aria-current="true"></i></div>
       <div class="l54a-actions"><button type="button" class="btn primary l54a-button">Continue</button></div>
@@ -285,10 +287,11 @@
     <div class="ringwrap l54a-proofring">
       <i class="lring"></i><i class="lhalo l54a-tierhalo"></i><i class="lorbit l54a-orbit"></i><span class="l54a-avatar dice-static">{{die:5:p1:32}}</span>
     </div>
-    <span class="l54a-reducedcopy"><b>BONE · 333 points</b><span>Material, orbit, group, direction, dots and feature copy remain. Rise, fall, orbit motion and particles disappear.</span></span>
+    <span class="l54a-reducedcopy"><b>BONE · 370 points · curve v2</b><span>Material, orbit, group, direction, dots and feature copy remain. Rise, fall, orbit motion and particles disappear.</span></span>
   </div>
 </div></div>
 <div class="note"><b>One ring, two directions.</b> Promotion releases the completed STONE skin upward and grows BONE around the same avatar; demotion lets SILVER shed with gravity and settles into IVORY without failure-red or a shatter. Both 7.2-second previews finish by 36% and hold the readable final state for the remaining 64%. Reduced motion is that same final state with no movement.<br>
-<b>The deck cannot be dismissed early.</b> It owns the ranked result, has no X, and keeps SWIPE TO EXPLORE on every multi-page slide beside Back/Next. A one-card crossing drops the redundant 1 / 1 while its lone dot sits above a centered 44px Continue target. The group hero always appears. Row Switch, Row Multiply and Bounty are individual slides only on the first BONE unlock; permanent features do not repeat once taught.<br>
+<b>The deck cannot be dismissed early.</b> It owns the ranked result, has no X, and keeps SWIPE TO EXPLORE on every multi-page slide beside Back/Next. A one-card crossing drops the redundant 1 / 1 while its lone dot sits above a centered 44px Continue target. The group hero always appears. Curve-v2 rows then teach only their exact server-granted outcomes; they never infer a new mode from a cached cumulative tier.<br>
+<b>Catch-up follows the ladder.</b> After the final-group acknowledgement, a multi-boundary jump interleaves Row Multiply at BONE, Rune Ritual at IVORY, the equipped-rune seat at SILVER, Row Switch then Limited at GOLD, weekly access at OBSIDIAN, and the cosmetic medal at NEON. Ordinary outcomes share one canonical visible order. Pre-v2 rows retain the mode set and teaching order they already shipped.<br>
 <b>Mode slides stop at icon, title and text.</b> The second teaching diagrams were removed by the owner call on 30 August 2026; the registry sentence is enough before the buttons.<br>
-<b>Demotion is group-only.</b> SILVER → IVORY settles the current ring and group on the deck's only slide. Reaching SILVER once leaves the equipped-rune seat permanently active, while peak-earned modes and Rune Ritual remain in the ranked pool; there is no runes-resting or retained-access follow-up page.</div>
+<b>Demotion is group-only.</b> SILVER → IVORY settles the current ring and group on the deck's only slide. Historical outcome, equipment, weekly, and medal facts remain owned; no falling or malformed flag creates a feature slide while moving down.</div>

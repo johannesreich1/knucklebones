@@ -39,6 +39,8 @@ export const esGame = {
   home: {
     notSignedIn: 'SIN SESIÓN',
     playRanked: 'Jugar partida clasificatoria',
+    weeklyChallenge: 'Desafío semanal · {{mode}}',
+    weeklyChallengeComplete: 'Semana completada ✓ · {{mode}}',
     ladder: 'Clasificación',
     settings: 'Ajustes',
     practiceOffline: 'Jugar sin conexión',
@@ -209,6 +211,7 @@ export const esGame = {
   },
   modeLock: {
     reachBone: 'Alcanza HUESO para desbloquear este modo contra la IA.',
+    reachGold: 'Alcanza ORO para desbloquear este modo contra la IA.',
   },
   runeTrial: {
     choosePrompt: 'Elige una runa — tu rival no puede verla',
@@ -222,6 +225,9 @@ export const esGame = {
     revealPair: 'Las dos elecciones están confirmadas',
     revealed: 'Runas reveladas',
     pickClock: 'SEGUNDOS PARA ELEGIR',
+    claim: 'CLAIM',
+    claimOwned: 'TUYA',
+    claimNew: 'NUEVA',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Activada; elige una columna marcada.',

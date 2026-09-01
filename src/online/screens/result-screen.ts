@@ -22,19 +22,20 @@ import {
 } from '../runes/rune-reward-presentation.ts';
 import type { FinishReport } from '../play/play.ts';
 import { rankedProgressionRecovery } from '../api/ranked-progression-api.ts';
+import { refreshRankedProgressionStatus } from '../api/progression-status-api.ts';
 import { createGroupTransitionScreen } from './group-transition-screen.ts';
 import type { AccountShowOptions } from './account-screen.ts';
 import { createResultPlayers } from './result-players.ts';
+import { resultDeltaBreakdown, resultReplayAction } from './result-progression-copy.ts';
 
 interface ResultPorts {
   goHome(): void;
-  nextDuel(): void;
+  nextDuel(entryKind?: 'ordinary' | 'weekly'): void;
   openProfile(onReturn: () => void, options?: AccountShowOptions): void;
   openLadder(onReturn: () => void): void;
 }
 
 const TRANSITION_RUNE_DECISION_MS = 1200;
-
 export interface ResultScreen {
   show(report: FinishReport): Promise<void>;
 }
@@ -45,6 +46,10 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
   let activeRewardSheet: RuneRewardSheet | null = null;
   async function show(report: FinishReport): Promise<void> {
     const revision = ++showRevision;
+    /* Weekly completion and newly earned OBSIDIAN access are settlement facts.
+       Refresh while the result is foregrounded so Home's subscribed entry is
+       correct before the player leaves this card. */
+    void refreshRankedProgressionStatus().catch(() => null);
     groupTransition.cancel();
     activeRewardSheet?.close();
     activeRewardSheet = null;
@@ -218,10 +223,11 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
         you: { score: report.my, label: '' },
         them: { score: report.their, label: '' },
         plates: players.plates(),
+        meta: resultDeltaBreakdown(report),
         /* The card opens the rune's own entry over this screen — a cover, not
            a departure, so the result is still here when the sheet closes. */
         feature: reward ? runeRewardFeature(reward, acknowledgeRewardForAction) : undefined,
-        again: { label: t('online', 'result.nextDuel'), icon: 'play', run: depart(ports.nextDuel) },
+        again: resultReplayAction(report, depart(() => ports.nextDuel(report.entryKind))),
         quiet: { label: t('common', 'actions.home'), run: depart(ports.goHome) },
         share: t('online', 'result.share', {
           title,

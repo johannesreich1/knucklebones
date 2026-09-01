@@ -39,6 +39,8 @@ export const ptGame = {
   home: {
     notSignedIn: 'SEM LOGIN',
     playRanked: 'Jogar partida ranqueada',
+    weeklyChallenge: 'Desafio semanal · {{mode}}',
+    weeklyChallengeComplete: 'Semana concluída ✓ · {{mode}}',
     ladder: 'Ranking',
     settings: 'Configurações',
     practiceOffline: 'Treinar offline',
@@ -209,6 +211,7 @@ export const ptGame = {
   },
   modeLock: {
     reachBone: 'Chegue a OSSO para liberar este modo contra a IA.',
+    reachGold: 'Chegue a OURO para liberar este modo contra a IA.',
   },
   runeTrial: {
     choosePrompt: 'Escolha uma runa — seu oponente não pode vê-la',
@@ -222,6 +225,9 @@ export const ptGame = {
     revealPair: 'As duas escolhas estão confirmadas',
     revealed: 'Runas reveladas',
     pickClock: 'SEGUNDOS PARA ESCOLHER',
+    claim: 'CLAIM',
+    claimOwned: 'SUA',
+    claimNew: 'NOVA',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Ativada — escolha uma coluna marcada.',

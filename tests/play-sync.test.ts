@@ -8,7 +8,12 @@
 import { CLASSIC, emptyBoard, freshCharm } from '../src/core/rules.ts';
 import type { MatchRow } from '../src/online/api/match-api.ts';
 import { requireProjectionRecovery } from '../src/online/play/play-recovery.ts';
-import { createOnlineSynchronizer } from '../src/online/play/play-sync.ts';
+import {
+  PLAY_SYNC_LEGACY_MATCH_COLUMNS,
+  PLAY_SYNC_MATCH_COLUMNS,
+  PLAY_SYNC_V2_MATCH_COLUMNS,
+  createOnlineSynchronizer,
+} from '../src/online/play/play-sync.ts';
 import type { OnlineState } from '../src/online/play/play-types.ts';
 import { S } from '../src/state.ts';
 import { installFakeDom } from './support/fake-dom.ts';
@@ -17,15 +22,17 @@ import { emitReport } from './support/emit-report.mjs';
 installFakeDom();
 
 type RestReply = { body: unknown; status?: number };
-let routes: Record<string, () => RestReply> = {};
+let routes: Record<string, (url: URL) => RestReply> = {};
 const restReads: Record<string, number> = {};
+const matchSelects: string[] = [];
 globalThis.fetch = (async (input: string | URL | Request) => {
   const url = new URL(String(input instanceof Request ? input.url : input));
   const table = url.pathname.split('/').pop() ?? '';
   restReads[table] = (restReads[table] ?? 0) + 1;
+  if (table === 'matches') matchSelects.push(url.searchParams.get('select') ?? '');
   const route = routes[table];
   // Fail closed: an unrouted request must never fall through to the network.
-  const reply = route ? route() : { body: { message: `unrouted table ${table}` }, status: 500 };
+  const reply = route ? route(url) : { body: { message: `unrouted table ${table}` }, status: 500 };
   return new Response(JSON.stringify(reply.body), {
     status: reply.status ?? 200,
     headers: { 'content-type': 'application/json' },
@@ -99,6 +106,10 @@ routes = {
   matches: () => ({ body: matchRow() }),
 };
 check(await sync(true), 'a coherent standard snapshot did not sync');
+check(matchSelects.at(-1) === PLAY_SYNC_MATCH_COLUMNS
+  && PLAY_SYNC_V2_MATCH_COLUMNS.every((column) => matchSelects.at(-1)?.includes(column)),
+  'standard fallback sync did not select the complete v2 terminal contract once',
+  matchSelects.at(-1));
 check(JSON.stringify(S.boards[1][0]) === '[5]' && JSON.stringify(S.boards[0][2]) === '[3]'
   && online.applied === 2 && poolRenders === 1
   && appliedRows.length === 1 && appliedRows[0].id === 'match-1' && online.pendingRow === null,
@@ -148,6 +159,8 @@ routes = {
   matches: () => ({ body: trialRow({ turn: 0, next_die: 3, action_version: 2 }) }),
 };
 check(await sync(true), 'a coherent Trial snapshot did not sync');
+check(matchSelects.at(-1) === PLAY_SYNC_MATCH_COLUMNS,
+  'action fallback sync drifted from the shared terminal match projection', matchSelects.at(-1));
 check(JSON.stringify(S.boards[1][0]) === '[4]' && S.charm.wards[1][0] === 1
   && S.spellCharges[1].ward === 0 && S.spellCharges[0].ward === 1
   && S.turn === 0 && S.die === 3 && S.spellCastThisTurn === null
@@ -346,8 +359,42 @@ check(await sync(true)
     actionApplied: online.actionApplied,
   });
 
-S.turn = savedGlobals.turn;
-S.die = savedGlobals.die;
-S.scoring = savedGlobals.scoring;
+/* Terminal recovery carries exact scoring components and the weekly lane. */
+online = onlineState({ actionProtocol: false });
+const terminalV2 = matchRow({
+  status: 'done', winner: 'p1-id', p1_score: 44, p2_score: 30, next_die: null,
+  p1_rating_delta: 65, p2_rating_delta: -65,
+  p1_base_rating_delta: 60, p2_base_rating_delta: -60,
+  p1_finish_rating_delta: 5, p2_finish_rating_delta: -5,
+  scoring_version: 2, curve_version: 2, entry_kind: 'weekly',
+  weekly_rotation_id: '2026-W36',
+});
+routes = { match_moves: () => ({ body: [] }), matches: () => ({ body: terminalV2 }) };
+check(await sync(true), 'the v2 terminal fallback snapshot did not sync');
+const appliedTerminal = appliedRows.at(-1);
+check(appliedTerminal?.scoring_version === 2
+  && appliedTerminal.curve_version === 2
+  && appliedTerminal.p1_base_rating_delta === 60 && appliedTerminal.p1_finish_rating_delta === 5
+  && appliedTerminal.entry_kind === 'weekly'
+  && appliedTerminal.weekly_rotation_id === '2026-W36',
+  'terminal fallback dropped v2 score, curve, or entry metadata', appliedTerminal);
 
+/* Only the exact old-schema missing-column response retries legacy fields. */
+online = onlineState({ actionProtocol: false });
+const beforeLegacySelects = matchSelects.length;
+routes = {
+  match_moves: () => ({ body: [] }),
+  matches: (url) => url.searchParams.get('select') === PLAY_SYNC_MATCH_COLUMNS ? {
+    status: 400, body: { code: 'PGRST204',
+      message: "Could not find the 'scoring_version' column of 'matches' in the schema cache" },
+  }
+    : ({ body: matchRow() }),
+};
+check(await sync(true), 'the old-schema terminal projection did not use its narrow fallback');
+check(JSON.stringify(matchSelects.slice(beforeLegacySelects))
+    === JSON.stringify([PLAY_SYNC_MATCH_COLUMNS, PLAY_SYNC_LEGACY_MATCH_COLUMNS]),
+  'old-schema fallback did not retry exactly once with the shared legacy projection',
+  matchSelects.slice(beforeLegacySelects));
+
+Object.assign(S, savedGlobals);
 emitReport({ problems, errs: [] }, problems.length);

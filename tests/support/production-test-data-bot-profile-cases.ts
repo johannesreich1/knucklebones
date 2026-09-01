@@ -156,6 +156,8 @@ export function assertBotSeedSql() {
   assert.match(SEED_PRODUCTION_BOTS_SQL, /a bot was seated with a rune it does not hold/);
   assert.doesNotMatch(SEED_PRODUCTION_BOTS_SQL, /\brandom\s*\(/i);
   assert.match(SEED_PRODUCTION_BOTS_SQL, /20260826153000.*ladder_streak_baselines/s);
+  assert.match(SEED_PRODUCTION_BOTS_SQL,
+    /active_ranked_curve_version\(\)[\s\S]*legacy production bot seed is disabled after curve-v2 activation/);
   assert.match(SEED_PRODUCTION_BOTS_SQL, /ranked_pool_tier = \(case/);
   assert.match(SEED_PRODUCTION_BOTS_SQL,
     new RegExp(`count\\(distinct points\\).*<> ${PRODUCTION_BOT_COUNT}`, 's'));
@@ -176,6 +178,8 @@ export function assertBotProfileRefreshSql() {
   assert.match(REFRESH_PRODUCTION_BOT_PROFILES_SQL, /^\s*begin;/);
   assert.match(REFRESH_PRODUCTION_BOT_PROFILES_SQL, /commit;\s*$/);
   assert.match(REFRESH_PRODUCTION_BOT_PROFILES_SQL, /lock_timeout = '10s'/);
+  assert.match(REFRESH_PRODUCTION_BOT_PROFILES_SQL,
+    /active_ranked_curve_version\(\)[\s\S]*legacy production bot-profile refresh is disabled after curve-v2 activation/);
   assert.match(
     REFRESH_PRODUCTION_BOT_PROFILES_SQL,
     /select (?:count\(\*\)|1) from public\.matches/,
@@ -311,9 +315,9 @@ export async function assertExactStreakBaselinePrerequisite() {
       function_contracts: true, function_bodies: true, function_grants: true,
     }];
     if (query === RUNE_TRIAL_JOB) return [{ cron_job: true, cron_job_contract: true }];
-    if (query === RUNE_TRIAL_POST_APPLY_DATA) return [{
-      profile_backfill: true, legacy_matches: true, legacy_queue: true, new_tables_empty: true,
-    }];
+    if (query === RUNE_TRIAL_POST_APPLY_DATA) {
+      throw new Error('bot-population exact audit repeated the empty-data migration check');
+    }
     throw new Error('unexpected combined query');
   });
   assert.equal(combined.ledgerStage, 1);
@@ -345,6 +349,7 @@ export async function assertBotProfileRefreshOrchestration() {
     apply: true,
     optIn: PRODUCTION_TEST_DATA_OPT_INS['refresh-bot-profiles'].value,
     read: readFor('legacy'),
+    rankedCurve: async () => 1,
     verifyEnvironment: () => {},
     exactBotSeedPrerequisite: async () => { exactChecks++; return { ledgerStage: 1 }; },
     execute: (sql: string) => { executed.push(sql); },
@@ -360,6 +365,7 @@ export async function assertBotProfileRefreshOrchestration() {
     apply: true,
     optIn: PRODUCTION_TEST_DATA_OPT_INS['refresh-bot-profiles'].value,
     read: readFor('refreshed'),
+    rankedCurve: async () => 1,
     verifyEnvironment: () => {},
     exactBotSeedPrerequisite: async () => ({ ledgerStage: 1 }),
     execute: (sql: string) => { refreshedProfileWrites.push(sql); },
@@ -377,6 +383,7 @@ export async function assertBotProfileRefreshOrchestration() {
     read: readFor('refreshed', emptyRune({
       playerRunes: PRODUCTION_BOT_RUNE_ROW_COUNT,
     })),
+    rankedCurve: async () => 1,
     verifyEnvironment: () => {},
     exactBotSeedPrerequisite: async () => ({ ledgerStage: 1 }),
     execute: () => { canonicalWrites++; },

@@ -37,10 +37,11 @@ export async function assertRankedRunesPlanContract() {
       'supabase/migrations/20260830160000_random_rune_mode.sql',
       'supabase/migrations/20260830182406_ranked_progression_events.sql',
       'supabase/migrations/20260831133000_historical_silver_ranked_runes.sql',
+      'supabase/migrations/20260901162456_progression_v2.sql',
     ],
     'ranked-runes function rollout did not pin its exact ordered migration controls',
   );
-  assert.match(RANKED_RUNES_PRODUCTION_PREREQUISITE, /select count\(\*\) = 4/);
+  assert.match(RANKED_RUNES_PRODUCTION_PREREQUISITE, /select count\(\*\) = 5/);
   assert.match(RANKED_RUNES_PRODUCTION_PREREQUISITE,
     /version = \$1::text and name = \$2::text/);
   assert.match(RANKED_RUNES_PRODUCTION_PREREQUISITE,
@@ -49,6 +50,8 @@ export async function assertRankedRunesPlanContract() {
     /version = \$5::text and name = \$6::text/);
   assert.match(RANKED_RUNES_PRODUCTION_PREREQUISITE,
     /version = \$7::text and name = \$8::text/);
+  assert.match(RANKED_RUNES_PRODUCTION_PREREQUISITE,
+    /version = \$9::text and name = \$10::text/);
   /* What production must already prove before any ranked function is
      deployed: the ordered equipment and progression migrations applied exactly
      once, the Rune Trial foundation remains complete, both final historical-

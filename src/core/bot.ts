@@ -16,7 +16,7 @@ import {
   type CharmSt, type GameState, type Mode, type Player,
 } from './rules.ts';
 import { searchRoot } from './ai.ts';
-import { botShapeAt, type BotShape } from './ladder.ts';
+import { botShapeAt, type BotShape, type LadderCurveVersion } from './ladder.ts';
 
 /** The same league shape has a separately calibrated slip rate when it opens. */
 export function botSlip(shape: BotShape, botIdx: Player): number {
@@ -30,8 +30,9 @@ export function botSlip(shape: BotShape, botIdx: Player): number {
    Search configuration is per call. The same injected random stream drives
    slips and tie-break jitter, so a caller can replay the whole decision. */
 export function botMove(st: GameState, botIdx: Player, die: number, rating: number,
-                        mode: Mode, rand: () => number, rootCharm?: CharmSt): number {
-  const shape = botShapeAt(rating);
+                        mode: Mode, curveVersion: LadderCurveVersion,
+                        rand: () => number, rootCharm?: CharmSt): number {
+  const shape = botShapeAt(rating, curveVersion);
   const slip = botSlip(shape, botIdx);
   const legal = legalCols(st[botIdx]);
   if (!legal.length) return -1;                 // nothing to play: the caller is asking too late
