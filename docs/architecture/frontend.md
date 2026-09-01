@@ -121,6 +121,19 @@ the reveal's own note line rather than sending the player back to the queue
 panel. A second overlay for the runes is the shape this replaced; a caller that
 reveals a mode, closes, and then reveals the choices has rebuilt it.
 
+The decided successor progression adds one other shared presentation contract,
+not yet shipped: ranked-outcome entries appear in unlock order wherever they
+are presented. The exact sequence and per-surface inclusion contract live in
+`docs/LADDER.md §7`. One progression/display rank belongs to the shared
+ranked-outcome spec, and one pure roster-order helper orders any supplied
+subset; browser surfaces consume that result rather than owning arrays or
+repeating a comparator. CPU may retain unavailable entries as locked, while a
+negotiated spinner removes them, and both preserve relative order. Synthetic
+RANDOM stays outside the outcome sorter, as do typed non-outcome transition
+slides for equipment, weekly access, and the NEON medal. Keep this presentation
+helper separate from the seed-sensitive weighted draw so a UI reorder cannot
+alter game selection.
+
 When extracting code from a large module:
 
 1. Name one responsibility and its inputs/outputs.

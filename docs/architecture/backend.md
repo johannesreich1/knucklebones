@@ -13,6 +13,13 @@ deployed function versions are not inferred from repository prose.
   never committed, logged, returned, or bundled into a client.
 - The server owns match seeds, validates requested moves by replaying the
   server-written log, and computes final scores and ladder changes.
+- The decided finish-margin ladder transfer is not shipped. When implemented,
+  shared TypeScript must derive its normalized 2–7 request from authoritative
+  terminal scores/status and limit the 0–7 applied value against the locked
+  ladder snapshot. Persist versioned signed finish components beside the total,
+  with the exact contract in `docs/LADDER.md §1`. The browser must not submit
+  any of it, and SQL or individual Edge Function adapters must not grow copied
+  versions of the formula.
 - For Rune Trial, the server also owns the common offer, private choices,
   deterministic deadline auto-picks, revealed rune snapshots, and idempotent
   collection reward. A client never chooses an offer or claims ownership.

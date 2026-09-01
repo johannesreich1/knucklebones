@@ -106,12 +106,22 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 
 - Implement the 2026-09-01 ranked progression decision in
   `docs/LADDER.md §7`: redistribute Bounty, Row Multiply, Row Switch, and
-  Limited; add durable bot-debut guarantees; add the permanently unlocked
-  OBSIDIAN weekly feature; grandfather current entitlements; and update the
-  client, server, persistence, transitions, offline choices, locales, tests,
-  the LG1 transition card, and any other affected previews/exports. This
-  documentation decision is not live, and the authoritative join function
-  must be redeployed when implementation ships.
+  Limited; drive ranked-outcome ordering inside offline pickers, the ranked
+  spinner, the library, and outcome-unlock slides from one shared rank/helper;
+  add durable bot-debut guarantees; add the permanently unlocked OBSIDIAN
+  weekly feature; grandfather current entitlements; and update the client,
+  server, persistence, transitions, offline choices, locales, tests, the LG1
+  transition card, and any other affected previews/exports. Keep presentation
+  sorting independent of the seed-sensitive weighted draw. This documentation
+  decision is not live, and the authoritative join function must be redeployed
+  when implementation ships.
+- Implement the separately decided 2026-09-01 finish-margin transfer in
+  `docs/LADDER.md §1`: retain the current floors and opponent-strength base,
+  request a normalized **2–7** loser-to-winner transfer (**0–7** applied at
+  boundaries), and persist versioned total/finish components. This is not live;
+  implementation requires every settlement/retry and result/history surface,
+  retained production-shaped evidence, tests, and redeployment of each affected
+  authoritative function closure.
 - The `localization-browser` geometry matrix is manual-only since 2026-08-26
   (owner: Johannes): run
   `mise exec -- node tests/browser/localization/run.mjs` plus the manual
