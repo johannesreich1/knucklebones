@@ -53,18 +53,29 @@ The profile avatar is presentation, not account proof. It has 42 server-owned
 values — six die faces crossed with seven hues — while authentication still
 depends only on the rung above. The default `die:5:cy` is also the native
 primary launcher icon; the other 41 profile values are pre-bundled native
-alternates. Public/PWA/standalone/widget icons and loading screens stay the
-cyan five.
+alternates. They are available only in the installed iOS and Android apps.
+Public web/PWA/standalone/widget icons and loading screens stay the fixed cyan
+five, and their Settings surfaces do not expose the launcher control.
+
+The native Settings control is an explicit, off-by-default choice to use the
+profile die as the app icon. Its preference belongs to that installation; it is
+not profile data, is not synchronized between devices, and is never written to
+Supabase. Enabling it reconciles the current confirmed avatar. Disabling it
+immediately restores the primary icon.
 
 The eager profile cache includes the owning Supabase account id. Legacy cache
 without an owner may paint Home but cannot select a launcher, and a response
 that started under one session re-checks that session before it may publish.
 Only a successful avatar write or a successful owner-scoped profile read can
-request an icon; picker previews and refused writes cannot. The native
-coordinator serializes requests and lets only the latest revision settle the
-final presentation. Sign-out, deletion, fresh-guest creation, and a detected
-provider/account replacement clear profile presentation and request the
-primary before another account can reconcile its avatar.
+request an alternate icon, and only while the device-local choice is enabled;
+picker previews and refused writes cannot. The native coordinator serializes
+requests and lets only the latest revision settle the final presentation.
+Explicit Off, sign-out, deletion, fresh-guest creation, and a detected
+provider/account replacement request the primary before another account can
+reconcile its avatar. While the choice is disabled, boot also performs one
+primary reconciliation per startup. Besides enforcing the default, that
+repairs an installation that received the briefly released automatic icon
+behaviour before the explicit choice was added.
 
 Launcher selection is deliberately failure-isolated. An unavailable native
 bridge, iOS rejection, Android component/configuration error, or delayed OEM

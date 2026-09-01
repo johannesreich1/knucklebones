@@ -6,6 +6,7 @@ export const enSettings = {
   yourColour: 'Your colour',
   opponentColour: 'Opponent colour',
   sound: 'Sound',
+  profileAppIcon: 'Use profile die as app icon',
   accessibility: 'Accessibility',
   diceFaces: 'Dice faces',
   pips: 'PIPS',

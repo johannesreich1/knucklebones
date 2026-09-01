@@ -10,7 +10,12 @@ import {
   type AlternateAppIcon,
 } from '../src/profile-avatar.ts';
 import {
+  PROFILE_APP_ICON_ENABLED_KEY,
   createAppIconSynchronizer,
+  profileAppIconAvailable,
+  profileAppIconEnabled,
+  setProfileAppIconEnabled,
+  syncProfileAppIcon,
   type AppIconBridge,
   type AppIconId,
 } from '../src/native/app-icon.ts';
@@ -144,6 +149,100 @@ const storage = new Map<string, string>();
   key: (index: number) => [...storage.keys()][index] ?? null,
   get length() { return storage.size; },
 };
+
+/* Alternate launcher art is an explicit device choice. A profile refresh or
+   avatar save must not reach the OS until the player has opted in from
+   Settings; absence of the preference is the off-by-default state. */
+let gatedCurrent: AppIconId = 'primary';
+const gatedChanges: AppIconId[] = [];
+let gatedReads = 0;
+(globalThis as typeof globalThis & {
+  Capacitor: { Plugins: { AppIcon: AppIconBridge } };
+}).Capacitor = {
+  Plugins: {
+    AppIcon: {
+      getState: async () => {
+        gatedReads++;
+        return { supported: true, icon: gatedCurrent };
+      },
+      setIcon: async ({ icon }) => {
+        gatedCurrent = icon;
+        gatedChanges.push(icon);
+        return { supported: true, icon, changed: true };
+      },
+    },
+  },
+};
+assert.deepEqual(await syncProfileAppIcon('die:4:green'), {
+  status: 'disabled', icon: 'die-4-green',
+});
+assert.equal(gatedReads, 0,
+  'disabled profile sync still read native launcher state');
+assert.deepEqual(gatedChanges, [],
+  'a profile refresh changed the native launcher before the player opted in');
+assert.equal(profileAppIconAvailable(), true);
+assert.equal(profileAppIconEnabled(), false);
+
+assert.deepEqual(await setProfileAppIconEnabled(true, 'die:4:green'), {
+  status: 'changed', icon: 'die-4-green',
+});
+assert.equal(storage.get(PROFILE_APP_ICON_ENABLED_KEY), '1');
+assert.equal(profileAppIconEnabled(), true);
+assert.deepEqual(gatedChanges, ['die-4-green']);
+
+assert.deepEqual(await syncProfileAppIcon('die:4:green'), {
+  status: 'unchanged', icon: 'die-4-green',
+});
+assert.deepEqual(gatedChanges, ['die-4-green'],
+  'enabled reconciliation rewrote an already-selected icon');
+assert.deepEqual(await syncProfileAppIcon('die:2:mg'), {
+  status: 'changed', icon: 'die-2-mg',
+});
+assert.deepEqual(gatedChanges, ['die-4-green', 'die-2-mg']);
+
+assert.deepEqual(await setProfileAppIconEnabled(false, 'die:2:mg'), {
+  status: 'changed', icon: 'primary',
+});
+assert.equal(storage.has(PROFILE_APP_ICON_ENABLED_KEY), false);
+assert.equal(profileAppIconEnabled(), false);
+assert.equal(gatedCurrent, 'primary');
+const readsAfterDisable = gatedReads;
+assert.deepEqual(await syncProfileAppIcon('die:6:blue'), {
+  status: 'disabled', icon: 'die-6-blue',
+});
+assert.equal(gatedReads, readsAfterDisable,
+  'an avatar refresh reached native state after explicit OFF');
+
+/* OFF persists before its primary reset enters the shared queue, so it wins
+   even when the preceding ON request is already inside the OS. */
+let raceCurrent: AppIconId = 'primary';
+let releaseOptInRequest!: () => void;
+let markOptInStarted!: () => void;
+const optInStarted = new Promise<void>((resolve) => { markOptInStarted = resolve; });
+const optInRelease = new Promise<void>((resolve) => { releaseOptInRequest = resolve; });
+(globalThis as typeof globalThis & {
+  Capacitor: { Plugins: { AppIcon: AppIconBridge } };
+}).Capacitor.Plugins.AppIcon = {
+  getState: async () => ({ supported: true, icon: raceCurrent }),
+  setIcon: async ({ icon }) => {
+    if (icon !== 'primary') {
+      markOptInStarted();
+      await optInRelease;
+    }
+    const changed = raceCurrent !== icon;
+    raceCurrent = icon;
+    return { supported: true, icon, changed };
+  },
+};
+const enabling = setProfileAppIconEnabled(true, 'die:6:blue');
+await optInStarted;
+const disabling = setProfileAppIconEnabled(false, 'die:6:blue');
+releaseOptInRequest();
+assert.deepEqual(await enabling, { status: 'superseded', icon: 'die-6-blue' });
+assert.deepEqual(await disabling, { status: 'changed', icon: 'primary' });
+assert.equal(raceCurrent, 'primary', 'an in-flight opt-in icon won after OFF');
+assert.equal(profileAppIconEnabled(), false);
+
 const ACCOUNT_A = 'AAAAAAAA-BBBB-4CCC-8DDD-EEEEEEEEEEEE';
 const ACCOUNT_B = '11111111-2222-4333-8444-555555555555';
 clearProfileCache();

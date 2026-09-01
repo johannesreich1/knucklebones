@@ -1,9 +1,17 @@
 # Knucklebones profile app icons
 
-This local Capacitor plugin applies the signed-in profile avatar to the native
-launcher. It does not choose an avatar or persist account state: the canonical
-42-value registry lives in `src/profile-avatar.ts`, and `src/native/app-icon.ts`
-only calls this bridge after a confirmed account-scoped profile value.
+This local Capacitor plugin can apply the signed-in profile avatar to the iOS
+or Android launcher. It does not choose an avatar or persist account state: the
+canonical 42-value registry lives in `src/profile-avatar.ts`, while
+`src/native/app-icon.ts` owns an off-by-default, installation-local Settings
+choice that is never written to Supabase. Web/PWA/widget builds do not expose
+the choice and keep the fixed primary icon.
+
+Enabling the choice applies the current confirmed avatar. Later successful
+profile reads and saves call this bridge only while it remains enabled. Explicit
+Off, sign-out, and account replacement restore primary, and disabled startup
+performs one idempotent primary reconciliation per launch. That startup reset
+also repairs installs exposed to the briefly released automatic behaviour.
 
 ## Bridge contract
 
@@ -14,7 +22,8 @@ The injected plugin name is `AppIcon`.
 - `icon` is `primary` for `die:5:cy`; every other accepted value is the exact
   `die-<face>-<hue>` id generated from the profile registry.
 - Repeating the selected value is idempotent. Profile persistence never rolls
-  back when this cosmetic side effect is unavailable or rejected.
+  back when this cosmetic side effect is unavailable or rejected, and launcher
+  failure never blocks startup.
 
 iOS maps `primary` to `UIApplication.setAlternateIconName(nil)` and the 41
 other ids to asset-catalog names. UIKit owns the confirmation alert after a

@@ -24,7 +24,12 @@ import { cancelPass, repaintPassLocale } from './flow/pass-card.ts';
 import { userPreferencesRevision } from './preferences.ts';
 import { isProfileAvatar } from './profile-avatar.ts';
 import { readProfileCache } from './profile-cache.ts';
-import { syncProfileAppIcon } from './native/app-icon.ts';
+import {
+  profileAppIconAvailable,
+  profileAppIconEnabled,
+  resetProfileAppIcon,
+  syncProfileAppIcon,
+} from './native/app-icon.ts';
 import { initializeGameCenter } from './native/game-center.ts';
 
 export function boot(embed: boolean): void {
@@ -52,11 +57,14 @@ export function boot(embed: boolean): void {
   refreshHomeChip();
 
   if (!embed) {
-    /* The OS retains an alternate launcher between runs. Reconcile only a
-       valid account-scoped cache here: absence is not evidence for resetting
-       a selection whose fresh server row has not arrived yet. */
+    /* Alternate launchers are an explicit device choice. While enabled, only
+       a valid account-scoped cache may reconcile before the fresh row lands.
+       While disabled, native boot restores primary; this also cleans up the
+       briefly released automatic behavior without exposing anything on web. */
     const cached = readProfileCache();
-    if (cached?.accountId && isProfileAvatar(cached.avatar)) {
+    if (!profileAppIconEnabled() && profileAppIconAvailable()) {
+      void resetProfileAppIcon();
+    } else if (cached?.accountId && isProfileAvatar(cached.avatar)) {
       void syncProfileAppIcon(cached.avatar);
     }
     // GameKit owns device-level authentication and may already be signed in.

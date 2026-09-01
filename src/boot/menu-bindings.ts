@@ -54,6 +54,9 @@ import { bindLearnPageBack } from '../ui/learn-page.ts';
 import { tap } from '../ui/tap.ts';
 import { isEmbed } from '../ui/embed.ts';
 import { hueLabel } from '../ui/hue.ts';
+import { isProfileAvatar } from '../profile-avatar.ts';
+import { readProfileCache } from '../profile-cache.ts';
+import { setProfileAppIconEnabled } from '../native/app-icon.ts';
 import { bindOnlineDoors } from './online-door.ts';
 import { bindPickerRow, eventButton } from './picker-row.ts';
 
@@ -275,6 +278,12 @@ export function bindMenus(root: HTMLElement): void {
   bindSegment('#timerSeg', 't', (value) => { S.timer = oneOf(TIMERS, Number(value), S.timer); });
   bindSegment('#seatSeg', 'seat', (value) => { S.seat = oneOf(SEATS, value, S.seat); });
   bindSegment('#sndSeg', 's', (value) => { S.sound = value === '1'; }, true);
+  bindSegment('#appIconSeg', 'ai', (value) => {
+    const cached = readProfileCache();
+    const avatar = cached?.accountId && isProfileAvatar(cached.avatar)
+      ? cached.avatar : undefined;
+    void setProfileAppIconEnabled(value === '1', avatar);
+  });
   bindSegment('#faceSeg', 'f', (value) => { S.numerals = value === 'nums'; }, true);
 
   huePicker('#p1Pick', (hue) => { S.p1Hue = hue; });

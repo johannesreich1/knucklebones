@@ -547,17 +547,21 @@ it. No storage bucket, no moderation, and no user-generated-image obligations
 at App Store review. The string format is the seam: a later value can be
 `"img:<storage-path>"` with no schema change.
 
-In an installed native app, a server-confirmed avatar also selects the matching
-launcher icon on that device. `die:5:cy` is the primary icon; the other 41 are
-pre-bundled alternates. A picker preview changes nothing: only a successful
-save, or a successful account-scoped profile read, can reconcile the launcher.
-The latest confirmed request wins if profile reads, saves, sign-out, or an
-account switch overlap. Sign-out and account replacement restore the primary
-icon before another account's profile is allowed to select its own. Launcher
-failure is cosmetic and never rolls back the profile write. iOS presents its
-system confirmation alert for a real alternate-icon change; Android launcher
-refresh timing belongs to the installed launcher. The PWA/widget icon and every
-loading screen remain the fixed cyan five rather than becoming account state.
+Installed iOS and Android apps offer an off-by-default Settings choice to use
+the server-confirmed avatar as the launcher icon. `die:5:cy` is the primary;
+the other 41 are pre-bundled alternates. The choice is local to that app
+installation and never becomes profile or Supabase state. Enabling it applies
+the current confirmed avatar. A picker preview changes nothing, and later
+successful saves or account-scoped profile reads reconcile the launcher only
+while enabled. The latest confirmed request wins if profile reads, saves,
+sign-out, or an account switch overlap. Explicit Off, sign-out, and account
+replacement restore primary before another account may select its own; while
+disabled, boot also reconciles primary once to repair an install that received
+the briefly released automatic behaviour. Launcher failure is cosmetic and
+never rolls back the profile write. iOS presents its system confirmation alert
+for a real alternate-icon change; Android launcher refresh timing belongs to
+the installed launcher. Web/PWA/widget Settings omit the choice, and those
+icons plus every loading screen remain the fixed cyan five.
 
 **"Member since" is hidden for guests** — their account lives on this device
 only, so the line would be a promise nobody made.

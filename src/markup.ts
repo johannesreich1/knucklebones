@@ -159,6 +159,13 @@ ${OVERLAY_CARDS_MARKUP}
         <button data-s="0" data-i18n="common:states.off">OFF</button>
       </div>
     </div>
+    <div class="card" id="appIconCard" hidden>
+      <div class="lbl" data-i18n="settings:profileAppIcon">Use profile die as app icon</div>
+      <div class="seg" id="appIconSeg">
+        <button data-ai="1" data-i18n="common:states.on">ON</button>
+        <button data-ai="0" data-i18n="common:states.off">OFF</button>
+      </div>
+    </div>
     <h2 class="setsection" id="accessibilityHeading" data-i18n="settings:accessibility">Accessibility</h2>
     <div class="card">
       <div class="lbl" data-i18n="settings:diceFaces">Dice faces</div>

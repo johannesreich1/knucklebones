@@ -6,6 +6,16 @@ export async function runSettingsNavigationScenarios(suite) {
   await page.tap('#btnSettingsHome'); await page.waitForTimeout(400);
   out.settingsOpen = await page.evaluate(() => ({
     on: document.getElementById('ovSettings').classList.contains('on'),
+    profileAppIcon: (() => {
+      const card = document.getElementById('appIconCard');
+      const box = card?.getBoundingClientRect();
+      return {
+        exists: !!card,
+        hidden: card?.hidden ?? false,
+        width: box?.width ?? -1,
+        height: box?.height ?? -1,
+      };
+    })(),
     sndOn: document.querySelector('#sndSeg button.on')?.dataset.s,
     faceOn: document.querySelector('#faceSeg button.on')?.dataset.f,
     motionOn: document.querySelector('#motionSeg button.on')?.dataset.rm,
@@ -53,6 +63,9 @@ export async function runSettingsNavigationScenarios(suite) {
   check(out.settingsOpen.on && out.settingsOpen.sndOn === '1' && out.settingsOpen.faceOn === 'pips'
     && out.settingsOpen.motionOn === '0',
         'settings did not open with current values', out.settingsOpen);
+  check(out.settingsOpen.profileAppIcon.exists && out.settingsOpen.profileAppIcon.hidden
+    && out.settingsOpen.profileAppIcon.width === 0 && out.settingsOpen.profileAppIcon.height === 0,
+  'the native profile-icon choice is visible in the web Settings page', out.settingsOpen.profileAppIcon);
   check(JSON.stringify(out.settingsOpen.segmentOrder) === JSON.stringify({
     sound: ['1', '0'], faces: ['nums', 'pips'], colourBlind: ['1', '0'], motion: ['1', '0'],
   }), 'default Settings choices are not right-aligned, or Sound order changed', out.settingsOpen);

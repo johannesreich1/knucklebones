@@ -29,6 +29,7 @@ interface CapacitorAppIconBridge {
 export type AppIconSyncStatus =
   | 'changed'
   | 'unchanged'
+  | 'disabled'
   | 'unavailable'
   | 'superseded'
   | 'failed';
@@ -46,12 +47,14 @@ export interface AppIconSynchronizer {
 export type ReadAppIconBridge = () => AppIconBridge | undefined;
 
 const globalBridge: ReadAppIconBridge = () => {
-  const capacitor = (globalThis as typeof globalThis & {
-    Capacitor?: CapacitorAppIconBridge;
-  }).Capacitor;
-  const bridge = capacitor?.Plugins?.AppIcon;
-  return bridge && typeof bridge.getState === 'function' && typeof bridge.setIcon === 'function'
-    ? bridge : undefined;
+  try {
+    const capacitor = (globalThis as typeof globalThis & {
+      Capacitor?: CapacitorAppIconBridge;
+    }).Capacitor;
+    const bridge = capacitor?.Plugins?.AppIcon;
+    return bridge && typeof bridge.getState === 'function' && typeof bridge.setIcon === 'function'
+      ? bridge : undefined;
+  } catch { return undefined; }
 };
 
 function result(status: AppIconSyncStatus, icon: AppIconId): AppIconSyncResult {
@@ -134,10 +137,57 @@ export function createAppIconSynchronizer(
 
 const profileAppIcon = createAppIconSynchronizer();
 
+/** Device/install preference: account preference sync must never opt in a
+ * second phone. Absence (including upgrades from the automatic prototype) is
+ * OFF; native boot restores the primary icon while OFF. */
+export const PROFILE_APP_ICON_ENABLED_KEY = 'knucklebones.native.profile-app-icon.enabled';
+
+function localStore(): Storage | undefined {
+  try { return typeof localStorage === 'undefined' ? undefined : localStorage; }
+  catch { return undefined; }
+}
+
+export function profileAppIconEnabled(): boolean {
+  try { return localStore()?.getItem(PROFILE_APP_ICON_ENABLED_KEY) === '1'; }
+  catch { return false; }
+}
+
+export function profileAppIconAvailable(): boolean {
+  return globalBridge() !== undefined;
+}
+
+function persistProfileAppIconEnabled(enabled: boolean): boolean {
+  const storage = localStore();
+  if (!storage) return !enabled;
+  try {
+    if (enabled) storage.setItem(PROFILE_APP_ICON_ENABLED_KEY, '1');
+    else storage.removeItem(PROFILE_APP_ICON_ENABLED_KEY);
+    return enabled
+      ? storage.getItem(PROFILE_APP_ICON_ENABLED_KEY) === '1'
+      : storage.getItem(PROFILE_APP_ICON_ENABLED_KEY) !== '1';
+  } catch { return false; }
+}
+
 export function syncProfileAppIcon(avatar: unknown): Promise<AppIconSyncResult> {
+  const icon = appIconIdForAvatar(avatar);
+  if (!profileAppIconEnabled()) return Promise.resolve(result('disabled', icon));
   return profileAppIcon.syncAvatar(avatar);
 }
 
 export function resetProfileAppIcon(): Promise<AppIconSyncResult> {
   return profileAppIcon.reset();
+}
+
+/** The Settings gesture persists first, then joins the latest-wins native
+ * queue. OFF deliberately bypasses the sync gate so primary always wins over
+ * an alternate request already inside the OS. */
+export function setProfileAppIconEnabled(
+  enabled: boolean,
+  avatar: unknown,
+): Promise<AppIconSyncResult> {
+  const icon = enabled ? appIconIdForAvatar(avatar) : 'primary';
+  if (!persistProfileAppIconEnabled(enabled)) {
+    return Promise.resolve(result('failed', icon));
+  }
+  return enabled ? profileAppIcon.syncAvatar(avatar) : profileAppIcon.reset();
 }

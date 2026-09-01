@@ -171,10 +171,21 @@ the round path on API 26+, while the legacy alias bitmap is round-safe. Android
 themed icons preserve the selected face and cut-out pip silhouette, but the OS
 owns their monochrome tint, so the profile hue is deliberately absent there.
 
+The catalogs and aliases make the capability available; they do not activate
+it automatically. The installed iOS/Android Settings control is off by default
+and records its choice only for that installation, never in Supabase. Enabling
+it applies the current confirmed profile die, and later confirmed profile reads
+or saves reconcile only while it remains enabled. Explicit Off, sign-out, or an
+account replacement restores primary. While disabled, startup performs one
+idempotent primary reconciliation so new installs keep the default and installs
+that saw the briefly released automatic behaviour are repaired. Bridge or
+launcher failures remain cosmetic and never block startup or profile state.
+
 Only the native launcher is profile-driven. The primary public/PWA/standalone
 and widget art, plus iOS/Android splash and in-app loading art, remain the fixed
-cyan neon five. Startup never waits for icon reconciliation, and an icon error
-cannot become an account, profile, or navigation failure.
+cyan neon five. Web/PWA/widget Settings do not render the native icon choice.
+Startup never waits for icon reconciliation, and an icon error cannot become an
+account, profile, or navigation failure.
 
 The release shell is portrait-only on iOS and Android. The universal iOS target
 explicitly requests the temporary full-screen compatibility mode so its
