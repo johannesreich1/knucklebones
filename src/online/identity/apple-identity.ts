@@ -1,10 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { t } from '../../i18n/index.ts';
 import { callFunction, supa } from '../api/client.ts';
-import { ask } from '../../ui/askcard.ts';
+import { askOutcome } from '../../ui/askcard.ts';
 import { onlineMessage } from '../message-copy.ts';
 import { randomUuid } from '../api/random-id.ts';
-import type { OneTap } from './identity-provider.ts';
+import type { OneTap, OneTapRestoreLifecycle } from './identity-provider.ts';
 
 type AppleAuth = Pick<SupabaseClient['auth'],
   'getSession' | 'getUser' | 'linkIdentity' | 'signInWithIdToken'>;
@@ -60,9 +60,10 @@ export interface AppleIdentityPorts {
      to another account of theirs, which is the case that prompted this
      (requested 2026-08-30, as a modal to confirm).
      A port rather than a call, so this module keeps no DOM and its owner test
-     goes on building it headlessly. Resolving false abandons the sign-in with
-     nothing changed. */
-  confirmGuestReplacement(): Promise<boolean>;
+     goes on building it headlessly. False is the player's explicit cancel or
+     dismissal; null means a newer shared sheet replaced the warning. Both
+     abandon sign-in, but only false lets AUTH reclaim the room. */
+  confirmGuestReplacement(): Promise<boolean | null>;
 }
 
 type AppleCredential = { token: string; rawNonce: string; authorizationCode?: string };
@@ -138,6 +139,7 @@ export function createAppleIdentity(ports: AppleIdentityPorts): AppleIdentity {
   const authenticate = async (
     mode: 'restore' | 'attach',
     reportRegistration = false,
+    lifecycle?: OneTapRestoreLifecycle,
   ): Promise<string | null> => {
     const credential = await requestAppleCredential(ports);
     if (typeof credential === 'string') return credential;
@@ -151,9 +153,18 @@ export function createAppleIdentity(ports: AppleIdentityPorts): AppleIdentity {
            is a guest run standing. A signed-out device answers no user and is
            never questioned; neither is a real account signing back in. */
         const { data: who } = await auth.getUser();
-        if (who.user?.is_anonymous && !(await ports.confirmGuestReplacement())) {
-          /* Cancelled is not an error: the sheet stays as it was. */
-          return null;
+        if (who.user?.is_anonymous) {
+          const replacingGuest = await ports.confirmGuestReplacement();
+          /* A newer shared sheet replaced the warning. It owns the room now:
+             abandon without a lifecycle callback, so AUTH cannot resurrect
+             over it. Explicit NO/Escape remain false and reclaim AUTH. */
+          if (replacingGuest === null) return '';
+          lifecycle?.nestedSheetSettled(replacingGuest);
+          if (!replacingGuest) {
+            /* Empty copy is the shared provider contract for a player-cancelled
+               native/question sheet; null is reserved for completed identity. */
+            return '';
+          }
         }
         ({ error } = await auth.signInWithIdToken(proof));
       }
@@ -184,7 +195,8 @@ export function createAppleIdentity(ports: AppleIdentityPorts): AppleIdentity {
     id: 'apple', labelKey: 'auth.continueApple',
     get label(): string { return t('online', 'auth.continueApple'); },
     available: () => !!ports.getPlugin() && ports.getPlatform() === 'ios',
-    restore: () => authenticate('restore'), attach: () => authenticate('attach'),
+    restore: (lifecycle) => authenticate('restore', false, lifecycle),
+    attach: () => authenticate('attach'),
     repair: () => authenticate('attach', true),
   };
 }
@@ -209,12 +221,15 @@ export const APPLE = createAppleIdentity({
   registerAuthorizationCode: registerAppleAuthorizationCode,
   /* The one place this module meets the DOM, and it meets it through the app's
      own question card rather than a confirm() the styling never reaches. */
-  confirmGuestReplacement: () => ask({
-    head: () => t('online', 'auth.replaceGuestTitle'),
-    body: () => t('online', 'auth.replaceGuestBody'),
-    confirm: () => t('online', 'auth.replaceGuestConfirm'),
-    cancel: () => t('common', 'actions.cancel'),
-    /* This one really does destroy something, so the way OUT keeps the weight. */
-    danger: true,
-  }),
+  confirmGuestReplacement: async () => {
+    const outcome = await askOutcome({
+      head: () => t('online', 'auth.replaceGuestTitle'),
+      body: () => t('online', 'auth.replaceGuestBody'),
+      confirm: () => t('online', 'auth.replaceGuestConfirm'),
+      cancel: () => t('common', 'actions.cancel'),
+      /* This one really does destroy something, so the way OUT keeps the weight. */
+      danger: true,
+    });
+    return outcome === 'confirm' ? true : outcome === 'replaced' ? null : false;
+  },
 });

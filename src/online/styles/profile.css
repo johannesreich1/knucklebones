@@ -2,7 +2,11 @@
    The ring itself (.ringwrap/.lring/.lpeak) lives in styles/main.css: the HOME
    plate wears it at boot, before this chunk exists. Here is only what the
    account panel adds around it. */
-:where(#kbroot) #onAccount{gap:11px}
+:where(#kbroot) #ovOnline #onAccount{
+  --profile-stack-gap:16px;
+  --profile-history-gap:5px;
+  --profile-history-row-height:39px;
+  gap:var(--profile-stack-gap)}
 :where(#kbroot) #onAccount .avwrap{position:relative;display:grid;place-items:center;background:none;border:0;
   padding:0;cursor:pointer;font:inherit;z-index:2}
 /* THE EDIT BADGE RIDES THE TOP OF THE RING, CENTRED. It used to sit at the
@@ -67,11 +71,24 @@
 :where(#kbroot) #onAccount .accfoot .viewfoot{margin-top:0;padding-bottom:0}
 /* the PAST DUELS rows reuse .lb's row chrome but are never a list of their own:
    three rows, no scroller, no cap — where they no longer fit, the page scrolls */
-:where(#kbroot) #ovOnline .minihist{max-height:none;overflow:visible;flex:0 0 auto}
-:where(#kbroot) #onAccount .histrow{display:flex;align-items:center;width:100%;padding:12px 14px;border-radius:14px;
-  min-height:44px;
+:where(#kbroot) #ovOnline .minihist{max-height:none;overflow:visible;flex:0 0 auto;
+  gap:var(--profile-history-gap)}
+:where(#kbroot) #onAccount .minihist .history-row{height:var(--profile-history-row-height);
+  min-height:var(--profile-history-row-height)}
+/* FULL MATCH HISTORY is the fourth visual row: its border box is exactly the
+   three duel rows' height and its leading gap repeats their 5px rhythm. The
+   transparent pseudo-element keeps the finger target at 44px without making
+   this one row look larger; its 2.5px upward reach still leaves 2.5px clear
+   before the preceding row's painted edge. */
+:where(#kbroot) #onAccount .histrow{position:relative;display:flex;align-items:center;width:100%;
+  height:var(--profile-history-row-height);min-height:var(--profile-history-row-height);
+  padding:9px 12px;border-radius:12px;
   background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);cursor:pointer;
   font-size:clamp(11px,2.8vw,12.5px);letter-spacing:.18em;color:var(--dim);text-transform:uppercase;font-family:inherit}
+:where(#kbroot) #onAccount #accRecentBox:not([hidden]) + .histrow{
+  margin-top:calc(var(--profile-history-gap) - var(--profile-stack-gap))}
+:where(#kbroot) #onAccount .histrow::before{content:"";position:absolute;left:50%;top:50%;
+  width:max(100%,44px);height:44px;transform:translate(-50%,-50%)}
 :where(#kbroot) #onAccount .histrow b{color:var(--txt);margin-left:auto;letter-spacing:.06em}
 :where(#kbroot) #onAccount .accsince{font-size:clamp(9px,2.3vw,10px);letter-spacing:.16em;text-indent:.16em;color:var(--dim);text-transform:uppercase;text-align:center}
 /* an empty since-line is not a row: as a zero-height flex item it would still

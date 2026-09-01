@@ -2,6 +2,7 @@ import { ladderBoardFixture } from './board-fixtures.mjs';
 import { installLadderRoutes } from './ladder-routes.mjs';
 import { installProfileRoutes } from './profile-routes.mjs';
 import { installIdentityRoutes } from './identity-routes.mjs';
+import { installAppleAuthRoutes } from './apple-auth-routes.mjs';
 
 export async function installOnlineRoutes(
   page,
@@ -24,6 +25,8 @@ export async function installOnlineRoutes(
     historyDepth = 0,
     paginationRace = false,
     passwordAuth = 'error',
+    appleAuth = 'invalid',
+    deferAppleAuth = false,
     runes = [],
     /* Which rune the account carries, as the profiles row reports it. */
     equippedRune = null,
@@ -113,6 +116,15 @@ export async function installOnlineRoutes(
     ? new Promise((resolve) => setTimeout(resolve, dataDelay * share))
     : Promise.resolve();
   const nearBottomBoard = ladderBoardFixture(ladderBoard ?? ladderNearBottom);
+  const identityRoutes = await installIdentityRoutes(page, {
+    identity, gameCenter: gameCenterBridge, session,
+  });
+  const appleRoutes = await installAppleAuthRoutes(page, {
+    mode: appleAuth,
+    defer: deferAppleAuth,
+    session,
+    onRegistered: () => identityRoutes.setAppleIdentity(true, true),
+  });
   /* Kill the service worker before app code runs. Once it controls the page it
      re-issues requests from the worker, where page.route() cannot see them —
      and whether it has claimed the page by the time of the tap is a race, so a
@@ -216,10 +228,14 @@ export async function installOnlineRoutes(
         body: JSON.stringify({ random_rune_mode: currentRandomRuneMode }) });
     }
     profileCalls++;
+    const appleProfile = appleRoutes.appleProfile();
     const response = r.fulfill({ status: 200, contentType: 'application/json',
-      body: JSON.stringify([{ id: profileAccountId, nickname: claimed && door === 'claim' ? 'NeonKing77' : 'TestGuest001',
+      body: JSON.stringify([{ id: appleProfile?.id ?? profileAccountId,
+                              nickname: appleProfile?.nickname
+        ?? (claimed && door === 'claim' ? 'NeonKing77' : 'TestGuest001'),
                               rating: 1000, created_at: new Date().toISOString(),
-                              named_at: claimed ? '2026-08-01T00:00:00Z' : null }]) });
+                              named_at: appleProfile?.named_at
+        ?? (claimed ? '2026-08-01T00:00:00Z' : null) }]) });
     if (deferred) void response.then(markAccountProfileFinished);
     return response;
   });
@@ -283,9 +299,6 @@ export async function installOnlineRoutes(
     joinCalls++;
     return r.fulfill({ status: 200, contentType: 'application/json', body: '{"status":"queued"}' });
   });
-  const identityRoutes = await installIdentityRoutes(page, {
-    identity, gameCenter: gameCenterBridge, session,
-  });
   await page.route('**/rest/v1/rpc/leave_ranked_queue', (r) => r.fulfill({
     status: 200, contentType: 'application/json', body: '{"status":"left"}',
   }));
@@ -304,6 +317,7 @@ export async function installOnlineRoutes(
   });
   return {
     ...identityRoutes,
+    ...appleRoutes,
     ...ladder,
     signupCalls: () => signupCalls,
     deferNextSignupResponse: () => { deferNextSignup = true; },

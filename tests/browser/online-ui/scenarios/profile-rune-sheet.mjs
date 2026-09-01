@@ -37,6 +37,7 @@ async function profileRuneProbe(page) {
     });
     const title = document.getElementById('accRunesTitle');
     const count = document.getElementById('accRuneCount');
+    const pastDuelsTitle = document.getElementById('accRecentTitle');
     const root = document.getElementById('kbroot');
     /* Paint the token to compare like with like: getComputedStyle reports a
        used colour, and an UNDEFINED custom property reports the inherited one
@@ -52,6 +53,7 @@ async function profileRuneProbe(page) {
     return {
       titleColor: title ? getComputedStyle(title).color : '',
       countColor: count ? getComputedStyle(count).color : '',
+      pastDuelsTitleColor: pastDuelsTitle ? getComputedStyle(pastDuelsTitle).color : '',
       txtColor: resolve('var(--txt)'),
       dimColor: resolve('var(--dim)'),
       count: count?.textContent?.trim(),
@@ -165,14 +167,13 @@ export async function runProfileRuneSheetScenarios({ visit, out, check }) {
       && profile.probeResult.countFontSize >= profile.probeResult.labelMinimum,
     'profile rune heading and count fell below the shared compact-label minimum',
     profile.probeResult);
-  /* The head has a bright half and a dim half. Asserting the COMPUTED colour,
-     not the declaration: an undefined token silently inherits instead of
-     failing, so the heading read --dim like its own count for as long as it
-     asked for `--fg`. */
-  check(profile.probeResult?.titleColor === profile.probeResult?.txtColor
+  /* These two section titles and the rune count are one subdued hierarchy.
+     Assert the COMPUTED colours so a later child override cannot make either
+     heading bright while the count remains toned down. */
+  check(profile.probeResult?.titleColor === profile.probeResult?.dimColor
       && profile.probeResult?.countColor === profile.probeResult?.dimColor
-      && profile.probeResult?.titleColor !== profile.probeResult?.countColor,
-    'the profile rune heading did not stand out from the dim count beside it',
+      && profile.probeResult?.pastDuelsTitleColor === profile.probeResult?.dimColor,
+    'the profile section headings did not share the rune count subdued colour',
     profile.probeResult);
   /* Every slot's name SPEAKS ITS RUNE'S COLOUR, like the frame and sigil round
      it — so the name matches the slot, and the six do not all agree. */

@@ -18,6 +18,11 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
        whole provider path and lands on the profile's own error line rather
        than reaching Apple. */
     appleBridge = false,
+    /* The bridge normally returns an invalid credential so provider-error
+       probes cannot accidentally become successful sign-ins. A focused auth
+       probe opts into a valid Apple result and the matching Supabase route. */
+    appleAuth = 'invalid',
+    deferAppleAuth = false,
     attached = false,
     authDelay = 0,
     dataDelay = 0,
@@ -117,7 +122,8 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
       dataDelay: inspectLoading ? 900 : dataDelay, markRunesSeenAfterFirstRead,
       door, gameCenterBridge, identity, member, named, ladderNearBottom, ladderBoard, historyDepth,
       paginationRace,
-      passwordAuth, runes, unseenRunes, equippedRune, randomRuneMode,
+      passwordAuth, appleAuth, deferAppleAuth,
+      runes, unseenRunes, equippedRune, randomRuneMode,
       standingPoints, standingPeak, historicalSilverReached, SESSION, GUEST_ID,
     });
     /* Registered AFTER the base stub on purpose: Playwright gives the most
@@ -132,7 +138,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
        and two init scripts each installing their own would leave whichever ran
        last as the only device the app can see. */
     if (appleBridge || gameCenterBridge) {
-      await page.addInitScript(({ apple, gameCenter, refusal, persistent }) => {
+      await page.addInitScript(({ apple, appleAuth, gameCenter, refusal, persistent }) => {
         const Plugins = {};
         if (apple) {
           Plugins.AppleSignIn = {
@@ -140,7 +146,9 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
             signIn: async (options) => {
               globalThis.__appleSignIn = { calls: (globalThis.__appleSignIn?.calls ?? 0) + 1,
                                            options: options ?? null };
-              return { idToken: '' };
+              return appleAuth === 'success'
+                ? { idToken: 'apple-id-token', authorizationCode: 'apple-authorization-code' }
+                : { idToken: '' };
             },
           };
         }
@@ -170,7 +178,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
           };
         }
         globalThis.Capacitor = { getPlatform: () => 'ios', Plugins };
-      }, { apple: appleBridge, gameCenter: !!gameCenterBridge, refusal: proofRefusal,
+      }, { apple: appleBridge, appleAuth, gameCenter: !!gameCenterBridge, refusal: proofRefusal,
            persistent: gameCenterPersistent });
     }
     if (door === 'play' || door === 'match' || door === 'auth-play') {

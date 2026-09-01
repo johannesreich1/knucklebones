@@ -16,6 +16,10 @@ export async function installIdentityRoutes(page, { identity, gameCenter, sessio
   const readers = {
     gameCenterModes: () => [...modes],
     identityState: () => ({ ...state }),
+    setAppleIdentity: (linked, revocationReady) => {
+      state.appleLinked = linked;
+      state.appleRevocationReady = revocationReady;
+    },
   };
   await page.route('**/functions/v1/identity-status', (r) => r.fulfill({
     status: 200, contentType: 'application/json', body: JSON.stringify(state),
