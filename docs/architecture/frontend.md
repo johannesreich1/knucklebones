@@ -121,6 +121,18 @@ the reveal's own note line rather than sending the player back to the queue
 panel. A second overlay for the runes is the shape this replaced; a caller that
 reveals a mode, closes, and then reveals the choices has rebuilt it.
 
+The decided successor ranked CLAIM reward, not yet shipped, stays inside that
+same selector and reveal. In ranked Trial exactly one of the three common cards
+is visibly marked CLAIM before either player chooses, and the card says whether
+that rune is already owned **by the viewer**. Both seats see the same marked
+rune, but each ownership annotation comes only from that seat's server-confirmed
+collection; opponent ownership is never exposed. Selection and the later
+simultaneous turn-over use the existing shared card primitives; no reward modal,
+post-win random draw, or second Trial overlay is introduced. Offline CPU and
+local two-player callers omit the optional mark because they grant no collection
+reward. The result reveals a new collection item only when the authoritative
+resolved winning choice matched the snapshotted CLAIM card.
+
 The decided successor progression adds one other shared presentation contract,
 not yet shipped: ranked-outcome entries appear in unlock order wherever they
 are presented. The exact sequence and per-surface inclusion contract live in
@@ -133,6 +145,15 @@ RANDOM stays outside the outcome sorter, as do typed non-outcome transition
 slides for equipment, weekly access, and the NEON medal. Keep this presentation
 helper separate from the seed-sensitive weighted draw so a UI reorder cannot
 alter game selection.
+
+The successor score curve has its own server-advertised contract version. A
+compatible client renders the active version's shared floors and progress
+helper; it does not infer them from a point total or keep a screen-local table.
+Once v2 points are activated, a v1 client receives an update-required boundary
+before ranked rather than displaying the new points against old floors. The
+dedicated CLAIM capability follows the same rule: advertising it means the
+client can render the mark before choice and the snapshotted reward version on
+result/history; otherwise matchmaking excludes Trial.
 
 When extracting code from a large module:
 

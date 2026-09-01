@@ -785,11 +785,13 @@ materials climbing toward the game's own neon. **Agreed 2026-08-20.**
 
 *Decided 2026-09-01. Owner: Johannes. After selecting the broad league
 placement and delegating the remaining choice with “You decide”, the owner
-accepted this section as the complete product contract, including bot debuts,
-weekly cadence/rewards, and cutover behavior. It is not a description of current
-runtime. The shipped pool and transition deck remain the ones in §2 until the
-entitlement, draw, presentation, and persistence work below is implemented and
-verified.*
+accepted this section as the complete product contract, including the target
+score curve, collection tail, bot debuts, weekly cadence/rewards, and cutover
+behavior. It is not a description of current runtime. The possible paid
+one-rune tail escape is recorded only as an unapproved later example. The
+shipped pool, score floors, Trial reward, and transition deck remain the ones
+in §2 and `docs/SPELLS.md §8` until the entitlement, draw, presentation,
+settlement, migration, and persistence work below is implemented and verified.*
 
 ### Why the populated estimate is not today's content cadence
 
@@ -830,126 +832,151 @@ after 12** BONE games and **48.3% after 15**. An unlock can therefore arrive
 before the old pool has been sampled and still remain unseen for most of the
 next league.
 
-### Decision: keep the fast promotion and spread the content
+### Decision: keep the fast opening, spread content, stretch the late climb
 
-Do **not** slow the ladder merely to create room for its unlocks. Reaching a new
-league after a short first run is satisfying, and the continuously moving ring
-already makes the point curve legible. The correction is to redistribute
-content so each early promotion has one clear teaching beat and the long later
-climbs still contain meaningful rewards.
+Do **not** slow STONE merely to create room for its unlocks. Reaching BONE after
+a short first run is satisfying, and the continuously moving ring makes every
+point legible. But the same argument does not justify compressing the entire
+permanent progression: the current bot-heavy planning model puts OBSIDIAN at
+about **130 median / 152 mean matches**, with a plausible fast ordinary path
+near the owner's rounded **128**. That is too short for the last permanent
+gameplay entitlement.
 
-#### League-score decision: keep the current floors
+The correction therefore has two parts: redistribute modes so early leagues
+teach one idea at a time, and preserve the fast opening while widening the
+middle and late point bands.
 
-The successor content schedule does **not** change the league scores:
+#### League-score decision: a late-weighted 3,800-point curve
 
-| league | decided floor | width to next point-based league |
+The current runtime floors in §2 remain shipped until implementation. The
+successor target is:
+
+| league | target floor | target width to next point-based league |
 |---|---:|---:|
 | STONE | 0 | 300 |
-| BONE | 300 | 420 |
-| IVORY | 720 | 540 |
-| SILVER | 1,260 | 750 |
-| GOLD | 2,010 | 990 |
-| OBSIDIAN | 3,000 | 1,350 to the small-population NEON fallback |
-| NEON | top 1% position; 4,350 fallback only below 100 rated players | unbounded |
+| BONE | 300 | 450 |
+| IVORY | 750 | 650 |
+| SILVER | 1,400 | 1,000 |
+| GOLD | 2,400 | 1,400 |
+| OBSIDIAN | 3,800 | 2,200 to the small-population NEON fallback |
+| NEON | top 1% position; 6,000 fallback only below 100 rated players | unbounded |
 
-The observed roughly five-game STONE promotion is the desired fast opening,
-not evidence that every later league lasts five games. The tempting
-`420 / 80 ≈ 5` calculation for BONE → IVORY is only a rough perfect-run
-estimate: the quotient is **5.25**, so five equal-rated base wins produce 400
-and the sixth crosses the floor. Five wins can still suffice when stronger
-opponents raise the base payouts or the new applied finish transfers total at
-least 20—an average of four per win.
+The widening is deliberately late. STONE stays exactly 300, BONE's width grows
+only 30 points, and the larger additions land where the player already has a
+wider mode/rune vocabulary. Applying width ratios to the same coarse bot-heavy
+model gives this planning comparison:
 
-At an equal-rated 50% record, five wins and five losses produce a base
-`5 × 80 - 5 × 60 = 100`, not 420. With symmetric win/loss finish margins,
-those transfers cancel in expectation, leaving +10 per match and about **42
-matches** for 420 points. Unequal finish margins intentionally shift that
-individual result: across those ten matches the transfer can move the +100
-base total down to +75 or up to +125. The coarse current bot-shaped estimate
-is faster—roughly 15 at the approximately 63% BONE human win share. Its
-base-only equal-rating simplification is
-`0.63 × 80 - 0.37 × 60 = 28.2` and `420 / 28.2 ≈ 15`; the complete expectation
-adds `0.63 × E[win transfer] - 0.37 × E[loss transfer]`. That is why the
-planning range above is 10–20 rather than treating either 5 or 42 as a
-forecast.
+| traversal | current width | target width | current median / mean | scaled target median / mean* |
+|---|---:|---:|---:|---:|
+| STONE → BONE | 300 | 300 | 7.0 / 7.5 | **7.0 / 7.5** |
+| BONE → IVORY | 420 | 450 | 12.0 / 14.8 | **12.9 / 15.9** |
+| IVORY → SILVER | 540 | 650 | 21.0 / 24.9 | **25.3 / 30.0** |
+| SILVER → GOLD | 750 | 1,000 | 36.0 / 42.5 | **48.0 / 56.7** |
+| GOLD → OBSIDIAN | 990 | 1,400 | 54.0 / 62.2 | **76.4 / 88.0** |
+| **total to OBSIDIAN** | **3,000** | **3,800** | **130.0 / 151.9** | **169.5 / 198.0** |
+
+\* This is a linear planning extrapolation, not a retained simulation or
+telemetry. Widening a group also widens `botPairBand`; in a sparse population
+the separate `matchBand` ceiling is `900 × SCALE = 4,500` displayed ladder
+points, so every target group width remains the tighter bot cap. Denser
+populations can narrow `matchBand` instead. New floor boundaries also change
+bot shapes, eligible opponent pools, payouts, and potentially win rates, so
+linear scaling cannot model those feedbacks. Before implementation, a retained
+production-shaped simulation must use the target outcome pools, finish
+transfer, both seats, runes, Trial, and target pairing bands. The release range
+is **160–185 median**
+and **185–215 mean** matches from a fresh account to OBSIDIAN, with STONE still
+at a **5–8 settled-match median** and no individual late band becoming longer
+than its reward can carry. If measurement misses, tune SILVER/GOLD widths—not
+STONE—until it lands inside that product target.
+
+The 4,000-point alternative was rejected. It projected about 180 median / 211
+mean overall but made GOLD alone roughly 87 median / 101 mean matches, too long
+between visible promotions even with two modes at entry. The 3,800 curve still
+adds about 30% to the full climb without creating that wall.
+
+The new BONE width also makes the earlier division explicit. At an equal-rated
+base payout, `450 / 80 = 5.625`, so a perfect base-only run takes six wins. Six
+dominant target-rule wins also cross it; only repeatedly beating higher-rated
+bots can reduce that to five. At an equal-rated 50% record with symmetric
+finish margins, +10 per match would take about 45 matches. The coarse
+approximately 63% BONE human share is much faster: its base-only expectation is
+`0.63 × 80 - 0.37 × 60 = 28.2`, or about 16 matches for 450 points, before the
+small finish signal.
 
 ##### Best-case traversal bounds
 
 “Best case” needs an opponent assumption because the base payout changes with
-rating gap. These are perfect all-win streaks with no draws or forfeits:
+rating gap. These are target-width perfect streaks with no draws or forfeits:
 
-| traversal | width | shipped: equal-rated wins at +80 | target: dominant equal-rated wins at +87* | target: cap-edge higher bot, dominant win | absolute traversal floor at the +160 payout ceiling** |
+| traversal | width | equal-rated base wins at +80 | dominant equal-rated wins at +87* | cap-edge higher bot, dominant win | absolute traversal floor at the +160 payout ceiling** |
 |---|---:|---:|---:|---:|---:|
 | STONE → BONE | 300 | 4 | **4** | **3** at up to +101 | 2 |
-| BONE → IVORY | 420 | 6 | **5** | **4** at up to +106 | 3 |
-| IVORY → SILVER | 540 | 7 | **7** | **5** at up to +111 | 4 |
-| SILVER → GOLD | 750 | 10 | **9** | **7** at up to +120 | 5 |
-| GOLD → OBSIDIAN | 990 | 13 | **12** | **8** at up to +128 | 7 |
-| OBSIDIAN width → 4,350 fallback | 1,350 | 17 | **16** | **10** at up to +139 | 9 |
+| BONE → IVORY | 450 | 6 | **6** | **5** at up to +107 | 3 |
+| IVORY → SILVER | 650 | 9 | **8** | **6** at up to +116 | 5 |
+| SILVER → GOLD | 1,000 | 13 | **12** | **8** at up to +129 | 7 |
+| GOLD → OBSIDIAN | 1,400 | 18 | **17** | **10** at up to +140 | 9 |
+| OBSIDIAN width → 6,000 fallback | 2,200 | 28 | **26** | **15** at up to +155 | 14 |
 | NEON in a populated season | positional | not finite | not finite | not finite | not finite |
 
 \* `+87 = +80` equal-rated base plus the maximum requested and applied seven.
 At the zero-point opening, an equal-zero loser cannot fund the finish transfer;
 STONE still takes four such equal-rated wins, so the table's count is unchanged.
+A continuous dominant equal-rated streak reaches target OBSIDIAN in 44 matches;
+a cap-edge maximum bot streak does it in about 31. Both are compounded extremes,
+not cadence estimates.
 
 \** The absolute +160 is a maths ceiling, not a matchmaking forecast. Against
 an opponent thousands of points above, the base win approaches +160 but the
 opponent's base loss approaches the −120 cap, progressively removing finish
-transfer room. The combined payout therefore never exceeds +160. Current bot
-backfill is much tighter: its rating-gap cap is the player's current league
-width, which produces the preceding cap-edge column. That column itself assumes
-the highest allowed bot appears every time **and** loses every game by the
-maximum normalized margin; real streaks will almost always be slower.
-
-The target finish rule reduces the equal-rated perfect-run bound by at most one
-match in this table. That is deliberately enough to make a dominant result
-visible without turning the finish transfer into the progression engine. Fast perfect
-streaks are allowed to feel fast; the 5–8 STONE target and the later measured
-medians, not these compounded best cases, decide whether floors need review.
-For scale only, five independent wins at the approximate 63% BONE human share
-have a **9.9%** chance, while sixteen at a 52–54% late-league share have only a
-**0.0029–0.0052%** chance—before also requiring dominant margins. Those simple
-powers assume independence and are not telemetry or a progression forecast.
+transfer room. The combined payout therefore never exceeds +160. Bot backfill
+is tighter: its permitted gap is `min(matchBand(nearby), botPairBand(points))`.
+`botPairBand` is the current league width. `matchBand` tops out at
+`900 × SCALE = 4,500` displayed ladder points, so the target league width is
+the tighter limit in the sparse cap-edge case used by the table; denser
+populations can make `matchBand` tighter. The cap-edge column assumes the
+highest allowed bot appears every time **and** loses every game by the maximum
+normalized margin.
 
 Unlock distribution has **no direct arithmetic effect** on point speed. It
-changes when the player receives and reliably sees fresh content. It may later
-change measured progression indirectly because different mode mixes can change
-human win rates and normalized finish-margin distributions, but that must be
-measured after the target pool ships; it is not a reason to pretend the unlock
-table directly adds or removes ladder points.
+changes when the player receives and reliably sees fresh content. It can change
+measured progression indirectly because the new mode mix changes win and
+normalized-margin distributions; that is why the retained simulation must
+combine both decisions rather than pretending the unlock table awards points.
+The finish transfer is likewise not the reason for the wider floors: it moves
+at most seven additional points and remains antisymmetric. The reason is the
+total permanent-progression cadence.
 
-The decided finish-margin transfer in §1 also does not justify compensating
-league-floor changes. Its requested range is 2–7 and every applied point moves
-from loser to winner, so it keeps aggregate drift unchanged and is tiny beside
-the opponent-strength base delta. A player who wins big and loses narrowly may
-climb a little faster; that is the intended performance signal, not general
-inflation.
+#### Score-curve cutover preserves standing
 
-Do not change league floors in the same release as the successor mode
-distribution. First ship and measure the target pool plus the finish-margin
-rule while the current floors remain the control. The desired band for a
-fresh-account, bot-only STONE → BONE climb is a median of **5–8 settled ranked
-matches**, including draws, across at least 30 distinct fresh-account climbs.
-If population remains too small for that cohort, use a deterministic
-clean-profile scenario matrix with varied match seeds and opponent draws rather
-than repeating one path.
+Raising floors must not visibly demote every existing account. At target
+cutover, migrate every human and bot's current points and peak through one
+monotonic, group-local mapping:
 
-Only if the measured median is below five should the first fallback be
-considered: shift every later floor up by 50—BONE 350, IVORY 770, SILVER 1,310,
-GOLD 2,060, OBSIDIAN 3,050, and the tiny-population NEON fallback 4,400. Fifty
-points are about 0.57–0.61 of an equal-rated 82–87-point win; discreteness may
-still move the observed median by one match. Moving BONE alone to 350 while
-leaving IVORY at 720 is rejected because it silently shortens BONE from 420 to
-370. A median above eight triggers diagnosis of bot difficulty, opponent
-selection, mode-specific win/margin distributions, and onboarding
-comprehension before any proposal to lower floors; there is no automatic
-opposite adjustment.
+```
+progress   = (old_points - old_group_floor) / old_group_width
+new_points = new_group_floor + round(progress * new_group_width)
+```
 
-The +50 fallback is a review trigger, not pre-approved release policy. Raising
-floors can visibly demote existing players and moves the bot-strength group
-boundaries even when later widths are preserved. Any eventual change therefore
-needs a separate measured owner decision, must retain every historical unlock
-already earned, and must define the current-player transition explicitly.
+Use the old OBSIDIAN segment `3,000…4,350` and new segment `3,800…6,000` for
+all points at or above old OBSIDIAN, allowing the formula to extrapolate beyond
+either fallback. Apply the same mapping to current points and historical peaks.
+This preserves rank order, displayed non-apex league, and ring progress; NEON's
+top-1% status remains positional. Existing outcome/rune/weekly entitlements are
+retained independently, and historical match deltas are not rewritten. The
+numeric migration itself emits no match result, promotion deck, reward, or bot
+debut; the separate entitlement union below decides anything newly granted.
+
+The curve cutover is versioned and must not strand an installed client between
+numeric contracts. First ship a client that understands both curves while v1
+remains active. At the maintenance boundary, pause new ranked admission, finish
+or deterministically settle every active v1 match, atomically map current/peak
+points and activate the server-owned v2 curve, then resume ranked only for
+clients that advertise that curve version. The migration refuses to run while
+an old-version match remains active. An older installed client may continue
+offline but receives an update-required screen before ranked; it must never
+render mapped points against the old floors or settle a v1 delta into v2
+points.
 
 | league milestone | decided target reward |
 |---|---|
@@ -972,6 +999,133 @@ equally across every eligible addition:
 | IVORY | BONE + Rune Ritual | Classic 40%; each addition 12% |
 | SILVER | unchanged from IVORY; equipped runes activate separately | Classic 40%; each addition 12% |
 | GOLD and above | SILVER + Row Switch; Limited | Classic 40%; each addition `60/7` (about 8.571%) |
+
+#### Rune collection target: a long tail, not a checklist
+
+The shipped Trial awards the winner's selected rune. An optimal collector can
+choose any offered unowned rune, so the first three acquisitions are guaranteed
+on wins and the complete six-rune set takes only **7.303 winning Trials on
+average**. Under the target appearance odds that is roughly 75–150 total ranked
+matches from a fresh account, depending on Trial win rate. That is too generous:
+the complete collection would become the normal endpoint instead of a rare
+long-tail achievement.
+
+The successor Trial therefore marks exactly one of the common three offered
+cards as the **CLAIM rune** before either private choice. After snapshotting the
+offer, the server chooses one of its three slots uniformly with a
+domain-separated deterministic stream and snapshots the rune at that slot. Both
+players see the same marked rune; each sees only whether it is in their own
+server-confirmed collection. A Trial winner collects that rune only if they
+selected the marked card; selecting either unmarked card chooses gameplay
+strength over collection progress. A loss or draw awards nothing, and an
+already-owned CLAIM rune remains a duplicate with no replacement. Forfeit,
+timeout, and resignation use the actual resolved selection under the same rule.
+The existing deterministic auto-pick is not biased toward CLAIM.
+
+This rejects the tempting post-win-random alternative: the collectible is known
+before the duel, and the player must win with it. Compared with the shipped
+selected-rune reward, CLAIM intentionally gives the collector less control—that
+is what creates the longer tail—but preserves a meaningful tactical choice
+between collection progress and either unmarked matchup. Trial still loans all
+six, a fixed equipment seat needs only one owned rune, and RANDOM needs two, so
+an incomplete collection does not block the core ranked format.
+
+Because the offer is a uniform three-of-six and the mark is uniform among those
+three, each rune is CLAIM with probability `1/6`. A collection-focused player
+who always selects CLAIM therefore follows the ordinary six-coupon collector:
+
+```
+expected winning Trials for all six
+  = 6 × (1 + 1/2 + 1/3 + 1/4 + 1/5 + 1/6)
+  = 14.7
+```
+
+At a 50% Trial win rate, that becomes **29.4 Trial matches** on average. Using
+the guaranteed IVORY bot debut, 12% Trial odds through IVORY/SILVER, `3/35`
+(about 8.571%) from GOLD, and the target floor projection gives these planning
+results for a fresh account:
+
+| collection behavior | expected Trial matches to all six | expected total ranked matches to all six* |
+|---|---:|---:|
+| always select CLAIM; win every Trial | 14.7 | about **153–154** |
+| always select CLAIM; win 50% of Trials | 29.4 | about **322–324** |
+
+\* Includes roughly 20 median / 23 mean matches to reach IVORY. The two
+discrete scenarios then use 73 IVORY/SILVER + 77 GOLD matches and 87
+IVORY/SILVER + 88 GOLD matches respectively, with one immediate guaranteed bot
+Trial, 12% Trial odds for the rest of IVORY/SILVER, and `3/35` in GOLD. These
+are scenario endpoints, not confidence bounds or release-range extremes.
+Phase length, Trial appearance, offer/CLAIM identity, and Trial wins are treated
+as independent. Choosing an unmarked card, drawing instead of winning, or an
+ineligible Trial lengthens collection under the same schedule. Human
+shared-entitlement matches may instead raise the Trial slice to 12% or remove
+Trial through capability/entitlement intersection, so retained implementation
+simulation must model those correlations rather than infer them from this
+bot/own-pool estimate.
+
+At the target OBSIDIAN timing, the same model produces the intended partial
+collection for a collection-focused player who always selects CLAIM and wins
+50% of Trials: about **4.5–4.8 runes owned**, only **16–25%** complete, and
+**74–80%** still missing one to three. A player who wins every Trial is
+exceptional and completes more often—about **67–77%** by OBSIDIAN—but even that
+path is not guaranteed. No pity replacement is added; the missing final runes
+are the long tail the collection is meant to retain.
+
+The collection-focused 50%-win distribution makes the target more explicit.
+The range below spans those rounded median and mean cadence scenarios rather
+than pretending one climb length is exact; it is not a confidence interval:
+
+| collection state at OBSIDIAN, always choosing CLAIM and winning 50% of Trials | modeled share |
+|---|---:|
+| complete | **16.4–24.6%** |
+| one rune missing | **35.4–39.5%** |
+| two runes missing | **25.6–30.7%** |
+| three runes missing | **8.6–13.8%** |
+| four to six missing | **1.7–3.8%** |
+
+This is the product criterion: most collection-focused ordinary climbers arrive
+with a meaningful one-to-three-rune tail, a minority have already completed the
+set, and almost nobody who consistently pursues CLAIM is still missing most of
+it. Do not tune for universal incompletion; perfect Trial winners and lucky
+collectors are allowed to finish early. Also do not add a guaranteed final-rune
+payout merely because the last coupon can take time—the uneven finish is what
+keeps collections from becoming a mandatory six-box checklist. A player who
+knowingly chooses an unmarked tactical card can fall behind this distribution
+by choice; that is the intended tradeoff, not a pacing defect.
+
+##### Possible later tail escape — example, not approved
+
+A future commercial experiment could offer **one explicitly chosen missing
+rune for a tiny fixed amount after the account has first reached OBSIDIAN**.
+That is an example of a late collection convenience, not part of the successor
+launch and not a promise that the store will sell runes. The exact local price,
+platform product, availability, and whether the experiment happens at all need
+a separate owner decision and store-policy review. Every pacing estimate above
+excludes this hypothetical purchase.
+
+If explored, the first version should be capped at one direct rune purchase per
+account. It shows the exact rune and final price before confirmation, can never
+roll a random or duplicate reward, grants no exclusive or stronger variant,
+and leaves the identical rune permanently earnable through Rune Ritual. Waiting
+until OBSIDIAN prevents money from replacing the learning/collection journey;
+the one-rune cap lets a player escape an unlucky final coupon without turning
+the whole collection into a checkout. If balance evidence ever shows that
+owning a particular rune supplies material competitive power rather than
+choice, do not ship the purchase under this rationale.
+
+The CLAIM identity and reward-rule version must be part of the immutable match
+snapshot and settle idempotently. Its slot stream is domain-separated: it may
+read the already-snapshotted offer but must neither consume nor perturb the
+offer, choice/auto-pick, outcome-draw, or dice streams. Existing collected runes
+are never removed at cutover. A dedicated successor capability, distinct from
+current `rune_trial_v1`, is required before a client can enter a CLAIM Trial.
+Both humans must advertise it; bots support it with the target release. A human
+pairing with an older client simply excludes Trial from their shared eligible
+pool. Every already-active match retains its snapshotted reward version, so a
+v1 Trial always settles the selected rune and a CLAIM Trial can never be played
+without rendering its mark. The shipped selected-rune rule remains runtime
+truth until this target ships; `docs/SPELLS.md §8` owns the interaction and
+reveal contract.
 
 #### Presentation order follows unlock order
 
@@ -1069,7 +1223,9 @@ Alternatives considered and rejected:
 | alternative | why it lost |
 |---|---|
 | Keep all three shipped BONE additions together | A roughly five-game first promotion can arrive while 80.8% of players still lack at least one STONE exposure, and the three new outcomes themselves take too long to sample. |
-| Slow STONE or widen every league | It fixes content cadence by removing the satisfying early promotion and changes the ladder for a problem caused by unlock packaging. |
+| Keep the current 3,000-point OBSIDIAN curve | Unlock redistribution fixes teaching cadence but leaves the entire permanent climb at roughly 130 median / 152 mean matches, too short for the long-term collection and weekly loop. |
+| Slow STONE or stretch every league uniformly | It removes the satisfying early promotion. The selected curve keeps STONE at 300 and places almost all extra distance in the content-rich middle and late game. |
+| Stretch OBSIDIAN to 4,000 and fallback NEON to 6,400 | It raises the overall estimate to about 180 median / 211 mean, but GOLD alone becomes roughly 87 median / 101 mean matches between promotions. The 3,800 / 6,000 compromise avoids that wall. |
 | Put Limited at SILVER and Row Switch at GOLD | SILVER already changes every eligible ordinary match by activating equipment; adding a new supply/end-condition lesson competes with the rune lesson, while GOLD can comfortably carry two advanced outcomes. |
 | Put one advanced mode at GOLD and the other at OBSIDIAN | OBSIDIAN's long climb benefits more from a renewable weekly reason to return than from one more finite wheel node. |
 | Add the weekly challenge to the ordinary OBSIDIAN wheel | A featured challenge should be chosen knowingly and reliably; another low-probability random node would recreate the invisibility problem this decision fixes. |
@@ -1179,8 +1335,13 @@ per-outcome ownership.
 
 The cutover rule is an entitlement union: **everything granted by the shipped
 pool at the account's pre-cutover historical peak, plus everything granted by
-the successor schedule at that peak**. Consequently, grandfathered ordinary
-wheels deliberately differ from the clean new-account table above:
+the successor schedule at the account's mapped historical peak**—equivalently,
+its preserved historical league. Compute the old entitlement side before point
+conversion and the target side after conversion. Thus an old 3,000-point
+OBSIDIAN peak maps to target 3,800 and receives weekly access; treating raw
+3,000 as target GOLD would violate the preservation rule. Consequently,
+grandfathered ordinary wheels deliberately differ from the clean new-account
+table above:
 
 | pre-cutover permanent pool | cumulative post-cutover ordinary outcomes | steady-state odds |
 |---|---|---|
@@ -1213,13 +1374,17 @@ actual before/after grants:
 The current transition event, cached tier, and registry-derived slide plan do
 not yet represent all of those facts. Shipping the target requires durable
 per-outcome entitlements, one-time pending debut state, GOLD and OBSIDIAN
-transition facts, and a server-owned bot draw override that still respects
-capability negotiation. It also requires outcome-aware offline locks and cache,
-all eleven locale catalogs, the ranked outcome and transition gates, random
-dial and local-option gates, browser transition coverage, production-weighted
-bot balance measurement, a redesigned/regenerated LG1 card, and an authoritative
-join-function deployment. Those are implementation dependencies, not claims
-that the target is already live.
+transition facts, a versioned immutable CLAIM mark and atomic reward predicate,
+the current/peak point migration, version/capability gates for both disruptive
+contracts, a drained ranked maintenance boundary, and a server-owned bot draw
+override that still respects capability negotiation. It also requires
+outcome-aware offline locks and cache, all eleven locale catalogs, the ranked
+outcome and transition gates, Trial reward and cutover gates, random dial and
+local-option gates, browser transition coverage, production-weighted bot
+balance/progression measurement, a redesigned/regenerated LG1 card, and
+redeployment of every affected authoritative function. Those are implementation
+dependencies, not claims that the target is already live. The possible paid
+tail escape above is explicitly outside that implementation scope.
 
 ---
 

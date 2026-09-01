@@ -22,7 +22,10 @@ deployed function versions are not inferred from repository prose.
   versions of the formula.
 - For Rune Trial, the server also owns the common offer, private choices,
   deterministic deadline auto-picks, revealed rune snapshots, and idempotent
-  collection reward. A client never chooses an offer or claims ownership.
+  collection reward. The unshipped successor also makes the server snapshot the
+  offer first, choose one of its three slots uniformly with a domain-separated
+  deterministic stream, and snapshot that visible CLAIM rune; a client never
+  chooses an offer or mark, or claims ownership.
 - A normal client action describes intent; it does not submit authoritative
   scores, dice, ratings, player identity, or match state.
 - `src/core/` is imported by Edge Functions as the same source used by the
@@ -187,6 +190,17 @@ winner's selected rune with `ON CONFLICT DO NOTHING`; a loss or draw inserts
 nothing, and a duplicate is not replaced. Rating/profile settlement and rune
 grant either commit together or not at all.
 
+That paragraph is the shipped reward contract. In the decided successor, the
+immutable match snapshot additionally contains one uniformly selected CLAIM
+rune/slot from the already-snapshotted common offer plus its reward-rules
+version. Settlement inserts only when the winner's resolved selected rune
+equals that stored mark; it never redraws a duplicate or trusts a client
+eligibility assertion. Existing collection rows survive cutover. Offer
+generation, CLAIM-slot selection, per-seat auto-picks, outcome selection, and
+dice each use domain-separated deterministic streams so changing or consuming
+one cannot perturb another. CLAIM depends on the resulting offer but does not
+share its random consumption.
+
 ## Ranked lifecycle and commands
 
 - `private.active_match_players` is the database-level one-active-match seat
@@ -213,6 +227,22 @@ grant either commit together or not at all.
   Demotion or a new season never writes a lower tier. Promotion settlement may
   raise the tier, and the newly eligible pool applies to the next match.
 
+- The approved successor changes the score floors to 0 / 300 / 750 / 1,400 /
+  2,400 / 3,800, with 6,000 only as the small-population NEON fallback. Cutover
+  is one server-owned monotonic migration of every human and bot's current and
+  peak points through the group-local mapping in `docs/LADDER.md §7`; clients
+  do not calculate or submit the conversion. Historical match deltas stay
+  immutable, positional NEON is recomputed normally, and outcome/rune/weekly
+  entitlements survive independently of the numeric mapping.
+
+  The rollout first deploys a client/server contract that understands both
+  curve versions while v1 remains active. At cutover, ranked admission pauses,
+  every active v1 match is finished or deterministically settled, one
+  transaction maps current/peak points and activates v2, and admission resumes
+  only for clients advertising v2. The migration aborts if an old-version match
+  remains active. An old client may remain usable offline but cannot enter
+  ranked or render v2 points against v1 floors.
+
 - Ranked settlement writes one owner-readable progression event for each human
   participant in the same transaction as the rating and permanent-pool writes.
   It snapshots points, positional apex/NEON membership, permanent pool tier,
@@ -234,8 +264,9 @@ grant either commit together or not at all.
   is the implemented repository and production-schema three-tier contract;
   deployed Edge Function bytes still require the independent confirmation in
   `docs/STATUS.md`. The approved successor needs per-outcome grandfathered
-  entitlements and durable debut state; see `docs/LADDER.md §7`. Do not
-  reinterpret these current tier rows as the target design.
+  entitlements, durable debut state, the versioned CLAIM snapshot/reward, and
+  the score-curve migration; see `docs/LADDER.md §7`. Do not reinterpret these
+  current tier rows as the target design.
 - Ordinary ranked activates equipment permanently after that participant has
   reached SILVER in any season. Fixed equipment snapshots directly; RANDOM
   selects one current owned rune with a salted hash of the fresh match seed and
@@ -244,12 +275,20 @@ grant either commit together or not at all.
   immutable authority. A participant who has never reached SILVER or has empty
   equipment stays rune-free; Rune Trial preserves its separate loaned boundary.
 - Rune Trial begins in a private-selection phase with one uniform three-of-six
-  offer and a 30-second server deadline. Submission is idempotent and reveals
-  both assignments atomically when resolved. `selection_version` is the
-  Realtime/poll invalidation counter; public `p1_rune`/`p2_rune` remain null
-  until both private choices finalize. Reconnect returns the durable phase,
-  offer, caller submission state, and revealed assignments rather than
-  depending on a transient broadcast.
+  offer and a 10-second server deadline (`RUNE_TRIAL_PICK_SECS`). Submission is
+  idempotent and reveals both assignments atomically when resolved.
+  `selection_version` is the Realtime/poll invalidation counter; public
+  `p1_rune`/`p2_rune` remain null until both private choices finalize.
+  Reconnect returns the durable phase, offer, caller submission state, and
+  revealed assignments rather than depending on a transient broadcast.
+- The successor CLAIM reward has a dedicated capability distinct from current
+  `rune_trial_v1`, plus an immutable per-match reward version. CLAIM Trial is
+  eligible only when both humans advertise it, or for a capable human against
+  a target-version bot. An older human pairing excludes Trial from its shared
+  pool. Deployment never rewrites active matches: v1 Trial keeps the selected-
+  rune grant, while a CLAIM-version match must return its mark before choice
+  and settle only that rule. No participant can play a reward version their
+  client cannot display.
 - Protocol v2 orders `aim`, `cast`, and `place` in one `match_actions` stream. Commands
   carry a UUID and expected `action_version`; server replay derives die/supply,
   one-cast-per-turn state, charges, persistent charm, legality, projection, and
@@ -258,7 +297,7 @@ grant either commit together or not at all.
   ANVIL `aim` row spends its charge and persists `pending_aim`; matching cast
   resolution or server timeout is mandatory before placement can commit. The
   existing-style action stall boundary remains 12 seconds; it is distinct from
-  Trial's 30-second private-selection deadline.
+  Trial's 10-second private-selection deadline.
 - Command responses are retry receipts, not match history. An hourly
   `pg_cron` job deletes at most 5,000 receipts whose command and terminal match
   are both older than seven days; active-match receipts never expire. The

@@ -121,6 +121,15 @@ From the mode-design side, the order is fixed:
 - OBSIDIAN unlocks a weekly featured challenge; and
 - NEON grants prestige and cosmetics, never exclusive mechanics or power.
 
+The accompanying target score floors are **0 / 300 / 750 / 1,400 / 2,400 /
+3,800**, with **6,000** used only as NEON's fallback below 100 rated players.
+This preserves the fast STONE opening but stretches the permanent climb from
+the current coarse 130 median / 152 mean projection to about **170 median /
+198 mean** before retained target-rule simulation. Existing current and peak
+points are rescaled within their old league segment so cutover preserves rank,
+displayed league, and ring progress; `docs/LADDER.md §7` owns the exact mapping
+and release evidence.
+
 This ordering is a teaching curve, not a fun ranking alone. Bounty has the
 best excitement-to-rule-cost ratio. Row Multiply adds a second scoring axis
 without invalidating the familiar column score. Row Switch and Limited demand
@@ -134,6 +143,17 @@ the remaining 60% equally. Guaranteed first bot exposures and an explicitly
 chosen weekly challenge are deliberate exceptions: they exist so a promoted
 player actually encounters the reward instead of waiting for a low-probability
 wheel result.
+
+Ranked Rune Ritual's successor collection reward also becomes deliberately
+non-completing for most climbers. One of its three common offered cards is
+visibly marked CLAIM before either private choice; only a winner who selected
+that card collects it, and a duplicate has no replacement. The mark changes
+neither the loaned hand nor the board rules. A collection-focused player who
+always selects CLAIM and wins 50% of Trials owns about 4.5–4.8 of six runes at
+target OBSIDIAN instead of treating a full set as an expected progression
+checklist. `docs/SPELLS.md §8` owns the interaction contract and
+`docs/LADDER.md §7` owns the pacing model and records a possible later
+fixed-price, one-rune tail escape as an unapproved example—not launch scope.
 
 The separately decided, unshipped finish-margin ladder transfer does not let a
 high-scoring mode pay more merely because its numbers are larger. It uses the
@@ -212,8 +232,9 @@ countdown. The dial spins once and the overlay opens once.
 The server derives a uniform three-distinct-rune offer: all 20 subsets of the
 six-rune roster are equally likely, and both seats receive the same offer.
 Each seat chooses independently and privately, so both may select the same
-rune. Choices reveal together. A 30-second server deadline resolves any
-missing choice with a deterministic participant-specific pick, including
+rune. Choices reveal together. The 10-second server deadline
+(`RUNE_TRIAL_PICK_SECS`) resolves any missing choice with a deterministic
+participant-specific pick, including
 before early resignation, timeout, deletion, or other settlement. Trial loans
 the complete roster regardless of ownership. An equipped rune is ignored for
 the duel and remains equipped and unmodified afterward.

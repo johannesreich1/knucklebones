@@ -783,10 +783,11 @@ rune reveal is exclusive to this format.
 Both participants receive the same uniform offer of three distinct runes from
 the complete six-rune roster, independent of collection. They choose privately
 and independently, may choose the same rune, and reveal together. A server
-deadline expires after 30 seconds. Any missing selection is filled by a
-deterministic participant-specific auto-pick before gameplay or any early
-resignation, deletion, timeout, or other settlement. Fixed or RANDOM equipment
-remains selected, is ignored in Trial, and is never overwritten by the loan.
+deadline expires after 10 seconds (`RUNE_TRIAL_PICK_SECS`). Any missing
+selection is filled by a deterministic participant-specific auto-pick before
+gameplay or any early resignation, deletion, timeout, or other settlement.
+Fixed or RANDOM equipment remains selected, is ignored in Trial, and is never
+overwritten by the loan.
 
 Protocol v2 gives aims, casts, and placements one authoritative total order. The
 client submits intent plus an idempotency key and expected action version; the
@@ -811,6 +812,47 @@ collection. A loss or draw grants nothing. Owning that rune already grants no
 replacement and produces no new-reward reveal. Collections start empty for
 new and existing players; Trial loans all six precisely so collection size
 cannot change ranked options.
+
+#### Decided successor CLAIM reward — not shipped
+
+The future ranked progression target deliberately changes only the collection
+reward, not the loan or cast rules. One of the common three offered cards is
+marked **CLAIM** before both private choices. The server first snapshots the
+offer, then chooses one of its three slots uniformly with a domain-separated
+deterministic stream and stores both slot/rune identity in the immutable match
+snapshot. Both seats see the same mark. Each client labels ownership only from
+that viewer's server-confirmed collection; opponent ownership is never exposed.
+To collect it, the winner must have selected that marked rune; choosing either
+other card is an explicit decision to prefer the duel matchup over collection
+progress.
+
+A loss or draw still grants nothing. A resignation, forfeit, timeout, or
+deletion uses the resolved selected rune, including any deterministic auto-pick,
+and does not manufacture CLAIM eligibility. An already-owned CLAIM rune is a
+duplicate: no replacement is drawn and no new-acquisition reveal appears. The
+pre-game card must tell each viewer whether the marked rune is in **their own**
+collection, so a duplicate is known before the choice rather than sprung on the
+player after a win. It never reveals the opponent's ownership.
+
+The reward write remains server-authoritative, versioned, idempotent, and in the
+same atomic settlement as the match. The client never submits the mark or claims
+that it selected it. Existing collections survive cutover unchanged. A
+dedicated successor capability distinct from current `rune_trial_v1` gates the
+format for both human participants; an incompatible human pairing excludes
+Trial, while a target-version bot is capable. The immutable match reward
+version wins over deployment time: an already-active v1 Trial grants the
+selected rune, and a CLAIM Trial cannot start for a client unable to render its
+mark. The exact coupon-collector pacing, expected games, OBSIDIAN distribution,
+and reason for retaining a one-to-three-rune long tail are in
+`docs/LADDER.md §7`. Until that versioned target ships, the selected-rune reward
+in the preceding paragraph is the runtime contract.
+
+Offline CPU and local two-player Trial still grant no collection reward and
+therefore receive no CLAIM mark. The shared selector accepts the ranked mark as
+explicit optional input; it does not infer one or grow a second Trial flow. A
+possible later fixed-price purchase of one chosen missing rune is recorded only
+as an unapproved post-OBSIDIAN example in `docs/LADDER.md §7`; it changes none
+of this target's launch rules.
 
 The first acquisition of a rune remains durably unseen until the account UI
 acknowledges its reveal, so reconnecting or changing devices cannot swallow the
@@ -854,6 +896,7 @@ three.
 The frozen asymmetric-v1 study remains a balance warning for the selected
 personal-equipped ranked contract: under its blind Normal policy and historical
 WARD rule, fixed PILFER dominated the other loadouts at the point estimate.
-Rune Trial deliberately avoids ownership inequality by loaning its offer. The
-SILVER floor and current bounded roster are product decisions, not proof of
-perfect balance; human choice and matchup telemetry still need monitoring.
+Rune Trial deliberately avoids gameplay-option inequality by loaning its offer;
+CLAIM's collection value can still differ by viewer. The SILVER floor and
+current bounded roster are product decisions, not proof of perfect balance;
+human choice and matchup telemetry still need monitoring.

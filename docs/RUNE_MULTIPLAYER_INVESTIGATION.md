@@ -92,7 +92,7 @@ the pre-v2 evidence that led to it.
   state, keeps choices server-private until simultaneous reveal, and uses
   `selection_version` to invalidate selection reads. Public per-seat runes stay
   null until both choices finalize. The 12-second action stall boundary remains
-  distinct from the 30-second selection deadline. Rating plus reward settle
+  distinct from the 10-second selection deadline. Rating plus reward settle
   atomically. The additive v1 placement-only path remains
   available for ordinary matches; capability negotiation keeps old clients out
   of Trial. Repository readiness does not mean the migration, Edge Functions,
