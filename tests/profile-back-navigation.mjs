@@ -71,10 +71,7 @@ const PROGRESSION = {
   scoring_version: 1,
   admission_paused: false,
   outcomes: legacyRankedOutcomeEntitlementsForPeak(1080),
-  weekly_unlocked: false,
-  pending_bot_debuts: [],
-  neon_medal_seasons: [],
-  weekly: null,
+  weekly_unlocked: false, pending_bot_debuts: [], neon_medal_seasons: [], weekly: null,
 };
 
 const browser = await chromium.launch();
