@@ -83,8 +83,8 @@
     },
     {
       "path": "src/styles/components/trial-select.css",
-      "bytes": 5432,
-      "sha256": "8140495d17ee1b7afe7511d72053b55dfe32ffa928cfdce0b7ebb730a4fadaf7"
+      "bytes": 6460,
+      "sha256": "f513776a1bac5ada575b21f623056fbd62bd7e20308e85b38ad30de6b96fc0bb"
     },
     {
       "path": "src/styles/foundations/backdrop.css",
@@ -183,8 +183,8 @@
     },
     {
       "path": "src/styles/screens/home.css",
-      "bytes": 3821,
-      "sha256": "5b689f286c6f6e86d3cc72ac76a3c36a4f461778fe0894571fa22aac7fef3c4f"
+      "bytes": 4272,
+      "sha256": "f8120622218ec85f7402782f7c0b41478709b68b1174635975f808970a643675"
     },
     {
       "path": "src/styles/screens/learn-settings.css",
