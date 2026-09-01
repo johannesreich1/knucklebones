@@ -17,6 +17,7 @@ import {
 import { invalidateRuneCollectionRefreshes } from '../runes/rune-collection.ts';
 import { resetProfileAppIcon } from '../../native/app-icon.ts';
 import { clearProfileCache, readProfileCache } from '../../profile-cache.ts';
+import { readAuthSession, type AuthSessionRead } from './session-read.ts';
 
 /* ---- auth ----
 
@@ -48,6 +49,12 @@ const me = (u: { id: string; is_anonymous?: boolean; email?: string } | null | u
 function providerErrorCode(error: unknown): string {
   if (!error || typeof error !== 'object' || !('code' in error)) return '';
   return String((error as { code?: unknown }).code ?? '').toLowerCase();
+}
+
+function providerErrorStatus(error: unknown): number {
+  if (!error || typeof error !== 'object' || !('status' in error)) return 0;
+  const status = Number((error as { status?: unknown }).status);
+  return Number.isFinite(status) ? status : 0;
 }
 
 export function localizedAuthError(error: unknown): string | null {
@@ -140,9 +147,9 @@ function remember(u: Me | null): Me | null {
   return u;
 }
 
-export async function currentUser(): Promise<Me | null> {
-  const { data: { session } } = await supa().auth.getSession();
-  const user = remember(me(session?.user));
+function userFromSessionRead(read: AuthSessionRead): Me | null {
+  if (read.kind === 'unavailable') return null;
+  const user = remember(me(read.kind === 'authenticated' ? read.session.user : null));
   const runes = readRuneCollectionSnapshot();
   /* Supabase may replace a session directly during account recovery/sign-in.
      Never leave the preceding account's confirmed collection active while
@@ -160,6 +167,10 @@ export async function currentUser(): Promise<Me | null> {
     resetProfilePresentation();
   }
   return user;
+}
+
+export async function currentUser(): Promise<Me | null> {
+  return userFromSessionRead(await readAuthSession());
 }
 
 export async function identityStatus(): Promise<IdentityStatus | null> {
@@ -193,9 +204,9 @@ export function gameCenterSessionAction(
 }
 
 /* The first rung, taken silently: whoever asks for ranked without a session
-   becomes a guest and keeps playing. Returns null when the project has
-   anonymous sign-ins switched off — the caller then falls back to the sign-in
-   panel, which is exactly how this game behaved before guests existed.
+   becomes a guest and keeps playing. A typed result keeps a definitive missing
+   session separate from a temporarily unreadable one, so only the former can
+   fall back to the sign-in panel.
 
    THE ASYMMETRY BELOW IS DELIBERATE. Signing a device's Game Center player in
    when there is NO session is automatic (restoreGameCenterAutomatically), and
@@ -213,19 +224,29 @@ export function gameCenterSessionAction(
    permanent. What ensureIdentity does for such a session is otherwise only the
    reverse check: assert that the CURRENT native player still owns this
    account, and refuse to keep playing when they do not. */
-export async function ensureIdentity(): Promise<Me | null> {
-  const here = await currentUser();
+export type IdentityEntry =
+  | { readonly kind: 'authenticated'; readonly user: Me }
+  | { readonly kind: 'sessionless' }
+  | { readonly kind: 'restore-required' }
+  | { readonly kind: 'unavailable' };
+
+const authenticated = (user: Me): IdentityEntry => ({ kind: 'authenticated', user });
+
+export async function ensureIdentity(): Promise<IdentityEntry> {
+  const sessionRead = await readAuthSession();
+  if (sessionRead.kind === 'unavailable') return { kind: 'unavailable' };
+  const here = userFromSessionRead(sessionRead);
   if (here) {
     let nativeState = gameCenterState();
     if (nativeState.status === 'unavailable') nativeState = await waitForGameCenter();
-    if (nativeState.status === 'unavailable') return here;
+    if (nativeState.status === 'unavailable') return authenticated(here);
     const providers = await identityStatus();
     const action = gameCenterSessionAction(
       providers,
       acceptedGameCenterRevision,
       nativeState.revision,
     );
-    if (action === 'retry') return null;
+    if (action === 'retry') return { kind: 'unavailable' };
     if (action === 'continue') {
       const attached = await linkGuestGameCenter(
         { guest: here.guest, gameCenterLinked: providers?.gameCenterLinked ?? null },
@@ -235,28 +256,45 @@ export async function ensureIdentity(): Promise<Me | null> {
       );
       /* A completed attach hangs an address on this account, so the Me read
          above is stale — re-read rather than reporting a guest who is not. */
-      return attached ? (await currentUser() ?? here) : here;
+      return authenticated(attached ? (await currentUser() ?? here) : here);
     }
     const ownership = await assertCurrentGameCenter();
     if (ownership === 'match') {
       acceptedGameCenterRevision = nativeState.revision;
-      return here;
+      return authenticated(here);
     }
-    return null;
+    return ownership === 'other-account' || ownership === 'unlinked'
+      ? { kind: 'restore-required' }
+      : { kind: 'unavailable' };
   }
   let manual = false;
   try { manual = !!localStorage.getItem(MANUAL_AUTH); } catch { /* forgetful host */ }
-  if (manual || hadRealAccount()) return null; // they signed out to sign back IN
+  if (manual || hadRealAccount()) return { kind: 'sessionless' }; // they signed out to sign back IN
 
   const gameCenter = await restoreGameCenterAutomatically();
-  if (gameCenter === 'signed-in') return currentUser();
-  if (gameCenter === 'retry') return null;
+  if (gameCenter === 'signed-in') {
+    const restored = await readAuthSession();
+    if (restored.kind === 'unavailable') return { kind: 'unavailable' };
+    const user = userFromSessionRead(restored);
+    return user ? authenticated(user) : { kind: 'unavailable' };
+  }
+  if (gameCenter === 'retry') return { kind: 'unavailable' };
 
   const { data, error } = await supa().auth.signInAnonymously();
-  if (error) return null;
-  const guest = me(data.user);
-  if (guest) resetProfilePresentation();
-  return guest;
+  if (error) {
+    /* Older/self-hosted Auth responses do not always publish the API-version
+       header that lets auth-js preserve `code`; anonymous signup has no
+       player input to make 422 recoverable, so it is the definitive
+       disabled/signup-not-available fallback rather than a transport outage. */
+    return providerErrorCode(error) === 'anonymous_provider_disabled'
+        || providerErrorCode(error) === 'signup_disabled'
+        || providerErrorStatus(error) === 422
+      ? { kind: 'sessionless' }
+      : { kind: 'unavailable' };
+  }
+  const user = me(data.user);
+  if (user) resetProfilePresentation();
+  return user ? authenticated(user) : { kind: 'unavailable' };
 }
 
 /* The second rung: hang an email on the account the player already has, so the

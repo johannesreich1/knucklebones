@@ -86,6 +86,18 @@ PackageManager alias state but cannot promise when a launcher redraws it. This
 side effect therefore conveys no authentication, ownership, or synchronization
 guarantee beyond the profile value itself.
 
+## Connection failures are not sign-out
+
+Ranked entry keeps four identity outcomes separate: an authenticated session,
+a definitively absent session, a verified Game Center account mismatch, and a
+temporarily unreadable session/provider check. Only the absent or mismatched
+outcomes open account restore. Airplane/offline state opens the shared
+**YOU’RE OFFLINE** sheet; a transport or identity-service failure while the
+device still reports online opens **CAN’T CONNECT**. Both stop matchmaking and
+offer Retry without signing out, minting a guest, or clearing the last verified
+account cache. The same boundary owns Home → Online, result → Next duel, and a
+join request that loses connectivity after the queue has begun.
+
 ## State, and what is left
 
 **Rung 1 — guest: LIVE.** Verified against production on 2026-08-19: a guest

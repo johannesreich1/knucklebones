@@ -6,6 +6,7 @@ export type CanceledJoinResult =
   | { status: 'queued' }
   | { status: 'matched'; match: { id: string } }
   | { status: 'incompatible' }
+  | { status: 'unavailable' }
   | null;
 
 export type QueueLeaveResult =

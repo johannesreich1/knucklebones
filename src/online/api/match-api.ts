@@ -72,6 +72,8 @@ export type JoinResult =
   | { status: 'queued' }
   | { status: 'incompatible'; reason: 'client' | 'rune-rules' };
 
+export type JoinAttempt = JoinResult | { status: 'unavailable' };
+
 interface JoinErrorResult { error?: string }
 
 export function joinResultFromResponse(
@@ -89,7 +91,7 @@ export function joinResultFromResponse(
   return null;
 }
 
-export async function join(allowBot: boolean): Promise<JoinResult | null> {
+export async function join(allowBot: boolean): Promise<JoinAttempt> {
   /* Unknown request fields are ignored by the legacy join endpoint, so the
      v2 client can advertise support before every participant/function has
      upgraded without ever letting a v1 peer into a Trial. */
@@ -98,7 +100,8 @@ export async function join(allowBot: boolean): Promise<JoinResult | null> {
     protocol_version: 2,
     capabilities: [RUNE_TRIAL_CAPABILITY, EQUIPPED_RUNE_CAPABILITY],
   });
-  return joinResultFromResponse(response.status, response.data);
+  return joinResultFromResponse(response.status, response.data)
+    ?? { status: 'unavailable' };
 }
 
 export interface MoveResult {

@@ -27,6 +27,7 @@ import { runExplicitGuestSessionScenarios } from './scenarios/explicit-guest-ses
 import { runOnlineMenuPressFeedbackScenarios } from './scenarios/menu-press-feedback.mjs';
 import { runOnlineLoadingPanelScenarios } from './scenarios/loading-panels.mjs';
 import { runEntryWithoutDieScenarios } from './scenarios/entry-without-die.mjs';
+import { runOfflineEntryScenarios } from './scenarios/offline-entry.mjs';
 import { runAuthModalScenarios } from './scenarios/auth-modal.mjs';
 import { runAuthCredentialScenarios } from './scenarios/auth-credentials.mjs';
 import { runAccountAccessScenarios } from './scenarios/account-access.mjs';
@@ -76,6 +77,7 @@ const SCENARIOS = Object.freeze([
   { id: 'menu-press-feedback', run: runOnlineMenuPressFeedbackScenarios },
   { id: 'loading-panels', run: runOnlineLoadingPanelScenarios },
   { id: 'entry-without-die', run: runEntryWithoutDieScenarios },
+  { id: 'offline-entry', run: runOfflineEntryScenarios },
   { id: 'auth-modal', run: runAuthModalScenarios },
   { id: 'auth-credentials', run: runAuthCredentialScenarios },
   { id: 'account-access', run: runAccountAccessScenarios },

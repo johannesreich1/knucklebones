@@ -11,6 +11,16 @@ export const itOnline = {
     avatar: 'AVATAR',
     matchHistory: 'CRONOLOGIA',
   },
+  connection: {
+    offline: {
+      title: 'SEI OFFLINE',
+      body: 'Per giocare online serve una connessione a Internet. Controlla la connessione e riprova.',
+    },
+    unavailable: {
+      title: 'CONNESSIONE NON RIUSCITA',
+      body: 'Il gioco online non è disponibile al momento. Controlla la connessione e riprova.',
+    },
+  },
   auth: {
     emailPlaceholder: 'email',
     passwordPlaceholder: 'password (8+)',

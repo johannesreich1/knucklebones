@@ -3,9 +3,8 @@
 import '../online.css';
 import { t } from '../../i18n/index.ts';
 import { Sfx } from '../../ui/audio.ts';
-import { $, hide, show } from '../../ui/dom.ts';
+import { $, byId, hide, show } from '../../ui/dom.ts';
 import { closeEnd } from '../../ui/endscreen.ts';
-import { replayPlates } from '../../ui/endscreen-plates.ts';
 import { isNewcomer } from '../../ui/firstrun.ts';
 import { refreshHomeChip } from '../../ui/homechip.ts';
 import { S } from '../../state.ts';
@@ -39,8 +38,13 @@ import {
 } from './shell.ts';
 import { setFinishHandler, type FinishReport } from '../play/play.ts';
 import { createEntryRuneRewardPresenter } from './entry-rune-reward.ts';
+import { createEntryRecovery } from './entry-recovery.ts';
+import {
+  createResultEntry,
+  type OnlineView,
+} from './result-entry.ts';
 
-export type OnlineView = 'play' | 'ladder' | 'account';
+export type { OnlineView } from './result-entry.ts';
 export interface OnlinePorts {
   startTutorial: () => void;
 }
@@ -52,9 +56,22 @@ let accountRouteRevision = 0;
 let exitOnline: () => void = goHome;
 let onlinePorts: OnlinePorts | null = null;
 const runeReward = createEntryRuneRewardPresenter();
+const { presentConnectionIssue, handleIdentityFailure } =
+  createEntryRecovery<OnlineView, OnlinePorts>({
+    retryContext: () => onlinePorts,
+    goHome: () => { pendingView = null; goHome(); },
+    opener: (view) => byId(view === 'ladder' ? 'btnBoardHome'
+      : view === 'account' ? 'homeChip' : 'btnOnline'),
+    retry: (view, ports) => { void openOnline(view, ports); },
+    restore: (view, sessionless) => {
+      pendingView = view;
+      showAuthPanel('restore', 'home', null, sessionless);
+    },
+  });
 
 const queue = createQueueScreen({
   goHome,
+  connectionUnavailable: () => presentConnectionIssue('play'),
   startTutorial: () => {
     if (!onlinePorts) throw new Error('online flow was opened without composition ports');
     onlinePorts.startTutorial();
@@ -73,21 +90,42 @@ const account = createAccountScreen({
   showHistory,
   presentRuneReward: presentAccountRuneReward,
 });
+const resultEntry = createResultEntry<AccountShowOptions>({
+  incrementRevision: () => ++entryRevision,
+  isCurrent: (revision) => revision === entryRevision
+    && $('#ovOnline').classList.contains('on'),
+  closeRuneReward: () => runeReward.close(),
+  setExit: (next) => { exitOnline = next; },
+  goHome,
+  showEntryWait,
+  focusOnlineTitle,
+  route,
+  routeWithRuneReward,
+  handleIdentityFailure,
+  presentConnectionIssue,
+});
 const result = createResultScreen({
   goHome,
-  nextDuel,
+  nextDuel: resultEntry.nextDuel,
   openProfile: (onReturn: () => void, options?: AccountShowOptions) =>
-    openFromResult('account', onReturn, options),
-  openLadder: (onReturn: () => void) => openFromResult('ladder', onReturn),
+    resultEntry.openFromResult('account', onReturn, options),
+  openLadder: (onReturn: () => void) =>
+    resultEntry.openFromResult('ladder', onReturn),
 });
 
-function showAuthPanel(mode: AuthMode, origin: AuthOrigin, notice: string | null = null): void {
+function showAuthPanel(
+  mode: AuthMode,
+  origin: AuthOrigin,
+  notice: string | null = null,
+  sessionless = origin === 'home',
+): void {
   if (origin === 'home') {
-    /* Every Home-origin auth flow has no current session (initial fallback,
-       sign-out, or deletion). Its attach step is registration copy, never the
-       guest-only "keep this account" copy. A play entry may already be
-       painting its searching queue; that search ends here, clock included. */
-    setSessionless(true);
+    /* A Home-origin auth flow is either definitively sessionless (initial
+       fallback, sign-out, deletion) or a verified provider mismatch asking
+       the player to restore another account. A temporary failure never reaches
+       this branch. A play entry may already be painting its searching queue;
+       that search ends here, clock included. */
+    setSessionless(sessionless);
     /* Account may itself be a cover over a ranked result. Home-origin auth
        retires that whole route: leaving the result mounted would expose it to
        assistive technology after the auth sheet restores its inert snapshot. */
@@ -157,64 +195,16 @@ function goHome(): void {
   exitOnline = goHome;
 }
 
-/* ONE DOOR OUT OF THE FINISH SCREEN, TWO DESTINATIONS. The result is COVERED
-   rather than closed (#ovEnd stays up behind #ovOnline), so returning is a
-   one-shot closure in the single `exitOnline` slot that puts the slot back,
-   uncovers, and replays the plates' theatre. The player's own row opens the
-   LADDER and the rank pill on it opens the PROFILE; both come back HERE.
-   Written once with the view as its only parameter — two near-copies of this
-   closure is exactly how a return target comes to differ between two doors. */
-function openFromResult(
-  view: OnlineView,
-  onReturn: () => void,
-  accountOptions?: AccountShowOptions,
-): void {
-  entryRevision++;
-  runeReward.close();
-  $('#ovEnd').inert = true;
-  exitOnline = () => {
-    exitOnline = goHome;
-    hide('#ovOnline');
-    $('#ovEnd').inert = false;
-    replayPlates();
-    onReturn();
-  };
-  show('#ovOnline');
-  void route(view, accountOptions);
-}
-
-function nextDuel(): void {
-  const revision = ++entryRevision;
-  exitOnline = goHome;
-  runeReward.close();
-  closeEnd();
-  showEntryWait('play');
-  show('#ovOnline');
-  focusOnlineTitle();
-  /* A result request can still be in flight, and a visible reward can still be
-     inside its entrance. Verify durable unseen rows again before matchmaking;
-     queueing never starts behind a reward that Next Duel just covered. The
-     searching queue holds that wait exactly as a fresh entry does. */
-  void refreshRuneCollection().then(async (collection) => {
-    if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
-    const ownsCollection = await runeCollectionMatchesActiveAccount(collection);
-    if (!ownsCollection || revision !== entryRevision
-        || !$('#ovOnline').classList.contains('on')) return;
-    await routeWithRuneReward('play', collection, revision);
-  }).catch(() => {
-    if (revision === entryRevision && $('#ovOnline').classList.contains('on')) {
-      void route('play');
-    }
-  });
-}
-
 async function route(view: OnlineView, accountOptions?: AccountShowOptions): Promise<void> {
+  if (navigator.onLine === false) {
+    presentConnectionIssue(view, 'offline');
+    return;
+  }
   if (view === 'ladder') return ladder.show();
   if (view === 'account') return routeAccount(accountOptions);
-  const user = await ensureIdentity();
-  if (!user) {
-    pendingView = 'play';
-    showAuthPanel('restore', 'home');
+  const identity = await ensureIdentity();
+  if (identity.kind !== 'authenticated') {
+    handleIdentityFailure(view, identity);
     return;
   }
   return queue.start();
@@ -313,6 +303,10 @@ if (typeof window !== 'undefined') {
 export async function openOnline(view: OnlineView, ports: OnlinePorts): Promise<void> {
   onlinePorts = ports;
   bind();
+  if (navigator.onLine === false) {
+    presentConnectionIssue(view, 'offline');
+    return;
+  }
   const revision = ++entryRevision;
   runeReward.close();
   exitOnline = goHome;
@@ -328,10 +322,15 @@ export async function openOnline(view: OnlineView, ports: OnlinePorts): Promise<
   pendingView = null;
   showEntryWait(view);
   show('#ovOnline');
-  const user = await ensureIdentity();
+  const identity = await ensureIdentity();
   if (revision !== entryRevision) return;
-  setSessionless(!user);
-  if (user) {
+  if (identity.kind !== 'authenticated') {
+    handleIdentityFailure(view, identity);
+    return;
+  }
+  const user = identity.user;
+  setSessionless(false);
+  {
     /* Hydration stays behind the current hold — the searching queue for play,
        the die otherwise; partial account data never paints either way. */
     const [, collection] = await Promise.all([
@@ -345,6 +344,4 @@ export async function openOnline(view: OnlineView, ports: OnlinePorts): Promise<
         || !$('#ovOnline').classList.contains('on')) return;
     return routeWithRuneReward(view, collection, revision);
   }
-  pendingView = view;
-  showAuthPanel('restore', 'home');
 }
