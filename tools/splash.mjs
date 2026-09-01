@@ -1,5 +1,6 @@
-// The iOS launch screen, generated from the SAME vector as the app icon —
-// tools/appicon.mjs's iconSVG — so the two can never drift apart.
+// The iOS launch screen is generated from the SAME Home neon-die component as
+// the app icon. tools/appicon.mjs wraps the real markup and CSS for raster
+// export, so launcher and loading artwork cannot drift apart.
 //
 //   mise exec -- node tools/splash.mjs            regenerate native/ios Splash.imageset
 //   mise exec -- node tools/splash.mjs --dry      render splash-preview.png, write nothing
@@ -22,25 +23,23 @@ import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import {
   APP_ICON_PAD,
-  APP_ICON_VARIANT,
   iconSVG,
 } from './appicon.mjs';
 
 const BG = '#05060e';
 const SIZE = 2732;
 export const SPLASH_ICON_SCALE = .24;
-/* The icon canvas is 24% of the splash. Its deliberately smaller 56% die is
-   therefore about 13.4% before rotation (14.3% at its visible rounded bounds):
+/* The icon canvas is 24% of the splash. Its restored 70% die is therefore
+   about 16.8% before rotation:
    clearly larger than on the launcher, while still reading as a mark rather
-   than a poster. Rendering it at its own 512 canvas keeps the shared vector's
+   than a poster. Rendering it at its own 512 canvas keeps the shared component's
    geometry in proportion instead of scaling effects with the whole splash. */
 export function splashSVG(S = SIZE) {
   const die = Math.round(S * SPLASH_ICON_SCALE);
   const off = Math.round((S - die) / 2);
-  /* Only the shared die mark is embedded. Its transparent outer canvas and
-     pip cutouts reveal this launch screen's #05060e ground, so the splash
-     stays seamless while using the exact shipped icon geometry. */
-  const mark = iconSVG(APP_ICON_VARIANT, 512, APP_ICON_PAD, 'dark', true)
+  /* Only the shared die mark is embedded. Its transparent outer canvas lets
+     the #05060e ground continue around the dark glass and luminous cyan pips. */
+  const mark = iconSVG(512, APP_ICON_PAD, 'dark', true)
     .replace('<svg ', `<svg x="${off}" y="${off}" `)
     .replace(`width="512" height="512"`, `width="${die}" height="${die}"`);
   return `<svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" xmlns="http://www.w3.org/2000/svg">` +
@@ -74,7 +73,7 @@ if (RUN_AS_SCRIPT) {
         writeFileSync(f, buf);
         console.log(`${f}  ${SIZE}x${SIZE}`);
       }
-      console.log(`${android ? 'Android source splash set' : 'splash'} regenerated from the app icon vector`);
+      console.log(`${android ? 'Android source splash set' : 'splash'} regenerated from the Home neon die`);
     }
   } finally { await browser.close(); }
 }

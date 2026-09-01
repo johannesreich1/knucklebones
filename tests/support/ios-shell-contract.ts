@@ -239,15 +239,15 @@ export function verifyIosShellContract(check: Check): {
     'the iOS Any/light app icon must remain an opaque RGB PNG');
   check(darkPixels.colorType === 6 && darkPixels.hasTransparency,
     'the iOS Dark app icon must carry alpha so the system-provided background can show through');
-  check(pixelAt(darkPixels, .03, .03).alpha === 0,
-    'the iOS Dark app icon canvas must be transparent for Apple\'s System Dark background');
+  check(pixelAt(darkPixels, .03, .03).alpha <= 32,
+    'the iOS Dark app icon corners must remain transparent enough for Apple\'s System Dark background');
 
   const darkInkBounds = alphaBounds(darkPixels);
   const darkInkWidth = darkInkBounds
     ? (darkInkBounds.right - darkInkBounds.left + 1) / darkPixels.width
     : 0;
-  check(darkInkBounds !== null && darkInkWidth >= .59 && darkInkWidth <= .6,
-    `the iOS die's visible rounded bounds should occupy about 59% of the icon, found ${darkInkWidth}`);
+  check(darkInkBounds !== null && darkInkWidth >= .74 && darkInkWidth <= .76,
+    `the restored larger iOS neon die should occupy about 75% of the icon including its glow, found ${darkInkWidth}`);
   const topInk = alphaRowBounds(darkPixels, .4);
   const bottomInk = alphaRowBounds(darkPixels, .6);
   const topCenter = topInk ? (topInk.left + topInk.right) / (2 * darkPixels.width) : 0;
@@ -255,24 +255,29 @@ export function verifyIosShellContract(check: Check): {
   check(topInk !== null && bottomInk !== null
     && topCenter - bottomCenter >= .02 && topCenter - bottomCenter <= .03,
     `the iOS die should have a subtle clockwise tilt, found row centers ${topCenter} and ${bottomCenter}`);
-  for (const [x, y] of [[.383, .3502], [.6498, .383], [.5, .5], [.3502, .617], [.617, .6498]]) {
-    for (const dx of [-.018, 0, .018]) {
-      for (const dy of [-.018, 0, .018]) {
-        check(pixelAt(darkPixels, x + dx, y + dy).alpha === 0,
-          `the iOS Dark die pip around ${x},${y} must be a substantial transparent cutout`);
-        const lightPip = pixelAt(lightPixels, x + dx, y + dy);
-        const lightGround = pixelAt(lightPixels, .04, y + dy);
-        check(rgbDistance(lightPip, lightGround) <= 3,
-          `the iOS Any/light die pip around ${x},${y} must reveal its background gradient`);
-      }
+  const launcherPips = [[.36, .32], [.68, .36], [.5, .5], [.32, .64], [.64, .68]] as const;
+  for (const [x, y] of launcherPips) {
+    const darkPip = pixelAt(darkPixels, x, y);
+    const lightPip = pixelAt(lightPixels, x, y);
+    check(darkPip.alpha >= 250 && lightPip.alpha === 255,
+      `the Home neon pip at ${x},${y} must be filled in both iOS appearances`);
+    for (const [appearance, pip] of [['Dark', darkPip], ['Any/light', lightPip]] as const) {
+      check(pip.red >= 150 && pip.green >= 240 && pip.blue >= 250 && colorSpread(pip) >= 50,
+        `the iOS ${appearance} pip at ${x},${y} must keep its cyan-to-white luminosity`);
     }
   }
-  const dieMagenta = pixelAt(darkPixels, .39, .28);
-  const dieCyan = pixelAt(darkPixels, .61, .72);
-  check(dieMagenta.red - dieMagenta.green >= 100
-    && dieCyan.blue - dieCyan.red >= 100
-    && rgbDistance(dieMagenta, dieCyan) >= 100,
-  'the smaller iOS die must remain fully colored from its magenta edge to its cyan edge');
+  const darkFrame = pixelAt(darkPixels, .5, .15);
+  const lightFrame = pixelAt(lightPixels, .5, .15);
+  check(darkFrame.alpha >= 140
+    && darkFrame.green - darkFrame.red >= 100
+    && darkFrame.blue - darkFrame.red >= 110
+    && lightFrame.green - lightFrame.red >= 90
+    && lightFrame.blue - lightFrame.red >= 100,
+  'the iOS Home die must keep its cyan neon frame in both appearances');
+  const lightGlassShadow = pixelAt(lightPixels, .5, .78);
+  check(colorSpread(lightGlassShadow) <= 5
+    && lightGlassShadow.red >= 145 && lightGlassShadow.red <= 175,
+  'the iOS Any/light die must retain a neutral translucent glass body rather than the old colored slab');
   const lightGroundTop = pixelAt(lightPixels, .04, .04);
   const lightGroundBottom = pixelAt(lightPixels, .04, .96);
   check(rgbDistance(lightGroundTop, lightGroundBottom) >= 10
@@ -289,17 +294,14 @@ export function verifyIosShellContract(check: Check): {
   const splashInkWidth = splashInkBounds
     ? (splashInkBounds.right - splashInkBounds.left + 1) / splashPixels.width
     : 0;
-  check(splashInkBounds !== null && splashInkWidth >= .14 && splashInkWidth <= .145,
-    `the iOS loading-screen die's visible rounded bounds should occupy about 14.3% of the canvas, found ${splashInkWidth}`);
-  for (const [x, y] of [[.4719, .4641], [.536, .4719], [.5, .5], [.4641, .5281], [.5281, .536]]) {
+  check(splashInkBounds !== null && splashInkWidth >= .179 && splashInkWidth <= .182,
+    `the larger iOS loading-screen neon die should occupy about 18% of the canvas, found ${splashInkWidth}`);
+  for (const [x, y] of [[.4664, .4569], [.5431, .4664], [.5, .5], [.4569, .5336], [.5336, .5431]]) {
     const splashPip = pixelAt(splashPixels, x, y);
-    const splashGround = pixelAt(splashPixels, .04, y);
-    check(rgbDistance(splashPip, splashGround) <= 3,
-      `the iOS loading-screen pip at ${x},${y} must reveal its #05060e ground`);
+    check(splashPip.red >= 150 && splashPip.green >= 240 && splashPip.blue >= 250
+      && colorSpread(splashPip) >= 50,
+      `the iOS loading-screen pip at ${x},${y} must be filled and luminous`);
   }
-  check(colorSpread(pixelAt(splashPixels, .4736, .4472)) >= 80
-    && colorSpread(pixelAt(splashPixels, .5264, .5528)) >= 80,
-  'the iOS loading-screen die must use the same full-color artwork as the app icon');
   const launchScreen = readFileSync(LAUNCH_SCREEN, 'utf8');
   check(/image="Splash"/.test(launchScreen) && /contentMode="scaleAspectFill"/.test(launchScreen)
     && /<image name="Splash" width="2732" height="2732"\/>/.test(launchScreen),

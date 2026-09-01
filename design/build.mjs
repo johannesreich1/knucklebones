@@ -15,8 +15,8 @@
 //                              app's own die classes, space-separated, so a card
 //                              can picture a MULTIPLIED die (`p2 m2`) instead of
 //                              restating the shared dice CSS's gold in card CSS
-//   {{appicon[:px]}}             the shipped full-color die mark, including its
-//                              current scale and transparent pip cutouts
+//   {{appicon[:px]}}             the shipped Home neon-die mark, including its
+//                              current launcher scale and clockwise tilt
 //   {{mico:MODE[:px]}}          a mode icon — the APP's, imported below
 //   {{mhue:MODE}}               a mode's hue — likewise
 //   {{sico:SPELL[:px]}}         a rune icon — the APP's (ui/spellicons.ts)
@@ -58,7 +58,7 @@ import { spellById } from '../src/core/spells.ts';
 import { modeById } from '../src/core/modes.ts';
 import { libraryBody, libraryCards, pickerButtons, pickInfo, MODE_LIB, SPELL_LIB, MODE_PICKS, SPELL_PICKS } from '../src/ui/library.ts';
 import { inlineCssGraph } from '../tools/css-graph.mjs';
-import { APP_ICON_PAD, APP_ICON_VARIANT, iconSVG } from '../tools/appicon.mjs';
+import { APP_ICON_PAD, iconSVG } from '../tools/appicon.mjs';
 import { discoverDesignScreens } from './screen-library.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -223,7 +223,7 @@ function avatarHtml(spec, size) {
 }
 
 function appIconMarkup(size) {
-  const svg = iconSVG(APP_ICON_VARIANT, 512, APP_ICON_PAD, 'dark', true);
+  const svg = iconSVG(512, APP_ICON_PAD, 'dark', true);
   const source = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
   return `<img class="appicon-mark" src="${source}" width="${size}" height="${size}" alt="">`;
 }
