@@ -19,7 +19,6 @@ export const MASKABLE_ICON_PAD = .2;
 export const APP_ICON_TILT_DEG = 7;
 export const ANDROID_ADAPTIVE_INSET = '10%';
 export const SYSTEM_DARK_GRADIENT = Object.freeze({ top: '#313131', bottom: '#141414' });
-export const SYSTEM_LIGHT_GRADIENT = Object.freeze({ top: '#ffffff', bottom: '#e5e5e5' });
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
 const HOME_DIE_SIZE = 74;
@@ -30,15 +29,15 @@ const HOME_DIE_CSS = inlineCssGraph(['src/styles/main.css'], { rootDir: ROOT }).
    pass; maskable icons get 20% because an unknown launcher shape can crop
    their outer fifth. The shared 7° clockwise tilt keeps the face lively. */
 /* iOS supplies its exact System Dark gradient behind the transparent Dark
-   rendition. The opaque light fallback and platforms without appearance-aware
-   backgrounds use quiet neutral equivalents: light from the top, dark below,
-   matching the system lighting direction without copying another app's art. */
+   rendition. The opaque Any/Light fallback and platforms without an
+   appearance-aware ground use the same quiet charcoal direction; this keeps
+   the requested dark identity stable instead of washing the glass out. */
 const THEME = {
   dark:  {
     canvasTop: SYSTEM_DARK_GRADIENT.top, canvasBottom: SYSTEM_DARK_GRADIENT.bottom,
   },
   light: {
-    canvasTop: SYSTEM_LIGHT_GRADIENT.top, canvasBottom: SYSTEM_LIGHT_GRADIENT.bottom,
+    canvasTop: SYSTEM_DARK_GRADIENT.top, canvasBottom: SYSTEM_DARK_GRADIENT.bottom,
   },
 };
 const xmlText = (source) => source.replaceAll('&', '&amp;').replaceAll('<', '&lt;');
@@ -50,6 +49,7 @@ export function iconSVG(
   transparent = false,
   face = 5,
   hue = 'cy',
+  renderOuterGlow = true,
 ) {
   const T = THEME[theme] ?? THEME.dark;
   const dieSide = S * (1 - pad * 2);
@@ -58,7 +58,8 @@ export function iconSVG(
     classes: 'p1 appicon-die',
     size: HOME_DIE_SIZE,
     inlineStyle: `--p1:var(--${hue});--p1-rgb:var(--${hue}-rgb);` +
-      `--p1-hi:var(--${hue}-hi);transform:none!important`,
+      `--p1-hi:var(--${hue}-hi);transform:none!important;` +
+      `${renderOuterGlow ? '' : '--duel-die-outer-glow:0 0 0 transparent;'}`,
   });
   const background = transparent ? '' :
     `<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">` +
@@ -120,10 +121,18 @@ const TARGETS = [
   { file: 'public/icon-192.png', size: 192 },
   { file: 'public/icon-512.png', size: 512 },
   { file: 'public/icon-maskable-512.png', size: 512, pad: MASKABLE_ICON_PAD },
-  /* LIGHT is the iOS "Any" slot and DARK the dark-mode slot. The primary pair
-     remains die:5:cy; profile-app-icons.mjs authors matching alternate pairs. */
+  /* Any/Light deliberately keeps the requested dark system-style ground;
+     Dark supplies the crisp transparent mark Apple asks for; Tinted supplies
+     an authored grayscale face so Clear/Tinted need not derive from neon RGB.
+     The primary trio remains die:5:cy and alternates mirror it mechanically. */
   { file: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png', size: 1024, theme: 'light' },
-  { file: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-Dark-512@2x.png', size: 1024, theme: 'dark', transparent: true },
+  { file: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-Dark-512@2x.png', size: 1024, theme: 'dark', transparent: true, renderOuterGlow: false },
+  {
+    file: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-Tinted-512@2x.png',
+    size: 1024,
+    transparent: true,
+    svg: () => monochromeIconSVG(1024, APP_ICON_PAD, 5),
+  },
 ];
 
 /* The Assets CLI turns the four custom-mode inputs into legacy, round, and
@@ -228,7 +237,8 @@ try {
   } else {
     const targets = android ? ANDROID_TARGETS : TARGETS;
     for (const t of targets) {
-      const svg = t.svg ? t.svg() : iconSVG(t.size, t.pad, t.theme, t.transparent);
+      const svg = t.svg ? t.svg()
+        : iconSVG(t.size, t.pad, t.theme, t.transparent, 5, 'cy', t.renderOuterGlow);
       const buf = await shot(svg, t.size, t.transparent);
       mkdirSync(dirname(t.file), { recursive: true });
       writeFileSync(t.file, buf);

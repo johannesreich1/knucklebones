@@ -39,6 +39,12 @@ aliases. Both update `native/profile-app-icons.manifest.json`; the finalized
 manifest records all mappings and SHA-256 asset hashes without a timestamp.
 Do not edit a catalog, alias block, or density resource by hand.
 
+Every iOS catalog carries an opaque charcoal Any/Light icon, a transparent
+Dark mark with no broad background-washing halo, and an authored grayscale
+Tinted face with pip cutouts. iOS derives Clear from the monochrome source;
+SpringBoard still owns the final Clear/Tinted material and tint.
+
 The native splash, in-app loading mark, PWA, standalone page, and widget remain
 the fixed cyan five because they render before profile state exists or outside
-the native launcher bridge.
+the native launcher bridge. The native splash uses a full-canvas radial glow so
+its larger mark has no clipped square around it.

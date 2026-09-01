@@ -27,23 +27,31 @@ import {
 } from './appicon.mjs';
 
 const BG = '#05060e';
+const GLOW = '#28e8ff';
 const SIZE = 2732;
 export const SPLASH_ICON_SCALE = .24;
-/* The icon canvas is 24% of the splash. Its restored 70% die is therefore
-   about 16.8% before rotation:
+/* The launcher's icon composition is 24% of the splash. Its restored 70% die
+   is therefore about 16.8% before rotation:
    clearly larger than on the launcher, while still reading as a mark rather
-   than a poster. Rendering it at its own 512 canvas keeps the shared component's
-   geometry in proportion instead of scaling effects with the whole splash. */
+   than a poster. Render that same geometry directly on the full splash canvas:
+   the old nested 512px icon canvas clipped the 34px Home glow into a visible
+   square when it was enlarged. The full canvas gives every shadow room to
+   decay naturally while keeping the die itself exactly the same size. */
 export function splashSVG(S = SIZE) {
-  const die = Math.round(S * SPLASH_ICON_SCALE);
-  const off = Math.round((S - die) / 2);
-  /* Only the shared die mark is embedded. Its transparent outer canvas lets
-     the #05060e ground continue around the dark glass and luminous cyan pips. */
-  const mark = iconSVG(512, APP_ICON_PAD, 'dark', true)
-    .replace('<svg ', `<svg x="${off}" y="${off}" `)
-    .replace(`width="512" height="512"`, `width="${die}" height="${die}"`);
+  const dieScale = SPLASH_ICON_SCALE * (1 - APP_ICON_PAD * 2);
+  const fullCanvasPad = (1 - dieScale) / 2;
+  /* Only the shared die mark is embedded. Its transparent full-size canvas
+     lets #05060e continue around the glass while leaving the glow unclipped. */
+  const mark = iconSVG(S, fullCanvasPad, 'dark', true, 5, 'cy', false);
   return `<svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" xmlns="http://www.w3.org/2000/svg">` +
-    `<rect width="${S}" height="${S}" fill="${BG}"/>${mark}</svg>`;
+    `<defs><radialGradient id="launchGlow" cx="50%" cy="50%" r="50%">` +
+    `<stop offset="0" stop-color="${GLOW}" stop-opacity=".10"/>` +
+    `<stop offset=".32" stop-color="${GLOW}" stop-opacity=".075"/>` +
+    `<stop offset=".72" stop-color="${GLOW}" stop-opacity=".025"/>` +
+    `<stop offset="1" stop-color="${GLOW}" stop-opacity="0"/>` +
+    `</radialGradient></defs>` +
+    `<rect width="${S}" height="${S}" fill="${BG}"/>` +
+    `<rect width="${S}" height="${S}" fill="url(#launchGlow)"/>${mark}</svg>`;
 }
 
 const SET = 'native/ios/App/App/Assets.xcassets/Splash.imageset';

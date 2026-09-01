@@ -314,8 +314,11 @@ successful-save ordering, stale-account rejection, latest-wins serialization,
 unavailable bridges, native failures, and primary reset. Native shell contracts
 pin the local plugin packages and registration, iOS's primary plus exact 41
 alternate catalogs/build settings, Android's exact 42 aliases and component
-state policy, light/dark and adaptive/legacy/monochrome resource contracts, and
-the timestamp-free `native/profile-app-icons.manifest.json` mappings and hashes.
+state policy, iOS Any/Dark/Tinted and Android adaptive/legacy/monochrome resource
+contracts, and the timestamp-free `native/profile-app-icons.manifest.json`
+mappings and hashes. Pixel contracts also reject a washed-out Any icon, a broad
+transparent Dark halo, a non-cutout Tinted face, and any hard seam in the
+full-canvas native splash glow.
 Regenerating twice must leave the manifest and representative assets
 byte-identical. None of those checks proves that SpringBoard or an OEM launcher
 has repainted its pixels.
@@ -358,7 +361,7 @@ acceptance:
   every face and every hue, and two successive alternates. Confirm the iOS
   system alert appears only for a real change, relaunch/reconciliation of the
   already-selected icon is silent, and returning to `die:5:cy` restores the
-  primary. Inspect authored Light/Dark plus system-derived Clear/Tinted Home,
+  primary. Inspect authored Light/Dark/Tinted plus system-derived Clear Home,
   Spotlight, Settings, and notification appearances.
 - On API 24 and API 33+ devices, exercise primary → alternate → alternate →
   primary, then cold launch from the selected alias. Inspect legacy, adaptive,

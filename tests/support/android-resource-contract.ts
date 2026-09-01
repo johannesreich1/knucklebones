@@ -205,6 +205,24 @@ export function verifyAndroidResourceContract(
     : 0;
   check(splashInkBounds !== null && splashInkWidthByHeight >= .182 && splashInkWidthByHeight <= .186,
     `the larger Android loading-screen neon die should occupy about 18.3% of its source height, found ${splashInkWidthByHeight}`);
+  for (const [file, xEdges, yEdges] of [
+    [normalSplashFile, [.32, .68], [.38, .62]],
+    [`${res}/drawable-land-mdpi/splash.png`, [.38, .62], [.32, .68]],
+  ] as const) {
+    const pixels = readPngPixels(file);
+    const centerX = Math.round((pixels.width - 1) * .5);
+    const centerY = Math.round((pixels.height - 1) * .5);
+    for (const edge of xEdges) {
+      const x = Math.round(pixels.width * edge);
+      check(rgbDistance(pixels.pixel(x - 1, centerY), pixels.pixel(x, centerY)) <= 4,
+        `${file} has a clipped vertical edge in its loading-screen glow at ${edge}`);
+    }
+    for (const edge of yEdges) {
+      const y = Math.round(pixels.height * edge);
+      check(rgbDistance(pixels.pixel(centerX, y - 1), pixels.pixel(centerX, y)) <= 4,
+        `${file} has a clipped horizontal edge in its loading-screen glow at ${edge}`);
+    }
+  }
   for (const [x, y] of [[.4496, .4569], [.5646, .4664], [.5, .5], [.4354, .5336], [.5504, .5431]]) {
     const pip = pixelAt(splashPixels, x, y);
     check(pip.red >= 150 && pip.green >= 240 && pip.blue >= 250,

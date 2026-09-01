@@ -79,6 +79,7 @@ if (!PRIMARY_PROFILE_ICON || PROFILE_ICON_SPECS.length !== 42 || ALTERNATE_PROFI
 const iosCatalogPath = (spec) => `${IOS_CATALOG_ROOT}/${spec.iosCatalog}.appiconset`;
 const iosLightFile = (spec) => `${iosCatalogPath(spec)}/AppIcon-512@2x.png`;
 const iosDarkFile = (spec) => `${iosCatalogPath(spec)}/AppIcon-Dark-512@2x.png`;
+const iosTintedFile = (spec) => `${iosCatalogPath(spec)}/AppIcon-Tinted-512@2x.png`;
 const iosContentsFile = (spec) => `${iosCatalogPath(spec)}/Contents.json`;
 const IOS_CONTENTS = `${JSON.stringify({
   images: [
@@ -91,6 +92,13 @@ const IOS_CONTENTS = `${JSON.stringify({
     {
       appearances: [{ appearance: 'luminosity', value: 'dark' }],
       filename: 'AppIcon-Dark-512@2x.png',
+      idiom: 'universal',
+      platform: 'ios',
+      size: '1024x1024',
+    },
+    {
+      appearances: [{ appearance: 'luminosity', value: 'tinted' }],
+      filename: 'AppIcon-Tinted-512@2x.png',
       idiom: 'universal',
       platform: 'ios',
       size: '1024x1024',
@@ -171,6 +179,7 @@ function expectedGeneratedFiles() {
     iosContentsFile(spec),
     iosLightFile(spec),
     iosDarkFile(spec),
+    iosTintedFile(spec),
   ]);
   const androidPrimary = [
     'native/assets/icon-only.png',
@@ -232,8 +241,8 @@ function writeProvenanceManifest({ appIconPad, appIconTiltDeg, adaptiveInset, da
       launcherTiltDegrees: appIconTiltDeg,
       androidAdaptiveInset: adaptiveInset,
       darkGradient,
-      iosAuthoredAppearances: ['light', 'dark'],
-      iosSystemDerivedAppearances: ['clear', 'tinted'],
+      iosAuthoredAppearances: ['light', 'dark', 'tinted'],
+      iosSystemDerivedAppearances: ['clear'],
       androidMonochrome: 'system-tinted face cutout; hue and glow intentionally omitted',
     },
     registry: {
@@ -257,6 +266,7 @@ function writeProvenanceManifest({ appIconPad, appIconTiltDeg, adaptiveInset, da
 export async function generateIosProfileIcons({
   shot,
   iconSVG,
+  monochromeIconSVG,
   appIconPad,
   appIconTiltDeg,
   adaptiveInset,
@@ -269,9 +279,11 @@ export async function generateIosProfileIcons({
     );
     write(iosLightFile(spec), light);
     const dark = await shot(
-      iconSVG(1024, appIconPad, 'dark', true, spec.face, spec.hue), 1024, true,
+      iconSVG(1024, appIconPad, 'dark', true, spec.face, spec.hue, false), 1024, true,
     );
     write(iosDarkFile(spec), dark);
+    const tinted = await shot(monochromeIconSVG(1024, appIconPad, spec.face), 1024, true);
+    write(iosTintedFile(spec), tinted);
   }
   writeAndroidLauncherAliases();
   writeProvenanceManifest({ appIconPad, appIconTiltDeg, adaptiveInset, darkGradient });

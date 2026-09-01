@@ -108,7 +108,12 @@ iOS deploys to 15 and uses Capacitor 8.5's UIScene lifecycle. The branded
 launch screen stays up through synchronous Home composition; the global
 Splash Screen bridge hides it on the next task with a 200 ms fade, while the
 native five-second auto-hide remains a crash/error watchdog. The web and widget
-entries do not import a native plugin.
+entries do not import a native plugin. `tools/splash.mjs` draws the larger fixed
+cyan-five mark directly on the full 2732px canvas and supplies a full-canvas
+radial cyan falloff over `#05060e`; it must not enlarge a smaller icon raster or
+CSS shadow, because either path truncates the glow into a visible square. The
+same source feeds every tracked Android portrait/landscape and normal/night
+splash rendition.
 
 ### Profile-driven launcher icons
 
@@ -140,9 +145,12 @@ an alternate app-icon catalog. Debug and Release list the exact alternates in
 `ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES`; Xcode then generates
 `CFBundlePrimaryIcon` and `CFBundleAlternateIcons`, so those keys do not belong
 as a second manual registry in source `Info.plist`. Every catalog has an
-authored opaque Any/Light rendition and a transparent Dark rendition. iOS
-derives Clear and Tinted appearances; because those pixels are system-owned,
-they require device visual acceptance rather than a checked-in raster claim.
+authored opaque Any/Light rendition on the requested charcoal gradient, a
+transparent Dark rendition with a compact halo for Apple's system background,
+and a grayscale Tinted rendition whose pips are transparent cutouts. iOS
+derives Clear from that authored monochrome source; the final Clear and Tinted
+pixels remain system-owned and therefore require device visual acceptance
+rather than a checked-in color claim.
 The Capacitor bridge compares `UIApplication.alternateIconName` before calling
 `setAlternateIconName`, keeping launch reconciliation silent when the correct
 icon is already selected. A real change uses the system API and therefore shows

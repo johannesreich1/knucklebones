@@ -183,8 +183,8 @@
     },
     {
       "path": "src/styles/screens/home.css",
-      "bytes": 3791,
-      "sha256": "972a68f9f85cf6beafe4022bd3d236e1b48ad564096ae0f2fd060fd8125996d4"
+      "bytes": 3821,
+      "sha256": "5b689f286c6f6e86d3cc72ac76a3c36a4f461778fe0894571fa22aac7fef3c4f"
     },
     {
       "path": "src/styles/screens/learn-settings.css",
@@ -213,13 +213,13 @@
     },
     {
       "path": "tools/appicon.mjs",
-      "bytes": 12832,
-      "sha256": "82ecca8a266612e0a24bb613822db863d947eec7e358615a208c6c2201b03181"
+      "bytes": 13238,
+      "sha256": "6ea08154ffc63cdb327bc3bd58f4f782e5c2a48ee3dc24c670062f7d14532297"
     },
     {
       "path": "tools/profile-app-icons.mjs",
-      "bytes": 12290,
-      "sha256": "91f096f3313160e43735801dd9d0a6193069b480e188a46120c7e83b28b80e0e"
+      "bytes": 12759,
+      "sha256": "63b55ead4c4021678d040576adc1546ff519bdc29b06f9892f631dd01c0af2b1"
     }
   ],
   "nativeContracts": [
@@ -259,11 +259,11 @@
     },
     "iosAuthoredAppearances": [
       "light",
-      "dark"
+      "dark",
+      "tinted"
     ],
     "iosSystemDerivedAppearances": [
-      "clear",
-      "tinted"
+      "clear"
     ],
     "androidMonochrome": "system-tinted face cutout; hue and glow intentionally omitted"
   },
@@ -3697,633 +3697,843 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png",
-      "bytes": 528125,
-      "sha256": "e958f79c9b976fc6ac960e50d6e8fad3db7c642ae45e1b643d34e364c7216734"
+      "bytes": 505413,
+      "sha256": "14950731e56e4d556275116087e6bcc08bc54befaee2f40bbfd859fe75f11cc1"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 707739,
-      "sha256": "a7fdb4642cc043d503fb6aa833e23330edbf99e39349923a23d5da281512afaf"
+      "bytes": 607414,
+      "sha256": "6405012ffd19720d0b9e7cd62e7d7133a9fd60e8ca6e4d408aa9145fbf988eec"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 26675,
+      "sha256": "de4732116fbb2f1d801d2c12d252699a0de04be41d0a048563dba7a91bc1f6c0"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/AppIcon.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-blue.appiconset/AppIcon-512@2x.png",
-      "bytes": 402583,
-      "sha256": "a5fd31302cdaa7b6ff975192374219c6d90c228c4289b8b3f4126644c7b51bab"
+      "bytes": 361217,
+      "sha256": "839e466a9e9b5f36d1096e454764c359747e8aa652bd33dc99ab62bd2c3aa90c"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-blue.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 480850,
-      "sha256": "822195b7662751d96fc94e3a7949463aa67f49e724af7e1a7ca703c0ff1d73fa"
+      "bytes": 369514,
+      "sha256": "1756c848b7261e213e2f5004da44f1f2086d12b3664c4ea3fcbad3ac9fe0aeff"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-1-blue.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 18437,
+      "sha256": "1b4e8151e259c82f254c6e62e9728a3e04ec8f6ead6f490e6a3b6da5ad1d2a57"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-blue.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-cy.appiconset/AppIcon-512@2x.png",
-      "bytes": 406404,
-      "sha256": "907a021e1a92f6e3256e6c768305fb499af3267d49c703221f49eb709557d4e5"
+      "bytes": 365457,
+      "sha256": "9324a15b8e8f713725591a4781516a3e7b4c53f8f526df1e568c61444835a6aa"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-cy.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 474937,
-      "sha256": "7c4978fa3f29466b792c701dab1d11ddf3f447bdad72b0d6624d51684cd2074a"
+      "bytes": 368007,
+      "sha256": "a59e76cd8831b412193c553dde4b1934808590cb46e043e1995ae7176307e4c0"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-1-cy.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 18437,
+      "sha256": "1b4e8151e259c82f254c6e62e9728a3e04ec8f6ead6f490e6a3b6da5ad1d2a57"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-cy.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-gold.appiconset/AppIcon-512@2x.png",
-      "bytes": 406364,
-      "sha256": "8c17b7c316a20c1c9a0d3fc95e01552820bf723e82ac9bbcd7d6d0bae5998d01"
+      "bytes": 371882,
+      "sha256": "4da4ae7580dad5cf29899e5a4ca497319acd40bc2963da2aa9f25296f6bf3e34"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-gold.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 490212,
-      "sha256": "d01a694f27d7070efa4d5a336f674d6c04ea253c488d594527db2137645ae7b2"
+      "bytes": 367786,
+      "sha256": "ed6a05e7a20f581a1012ec742c59d27d9717f1449732347054315c3227d6e421"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-1-gold.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 18437,
+      "sha256": "1b4e8151e259c82f254c6e62e9728a3e04ec8f6ead6f490e6a3b6da5ad1d2a57"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-gold.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-green.appiconset/AppIcon-512@2x.png",
-      "bytes": 419038,
-      "sha256": "ded18ddc74595a58418d901ecf7168368740e82b88c75fadab70f55a2288525f"
+      "bytes": 363827,
+      "sha256": "2cfb3d537cf2bbfc0d8d5317b83445180782bb0e0e94b3b09b0e8c05c3e5498b"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-green.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 505142,
-      "sha256": "c68ceb1f4b379f16ec2d3dd45eb678a39bd9975e8e120986775dcfc1fdd11dd9"
+      "bytes": 373536,
+      "sha256": "3407792549cfc540b616ba0e6483af80b8933bd72f325e81cc2be546c521ba1a"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-1-green.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 18437,
+      "sha256": "1b4e8151e259c82f254c6e62e9728a3e04ec8f6ead6f490e6a3b6da5ad1d2a57"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-green.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-mg.appiconset/AppIcon-512@2x.png",
-      "bytes": 399828,
-      "sha256": "bd2ad429aba1ad77057313d1e11a8731700f35a65520b52a768919f6caed3878"
+      "bytes": 358230,
+      "sha256": "5ae2be2ec9b33e2fe52b2904d8141679c1fe85cc327e14f88f246913ddf60332"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-mg.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 475562,
-      "sha256": "2b0519aaccefb35af2b490c580a102ae4b784f102cc737b88994f29e2887d20a"
+      "bytes": 370378,
+      "sha256": "93e97a9461397c74ae7d1ac20d6002becdaf1939a7b64da31e0774b5e84c674f"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-1-mg.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 18437,
+      "sha256": "1b4e8151e259c82f254c6e62e9728a3e04ec8f6ead6f490e6a3b6da5ad1d2a57"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-mg.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-orange.appiconset/AppIcon-512@2x.png",
-      "bytes": 402635,
-      "sha256": "4e855e7d4bec9ffb1de1b2616377ce1eb1fa85a468ed708c02863a5d7da45209"
+      "bytes": 359666,
+      "sha256": "8ea09ba3a6b1707812252222ac8c177f0ae78b35a64fdb57e431d83000901b49"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-orange.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 477193,
-      "sha256": "1489696d857bf59c40374ac7c424141ba63f43f0c30c96107c468dd56be47043"
+      "bytes": 368102,
+      "sha256": "2c7b653a5953f2b267aa3daa82d87c0f44a2f8a85fbb6f8b1458fca7f911c8c7"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-1-orange.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 18437,
+      "sha256": "1b4e8151e259c82f254c6e62e9728a3e04ec8f6ead6f490e6a3b6da5ad1d2a57"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-orange.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-violet.appiconset/AppIcon-512@2x.png",
-      "bytes": 402763,
-      "sha256": "908e695bd12cd6e7226a39498bfee9109d5657c040f486db5d1de9e5d4321244"
+      "bytes": 372758,
+      "sha256": "04f0d439e760f2ad61cc19b3f0c7059f251c8fc4002f40bd51a99bb78ec4ea25"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-violet.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 495098,
-      "sha256": "1ac20f6dabe7bcabb7cef7bffd242841edc171afb6abbc8bb96390b1b6b415cc"
+      "bytes": 371059,
+      "sha256": "cbd5366ebabd057ca708c17d3f8b0e99d1fb0971d724b5dbd4aa0bd52f233bf1"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-1-violet.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 18437,
+      "sha256": "1b4e8151e259c82f254c6e62e9728a3e04ec8f6ead6f490e6a3b6da5ad1d2a57"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-1-violet.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-blue.appiconset/AppIcon-512@2x.png",
-      "bytes": 440163,
-      "sha256": "2eae91d571bab4d333542216fd84448272865acaf15e9ce57dfb3d99c7dba685"
+      "bytes": 404018,
+      "sha256": "869c0ab6e4f15c369f339812888cc7051c52bd97e160d98c25e0b985d29ced34"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-blue.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 544547,
-      "sha256": "eac410521c15e9c430b1678d31d3c03c2421b671956e86c8ac0f66fb3f5a78a2"
+      "bytes": 438502,
+      "sha256": "5d6fdd995e31cc4aebb3bb2493f4e7351b5f5bfaf5e97f391a5adbf4a9532235"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-2-blue.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 20311,
+      "sha256": "fb57482ed454223db895d66efe5d98d572cec723406f9bd4209aa88eccfd04ae"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-blue.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-cy.appiconset/AppIcon-512@2x.png",
-      "bytes": 444955,
-      "sha256": "933f4036c8ede975769b3407b3c742dd2ccf0600da5d94ed7337da6b0bc16ed2"
+      "bytes": 408077,
+      "sha256": "734ec384641be6426cd1d604048eb3b67cb69c35bbfcc81e2fb5b9300108c253"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-cy.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 537286,
-      "sha256": "0ce2d53d1b08acfa505a9dd47c52a974e068508832086d87417d7466287f553d"
+      "bytes": 434227,
+      "sha256": "88a5099492d1babfe5abf1adf6246de05a158768f5fb1f6ba8236f135438052b"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-2-cy.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 20311,
+      "sha256": "fb57482ed454223db895d66efe5d98d572cec723406f9bd4209aa88eccfd04ae"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-cy.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-gold.appiconset/AppIcon-512@2x.png",
-      "bytes": 440732,
-      "sha256": "6e0855bf88db55e2fd7a806f1d8094ec112b5bc0ecf829ad5e6312aff69b121c"
+      "bytes": 411665,
+      "sha256": "8893b55dd215fe67909652c9e795c06ab7300b63dc44712bbaf74557f5a68652"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-gold.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 551419,
-      "sha256": "e0939b6497c3702681ba0e1d36ce05a1216472e3a87d6d02e6a7309e82381339"
+      "bytes": 433794,
+      "sha256": "15e3ba434fbced5e8a4327ecfe24eab8bf4b4a647a98e8725c6c4ae6b8fd2fa7"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-2-gold.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 20311,
+      "sha256": "fb57482ed454223db895d66efe5d98d572cec723406f9bd4209aa88eccfd04ae"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-gold.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-green.appiconset/AppIcon-512@2x.png",
-      "bytes": 458151,
-      "sha256": "4633c2bcc3bf321fdf092201b7f958046a66905094e416dcd50139e37bfe07a1"
+      "bytes": 407015,
+      "sha256": "f715836a77e234f6fcb7c5a131bf2c2639076f71002769ebed8e6c5c2be62da1"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-green.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 573117,
-      "sha256": "b749f25b907d72103b23d374bd8c2f14a9e811b4deb9adb22b26eda84b242718"
+      "bytes": 449953,
+      "sha256": "128c92598d29488b2095d3ffe188b57e0a9f33eac0d1acff970a9bdf17765a84"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-2-green.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 20311,
+      "sha256": "fb57482ed454223db895d66efe5d98d572cec723406f9bd4209aa88eccfd04ae"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-green.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-mg.appiconset/AppIcon-512@2x.png",
-      "bytes": 438101,
-      "sha256": "ac476363a79590067621bf3f5f5787c6ac968761527a9eaf1713a33d2a2f8634"
+      "bytes": 401006,
+      "sha256": "07dc56bb08967339a6758e2dd86c650bf981bc81a8facea3c742ba93f89c2928"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-mg.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 537565,
-      "sha256": "72ec648b9d3cbbd8e38be98d7faed06385eaa45948f7db894f15ec1560527dfb"
+      "bytes": 439881,
+      "sha256": "452945a9b74bf366c4d17cc0d6708b1bdfcf117a186c247356a3cc0368196905"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-2-mg.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 20311,
+      "sha256": "fb57482ed454223db895d66efe5d98d572cec723406f9bd4209aa88eccfd04ae"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-mg.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-orange.appiconset/AppIcon-512@2x.png",
-      "bytes": 441362,
-      "sha256": "9d794b1944417a4a8a6c599e98474f6db817f10fcc00aab99c71ce8d656c6db9"
+      "bytes": 402000,
+      "sha256": "36936a722d476c680acff47ff93fa8a15ca73cc23e1f787e630546823d6bc1bc"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-orange.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 540501,
-      "sha256": "11e4aa8ab5b53adceacd72be9823b07d55eee06e2cd4802cd4fa320f652263cb"
+      "bytes": 438174,
+      "sha256": "50662eb533e02fcc72452452366c0aafb2369c1675277398852faf0bac0f5288"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-2-orange.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 20311,
+      "sha256": "fb57482ed454223db895d66efe5d98d572cec723406f9bd4209aa88eccfd04ae"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-orange.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-violet.appiconset/AppIcon-512@2x.png",
-      "bytes": 439557,
-      "sha256": "fc0db66cd5b1bc59e4d134714e16234cc61e8c3d550ff528fcd8af831638b6ef"
+      "bytes": 415945,
+      "sha256": "794d46e731225eba77bbb4587f414df9e09597cef703639c3eea13bbaa652675"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-violet.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 559739,
-      "sha256": "71840f9805270298466d490dbd3ee510a1cd454e7b96b03486f3f84258f46f6c"
+      "bytes": 439856,
+      "sha256": "094564041b2a564140855cbf8a2bac27b3eed52b1e6468bbd89f59712a182560"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-2-violet.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 20311,
+      "sha256": "fb57482ed454223db895d66efe5d98d572cec723406f9bd4209aa88eccfd04ae"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-2-violet.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-blue.appiconset/AppIcon-512@2x.png",
-      "bytes": 467964,
-      "sha256": "313d2b7c920da426054209c2f6849f7943fa3bfd9f32fd615c254c74bd5bb096"
+      "bytes": 435302,
+      "sha256": "03975cb15eb53ff760b7cc14473e9c564c42dfeef34187126189abd772e7b8f3"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-blue.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 606734,
-      "sha256": "83e106489846b3d25b86eef6b048650cb7ab563963643db5c5d8aa6d358ccffc"
+      "bytes": 505317,
+      "sha256": "10376fd7057202d4d8f3e958d84cb1912448dbe1fcb70ab97a3d7488f11b948a"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-3-blue.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 22436,
+      "sha256": "b47b8f4f4fd43b55c6f9596dc4ed7cbc00b4dbde9fe0a0639dfd79111e685ece"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-blue.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-cy.appiconset/AppIcon-512@2x.png",
-      "bytes": 472325,
-      "sha256": "bcd2d54106b3ae7253b32722ef12dedb550fd82e6f00754998b0a1dc9f6adb53"
+      "bytes": 439633,
+      "sha256": "48f7011beca8e1e9a5592398030c94a68ee891e239b532ee5a14aa584a3558e1"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-cy.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 598705,
-      "sha256": "c6645fa549c87c83ce6c97c21ddc9202c8018accfdb593daf9e9fcd158b29d3f"
+      "bytes": 496037,
+      "sha256": "f3ff2d19cd0714a2cc98f71942319fea82b92b6e8409e8c322b712c99296e804"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-3-cy.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 22436,
+      "sha256": "b47b8f4f4fd43b55c6f9596dc4ed7cbc00b4dbde9fe0a0639dfd79111e685ece"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-cy.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-gold.appiconset/AppIcon-512@2x.png",
-      "bytes": 466044,
-      "sha256": "05c0eae1307cabe1dfa633148edca9898f1996d9c834593ec7ad098dbdaeb134"
+      "bytes": 442499,
+      "sha256": "ad103afc4e86a5f4f0b77ded16e80e8912250e50c3562f83318bc828c8b7b167"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-gold.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 612459,
-      "sha256": "9e6214b86387b1ea968aa73fdff72de7ccf529f56356057edb74df337e1376b7"
+      "bytes": 495664,
+      "sha256": "854536358ed73cde2b5a6c222cfb67f58c81ec7cf522cc5d7a82a07bc50704cb"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-3-gold.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 22436,
+      "sha256": "b47b8f4f4fd43b55c6f9596dc4ed7cbc00b4dbde9fe0a0639dfd79111e685ece"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-gold.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-green.appiconset/AppIcon-512@2x.png",
-      "bytes": 487853,
-      "sha256": "55cab6fd137fb2dba32c3c9682e98af4a0214e928025efcd54dbd71322ce802e"
+      "bytes": 439198,
+      "sha256": "1304ce4cd1713a2bacd23694ec9a291440d4c032fde92100d04c244f064a51e8"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-green.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 641427,
-      "sha256": "b356657c06af7576d59fd055db583ab90eade663ee8efce72da89e57e88ea1c9"
+      "bytes": 521296,
+      "sha256": "4711afbd6a0634fa64cf0c0481cf9b36b0fb54ad5dcbc51a8d49c3da542ba1f2"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-3-green.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 22436,
+      "sha256": "b47b8f4f4fd43b55c6f9596dc4ed7cbc00b4dbde9fe0a0639dfd79111e685ece"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-green.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-mg.appiconset/AppIcon-512@2x.png",
-      "bytes": 466519,
-      "sha256": "35c195dda8a4dffcb06b1320b97eb796099a6e346ee773280f41f098dd189f18"
+      "bytes": 432341,
+      "sha256": "9ad06955de201d618c63533750ea0a5a466e2dda0e8bf15f565019b36e3c1e4f"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-mg.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 598780,
-      "sha256": "e9d2e7b2a58ace10b3748c5d4042ca854a82a517a130a7a22e1fb228f8ace2d7"
+      "bytes": 503766,
+      "sha256": "b5ac379c5eb7dbaf41ad25af1b3a0231acd251fa524fb9ac9b78210beea73133"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-3-mg.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 22436,
+      "sha256": "b47b8f4f4fd43b55c6f9596dc4ed7cbc00b4dbde9fe0a0639dfd79111e685ece"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-mg.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-orange.appiconset/AppIcon-512@2x.png",
-      "bytes": 469061,
-      "sha256": "da641dca50c56b6d14d6a54eaa89d0fae8de9e4308fc508d8bff6207b6498c8f"
+      "bytes": 433218,
+      "sha256": "bfc9db648759e4626df67987da335212e9e4a82f8f50436a42f53f03e19bd33d"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-orange.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 601423,
-      "sha256": "d8b6846e182ba1b7a989c5f61e0be0d3cc5e133b3a6fbeb62329fb5e6ce19909"
+      "bytes": 502576,
+      "sha256": "6562ce4d8a44d8feebc5f473803b53de01781e261ae6f53ec74d6ec431efe7b1"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-3-orange.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 22436,
+      "sha256": "b47b8f4f4fd43b55c6f9596dc4ed7cbc00b4dbde9fe0a0639dfd79111e685ece"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-orange.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-violet.appiconset/AppIcon-512@2x.png",
-      "bytes": 465908,
-      "sha256": "f3794525358b3c401aa0e7f2365f7fb3627593930e2e10916a7c256638568389"
+      "bytes": 447536,
+      "sha256": "ba1b6abaa1dcfcb468ee84257ee85148b65230eec21352375ccf16e75e1bd11b"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-violet.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 623814,
-      "sha256": "9934cb9cfc73a744b368514365c10f0cc4566db3b48272f30ee787290d12e90c"
+      "bytes": 503907,
+      "sha256": "e3fa9416501ef00bd182ef8357f968bfea67213ef71cfa13b7a6ec2a917f41e0"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-3-violet.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 22436,
+      "sha256": "b47b8f4f4fd43b55c6f9596dc4ed7cbc00b4dbde9fe0a0639dfd79111e685ece"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-3-violet.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-blue.appiconset/AppIcon-512@2x.png",
-      "bytes": 503417,
-      "sha256": "bf56ca4ec1fb704156a73b225d30f51e8e34d2b21c027d468dbd3b18e9492485"
+      "bytes": 477186,
+      "sha256": "780100d13e6383f268f5e3c9754b1e2da6df985e4d8cafc9da81956362cbf3e2"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-blue.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 674665,
-      "sha256": "cd27e0605c9c9c5187e248def371bb2d84c00e8ffdd8bd6162388f5e0eff5d69"
+      "bytes": 578992,
+      "sha256": "f96ca2a8b0470857d8bf95db190922ef0f90ef45228e1243067b3d3692088034"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-4-blue.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 24513,
+      "sha256": "44129baf1cb67dabaa1508cb52d09c322cf0f1a70d070864a473dfa8b400ceba"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-blue.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-cy.appiconset/AppIcon-512@2x.png",
-      "bytes": 507486,
-      "sha256": "85457eee11f2ab08ef0e328f69ee70a90cccbabaa273f79c19d46b966cfbb50f"
+      "bytes": 482440,
+      "sha256": "fe6232777622d2b986374dc412da136f0428f45680d4cc6a47df25947ca51244"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-cy.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 665330,
-      "sha256": "cfcc4283a3cb09f35fe499aef91328933565701fadbaf8d0d6696f3529dcbd12"
+      "bytes": 565135,
+      "sha256": "958a6deadbe94de3692427857ccbd1f47158d939c9a34e65aefdd1cca2afe321"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-4-cy.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 24513,
+      "sha256": "44129baf1cb67dabaa1508cb52d09c322cf0f1a70d070864a473dfa8b400ceba"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-cy.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-gold.appiconset/AppIcon-512@2x.png",
-      "bytes": 498062,
-      "sha256": "dcf75579aded07d433f5dba16f005b4d6ead9324d68f470236a4853247420b8c"
+      "bytes": 482557,
+      "sha256": "2f0cc8ce28bac82c1462bc1edd13de218c026ea59879b0b5e2ce73e8e29d8ee9"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-gold.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 677500,
-      "sha256": "ecedaff1536b58582f0944724486078b5aa966483c67d1143a8222da24920ac8"
+      "bytes": 565811,
+      "sha256": "ece6da2b864f89b81972557f2be0f76d59b7bbaf8e10dd024d44b554df88e237"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-4-gold.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 24513,
+      "sha256": "44129baf1cb67dabaa1508cb52d09c322cf0f1a70d070864a473dfa8b400ceba"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-gold.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-green.appiconset/AppIcon-512@2x.png",
-      "bytes": 523060,
-      "sha256": "8aeb054e0e3789f43ef84f7986dc4045638620a953e4d7503380dc189021ee6c"
+      "bytes": 481519,
+      "sha256": "f6a10b890a7be254957447da35408c919e78d8695b610d0a547deca725000cf4"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-green.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 708194,
-      "sha256": "fdb8dfc4498b3c2a724a3095d9da2bba3f10a4e0a9a65a74671fe16f760d96aa"
+      "bytes": 598781,
+      "sha256": "faab9ab6c029293e5ef4f6f4bf6392501c89fd8d2f3da52121857c90ff1753d4"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-4-green.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 24513,
+      "sha256": "44129baf1cb67dabaa1508cb52d09c322cf0f1a70d070864a473dfa8b400ceba"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-green.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-mg.appiconset/AppIcon-512@2x.png",
-      "bytes": 501585,
-      "sha256": "2d9a4e9ce9e05380d79bfab3e481de5db3fc0a40ce814a91b8c42d5b7092d6d2"
+      "bytes": 473851,
+      "sha256": "b2478c3bd843f20f72ae168e047f493e4e012278350d956dcf350670b8bfd48e"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-mg.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 666250,
-      "sha256": "500d7b70e3dea3817f0f1774a2053fb532998fd39d7a9f084524a92ae1547955"
+      "bytes": 576156,
+      "sha256": "57ff52067c6bcd00ec12c2598e3d7121678e70d653776db37d7fd5ce9aa1f6a7"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-4-mg.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 24513,
+      "sha256": "44129baf1cb67dabaa1508cb52d09c322cf0f1a70d070864a473dfa8b400ceba"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-mg.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-orange.appiconset/AppIcon-512@2x.png",
-      "bytes": 504415,
-      "sha256": "242e6c731d8e1795a41dea720a1c114007d8f5aae66b1d01e4f6c34cd185dd7d"
+      "bytes": 474635,
+      "sha256": "a761a6cf84ab89bfa72b2b205ff9467b8ebb7c7972664d1988102331594a9da8"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-orange.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 668492,
-      "sha256": "11d11711ce6983f15f6b097affdc548a57ee1a3f012f92454b884115abc37075"
+      "bytes": 576526,
+      "sha256": "670d67a38e9e469b107db51f94997005d8d4dd7fea9c036e65886d409191f668"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-4-orange.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 24513,
+      "sha256": "44129baf1cb67dabaa1508cb52d09c322cf0f1a70d070864a473dfa8b400ceba"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-orange.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-violet.appiconset/AppIcon-512@2x.png",
-      "bytes": 499765,
-      "sha256": "e9b1d15b29f654e186b0972e75f247e9dcc9e3420150790b20e9a061ac0619b3"
+      "bytes": 489639,
+      "sha256": "4a181458912728379af523707328d43e668d568a77602d0d727872568f2cd16b"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-violet.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 691154,
-      "sha256": "79172d6f4b3ad04651192ca2f03c391ca9a1bad17a8da077f4c263c00a3735b8"
+      "bytes": 579228,
+      "sha256": "a644dd9c9ef5d77c9f2864d79eb2342f80bdbe3af9ff274b9164a0f85b202774"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-4-violet.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 24513,
+      "sha256": "44129baf1cb67dabaa1508cb52d09c322cf0f1a70d070864a473dfa8b400ceba"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-4-violet.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-5-blue.appiconset/AppIcon-512@2x.png",
-      "bytes": 525060,
-      "sha256": "63564eef06e84d60be62a6aa57ffb592c016e7a753cfe331180e814cc677099f"
+      "bytes": 500755,
+      "sha256": "f349076e1e1b0647c2e639e1522cde4c7ab0a3fdddeb996cebe6dfa821741d7c"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-5-blue.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 718187,
-      "sha256": "201cd4cd7ee5830f87547ed7a697cbf8f0fcd688980d050c905910263c0d089d"
+      "bytes": 617552,
+      "sha256": "a20b434261721e1fd4b4e92c8cb513c7716554a30505cf8411aae9178173dc53"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-5-blue.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 26675,
+      "sha256": "de4732116fbb2f1d801d2c12d252699a0de04be41d0a048563dba7a91bc1f6c0"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-5-blue.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-5-gold.appiconset/AppIcon-512@2x.png",
-      "bytes": 517874,
-      "sha256": "44fbee5a6be160041c2b17d4f775669480750371e849a9915fa8312908e663fc"
+      "bytes": 506323,
+      "sha256": "077790ea7599695f3ae2ef4f2f56056c363ba2ee4967b11a4fb071b1aca852d8"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-5-gold.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 722448,
-      "sha256": "5ac7c77f57c977b5d7ff475e6cf10b8da6398b317496052779b96cde465df5e2"
+      "bytes": 609708,
+      "sha256": "1f306107bae11f028bc9943f0be8d9ae9fcf41c3ab608ca26d5ebcaadeff6ca1"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-5-gold.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 26675,
+      "sha256": "de4732116fbb2f1d801d2c12d252699a0de04be41d0a048563dba7a91bc1f6c0"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-5-gold.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-5-green.appiconset/AppIcon-512@2x.png",
-      "bytes": 545927,
-      "sha256": "a7f5d2cc18554ac026abb077547253406cd03ca055b9a222a23496916876b943"
+      "bytes": 506389,
+      "sha256": "11a52d7338c11933393b5f15daa935c75b2af54895150fe8862706b3b9c7bebb"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-5-green.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 759886,
-      "sha256": "f0433a05e92932c2a270793e37add2b883edeb6a9a43d63b8a8916c71a7d552d"
+      "bytes": 641478,
+      "sha256": "be2c10939ecd6ae164385295941a8857a260a1dc4ce2ecdf87600765d7ceaf6a"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-5-green.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 26675,
+      "sha256": "de4732116fbb2f1d801d2c12d252699a0de04be41d0a048563dba7a91bc1f6c0"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-5-green.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-5-mg.appiconset/AppIcon-512@2x.png",
-      "bytes": 523302,
-      "sha256": "b9a7cd41c66b759314b2ae9ba3dfacef2ce81f4004797bfb7435077186874580"
+      "bytes": 497445,
+      "sha256": "e9fe0b5c46e267e79bc3c4894974da1b34297b2355ee28187edd07a078f62eca"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-5-mg.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 707932,
-      "sha256": "d07540e635cd12847b25f42e60b2103b62b78f024e51886b88fd87bbd7526154"
+      "bytes": 613760,
+      "sha256": "e34445994337d1933ea9cc443ecba2181c55d1704a4b65d4f5c8c7f6bfb85bd0"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-5-mg.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 26675,
+      "sha256": "de4732116fbb2f1d801d2c12d252699a0de04be41d0a048563dba7a91bc1f6c0"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-5-mg.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-5-orange.appiconset/AppIcon-512@2x.png",
-      "bytes": 525584,
-      "sha256": "33963bb0632616dcd59ffd6a614c9d42073f434db22ff9fefac1cd97b4115163"
+      "bytes": 498828,
+      "sha256": "0f4e6622e700d67567cabc0f766d56996df8f8980bc86efde48ef85dc9831542"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-5-orange.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 710865,
-      "sha256": "6720abaf462507df9fe53b10a6e3a1a388454f4bf5a1d20f4cf47cc4cb6d6043"
+      "bytes": 613868,
+      "sha256": "0b359ec94a1271cd02de2cb3eb8f9e471a114840a3965f86d2586198d9a82604"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-5-orange.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 26675,
+      "sha256": "de4732116fbb2f1d801d2c12d252699a0de04be41d0a048563dba7a91bc1f6c0"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-5-orange.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-5-violet.appiconset/AppIcon-512@2x.png",
-      "bytes": 519328,
-      "sha256": "9c223d3901318d98f64ffef32a4faebdfdd388fda096074820b13520dda85a51"
+      "bytes": 514073,
+      "sha256": "0af88f884e3a27a790084d542b79df26a4a320ebdf6808337688d275d02dad43"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-5-violet.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 736598,
-      "sha256": "b37d91003809ca2d7b1a23e309c5aa60e697352eeaadc1d930ab6e9bc53accca"
+      "bytes": 622156,
+      "sha256": "a0d6d2e5c12cc8e361a1ddf25b7de40977abd340357eb07b60ea504f560abdf7"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-5-violet.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 26675,
+      "sha256": "de4732116fbb2f1d801d2c12d252699a0de04be41d0a048563dba7a91bc1f6c0"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-5-violet.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-blue.appiconset/AppIcon-512@2x.png",
-      "bytes": 532789,
-      "sha256": "6741ddada664b20cd11963e0561d3be4498c2600f9a1b9003579fef12c2e52cc"
+      "bytes": 510058,
+      "sha256": "dab21b3885c7d239f5495004cdad2be49743c174ebfa4aae63f5ec1fbead1823"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-blue.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 729145,
-      "sha256": "66db3170db2c0cf96f68b5f4ee0db54d36d521f0b04166455e081e67de07ab07"
+      "bytes": 628066,
+      "sha256": "8bee2d7e8acfa313d7206ef57e689f7b5194a162397cab239a64116dbc07b339"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-6-blue.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 28592,
+      "sha256": "5a2603eec9d4f8037dd18d09c2e5e0d6c5269603e2bd0e3bf658c1ee28c7f803"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-blue.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-cy.appiconset/AppIcon-512@2x.png",
-      "bytes": 536143,
-      "sha256": "05ed883540ec391e19a7f1655b90e75353d1f5d78b19606ff800e6457ce53df0"
+      "bytes": 515105,
+      "sha256": "a1edd8ed0a5511121a07715303e2b508aed6d66103dd41ed74a0b1d179c7e14f"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-cy.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 719867,
-      "sha256": "b5cb392d1fa6464d94207e4323ea856ea44e573fe04c76fee06e61ccc3e48b72"
+      "bytes": 619252,
+      "sha256": "29fb149eb1e91919b6c920de10beed8273b911031b787337f7e62253c3360742"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-6-cy.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 28592,
+      "sha256": "5a2603eec9d4f8037dd18d09c2e5e0d6c5269603e2bd0e3bf658c1ee28c7f803"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-cy.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-gold.appiconset/AppIcon-512@2x.png",
-      "bytes": 525745,
-      "sha256": "e4eda279ab47445518ddec047e775187578d34689852f589169ad808d0286d5b"
+      "bytes": 515718,
+      "sha256": "94faaabc09f0330e4814a3a0ea651ffe81514c5d7df590c6f238a6ae78216fa2"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-gold.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 731281,
-      "sha256": "11b30f0ff5bd180d47a14f64c8f73f16b4f77c479c3666a85dbf0685df692b9a"
+      "bytes": 618255,
+      "sha256": "492a34b86fadad31105c23c85b6ae823ccd2d3195a3297ce4836381b093fcfd6"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-6-gold.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 28592,
+      "sha256": "5a2603eec9d4f8037dd18d09c2e5e0d6c5269603e2bd0e3bf658c1ee28c7f803"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-gold.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-green.appiconset/AppIcon-512@2x.png",
-      "bytes": 556879,
-      "sha256": "86210a13add349b3e866ffba3a9b7749dd554ff0a6498577ede398ba815c68c4"
+      "bytes": 519827,
+      "sha256": "f0f1aeb659711ed4dc3d2093ed3dc252cfb8367dcfed0b8dd8f55b04b08fdef2"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-green.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 772952,
-      "sha256": "c41a71a15f65d282c8a77a25306150baefab737fdbe491a6e3303dd967ca9808"
+      "bytes": 652673,
+      "sha256": "2b54e951296a4f7ef50ddc2602044774293f738b8f66e6530b1e1100203cd8d8"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-6-green.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 28592,
+      "sha256": "5a2603eec9d4f8037dd18d09c2e5e0d6c5269603e2bd0e3bf658c1ee28c7f803"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-green.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-mg.appiconset/AppIcon-512@2x.png",
-      "bytes": 532041,
-      "sha256": "0a83401b960d3c3d1d4c6e7271cc95ec409eb5521982310e6671006e4fd9b771"
+      "bytes": 508048,
+      "sha256": "408a72b03f995bde6865c1f52ff8f68b8e6f2e521b52f186f28cc9cbe0b619b5"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-mg.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 720808,
-      "sha256": "7cad9104be990b2875077becb3be7271117edd0011e3ae833e86f2cd8de141a6"
+      "bytes": 625835,
+      "sha256": "f935d0a1868a2b3b486fdc3a48d32d973849501bf430667aae8e78cfafcde667"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-6-mg.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 28592,
+      "sha256": "5a2603eec9d4f8037dd18d09c2e5e0d6c5269603e2bd0e3bf658c1ee28c7f803"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-mg.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-orange.appiconset/AppIcon-512@2x.png",
-      "bytes": 534087,
-      "sha256": "07868a37fa1bb8aec1086294811c08bb27273c8f60d1a8eab364f6e2a7f6b2e2"
+      "bytes": 508469,
+      "sha256": "e24119058ca68b3aa05c1459b25a8a22024ffb04b6c52d20a4f0272dd3ae5c78"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-orange.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 723015,
-      "sha256": "9f36549d68305705c6ccd02c426c3d55640eb91fe930bc9cf159da96778bf751"
+      "bytes": 624475,
+      "sha256": "a884b1aa409abee6a403b0a131cdd80a7c8a0983bbe5825b37631e6cf36540b6"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-6-orange.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 28592,
+      "sha256": "5a2603eec9d4f8037dd18d09c2e5e0d6c5269603e2bd0e3bf658c1ee28c7f803"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-orange.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-violet.appiconset/AppIcon-512@2x.png",
-      "bytes": 527662,
-      "sha256": "7981b4af1dc99f6f41e83cfb0a66fe3bea3ae273089c514b31c22dd61b9ca50e"
+      "bytes": 523297,
+      "sha256": "eff8d87398be76df03db484ca0001a04828b6817252d88793150e5dc7ca3fcd9"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-violet.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 747338,
-      "sha256": "4f2c7cb4e88db9c47a0999b152cc933071d11fd3f8e4fbe5f2886d8c02ae52ab"
+      "bytes": 633431,
+      "sha256": "a3786ba09f94afc7cb27cad16c965e9ddd178d5d057c73001f7559be84271686"
+    },
+    {
+      "path": "native/ios/App/App/Assets.xcassets/die-6-violet.appiconset/AppIcon-Tinted-512@2x.png",
+      "bytes": 28592,
+      "sha256": "5a2603eec9d4f8037dd18d09c2e5e0d6c5269603e2bd0e3bf658c1ee28c7f803"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/die-6-violet.appiconset/Contents.json",
-      "bytes": 463,
-      "sha256": "5076e7e479360907e40990f543ca9530befcb9f48c9b0ec7033d163cf2389857"
+      "bytes": 720,
+      "sha256": "0b8dd5cfdec00235e1f307cb317ed5fab4a3fb9685a655cc0d4228f1a0d6685a"
     },
     {
       "path": "public/icon-180.png",

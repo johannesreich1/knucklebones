@@ -32,6 +32,7 @@ const PROFILE_GENERATOR = 'tools/profile-app-icons.mjs';
 const APP_ICON_GENERATOR = 'tools/appicon.mjs';
 const LIGHT_FILE = 'AppIcon-512@2x.png';
 const DARK_FILE = 'AppIcon-Dark-512@2x.png';
+const TINTED_FILE = 'AppIcon-Tinted-512@2x.png';
 const CONTENTS_FILE = 'Contents.json';
 
 const iconSpecs = PROFILE_AVATARS.map((avatar) => {
@@ -65,7 +66,7 @@ function xcodeStringList(body: string, setting: string): string[] | null {
 function verifyPngHeader(check: Check, file: string, expectedColorType: 2 | 6): void {
   check(existsSync(file), `${file} is absent; regenerate the profile app-icon catalogs`);
   if (!existsSync(file)) return;
-  // Read only IHDR for all 84 renditions. The representative visual checks
+  // Read only IHDR for all 126 renditions. The representative visual checks
   // below decode seven files instead of repeatedly scanning the whole set.
   const header = Buffer.alloc(29);
   const descriptor = openSync(file, 'r');
@@ -97,8 +98,9 @@ function verifyCatalog(check: Check, catalog: string): void {
   const images = Array.isArray(contents.images) ? contents.images : [];
   const light = images.find((image: { filename?: string }) => image.filename === LIGHT_FILE);
   const dark = images.find((image: { filename?: string }) => image.filename === DARK_FILE);
-  check(images.length === 2 && !!light && !!dark,
-    `${contentsFile} must contain exactly the Any/light and Dark 1024px renditions`);
+  const tinted = images.find((image: { filename?: string }) => image.filename === TINTED_FILE);
+  check(images.length === 3 && !!light && !!dark && !!tinted,
+    `${contentsFile} must contain exactly the Any/light, Dark, and authored Tinted 1024px renditions`);
   check(json(light && Object.keys(light).sort()) === json(['filename', 'idiom', 'platform', 'size'])
     && light?.idiom === 'universal' && light?.platform === 'ios' && light?.size === '1024x1024',
   `${contentsFile} ${LIGHT_FILE} must be the unqualified universal iOS 1024x1024 rendition`);
@@ -107,10 +109,16 @@ function verifyCatalog(check: Check, catalog: string): void {
     && dark?.idiom === 'universal' && dark?.platform === 'ios' && dark?.size === '1024x1024'
     && json(dark?.appearances) === json([{ appearance: 'luminosity', value: 'dark' }]),
   `${contentsFile} ${DARK_FILE} must be exactly the luminosity=dark universal iOS rendition`);
+  check(json(tinted && Object.keys(tinted).sort())
+    === json(['appearances', 'filename', 'idiom', 'platform', 'size'])
+    && tinted?.idiom === 'universal' && tinted?.platform === 'ios' && tinted?.size === '1024x1024'
+    && json(tinted?.appearances) === json([{ appearance: 'luminosity', value: 'tinted' }]),
+  `${contentsFile} ${TINTED_FILE} must be exactly the luminosity=tinted universal iOS rendition`);
   check(json(contents.info) === json({ author: 'xcode', version: 1 }),
     `${contentsFile} must retain the deterministic Xcode catalog metadata`);
   verifyPngHeader(check, catalogFile(catalog, LIGHT_FILE), 2);
   verifyPngHeader(check, catalogFile(catalog, DARK_FILE), 6);
+  verifyPngHeader(check, catalogFile(catalog, TINTED_FILE), 6);
 }
 
 function verifyBuildSettings(check: Check): void {
@@ -158,9 +166,9 @@ function verifyProvenance(check: Check): Map<string, ManifestEntry> {
     && manifest.registry?.count === 42
     && manifest.registry?.sha256 === registryHash,
   `${MANIFEST_FILE} registry identity/hash must match the imported 42-avatar registry`);
-  check(json(manifest.design?.iosAuthoredAppearances) === json(['light', 'dark'])
-    && json(manifest.design?.iosSystemDerivedAppearances) === json(['clear', 'tinted']),
-  `${MANIFEST_FILE} must distinguish authored Light/Dark from system-derived Clear/Tinted`);
+  check(json(manifest.design?.iosAuthoredAppearances) === json(['light', 'dark', 'tinted'])
+    && json(manifest.design?.iosSystemDerivedAppearances) === json(['clear']),
+  `${MANIFEST_FILE} must distinguish authored Light/Dark/Tinted from system-derived Clear`);
 
   const manifestOrder = primary ? [primary, ...alternates] : alternates;
   const expectedVariants = manifestOrder.map(({ avatar, icon, iosCatalog }) => ({
@@ -203,12 +211,13 @@ function verifyProvenance(check: Check): Map<string, ManifestEntry> {
     catalogFile(iosCatalog, CONTENTS_FILE),
     catalogFile(iosCatalog, LIGHT_FILE),
     catalogFile(iosCatalog, DARK_FILE),
+    catalogFile(iosCatalog, TINTED_FILE),
   ]).sort();
   const actualIosAssets = assets.map(({ path }) => path ?? '')
     .filter((path) => path.startsWith(`${CATALOG_ROOT}/`) && path.includes('.appiconset/'))
     .sort();
   check(json(actualIosAssets) === json(expectedIosAssets),
-    `${MANIFEST_FILE} must cover exactly all 126 files in the 42 iOS app-icon catalogs`);
+    `${MANIFEST_FILE} must cover exactly all 168 files in the 42 iOS app-icon catalogs`);
   for (const file of expectedIosAssets) {
     const entry = assetMap.get(file);
     check(entry?.missing !== true && typeof entry?.bytes === 'number'
@@ -248,6 +257,8 @@ function verifyRepresentativePixels(check: Check, assetMap: Map<string, Manifest
     const png = readPngPixels(file);
     check(png.colorType === 6 && png.hasTransparency && pixelAt(png, .03, .03).alpha <= 32,
       `${file} must preserve the transparent Dark-appearance cutout around the neon die`);
+    check(pixelAt(png, .12, .12).alpha <= 4,
+      `${file} must not wash the system-provided Dark background with an oversized transparent halo`);
     const expectedPips = new Set(pips[face]);
     const actualPips = grid
       .filter(([, x, y]) => pixelAt(png, x, y).alpha >= 200)
@@ -267,6 +278,22 @@ function verifyRepresentativePixels(check: Check, assetMap: Map<string, Manifest
     if (manifestEntry) {
       check(manifestEntry.bytes === statSync(file).size && manifestEntry.sha256 === sha256(file),
         `${MANIFEST_FILE} representative asset hash must match ${file}`);
+    }
+
+    const tintedFile = catalogFile(catalog, TINTED_FILE);
+    if (!existsSync(tintedFile)) continue;
+    const tinted = readPngPixels(tintedFile);
+    check(tinted.colorType === 6 && tinted.hasTransparency && pixelAt(tinted, .03, .03).alpha === 0,
+      `${tintedFile} must be a transparent grayscale source for iOS Tinted and Clear rendering`);
+    for (const [name, x, y] of grid) {
+      const pixel = pixelAt(tinted, x, y);
+      if (expectedPips.has(name)) {
+        check(pixel.alpha <= 32,
+          `${tintedFile} selected ${name} pip must remain a cutout in the tinted die`);
+      } else {
+        check(pixel.alpha >= 220 && colorSpread(pixel) <= 1,
+          `${tintedFile} unused ${name} cell must remain inside the solid grayscale die`);
+      }
     }
   }
   check(frames.length === samples.length,

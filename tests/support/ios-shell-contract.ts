@@ -191,6 +191,7 @@ export function verifyIosShellContract(check: Check): {
   const nativeAssets = [
     { path: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png', width: 1024, height: 1024 },
     { path: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-Dark-512@2x.png', width: 1024, height: 1024 },
+    { path: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-Tinted-512@2x.png', width: 1024, height: 1024 },
     { path: 'native/ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-2.png', width: 2732, height: 2732 },
     { path: 'native/ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-1.png', width: 2732, height: 2732 },
     { path: 'native/ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732.png', width: 2732, height: 2732 },
@@ -218,7 +219,7 @@ export function verifyIosShellContract(check: Check): {
   const splashCatalog = JSON.parse(readFileSync(SPLASH_CATALOG, 'utf8'));
   const iconNames = new Set<string>(iconCatalog.images?.map((image: { filename?: string }) => image.filename).filter(Boolean));
   const splashNames = new Set<string>(splashCatalog.images?.map((image: { filename?: string }) => image.filename).filter(Boolean));
-  for (const name of ['AppIcon-512@2x.png', 'AppIcon-Dark-512@2x.png']) {
+  for (const name of ['AppIcon-512@2x.png', 'AppIcon-Dark-512@2x.png', 'AppIcon-Tinted-512@2x.png']) {
     check(iconNames.has(name), `${APP_ICON_CATALOG} does not reference ${name}`);
   }
   const anyIcon = iconCatalog.images?.find(
@@ -227,10 +228,15 @@ export function verifyIosShellContract(check: Check): {
   const darkIcon = iconCatalog.images?.find(
     (image: { filename?: string }) => image.filename === 'AppIcon-Dark-512@2x.png',
   );
+  const tintedIcon = iconCatalog.images?.find(
+    (image: { filename?: string }) => image.filename === 'AppIcon-Tinted-512@2x.png',
+  );
   check(Array.isArray(anyIcon?.appearances) === false,
     `${APP_ICON_CATALOG} Any icon must remain the unqualified light/fallback rendition`);
   check(JSON.stringify(darkIcon?.appearances) === JSON.stringify([{ appearance: 'luminosity', value: 'dark' }]),
     `${APP_ICON_CATALOG} dark icon must be the luminosity=dark rendition`);
+  check(JSON.stringify(tintedIcon?.appearances) === JSON.stringify([{ appearance: 'luminosity', value: 'tinted' }]),
+    `${APP_ICON_CATALOG} tinted icon must be the authored luminosity=tinted rendition`);
   for (const name of ['splash-2732x2732-2.png', 'splash-2732x2732-1.png', 'splash-2732x2732.png']) {
     check(splashNames.has(name), `${SPLASH_CATALOG} does not reference ${name}`);
   }
@@ -239,12 +245,17 @@ export function verifyIosShellContract(check: Check): {
 
   const lightPixels = readPngPixels(nativeAssets[0].path);
   const darkPixels = readPngPixels(nativeAssets[1].path);
+  const tintedPixels = existsSync(nativeAssets[2].path) ? readPngPixels(nativeAssets[2].path) : null;
   check(lightPixels.colorType === 2 && !lightPixels.hasTransparency,
     'the iOS Any/light app icon must remain an opaque RGB PNG');
   check(darkPixels.colorType === 6 && darkPixels.hasTransparency,
     'the iOS Dark app icon must carry alpha so the system-provided background can show through');
+  check(tintedPixels?.colorType === 6 && tintedPixels.hasTransparency,
+    'the iOS Tinted app icon must carry a transparent grayscale die for system tinting');
   check(pixelAt(darkPixels, .03, .03).alpha <= 32,
     'the iOS Dark app icon corners must remain transparent enough for Apple\'s System Dark background');
+  check(pixelAt(darkPixels, .12, .12).alpha <= 4,
+    'the iOS Dark app icon must not flood Apple\'s transparent system background with a broad cyan halo');
 
   const darkInkBounds = alphaBounds(darkPixels);
   const darkInkWidth = darkInkBounds
@@ -280,15 +291,21 @@ export function verifyIosShellContract(check: Check): {
   'the iOS Home die must keep its cyan neon frame in both appearances');
   const lightGlassShadow = pixelAt(lightPixels, .5, .78);
   check(colorSpread(lightGlassShadow) <= 5
-    && lightGlassShadow.red >= 145 && lightGlassShadow.red <= 175,
-  'the iOS Any/light die must retain a neutral translucent glass body rather than the old colored slab');
+    && lightGlassShadow.red >= 15 && lightGlassShadow.red <= 30,
+  'the iOS Any/light die must retain a neutral dark glass body rather than a washed-out light slab');
   const lightGroundTop = pixelAt(lightPixels, .04, .04);
   const lightGroundBottom = pixelAt(lightPixels, .04, .96);
-  check(rgbDistance(lightGroundTop, lightGroundBottom) >= 10
-    && Math.min(lightGroundTop.red, lightGroundTop.green, lightGroundTop.blue) >= 225
-    && Math.min(lightGroundBottom.red, lightGroundBottom.green, lightGroundBottom.blue) >= 210,
-  'the iOS Any/light icon must use a subtle light system-style gradient rather than a flat canvas');
-  const splashPixels = readPngPixels(nativeAssets[2].path);
+  check(rgbDistance(lightGroundTop, lightGroundBottom) >= 20
+    && Math.max(lightGroundTop.red, lightGroundTop.green, lightGroundTop.blue) <= 55
+    && Math.max(lightGroundBottom.red, lightGroundBottom.green, lightGroundBottom.blue) <= 30,
+  'the iOS Any/light icon must preserve the requested dark system-style gradient');
+  if (tintedPixels) {
+    const tintedBody = pixelAt(tintedPixels, .52, .333);
+    const tintedPip = pixelAt(tintedPixels, .5, .5);
+    check(tintedBody.alpha >= 220 && colorSpread(tintedBody) <= 1 && tintedPip.alpha <= 32,
+      'the iOS authored Tinted icon must be a grayscale die with transparent pip cutouts');
+  }
+  const splashPixels = readPngPixels(nativeAssets[3].path);
   const splashTop = pixelAt(splashPixels, .04, .04);
   const splashBottom = pixelAt(splashPixels, .04, .96);
   check(rgbDistance(splashTop, splashBottom) <= 3
@@ -300,6 +317,34 @@ export function verifyIosShellContract(check: Check): {
     : 0;
   check(splashInkBounds !== null && splashInkWidth >= .179 && splashInkWidth <= .182,
     `the larger iOS loading-screen neon die should occupy about 18% of the canvas, found ${splashInkWidth}`);
+  /* The launch mark used to enlarge a CSS shadow until Chromium truncated its
+     blur into a visible square. Scan the clear air outside the die instead of
+     pinning one historical coordinate: a continuous full-canvas glow cannot
+     have a hard adjacent-pixel RGB jump anywhere in those four outer bands. */
+  const splashCenter = Math.round((splashPixels.width - 1) * .5);
+  const outerGlowJump = (vertical: boolean, from: number, to: number) => {
+    let maximum = 0;
+    for (let axis = Math.round(splashPixels.width * from) + 1;
+      axis <= Math.round(splashPixels.width * to); axis++) {
+      const before = vertical
+        ? splashPixels.pixel(splashCenter, axis - 1)
+        : splashPixels.pixel(axis - 1, splashCenter);
+      const after = vertical
+        ? splashPixels.pixel(splashCenter, axis)
+        : splashPixels.pixel(axis, splashCenter);
+      maximum = Math.max(maximum, rgbDistance(before, after));
+    }
+    return maximum;
+  };
+  for (const [edge, jump] of [
+    ['left', outerGlowJump(false, .30, .40)],
+    ['right', outerGlowJump(false, .60, .70)],
+    ['top', outerGlowJump(true, .30, .40)],
+    ['bottom', outerGlowJump(true, .60, .70)],
+  ] as const) {
+    check(jump <= 4,
+      `the iOS loading-screen glow is visibly clipped at its ${edge} edge (RGB jump ${jump})`);
+  }
   for (const [x, y] of [[.4664, .4569], [.5431, .4664], [.5, .5], [.4569, .5336], [.5336, .5431]]) {
     const splashPip = pixelAt(splashPixels, x, y);
     check(splashPip.red >= 150 && splashPip.green >= 240 && splashPip.blue >= 250
