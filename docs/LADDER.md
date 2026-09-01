@@ -67,14 +67,17 @@ delta**. The decided finish-margin transfer below is not live yet.
 
 ### Decided finish-margin transfer — not shipped
 
-*Decided 2026-09-01.* Keep opponent strength as the primary signal, then move
-a small, equal number of additional points from the loser to the winner based
-on how decisive the final board was. For a normally completed decisive match:
+*Decided and refined 2026-09-01.* Keep opponent strength as the primary signal,
+then move a small, equal number of additional points from the loser to the
+winner based on how decisive the final board was. The refinement deliberately
+makes medium/large score gaps one point more expressive without widening the
+agreed 2–7 envelope. For a normally completed decisive match:
 
 ```
-score_gap          = abs(winner_score - loser_score)
-combined_score     = winner_score + loser_score
-requested_transfer = 2 + round(5 * score_gap / combined_score)  // 2…7
+score_gap          = winner_score - loser_score
+winner_scale       = max(1, winner_score)
+margin_share       = score_gap / winner_scale
+requested_transfer = 2 + round(5 * margin_share)  // 2…7
 winner_delta       = winner_base_delta + applied_transfer
 loser_delta        = loser_base_delta  - applied_transfer
 ```
@@ -83,28 +86,79 @@ The requested minimum **2** makes every decisive finish register whenever the
 loser has cap and floor room; the normalized margin can add up to five more. A
 raw score gap is deliberately not used. The modes operate at different score
 scales, so “won by 20” is not equally decisive in Classic and Row Multiply.
-Dividing by the two final scores' sum produces a dimensionless share and keeps
-the finish transfer comparable across modes. For a normal completion, only the
-server-authoritative final scores determine the requested transfer. Settlement
-status selects the forfeit rule, and the locked pre-settlement ladder rows plus
-base deltas limit what can actually be applied. The client submits none of
-those calculations.
+Dividing by the winner's score produces a dimensionless “how much of the
+winning total was the lead?” share and keeps modes comparable. A normally
+completed decisive match necessarily has a positive winning score; `max(1, …)`
+is a defensive totality guard, not permission to settle invalid scores. `round`
+is the shared TypeScript non-negative half-up convention (`Math.round`); SQL
+and UI do not reimplement it.
 
-| both players at 1,000 points | requested transfer | final delta instead of +80 / −60 |
-|---|---:|---:|
-| 41–39 | 2 | **+82 / −62** |
-| 50–40 | 3 | **+83 / −63** |
-| 60–30 | 4 | **+84 / −64** |
-| 60–0 | 7 | **+87 / −67** |
-| draw | 0 | **0 / 0** |
+This supersedes the earlier combined-score denominator. That version
+concentrated about 69% of the probe's decisive results at 2–3 points.
+Winner-relative normalization distributes the same 2–7 values more evenly, yet
+for every legal decisive score its requested transfer is either unchanged or
+exactly **one point larger**, never two. The player-facing bands are therefore
+simple:
+
+| score gap as share of winner's score | requested transfer |
+|---:|---:|
+| below 10% | 2 |
+| 10% to below 30% | 3 |
+| 30% to below 50% | 4 |
+| 50% to below 70% | 5 |
+| 70% to below 90% | 6 |
+| 90% or more | 7 |
+
+For a normal completion, only the server-authoritative final scores determine
+the request. Settlement status selects the forfeit rule, and the locked
+pre-settlement ladder rows plus base deltas limit what can actually be applied.
+The client submits none of those calculations.
+
+| both players at 1,000 points | superseded sum-based request | decided winner-relative request | final delta instead of +80 / −60 |
+|---|---:|---:|---:|
+| 41–39 | 2 | 2 | **+82 / −62** |
+| 50–45 | 2 | 3 | **+83 / −63** |
+| 50–40 | 3 | 3 | **+83 / −63** |
+| 50–35 | 3 | 4 | **+84 / −64** |
+| 60–30 | 4 | 5 | **+85 / −65** |
+| 60–0 | 7 | 7 | **+87 / −67** |
+| draw | 0 | 0 | **0 / 0** |
 
 The applied transfer is antisymmetric: every extra point gained by the winner
 is taken from the loser, so it adds no ladder-wide points. For an equal-rated
-player whose win-margin and loss-margin distributions are symmetric, the
-expected 50% drift remains +10 points/game. A player who tends to win
-decisively and lose narrowly intentionally moves above that expectation, while
-the reverse pattern moves below it. The seven-point ceiling leaves opponent
-strength overwhelmingly dominant.
+player whose decisive wins/losses and margin distributions are symmetric, the
+expected drift remains +10 points per **decisive** match. With draw fraction
+`q`, zero-paying draws make the all-match drift `10 × (1 - q)`. A player who
+tends to win decisively and lose narrowly intentionally moves above that
+expectation, while the reverse pattern moves below it. The seven-point ceiling
+leaves opponent strength overwhelmingly dominant.
+
+A deterministic read-only probe through the existing game harness measured the
+size of the refinement before accepting it: 3,000 bare and 3,000 uniformly
+equipped games for each of the seven mechanical outcomes, plus 6,000 Rune
+Ritual games with the real common offer and independently seeded auto-picks
+from that shared offer—48,000 games total. The displayed target-wheel mixture
+uses the 21,000 equipped mechanical games plus the 6,000 Ritual games; the
+21,000 bare games are a sensitivity cross-check and show the same direction.
+Weighted as Classic 40% and each other outcome `60/7`, decisive requests changed
+as follows:
+
+| requested transfer | superseded sum-based share | decided winner-relative share |
+|---:|---:|---:|
+| 2 | 25.84% | 12.91% |
+| 3 | 43.34% | 31.77% |
+| 4 | 22.24% | 29.13% |
+| 5 | 7.37% | 19.74% |
+| 6 | 1.15% | 6.17% |
+| 7 | 0.06% | 0.27% |
+
+The mean request moved only **3.148 → 3.753** (+0.605), while 4+ became
+visible in **55.3%** rather than 30.8% of decisive games and 5+ in **26.2%**
+rather than 8.6%. Per-outcome winner-relative means stayed in a narrow
+3.58–4.01 range, supporting the cross-mode normalization. This probe is design
+evidence, not a retained ladder/progression simulation: its depth-2 Normal
+policies do not model rating, margin/skill correlation, floor clipping, or the
+target climb.
 
 Two protections reduce the **applied** transfer below the requested 2–7 when
 necessary:
@@ -171,9 +225,11 @@ the draw in the win/loss/draw tally; only the points stand still.
 
 ### Why a win pays more than a loss takes
 
-Net drift at a 50% win rate is **+10 points a game**. The ladder climbs for
-anyone who keeps playing, which is the intended feel, and it is the reason
-seasons are mandatory rather than optional (§3).
+At equal rating with wins and losses evenly split, net drift is **+10 points per
+decisive game**. With draw fraction `q`, it is `10 × (1 - q)` across all games.
+The ladder climbs for anyone who keeps playing, which is the intended feel, and
+it is the reason seasons are mandatory rather than optional (§3). The table is
+the no-draw equal-rating case:
 
 | win rate | 45% | 50% | 55% | 60% | 70% |
 |---|---|---|---|---|---|
@@ -249,10 +305,10 @@ has to exist for §4.
 
 **Groups can be lost.** There is no floor above 0.
 
-The asymmetry is already the mercy — at a 50% win rate you drift *upward*, so
-falling a group means genuinely losing more than you win. A floor on top of
-that would make every group boundary risk-free and the ladder inert exactly
-where it should be tense.
+The asymmetry is already the mercy — at a 50% decisive win rate you drift
+*upward*, so falling a group means genuinely losing more than you win. A floor
+on top of that would make every group boundary risk-free and the ladder inert
+exactly where it should be tense.
 
 ### Permanent ranked variety pools
 
@@ -916,8 +972,9 @@ adds about 30% to the full climb without creating that wall.
 The new BONE width also makes the earlier division explicit. At an equal-rated
 base payout, `450 / 80 = 5.625`, so a perfect base-only run takes six wins. Six
 dominant target-rule wins also cross it; only repeatedly beating higher-rated
-bots can reduce that to five. At an equal-rated 50% record with symmetric
-finish margins, +10 per match would take about 45 matches. The coarse
+bots can reduce that to five. At an equal-rated 50% decisive record with
+symmetric finish margins and no draws, +10 per match would take about 45
+matches. The coarse
 approximately 63% BONE human share is much faster: its base-only expectation is
 `0.63 × 80 - 0.37 × 60 = 28.2`, or about 16 matches for 450 points, before the
 small finish signal.
@@ -964,6 +1021,44 @@ combine both decisions rather than pretending the unlock table awards points.
 The finish transfer is likewise not the reason for the wider floors: it moves
 at most seven additional points and remains antisymmetric. The reason is the
 total permanent-progression cadence.
+
+##### Effect of the refinement on progression speed
+
+The more responsive denominator does **not** revise the 169.5 median / 198.0
+mean planning estimate or the 160–185 / 185–215 release bands above. Relative
+to the preceding sum-based target, a decisive result changes by zero or one
+additional transferred point. Pair-wide inflation remains exactly zero. With
+symmetric decisive wins/losses and margin distributions, an equal-rated player
+still receives the base system's expected **+10 points per decisive match**;
+zero-paying draws reduce the all-match value as described in §1.
+
+In general, the expected per-match speed change is
+`p_win × d_win - p_loss × d_loss`; draws add zero. If the conditional
+refinement increment is symmetric (`d_win = d_loss = d`) and `p` is outcome
+share with draws counting half, `p_win - p_loss = 2p - 1`, so that expression
+reduces to `(2p - 1) × d`. The hard bound is `d ≤ 1`; the 48,000-game probe's
+pooled decisive results measured `d = 0.605`:
+
+| outcome share | symmetric maximum extra points/match | symmetric probe-shaped extra points/match |
+|---:|---:|---:|
+| 50% | 0.00 | 0.00 |
+| 55% | 0.10 | 0.061 |
+| 60% | 0.20 | 0.121 |
+| 63% | 0.26 | **0.157** |
+| 70% | 0.40 | 0.242 |
+
+Under that symmetric probe-shaped assumption, the coarse 63% BONE share adds
+0.157 points per match, only **0.56%** of the coarse model's 28.2-point
+equal-rated, no-draw base-only expectation. With draw fraction `q`, that base
+comparison becomes `28.2 - 10q`. Across the whole target climb the no-draw
+estimate suggests roughly zero to a couple fewer games, inside the planning
+model's uncertainty; floor/loss-cap clipping makes the practical change smaller.
+Even the perfect-streak bounds do not move because their dominant result already
+requests the unchanged maximum seven: 44 continuous equal-rated dominant wins
+and about 31 cap-edge bot wins still reach OBSIDIAN. The retained target
+simulation, not this estimate, owns the eventual cadence verdict because real
+margin increments may correlate with win/loss, rating gap, mode, and player
+skill.
 
 #### Score-curve cutover preserves standing
 

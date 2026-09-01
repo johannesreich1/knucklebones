@@ -125,13 +125,16 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   cannot see. This documentation decision is not live, and every affected
   authoritative function must be redeployed when implementation ships.
 - Implement the separately decided 2026-09-01 finish-margin transfer in
-  `docs/LADDER.md §1`: retain the opponent-strength base, request a normalized
-  **2–7** loser-to-winner transfer (**0–7** applied at boundaries), and persist
-  versioned total/finish components. The current floors remain runtime truth;
-  the successor floor curve and cutover are the separate, coordinated target in
-  §7. Neither decision is live; implementation requires every settlement/retry
-  and result/history surface, retained production-shaped evidence, tests, and
-  redeployment of each affected authoritative function closure.
+  `docs/LADDER.md §1`: retain the opponent-strength base, request a
+  winner-score-normalized **2–7** loser-to-winner transfer (**0–7** applied at
+  boundaries), and persist versioned total/finish components. The refinement
+  changes a decisive result by at most one point versus the earlier
+  combined-score target and leaves the target cadence projection unchanged.
+  The current floors remain runtime truth; the successor floor curve and
+  cutover are the separate, coordinated target in §7. Neither decision is live;
+  implementation requires every settlement/retry and result/history surface,
+  retained production-shaped evidence, tests, and redeployment of each affected
+  authoritative function closure.
 - The `localization-browser` geometry matrix is manual-only since 2026-08-26
   (owner: Johannes): run
   `mise exec -- node tests/browser/localization/run.mjs` plus the manual
