@@ -34,7 +34,7 @@ const check = (condition, message, detail) => {
   if (!condition) problems.push(`${message} :: ${JSON.stringify(detail)}`);
 };
 
-const WIPE_IDS = ['kb-page-neon-beam', 'kb-page-neon-source', 'kb-page-neon-target'];
+const WIPE_IDS = ['kb-page-push-scrim', 'kb-page-push-source', 'kb-page-push-target'];
 const BACK_IDS = ['kb-duel-bracket-p1', 'kb-duel-bracket-p2', ...WIPE_IDS].sort();
 
 async function waitForMotionIdle(page) {
@@ -44,13 +44,13 @@ async function waitForMotionIdle(page) {
     return managed.length === 0
       && !document.getElementById('kbroot')?.classList.contains('page-motion-active')
       && !document.querySelector(
-        '.page-wipe-beam,.page-motion-source,.page-motion-target,.page-motion-stage,.page-motion-cleanup',
+        '.page-motion-source,.page-motion-target,.page-motion-stage,.page-motion-cleanup,.page-motion-within',
       );
   }, null, { timeout: 1500 });
 }
 
-/* Close runs the shared back wipe: the page beneath stays inert and the
-   opener regains focus only when that wipe lands. Sample what the player is
+/* Close runs the shared back push: the page beneath stays inert and the
+   opener regains focus only when that push lands. Sample what the player is
    left with after the landing, not the first frame of the departure. */
 async function closeLegalPage(page, legalPage) {
   await page.evaluate((pageId) => {
@@ -82,7 +82,9 @@ async function sampleMotion(page, expectedIds) {
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const source = document.querySelector('.page-motion-source');
     const target = document.querySelector('.page-motion-target');
-    const beam = document.querySelector('.page-wipe-beam');
+    const direction = document.getElementById('kbroot')?.dataset.pageMotionDirection ?? '';
+    const under = direction === 'back' ? target : source;
+    const scrimStyle = under ? getComputedStyle(under, '::after') : null;
     const sheet = document.querySelector('.faceoff');
     const style = (element) => element ? getComputedStyle(element) : null;
     const signature = managed.map((animation) => ({
@@ -90,15 +92,14 @@ async function sampleMotion(page, expectedIds) {
       duration: Number(animation.effect?.getTiming().duration ?? 0),
       easing: animation.effect?.getTiming().easing ?? '',
       keyframes: (animation.effect?.getKeyframes() ?? []).map((frame) =>
-        Object.fromEntries(['computedOffset', 'left', 'opacity', 'clipPath', 'transform']
+        Object.fromEntries(['computedOffset', 'opacity', 'transform']
           .filter((key) => frame[key] !== undefined)
           .map((key) => [key, frame[key]]))),
     })).sort((left, right) => left.id.localeCompare(right.id));
-    const beamBox = beam?.getBoundingClientRect();
     const reading = {
       ids: signature.map(({ id }) => id),
       signature,
-      direction: document.getElementById('kbroot')?.dataset.pageMotionDirection ?? '',
+      direction,
       sourceId: source?.id ?? '',
       targetId: target?.id ?? '',
       sourceClip: style(source)?.clipPath ?? '',
@@ -109,11 +110,7 @@ async function sampleMotion(page, expectedIds) {
       targetZ: Number.parseInt(style(target)?.zIndex ?? '', 10),
       sheetZ: Number.parseInt(style(sheet)?.zIndex ?? '', 10),
       sheetConnected: !!sheet?.isConnected,
-      beam: beamBox ? {
-        opacity: Number(style(beam)?.opacity ?? 0),
-        width: beamBox.width,
-        height: beamBox.height,
-      } : null,
+      scrim: scrimStyle ? { opacity: Number(scrimStyle.opacity), content: scrimStyle.content } : null,
     };
     managed.forEach((animation) => animation.play());
     return reading;
@@ -378,8 +375,8 @@ try {
             && document.activeElement === overlay.querySelector('h1');
         }, legalPage);
         const observation = await page.evaluate(async ({ locale, legalPage, sharedBody }) => {
-          // The shared room fade and Neon Wipe keep old and new overlays in
-          // composited layers for .28s. Hit-test only after the authored
+          // The shared room fade and page push keep old and new overlays in
+          // composited layers for .42s. Hit-test only after the authored
           // transitions settle, rather than assuming two frames are enough.
           const overlayTransitions = document.getAnimations({ subtree: true })
             .filter((animation) => animation.transitionProperty === 'opacity'
@@ -496,18 +493,19 @@ try {
   }
   out.legalAboveSheet = await inspectLegalAboveSheet(browser);
   const stack = out.legalAboveSheet;
-  const partlyClipped = (clip) => {
-    const percent = Number(clip.match(/([\d.]+)%\)$/)?.[1]);
-    return percent > 0 && percent < 100;
+  /* a pushed page is part-way across the screen: translated right of 0 and
+     not yet landed; a wipe's clip would read `none` here and fail */
+  const partlyTranslated = (transform) => {
+    const x = Number(/^matrix\(1, 0, 0, 1, (-?[\d.]+), 0\)$/.exec(transform ?? '')?.[1]);
+    return Number.isFinite(x) && x > 0;
   };
   const forwardPaints = ({ motion, state }) => motion.direction === 'forward'
     && JSON.stringify(motion.ids) === JSON.stringify([...WIPE_IDS].sort())
-    && motion.signature.every(({ duration }) => duration === 280)
+    && motion.signature.every(({ duration }) => duration === 420)
     && motion.sourceId === 'ovStart' && motion.targetId === 'ovPrivacy'
-    && partlyClipped(motion.targetClip) && motion.targetTransform !== 'none'
+    && motion.targetClip === 'none' && partlyTranslated(motion.targetTransform)
     && motion.targetZ > motion.sheetZ && motion.sheetConnected
-    && motion.beam?.opacity > 0 && motion.beam.width >= 2 && motion.beam.width <= 4
-    && motion.beam.height >= 800
+    && motion.scrim?.opacity > 0 && motion.scrim.opacity < .45
     && state.open && state.legalInert === false && state.sheetInert === true
     && state.headingFocused;
   check(forwardPaints(stack.forward),
@@ -518,17 +516,16 @@ try {
   const backPaints = (motion) => motion.direction === 'back'
     && JSON.stringify(motion.ids) === JSON.stringify(BACK_IDS)
     && motion.signature.every(({ id, duration }) =>
-      duration === (id.startsWith('kb-duel-bracket-') ? 220 : 280))
+      duration === (id.startsWith('kb-duel-bracket-') ? 220 : 420))
     && motion.sourceId === 'ovPrivacy' && motion.targetId === 'ovStart'
-    && partlyClipped(motion.sourceClip) && motion.sourceTransform !== 'none'
+    && motion.sourceClip === 'none' && partlyTranslated(motion.sourceTransform)
     && motion.sourceZ > motion.sheetZ && motion.sheetConnected
-    && motion.beam?.opacity > 0 && motion.beam.width >= 2 && motion.beam.width <= 4
-    && motion.beam.height >= 800;
+    && motion.scrim?.opacity > 0 && motion.scrim.opacity < .45;
   check(backPaints(stack.buttonBack),
-    'button Back skipped or painted the shared Legal Neon source/beam below the sheet',
+    'button Back skipped or painted the shared Legal push source/scrim below the sheet',
     stack.buttonBack);
   check(backPaints(stack.swipeBack),
-    'edge Back skipped or painted the shared Legal Neon source/beam below the sheet',
+    'edge Back skipped or painted the shared Legal push source/scrim below the sheet',
     stack.swipeBack);
   check(JSON.stringify(stack.swipeBack.signature) === JSON.stringify(stack.buttonBack.signature),
     'edge Back did not run the exact button Back timeline above the sheet', {

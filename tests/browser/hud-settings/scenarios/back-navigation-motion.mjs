@@ -1,12 +1,16 @@
-const MOTION_IDS = [
-  'kb-duel-bracket-p1',
-  'kb-duel-bracket-p2',
-  'kb-page-neon-beam',
-  'kb-page-neon-source',
-  'kb-page-neon-target',
-];
-const WIPE_IDS = MOTION_IDS.filter((id) => !id.startsWith('kb-duel-bracket'));
+/* THE PUSH (design 57e, selected 2026-09-02): the page on top slides in from
+   the right, the page underneath parallaxes a third of the way out under a
+   scrim painted on it. No beam, no clip: nothing here animates a layout or a
+   paint property, which is what made the wipe heat the phone. */
+const PUSH_IDS = ['kb-page-push-scrim', 'kb-page-push-source', 'kb-page-push-target'];
+const MOTION_IDS = ['kb-duel-bracket-p1', 'kb-duel-bracket-p2', ...PUSH_IDS];
 const CROSSFADE_IDS = ['kb-page-crossfade-source', 'kb-page-crossfade-target'];
+/* keyframe keys that are timing, not painted properties */
+const TIMING_KEYS = new Set(['offset', 'computedOffset', 'easing', 'composite']);
+const translateX = (transform) => {
+  const match = /^matrix\(1, 0, 0, 1, (-?[\d.]+), 0\)$/.exec(transform ?? '');
+  return match ? Number(match[1]) : null;
+};
 
 async function settle(page) {
   await page.waitForFunction(() => {
@@ -16,7 +20,7 @@ async function settle(page) {
     return !root?.classList.contains('page-motion-active')
       && managed.length === 0
       && !document.querySelector(
-        '.page-wipe-beam,.page-motion-source,.page-motion-target,.page-motion-stage,.page-motion-cleanup,.page-motion-panel-layer',
+        '.page-motion-source,.page-motion-target,.page-motion-stage,.page-motion-cleanup,.page-motion-panel-layer,.page-motion-within',
       );
   }, null, { timeout: 1200 });
 }
@@ -81,16 +85,23 @@ async function captureActiveMotion(page, expectedIds) {
         easing: timing?.easing ?? '',
         keyframes: (animation.effect?.getKeyframes() ?? []).map((frame) =>
           Object.fromEntries(Object.entries(frame).sort(([a], [b]) => a.localeCompare(b)))),
-        target: target?.id || target?.classList?.contains('page-wipe-beam') && 'beam'
-          || target?.classList?.value || '',
+        target: (target?.id || target?.classList?.value || '')
+          + (animation.effect?.pseudoElement ?? ''),
       };
     }).sort((a, b) => a.id.localeCompare(b.id));
     const sourceAnimation = managed.find((animation) => animation.id.endsWith('source'));
     const targetAnimation = managed.find((animation) => animation.id.endsWith('target'));
     const source = sourceAnimation?.effect?.target;
     const target = targetAnimation?.effect?.target;
-    const beam = document.querySelector('.page-wipe-beam');
-    const beamBox = beam?.getBoundingClientRect();
+    const direction = document.getElementById('kbroot')?.dataset.pageMotionDirection ?? '';
+    /* the page underneath wears the scrim; the page on top wears the shadow */
+    const under = direction === 'back' ? target : source;
+    const over = direction === 'back' ? source : target;
+    const scrim = under ? getComputedStyle(under, '::after') : null;
+    const backdrop = (element) => {
+      const style = element ? getComputedStyle(element) : null;
+      return style ? (style.backdropFilter || style.webkitBackdropFilter || '') : '';
+    };
     const icon = document.getElementById('btnSettingsBack');
     const p1 = icon?.querySelector('.back-bracket--p1');
     const p2 = icon?.querySelector('.back-bracket--p2');
@@ -105,12 +116,17 @@ async function captureActiveMotion(page, expectedIds) {
       targetOpacity: target ? getComputedStyle(target).opacity : '',
       sourceId: source?.id ?? '',
       targetId: target?.id ?? '',
-      beam: beam && beamBox ? {
-        width: beamBox.width,
-        height: beamBox.height,
-        visible: Number(getComputedStyle(beam).opacity) > 0,
-        gradient: getComputedStyle(beam).backgroundImage,
-      } : null,
+      direction,
+      viewportWidth: innerWidth,
+      scrim: scrim ? { opacity: Number(scrim.opacity), content: scrim.content } : null,
+      overShadow: over ? getComputedStyle(over).boxShadow : '',
+      backdrop: [backdrop(source), backdrop(target)],
+      willChange: [source, target].map((element) => element ? getComputedStyle(element).willChange : ''),
+      /* every painted property any managed timeline touches: the wipe's
+         `left` and `clipPath` were the layout/paint work per frame */
+      animatedProperties: [...new Set(managed.flatMap((animation) =>
+        (animation.effect?.getKeyframes() ?? []).flatMap((frame) => Object.keys(frame))))]
+        .filter((key) => !['offset', 'computedOffset', 'easing', 'composite'].includes(key)).sort(),
       bracketTransforms: [p1, p2].map((path) => path ? getComputedStyle(path).transform : ''),
       active: document.getElementById('kbroot')?.classList.contains('page-motion-active') ?? false,
     };
@@ -206,7 +222,7 @@ export async function runBackNavigationMotionScenarios(suite) {
   out.backSwipeMotion = await captureBackMotion(page, () => edgeSwipe(page));
   const expected = [...MOTION_IDS].sort();
   check(JSON.stringify(out.backButtonMotion.ids) === JSON.stringify(expected),
-    'button Back is missing the shared Duel Brackets + Neon Wipe timeline', out.backButtonMotion);
+    'button Back is missing the shared Duel Brackets + push timeline', out.backButtonMotion);
   check(JSON.stringify(out.backSwipeMotion.signature) === JSON.stringify(out.backButtonMotion.signature),
     'edge swipe does not run the exact same Back timeline as the button', {
       button: out.backButtonMotion.signature,
@@ -216,24 +232,41 @@ export async function runBackNavigationMotionScenarios(suite) {
     button: out.backButtonMotion,
     swipe: out.backSwipeMotion,
   })) {
-    check(sample.active && sample.sourceClip !== 'none'
-      && sample.sourceTransform !== 'none' && Number(sample.targetOpacity) > 0
-      && Number(sample.targetOpacity) < 1 && sample.beam?.visible
-      && sample.beam.width >= 2 && sample.beam.width <= 4
-      && /gradient/.test(sample.beam.gradient)
+    const sourceX = translateX(sample.sourceTransform);
+    const targetX = translateX(sample.targetTransform);
+    check(sample.active && sample.direction === 'back'
+      && sample.sourceClip === 'none' && sample.targetClip === 'none'
+      && sourceX > 0 && sourceX < sample.viewportWidth
+      && targetX < 0 && targetX > -sample.viewportWidth / 3
+      && Number(sample.targetOpacity) === 1
+      && sample.scrim?.opacity > 0 && sample.scrim.opacity < .45
+      && /-12px 0px 32px/.test(sample.overShadow)
       && sample.bracketTransforms.every((value) => value && value !== 'none'),
-    `${kind} Back is not visibly painting the selected Neon Wipe and bracket beat`, sample);
+    `${kind} Back is not visibly painting the selected push and bracket beat`, sample);
+    /* the heat: nothing animates layout or paint, no surface re-blurs its
+       backdrop while it moves, and the compositor is promised only what it
+       can composite */
+    check(!sample.animatedProperties.includes('left')
+      && !sample.animatedProperties.includes('clipPath')
+      && sample.backdrop.every((value) => value === 'none')
+      && sample.willChange.every((value) => value === 'transform, opacity'),
+    `${kind} Back still animates layout/paint properties or re-blurs a moving page`, sample);
   }
 
   await page.evaluate(() => window.__kb.goHome());
   await settle(page);
   await page.tap('#btnSettingsHome');
-  out.forwardMotion = await captureActiveMotion(page, WIPE_IDS);
-  check(out.forwardMotion.ids.join() === [...WIPE_IDS].sort().join()
+  out.forwardMotion = await captureActiveMotion(page, PUSH_IDS);
+  const forwardX = translateX(out.forwardMotion.targetTransform);
+  check(out.forwardMotion.ids.join() === [...PUSH_IDS].sort().join()
     && out.forwardMotion.sourceId === 'ovStart' && out.forwardMotion.targetId === 'ovSettings'
-    && out.forwardMotion.targetClip !== 'none' && out.forwardMotion.targetTransform !== 'none'
-    && out.forwardMotion.beam?.visible,
-  'opening a page does not use the mirrored shared Neon Wipe', out.forwardMotion);
+    && out.forwardMotion.targetClip === 'none'
+    && forwardX > 0 && forwardX < out.forwardMotion.viewportWidth
+    && translateX(out.forwardMotion.sourceTransform) < 0
+    && out.forwardMotion.scrim?.opacity > 0 && out.forwardMotion.scrim.opacity < .45
+    && /-12px 0px 32px/.test(out.forwardMotion.overShadow)
+    && out.forwardMotion.signature.every((row) => row.duration === 420),
+  'opening a page does not use the mirrored shared push', out.forwardMotion);
   await page.tap('#btnSettingsBack');
   await settle(page);
 
@@ -261,7 +294,7 @@ export async function runBackNavigationMotionScenarios(suite) {
   await page.tap('#btnSettingsBack');
   out.reducedMotion = await captureActiveMotion(page, CROSSFADE_IDS);
   check(out.reducedMotion.ids.join() === [...CROSSFADE_IDS].sort().join()
-    && !out.reducedMotion.beam && out.reducedMotion.sourceClip === 'none'
+    && out.reducedMotion.sourceClip === 'none'
     && out.reducedMotion.sourceTransform === 'none'
     && Number(out.reducedMotion.sourceOpacity) > 0
     && Number(out.reducedMotion.sourceOpacity) < 1
@@ -269,8 +302,31 @@ export async function runBackNavigationMotionScenarios(suite) {
     && Number(out.reducedMotion.targetOpacity) < 1
     && out.reducedMotion.bracketTransforms.every((value) => value === 'none')
     && out.reducedMotion.signature.every((row) => row.duration === 120),
-  'Reduced Motion still travels/clips or paints the Neon beam instead of crossfading', out.reducedMotion);
+  'Reduced Motion still travels or clips instead of crossfading', out.reducedMotion);
   await page.evaluate(() => document.getElementById('kbroot').classList.remove('reduce-motion'));
+
+  /* THE HEAT AT REST. An opaque page must not blur the backdrop it hides
+     (that blur kept every layer beneath it alive), the three translucent
+     rooms keep theirs, and the drifting blurred backdrop pauses under any
+     open page — it exists for the live table. */
+  await page.evaluate(() => window.__kb.goHome());
+  await settle(page);
+  out.restingCost = await page.evaluate(() => {
+    const backdrop = (id) => {
+      const style = getComputedStyle(document.getElementById(id));
+      return style.backdropFilter || style.webkitBackdropFilter || '';
+    };
+    return {
+      home: backdrop('ovStart'),
+      settings: backdrop('ovSettings'),
+      away: backdrop('ovAway'),
+      drift: getComputedStyle(document.getElementById('bg'), '::before').animationPlayState,
+    };
+  });
+  check(out.restingCost.home === 'none' && out.restingCost.settings === 'none'
+    && /blur\(16px\)/.test(out.restingCost.away) && out.restingCost.drift === 'paused',
+  'an opaque page still blurs its backdrop, or the backdrop drift runs under an open page',
+  out.restingCost);
 
   await page.evaluate(() => window.__kb.newGame());
   await page.waitForTimeout(50);
@@ -279,9 +335,11 @@ export async function runBackNavigationMotionScenarios(suite) {
       .filter((animation) => /^(kb-page-|kb-duel-bracket-)/.test(animation.id))
       .map((animation) => animation.id),
     active: document.getElementById('kbroot')?.classList.contains('page-motion-active') ?? false,
-    beam: !!document.querySelector('.page-wipe-beam'),
+    drift: getComputedStyle(document.getElementById('bg'), '::before').animationPlayState,
   }));
-  check(out.gameExcluded.animations.length === 0 && !out.gameExcluded.active && !out.gameExcluded.beam,
-    'entering the game runs page navigation motion', out.gameExcluded);
+  check(out.gameExcluded.animations.length === 0 && !out.gameExcluded.active
+    && out.gameExcluded.drift === 'running',
+  'entering the game runs page navigation motion, or the table lost its drifting backdrop',
+  out.gameExcluded);
   await page.evaluate(() => window.__kb.goHome());
 }

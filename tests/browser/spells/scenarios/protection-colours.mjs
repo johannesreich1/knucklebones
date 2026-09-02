@@ -1,3 +1,4 @@
+import { waitForOverlayTransitions } from '../../support/overlay-transitions.mjs';
 export async function runProtectionColourScenarios(suite) {
   const { page, out, check, newGame, waitChoose, table, guard } = suite;
 
@@ -8,9 +9,9 @@ export async function runProtectionColourScenarios(suite) {
      this mode is meant to strengthen. Drive the real Settings control so this
      also covers its palette synchronisation path. */
   await page.evaluate(() => window.__kb.goHome());
-  await page.tap('#btnSettingsHome'); await page.waitForTimeout(250);
+  await page.tap('#btnSettingsHome'); await page.waitForTimeout(250); await waitForOverlayTransitions(page, '.ov');
   await page.tap('#cbSeg button[data-b="1"]'); await page.waitForTimeout(150);
-  await page.tap('#btnSettingsBack'); await page.waitForTimeout(250);
+  await page.tap('#btnSettingsBack'); await page.waitForTimeout(250); await waitForOverlayTransitions(page, '.ov');
   await newGame({ spell: 'ward', mode: 3 });
   check(await waitChoose(), 'game never reached choose (colour-blind protections)');
   await table([[], [], []], [[5, 5, 2], [4], []], 5);
@@ -47,6 +48,6 @@ export async function runProtectionColourScenarios(suite) {
 
   /* Leave the persistent setting as this suite found it. */
   await page.evaluate(() => window.__kb.goHome());
-  await page.tap('#btnSettingsHome'); await page.waitForTimeout(200);
+  await page.tap('#btnSettingsHome'); await page.waitForTimeout(200); await waitForOverlayTransitions(page, '.ov');
   await page.tap('#cbSeg button[data-b="0"]'); await page.waitForTimeout(100);
 }

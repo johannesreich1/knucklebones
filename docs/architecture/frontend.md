@@ -166,6 +166,24 @@ When extracting code from a large module:
 Prefer plain functions, typed records, and narrow ports. The application does
 not need a framework store, event bus, or dependency-injection container.
 
+### Page navigation
+
+Every titled page enters and leaves through one controller,
+`src/ui/page-motion.ts`. Ordinary owners only change logical visibility; the
+reused Online shell goes through `changePagePanel()`, its single mutation seam,
+so the outgoing frame is still measurable before the shell repaints. The motion
+is the platform push from `src/ui/page-motion-frames.ts` (study 57e, chosen
+2026-09-02): the page on top slides in from the right in 420 ms while the page
+underneath parallaxes a third of the way out under a scrim; Back is the exact
+reverse and the edge swipe commits through the same Back control. A reused
+shell paints its own opaque slab and scrim as pseudo-elements the controller
+animates, and its title arrives with the page it names. Everything animates
+transform or opacity only, and a moving page never blurs its backdrop — the
+clip-path wipe this replaced cost layout and paint on every frame. Reduced
+motion keeps a 120 ms crossfade. The controller's router ignores its own paint
+classes, so a navigation wakes it once, and `src/ui/page-surface.ts` answers
+"which layer owns the room" with a single walk.
+
 ## State and concurrency
 
 - Game-root CSS state classes are a rendering contract and should have one

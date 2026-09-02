@@ -63,8 +63,8 @@
     },
     {
       "path": "src/styles/components/overlays.css",
-      "bytes": 12239,
-      "sha256": "c664dc1d20c4da6b3e65af300a7c51f2e18bca957b14fa43a095da029f4a68b1"
+      "bytes": 12786,
+      "sha256": "cd0723b661ea04c680d38271c9ec26b755acebf73b5884b69bc6c4c49ad9bfe1"
     },
     {
       "path": "src/styles/components/picker.css",
@@ -73,8 +73,8 @@
     },
     {
       "path": "src/styles/components/rune-deal.css",
-      "bytes": 5820,
-      "sha256": "a30d21eb61050e75e93ad7a2e4047ac4fc1c23313971c6a8a235778fbde230aa"
+      "bytes": 5823,
+      "sha256": "7a1b6c970ea7b6700b824171ab58d23f21b771d00d3ac50fe69fe8f9fdff06b4"
     },
     {
       "path": "src/styles/components/sheet.css",
@@ -88,8 +88,8 @@
     },
     {
       "path": "src/styles/foundations/backdrop.css",
-      "bytes": 1940,
-      "sha256": "f56a2c033517e4e50b28b916067f14642289429b8071a0fe1b665ee8af03b8c9"
+      "bytes": 2343,
+      "sha256": "7e4834ee052767571607c2d9c36e9248e326b3da28407cd0877a1d7195b6e616"
     },
     {
       "path": "src/styles/foundations/tokens.css",
@@ -118,8 +118,8 @@
     },
     {
       "path": "src/styles/game/motion.css",
-      "bytes": 3007,
-      "sha256": "1935fd5c9cae893ae6807dbcd255914ef8bb3866343eebd03cfde77ea8b5b604"
+      "bytes": 2936,
+      "sha256": "ff3590f7a918f6bfc024f073b92086fce3222b4a45ba6e8b4e98c4a364dd1911"
     },
     {
       "path": "src/styles/game/pilfer.css",
@@ -203,8 +203,8 @@
     },
     {
       "path": "src/styles/shell/paged-view.css",
-      "bytes": 21119,
-      "sha256": "e060c436c2567d6aaf6bf11ba06b5ef7a61c5237bba237e20c3d855afd4c1300"
+      "bytes": 22629,
+      "sha256": "72cc43cd5f35c11c3b72447842d89b5e7a0e1f175bac40a6c0365f389575d2dd"
     },
     {
       "path": "src/ui/die-markup.ts",
@@ -3678,23 +3678,19 @@
     },
     {
       "path": "native/assets/icon-background.png",
-      "bytes": 14615,
-      "sha256": "13895accc2574322af1994b2821414213b32dc518fe040fa8f49f2c2de675cdc"
+      "missing": true
     },
     {
       "path": "native/assets/icon-foreground.png",
-      "bytes": 707739,
-      "sha256": "a7fdb4642cc043d503fb6aa833e23330edbf99e39349923a23d5da281512afaf"
+      "missing": true
     },
     {
       "path": "native/assets/icon-monochrome.png",
-      "bytes": 26675,
-      "sha256": "de4732116fbb2f1d801d2c12d252699a0de04be41d0a048563dba7a91bc1f6c0"
+      "missing": true
     },
     {
       "path": "native/assets/icon-only.png",
-      "bytes": 505413,
-      "sha256": "14950731e56e4d556275116087e6bcc08bc54befaee2f40bbfd859fe75f11cc1"
+      "missing": true
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png",

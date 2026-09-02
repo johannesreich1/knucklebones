@@ -99,6 +99,19 @@ compute below it across their localization viewport matrices. This is scoped,
 not a blanket minimum for dense game metadata: smaller secondary metadata
 remains component-specific and needs a larger primary label for context.
 
+## Overlays, blur, and the backdrop
+
+Every `.ov` is opaque (`#04050c`, the topmost one wearing `--aurora`) and does
+not blur its backdrop. Only the three translucent rooms that show the live
+table — `#ovAway`, `#ovPass`, `#ovFirst` — carry `backdrop-filter`, because a
+backdrop-filter forces every layer beneath it to stay live: with it on every
+overlay, the drifting blurred backdrop was re-composited on every frame two
+overlays deep in the online menu, which is what heated the phone at rest
+(2026-09-02). The `#bg::before` drift is translate-only and pauses whenever
+any overlay is open. Page motion promises the compositor `transform` and
+`opacity` only and switches a moving page's backdrop-filter off for the run
+(`shell/paged-view.css`).
+
 ## Localized and legal copy
 
 Responsive rules stay locale-neutral. Do not add language-tag selectors,

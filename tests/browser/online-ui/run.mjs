@@ -31,6 +31,9 @@ import { runOnlineMenuPressFeedbackScenarios } from './scenarios/menu-press-feed
 import { runOnlineLoadingPanelScenarios } from './scenarios/loading-panels.mjs';
 import { runPageNavigationMotionScenarios } from './scenarios/page-navigation-motion.mjs';
 import {
+  runPageNavigationPerformanceScenarios,
+} from './scenarios/page-navigation-performance.mjs';
+import {
   runRankedGameMotionExclusionScenarios,
 } from './scenarios/ranked-game-motion-exclusion.mjs';
 import { runEntryWithoutDieScenarios } from './scenarios/entry-without-die.mjs';
@@ -89,6 +92,7 @@ const SCENARIOS = Object.freeze([
   { id: 'menu-press-feedback', run: runOnlineMenuPressFeedbackScenarios },
   { id: 'loading-panels', run: runOnlineLoadingPanelScenarios },
   { id: 'page-navigation-motion', run: runPageNavigationMotionScenarios },
+  { id: 'page-navigation-performance', run: runPageNavigationPerformanceScenarios },
   { id: 'ranked-game-motion-exclusion', run: runRankedGameMotionExclusionScenarios },
   { id: 'entry-without-die', run: runEntryWithoutDieScenarios },
   { id: 'offline-entry', run: runOfflineEntryScenarios },
@@ -133,7 +137,8 @@ const SHARDS = Object.freeze({
   entry: Object.freeze([
     'matchmaking', 'fresh-account', 'ladder-faceoff', 'ladder-scroll', 'history-crawl',
     'explicit-guest-session', 'menu-press-feedback', 'loading-panels',
-    'page-navigation-motion', 'ranked-game-motion-exclusion', 'entry-without-die',
+    'page-navigation-motion', 'page-navigation-performance', 'ranked-game-motion-exclusion',
+    'entry-without-die',
     'offline-entry', 'auth-modal', 'auth-credentials',
   ]),
   account: Object.freeze([

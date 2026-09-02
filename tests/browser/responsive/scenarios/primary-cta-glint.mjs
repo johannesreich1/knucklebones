@@ -119,11 +119,13 @@ export async function runPrimaryCtaGlintScenarios(suite) {
      selected die is a stable sibling of the copy, so changing language must
      repaint the label without erasing, moving, or absorbing the icon. */
   await page.click('#btnSettingsHome');
-  await page.waitForTimeout(320);
+  await waitForOverlayTransitions(page, '#ovSettings, #ovStart');
   await page.click('#languageNext');
   await page.waitForTimeout(120);
   await page.click('#btnSettingsBack');
-  await page.waitForTimeout(320);
+  /* the page push is 420ms and Home travels for all of it: a fixed timer here
+     read a 24.999996px icon out of the moving overlay (the memory's trap) */
+  await waitForOverlayTransitions(page, '#ovSettings, #ovStart');
   const localizedHomeAction = await readPlayAction(page, '#btnOnline');
 
   await page.evaluate(() => window.__kb.openPractice());
@@ -244,6 +246,7 @@ export async function runPrimaryCtaGlintScenarios(suite) {
     if (index === LOCALE_REGISTRY.length - 1) break;
     await compactPage.click('#btnSettingsHome');
     await compactPage.waitForTimeout(300);
+    await waitForOverlayTransitions(compactPage, '.ov');
     await compactPage.click('#languageNext');
     const next = LOCALE_REGISTRY[index + 1];
     await compactPage.waitForFunction((id) => document.documentElement.dataset.locale === id, next.id);

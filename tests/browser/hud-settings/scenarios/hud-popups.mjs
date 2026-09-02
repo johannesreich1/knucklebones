@@ -1,3 +1,4 @@
+import { waitForOverlayTransitions } from '../../support/overlay-transitions.mjs';
 export async function runHudPopupScenarios(suite) {
   const { page, out, check } = suite;
   // start collecting every score popup as it appears
@@ -24,7 +25,7 @@ export async function runHudPopupScenarios(suite) {
 
   // ===== popups, deterministically via the tutorial (home strip button) =====
   // the tutorial now lives one level in, behind HOW TO PLAY
-  await page.tap('#btnLearn'); await page.waitForTimeout(320);
+  await page.tap('#btnLearn'); await page.waitForTimeout(320); await waitForOverlayTransitions(page, '.ov');
   await page.tap('#btnLearnTut'); await page.waitForTimeout(500);
   await page.tap('#coach');
   async function waitChoose(maxMs = 15000) {

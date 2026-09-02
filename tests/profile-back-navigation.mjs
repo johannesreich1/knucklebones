@@ -1,3 +1,4 @@
+import { waitForOverlayTransitions } from './browser/support/overlay-transitions.mjs';
 // WHERE BACK LEADS OUT OF THE PROFILE: the door you came through, not the menu.
 //
 // The result screen's own plate is a DOOR — tapping it opens your profile
@@ -197,10 +198,10 @@ try {
     await page.waitForSelector('#homeChip');
     await page.click('#homeChip');
     await page.waitForFunction(() => document.querySelector('#onAccount')?.hidden === false);
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(400); await waitForOverlayTransitions(page, '.ov');
     out.fromHome = { profile: await room() };
     await page.click('#btnOnlineBack');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(500); await waitForOverlayTransitions(page, '.ov');
     out.fromHome.back = await room();
     check(out.fromHome.profile.id === 'ovOnline' && out.fromHome.profile.title === 'PROFILE',
           'the home chip did not open the profile', out.fromHome);
@@ -286,7 +287,7 @@ try {
     await page.focus(`${ownPlate} .gpill`);
     await page.keyboard.press('Enter');
     await page.waitForFunction(() => document.querySelector('#onAccount')?.hidden === false);
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(400); await waitForOverlayTransitions(page, '.ov');
     out.profileFromRank = await room();
     check(out.profileFromRank.id === 'ovOnline' && out.profileFromRank.title === 'PROFILE',
           'THE RANK PILL DID NOT OPEN THE PROFILE', out.profileFromRank);
@@ -299,7 +300,7 @@ try {
     /* ...and the ROW, which used to be the profile's door too. */
     await page.click(ownPlate);
     await page.waitForFunction(() => document.querySelector('#onLadder')?.hidden === false);
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(400); await waitForOverlayTransitions(page, '.ov');
     out.ladderFromResult = await room();
     check(out.ladderFromResult.id === 'ovOnline' && out.ladderFromResult.title === 'LADDER',
           'THE OWN PLATE DID NOT OPEN THE LADDER', out.ladderFromResult);
@@ -308,7 +309,7 @@ try {
     /* the plates take their stage again the moment the screen is uncovered —
        read it while it runs (the stamp's slam is still pending at 400ms, and
        a pending animation is a listed one) */
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(400); await waitForOverlayTransitions(page, '.ov');
     out.replay = await theatre();
     check(out.replay.includes('stampSlam') && out.replay.includes('plateIn'),
           'coming back did not replay the plates', out.replay);
@@ -336,14 +337,14 @@ try {
     await page.waitForFunction(() => document.querySelector('#onAccount')?.hidden === false);
     await page.click('#btnAvatar');
     await page.waitForFunction(() => document.querySelector('#onAvatar')?.hidden === false);
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(300); await waitForOverlayTransitions(page, '.ov');
     out.oneLevel = { avatar: await room() };
     await page.click('#btnOnlineBack');
     await page.waitForFunction(() => document.querySelector('#onAccount')?.hidden === false);
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(300); await waitForOverlayTransitions(page, '.ov');
     out.oneLevel.profile = await room();
     await page.click('#btnOnlineBack');
-    await page.waitForTimeout(900);
+    await page.waitForTimeout(900); await waitForOverlayTransitions(page, '.ov');
     out.oneLevel.result = await room();
     check(out.oneLevel.avatar.title === 'AVATAR', 'the avatar picker never opened', out.oneLevel);
     check(out.oneLevel.profile.id === 'ovOnline' && out.oneLevel.profile.title === 'PROFILE',
@@ -354,7 +355,7 @@ try {
 
     /* 5 · Home means home: nothing may be left floating above the title screen. */
     await page.click('#btnEndQuiet');
-    await page.waitForTimeout(700);
+    await page.waitForTimeout(700); await waitForOverlayTransitions(page, '.ov');
     out.home = { room: await room(),
                  endOn: await page.evaluate(() => document.getElementById('ovEnd').classList.contains('on')) };
     check(out.home.room.id === 'ovStart' && out.home.endOn === false,
@@ -369,14 +370,14 @@ try {
     await page.click('#btnBoardHome');
     await page.waitForFunction(() => document.querySelector('#onLadder')?.hidden === false
       && document.querySelectorAll('.lrow.me').length === 1);
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(300); await waitForOverlayTransitions(page, '.ov');
     out.ladder = { board: await room() };
     await page.click('.lrow.me');
     await page.waitForFunction(() => document.querySelector('#onAccount')?.hidden === false);
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(300); await waitForOverlayTransitions(page, '.ov');
     out.ladder.profile = await room();
     await page.click('#btnOnlineBack');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(500); await waitForOverlayTransitions(page, '.ov');
     out.ladder.back = await room();
     check(out.ladder.board.title === 'LADDER', 'the ladder never opened', out.ladder);
     check(out.ladder.profile.id === 'ovOnline' && out.ladder.profile.title === 'PROFILE',
@@ -394,7 +395,7 @@ try {
          ladder's own Back control would lead to the ladder and the player
          would be shut in a room that returns to itself. */
       await page.click('#btnOnlineBack');
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(500); await waitForOverlayTransitions(page, '.ov');
       out.ladder.home = await room();
       check(out.ladder.home.id === 'ovStart',
             'the ladder kept the profile\u2019s answer: its own Back control no longer leads home', out.ladder);

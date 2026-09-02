@@ -4,11 +4,22 @@
 // measurable before that shell changes title, layout, scroll, and panel state.
 // A committed edge swipe presses the real Back component and therefore enters
 // this exact controller path without a second animation implementation.
+// The motion itself is the platform push (page-motion-frames.ts): transform
+// and opacity only, so a navigation never asks for layout or paint per frame.
 
-import { topOpenOverlay, topOpenOverlayLayer } from './page-surface.ts';
+import { authoredLayer, openRoom, topOpenOverlay } from './page-surface.ts';
 import { makeInert, makeInertExcept, type InertSnapshot } from './modal-background.ts';
+import {
+  BRACKET_DURATION,
+  BRACKET_EASE,
+  PUSH_DURATION,
+  PUSH_EASE,
+  REDUCED_DURATION,
+  pushTimeline,
+  type PageMotionDirection,
+} from './page-motion-frames.ts';
 
-export type PageMotionDirection = 'forward' | 'back';
+export type { PageMotionDirection } from './page-motion-frames.ts';
 
 interface PageSurface {
   readonly key: string;
@@ -58,10 +69,6 @@ interface PageMotionController {
 
 const CONTROLLERS = new WeakMap<HTMLElement, PageMotionController>();
 const PAGE_BASES = new Set(['ovStart', 'ovEnd']);
-const NEON_DURATION = 280;
-const BRACKET_DURATION = 220;
-const REDUCED_DURATION = 120;
-const EASE = 'cubic-bezier(.16,1,.3,1)';
 
 function eligibleOverlay(element: HTMLElement): boolean {
   return element.classList.contains('paged') || PAGE_BASES.has(element.id);
@@ -81,30 +88,27 @@ function visibleOnlinePanel(overlay: HTMLElement): HTMLElement | null {
 }
 
 function pageSurface(overlay: HTMLElement, panel: HTMLElement | null,
-  logicalId?: string): PageSurface {
+  logicalId?: string, layer?: number): PageSurface {
   return {
     overlay,
     panel,
-    layer: stackLevel(overlay),
+    layer: layer ?? authoredLayer(overlay),
     key: panel ? `${overlay.id}/${logicalId || panel.dataset.pageMotionFor || panel.id}` : overlay.id,
   };
 }
 
-function surface(root: HTMLElement, behindSheet = false): PageSurface | null {
-  const overlay = behindSheet ? topOpenOverlayLayer(root) : topOpenOverlay(root);
+function surfaceOf(overlay: HTMLElement | null, layer?: number): PageSurface | null {
   if (!overlay || !eligibleOverlay(overlay)) return null;
-  const panel = visibleOnlinePanel(overlay);
-  return pageSurface(overlay, panel);
+  return pageSurface(overlay, visibleOnlinePanel(overlay), undefined, layer);
+}
+
+function surface(root: HTMLElement, behindSheet = false): PageSurface | null {
+  const room = openRoom(root);
+  return surfaceOf(behindSheet ? room.layerTop : room.top, room.layerTopZ);
 }
 
 function sameSurface(left: PageSurface | null, right: PageSurface | null): boolean {
   return left?.key === right?.key && left?.panel === right?.panel;
-}
-
-function stackLevel(element: HTMLElement): number {
-  const style = getComputedStyle(element);
-  const value = Number.parseInt(style.getPropertyValue('--page-motion-base-z') || style.zIndex, 10);
-  return Number.isFinite(value) ? value : 0;
 }
 
 /** Keep page motion inside the layer each surface already owns. Ordinary
@@ -115,8 +119,10 @@ function motionStack(
   after: PageSurface,
   direction: PageMotionDirection,
 ): { readonly source: number; readonly target: number } {
+  /* A reused shell paints its own slab at 2 between the two panels, so the
+     page on top sits at 3 (and its pinned header above that, in CSS). */
   if (before.overlay === after.overlay) {
-    return direction === 'back' ? { source: 2, target: 1 } : { source: 1, target: 2 };
+    return direction === 'back' ? { source: 3, target: 1 } : { source: 1, target: 3 };
   }
   const sourceBase = before.layer;
   const targetBase = after.layer;
@@ -141,7 +147,7 @@ function animate(
 
 function bracketBeat(control: HTMLElement): Animation[] {
   if (getComputedStyle(control).visibility !== 'visible') return [];
-  const options = { duration: BRACKET_DURATION, easing: EASE };
+  const options = { duration: BRACKET_DURATION, easing: BRACKET_EASE };
   const p1 = control.querySelector('.back-bracket--p1');
   const p2 = control.querySelector('.back-bracket--p2');
   return [
@@ -210,9 +216,9 @@ function startMotion(
     target.style.removeProperty('--page-motion-base-z');
   });
 
-  /* The outgoing overlay remains painted for the wipe after its logical route
+  /* The outgoing overlay remains painted for the push after its logical route
      has closed. The shared inert borrower composes with a sheet that may open
-     during this same 280ms; neither owner can restore the other's lock. */
+     during this same 420ms; neither owner can restore the other's lock. */
   if (source === before.overlay) {
     const sourceInert: InertSnapshot = makeInert(source);
     cleanups.add(() => sourceInert.release());
@@ -221,7 +227,7 @@ function startMotion(
   /* CSS clipping and pointer-events only govern sighted pointer input. Borrow
      inert for every incoming branch except its Back control as well, so Tab,
      keyboard activation, and assistive navigation cannot enter content before
-     the wipe reveals it. The same ownership primitive composes with loaders,
+     the push lands. The same ownership primitive composes with loaders,
      sheets, and interrupted runs, then restores their original state. */
   const targetBack = target.querySelector<HTMLElement>('[data-page-back]');
   const activeBeforeLock = document.activeElement;
@@ -256,6 +262,23 @@ function startMotion(
   root.classList.add('page-motion-active');
   root.dataset.pageMotionDirection = direction;
 
+  /* A reused shell moves TRANSPARENT panels over its own aurora, so the shell
+     itself paints what a full-screen page carries for free: an opaque slab
+     that travels with the page on top, a scrim over the page underneath, and
+     its one title arriving with the page it names (the owner's report: a
+     cached page's details were on screen in the first frame). A cross-overlay
+     run has two opaque pages; the one underneath wears the scrim. Both paints
+     are pseudo-elements the controller animates, so they leave nothing in the
+     DOM and cancel with everything else. */
+  const within = before.overlay === after.overlay;
+  const under = direction === 'forward' ? source : target;
+  const scrimHost = within ? stage : under;
+  const title = within ? stage.querySelector<HTMLElement>('.shead .ttl') : null;
+  if (within) stage.classList.add('page-motion-within');
+  const pseudo = (host: Element, frames: Keyframe[], options: KeyframeAnimationOptions,
+    id: string, pseudoElement: string): Animation =>
+    animate(host, frames, { ...options, pseudoElement }, id);
+
   if (reduced) {
     const options = { duration: REDUCED_DURATION, easing: 'ease-out' };
     animations.push(
@@ -264,47 +287,30 @@ function startMotion(
       animate(target, [{ opacity: direction === 'back' ? .88 : 0 }, { opacity: 1 }],
         options, 'kb-page-crossfade-target'),
     );
+    if (within) {
+      animations.push(pseudo(stage, [{ opacity: 0 }, { opacity: 1 }], options,
+        'kb-page-crossfade-slab', '::before'));
+      if (title) {
+        animations.push(animate(title, [{ opacity: 0 }, { opacity: 1 }], options,
+          'kb-page-crossfade-title'));
+      }
+    }
   } else {
-    const options = { duration: NEON_DURATION, easing: EASE };
+    const options = { duration: PUSH_DURATION, easing: PUSH_EASE };
+    const frames = pushTimeline(direction);
+    animations.push(
+      animate(source, frames.source, options, 'kb-page-push-source'),
+      animate(target, frames.target, options, 'kb-page-push-target'),
+      pseudo(scrimHost, frames.scrim, options, 'kb-page-push-scrim', '::after'),
+    );
+    if (within) {
+      animations.push(pseudo(stage, frames.slab, options, 'kb-page-push-slab', '::before'));
+      if (title) animations.push(animate(title, frames.title, options, 'kb-page-push-title'));
+    }
     if (direction === 'back') {
-      animations.push(
-        animate(source, [
-          { clipPath: 'inset(0 0 0 0%)', transform: 'translateX(0)', opacity: 1 },
-          { clipPath: 'inset(0 0 0 100%)', transform: 'translateX(12px)', opacity: 1 },
-        ], options, 'kb-page-neon-source'),
-        animate(target, [
-          { opacity: .82, transform: 'scale(.99)' },
-          { opacity: 1, transform: 'scale(1)' },
-        ], options, 'kb-page-neon-target'),
-      );
       const control = before.overlay.querySelector<HTMLElement>('[data-page-back]');
       if (control) animations.push(...bracketBeat(control));
-    } else {
-      animations.push(
-        animate(source, [
-          { opacity: 1, transform: 'scale(1)' },
-          { opacity: .82, transform: 'scale(.99)' },
-        ], options, 'kb-page-neon-source'),
-        animate(target, [
-          { clipPath: 'inset(0 0 0 100%)', transform: 'translateX(12px)', opacity: 1 },
-          { clipPath: 'inset(0 0 0 0%)', transform: 'translateX(0)', opacity: 1 },
-        ], options, 'kb-page-neon-target'),
-      );
     }
-
-    const beam = document.createElement('i');
-    beam.className = 'page-wipe-beam';
-    beam.setAttribute('aria-hidden', 'true');
-    stage.appendChild(beam);
-    cleanups.add(() => beam.remove());
-    const from = direction === 'back' ? '0%' : 'calc(100% - 3px)';
-    const to = direction === 'back' ? 'calc(100% - 3px)' : '0%';
-    animations.push(animate(beam, [
-      { left: from, opacity: 0 },
-      { offset: .08, opacity: 1 },
-      { offset: .92, opacity: 1 },
-      { left: to, opacity: 0 },
-    ], options, 'kb-page-neon-beam'));
   }
 
   let run: MotionRun;
@@ -317,7 +323,7 @@ function startMotion(
     target.classList.add('page-motion-cleanup');
     source.classList.remove('page-motion-source', `page-motion-${direction}`);
     target.classList.remove('page-motion-target', `page-motion-${direction}`);
-    stage.classList.remove('page-motion-stage');
+    stage.classList.remove('page-motion-stage', 'page-motion-within');
     /* Commit the cleanup rules before letting the generic overlay transition
        exist again. Without this flush Chromium treats removal as a fresh
        visible -> hidden delay and a closed page reports visible for .28s. */
@@ -534,7 +540,7 @@ export function bindPageMotion(root: HTMLElement): void {
       /* Cached data can paint in the same task that opened the overlay, before
          MutationObserver establishes its one top-level run. Defer one
          microtask so Account rewards/focus and other presentation side effects
-         cannot outrun that wipe. A superseding route resolves immediately;
+         cannot outrun that push. A superseding route resolves immediately;
          its owner revision remains the final authority. */
       return new Promise<void>((resolve) => queueMicrotask(() => {
         const run = activeRun;
@@ -546,7 +552,7 @@ export function bindPageMotion(root: HTMLElement): void {
 
     /* Queue/search painters legitimately restate their current panel while a
        top-level entry is still running. That is content paint, not a second
-       route, and must not truncate the one 280ms page timeline. */
+       route, and must not truncate the one 420ms page timeline. */
     if (before?.overlay === spec.overlay && before.panel === spec.target
         && before.key === targetKey) {
       mutate();
@@ -643,15 +649,17 @@ export function bindPageMotion(root: HTMLElement): void {
 
   const reconcile = (): void => {
     scheduled = false;
-    const top = topOpenOverlay(root);
-    const layeredTop = topOpenOverlayLayer(root);
+    const room = openRoom(root);
+    const top = room.top;
+    const layeredTop = room.layerTop;
     let next: PageSurface | null;
     if (!top && layeredTop) {
       /* A sheet owns the room. Keep the page under it stable. The exception is
-         a just-closed raised Legal page: wipe that source away to the page
+         a just-closed raised Legal page: push that source away to the page
          beneath the sheet, whose authored z remains below the modal. */
-      if (current && !current.overlay.classList.contains('on')) next = surface(root, true);
-      else return;
+      if (current && !current.overlay.classList.contains('on')) {
+        next = surfaceOf(layeredTop, room.layerTopZ);
+      } else return;
     } else if (top && !eligibleOverlay(top)) {
       /* A pass-through overlay such as the lazy download wait leaves its
          source page open. Preserve history, but stop any compositor run so a
@@ -666,7 +674,7 @@ export function bindPageMotion(root: HTMLElement): void {
       }
       next = null;
     } else {
-      next = surface(root);
+      next = surfaceOf(top, room.layerTopZ);
     }
     if (sameSurface(current, next)) return;
     const previous = current;
@@ -692,7 +700,7 @@ export function bindPageMotion(root: HTMLElement): void {
     activeRun?.cancel();
     activeRun = null;
     const run = setActiveRun(previous, next, direction);
-    /* Back during a fast hydration must wipe out the die the player saw, not
+    /* Back during a fast hydration must carry out the die the player saw, not
        reveal ready content underneath it halfway through the new run. */
     if (run && heldHydration && previous.overlay === heldHydration.before.overlay
         && next.overlay !== previous.overlay) {
@@ -703,11 +711,29 @@ export function bindPageMotion(root: HTMLElement): void {
   /* Only overlay class changes can create a top-level page transition. Online
      panels call the explicit shared seam above, so virtual rows, dice, sheets,
      inert toggles, and every unrelated class no longer rescan the page stack. */
+  /* The controller's own paint classes land on .ov elements too. Without this
+     filter every run woke the router four to six times to discover nothing
+     had routed, and each wake-up re-read computed styles right after a class
+     write — a forced style flush per wake-up (measured 2026-09-02). */
+  const routed = (record: MutationRecord): boolean => {
+    const target = record.target;
+    if (!(target instanceof HTMLElement) || !target.classList.contains('ov')) return false;
+    const before = new Set((record.oldValue ?? '').split(/\s+/).filter(Boolean));
+    const after = new Set(target.classList);
+    for (const token of before) {
+      if (!after.has(token) && !token.startsWith('page-motion-')) return true;
+    }
+    for (const token of after) {
+      if (!before.has(token) && !token.startsWith('page-motion-')) return true;
+    }
+    return false;
+  };
   const observer = new MutationObserver((records) => {
-    if (scheduled || !records.some((record) =>
-      record.target instanceof HTMLElement && record.target.classList.contains('ov'))) return;
+    if (scheduled || !records.some(routed)) return;
     scheduled = true;
     queueMicrotask(reconcile);
   });
-  observer.observe(root, { subtree: true, attributes: true, attributeFilter: ['class'] });
+  observer.observe(root, {
+    subtree: true, attributes: true, attributeFilter: ['class'], attributeOldValue: true,
+  });
 }

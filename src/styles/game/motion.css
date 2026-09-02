@@ -8,9 +8,8 @@
   transition-duration:.06s!important}
 #kbroot.reduce-motion #bg::before{animation:none}
 /* Page navigation retains only the short opacity settle authored by the
-   shared controller. The travelling beam and bracket beat have no informative
-   resting frame, so they disappear completely. */
-#kbroot.reduce-motion .page-wipe-beam{display:none!important}
+   shared controller (ui/page-motion.ts); the bracket beat has no informative
+   resting frame and is not run at all. */
 /* Decorative primary-button sheen has no informational resting frame. Remove
    its pseudo entirely instead of squeezing the sweep into the blanket .001ms
    duration, which could otherwise present as a one-frame flash. */

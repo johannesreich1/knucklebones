@@ -1,3 +1,4 @@
+import { waitForOverlayTransitions } from '../../support/overlay-transitions.mjs';
 async function waitForPageMotion(page) {
   await page.waitForFunction(() => !document.getElementById('kbroot')
     ?.classList.contains('page-motion-active'), null, { timeout: 1500 });
@@ -8,7 +9,7 @@ export async function runSettingsNavigationScenarios(suite) {
   // ===== settings panel — a HOME sheet since the HUD became quit-only =====
   await page.evaluate(() => window.__kb.goHome());
   await page.waitForTimeout(300);
-  await page.tap('#btnSettingsHome'); await page.waitForTimeout(400);
+  await page.tap('#btnSettingsHome'); await page.waitForTimeout(400); await waitForOverlayTransitions(page, '.ov');
   await waitForPageMotion(page);
   out.settingsOpen = await page.evaluate(() => ({
     on: document.getElementById('ovSettings').classList.contains('on'),
@@ -157,9 +158,9 @@ export async function runSettingsNavigationScenarios(suite) {
   }));
   check(!out.settingsIsToggles.how2 && !out.settingsIsToggles.quit && out.settingsIsToggles.buttons === 0,
         'settings still carries a button that belongs elsewhere', out.settingsIsToggles);
-  await page.tap('#btnSettingsBack'); await page.waitForTimeout(300);
-  await page.tap('#btnLearn'); await page.waitForTimeout(320);
-  await page.tap('#btnLearnRules'); await page.waitForTimeout(400);
+  await page.tap('#btnSettingsBack'); await page.waitForTimeout(300); await waitForOverlayTransitions(page, '.ov');
+  await page.tap('#btnLearn'); await page.waitForTimeout(320); await waitForOverlayTransitions(page, '.ov');
+  await page.tap('#btnLearnRules'); await page.waitForTimeout(400); await waitForOverlayTransitions(page, '.ov');
   await waitForPageMotion(page);
   out.help = await page.evaluate(() => {
     const rules = document.getElementById('ovRules');
@@ -234,7 +235,7 @@ export async function runSettingsNavigationScenarios(suite) {
      and sound/dice-faces live where nothing is at stake. */
   await page.evaluate(() => window.__kb.goHome());
   await page.waitForTimeout(300);
-  await page.tap('#btnSettingsHome'); await page.waitForTimeout(300);
+  await page.tap('#btnSettingsHome'); await page.waitForTimeout(300); await waitForOverlayTransitions(page, '.ov');
   await waitForPageMotion(page);
   out.sheet = await page.evaluate(() => ({
     reset: !!document.getElementById('btnResetStats'),
@@ -307,7 +308,7 @@ export async function runSettingsNavigationScenarios(suite) {
       && !document.getElementById('ovSettings').inert);
   check(out.settingsPrivacy.focusRestored,
     'closing Privacy did not restore the Settings door and page', out.settingsPrivacy);
-  await page.tap('#btnSettingsBack'); await page.waitForTimeout(300);
+  await page.tap('#btnSettingsBack'); await page.waitForTimeout(300); await waitForOverlayTransitions(page, '.ov');
   await waitForPageMotion(page);
   out.sheetClosed = await page.evaluate(() => !document.getElementById('ovSettings').classList.contains('on'));
   check(out.sheetClosed, 'Settings Back did not close the page', out.sheetClosed);
@@ -322,7 +323,7 @@ export async function runSettingsNavigationScenarios(suite) {
     for (const x of [30, 55, 90]) fire('touchmove', mk(x, 304));
     fire('touchend', mk(90, 304));
   });
-  await page.tap('#btnSettingsHome'); await page.waitForTimeout(400);
+  await page.tap('#btnSettingsHome'); await page.waitForTimeout(400); await waitForOverlayTransitions(page, '.ov');
   await waitForPageMotion(page);
   await edgeSwipe();
   await waitForPageMotion(page);

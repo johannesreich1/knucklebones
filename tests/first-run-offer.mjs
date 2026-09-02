@@ -1,3 +1,4 @@
+import { waitForOverlayTransitions } from './browser/support/overlay-transitions.mjs';
 // THE FIRST-RUN OFFER: a newcomer is asked once, and never again.
 //
 // Every other suite now declares itself an experienced player, because the
@@ -46,7 +47,7 @@ try {
 
   // the hub shouts about the tutorial, and only about the tutorial
   await page.click('#btnLearn');
-  await page.waitForTimeout(320);
+  await page.waitForTimeout(320); await waitForOverlayTransitions(page, '.ov');
   out.freshHub = await page.evaluate(() => ({
     fresh: document.querySelector('#ovLearn').classList.contains('fresh'),
     rows: [...document.querySelectorAll('.learnrow .lname')].map((e) => e.textContent),
@@ -54,7 +55,7 @@ try {
   check(out.freshHub.fresh, 'the hub does not highlight the tutorial for a newcomer', out.freshHub);
   check(out.freshHub.rows[0] === 'Tutorial', 'the tutorial is not the first row', out.freshHub);
   await page.click('#btnLearnBack');
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(300); await waitForOverlayTransitions(page, '.ov');
 
   // starting a real game asks first
   await page.evaluate(() => window.__kb.openPractice());
@@ -110,9 +111,9 @@ try {
   check(!out.second.offered, 'the offer came back after a game was played', out.second);
 
   await page.evaluate(() => window.__kb.goHome());
-  await page.waitForTimeout(250);
+  await page.waitForTimeout(250); await waitForOverlayTransitions(page, '.ov');
   await page.click('#btnLearn');
-  await page.waitForTimeout(320);
+  await page.waitForTimeout(320); await waitForOverlayTransitions(page, '.ov');
   out.hubAfter = await page.evaluate(() =>
     document.querySelector('#ovLearn').classList.contains('fresh'));
   check(out.hubAfter === false, 'the hub still highlights the tutorial after a game', out.hubAfter);

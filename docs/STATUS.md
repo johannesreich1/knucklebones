@@ -218,6 +218,12 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   tick (including 6→1) and FA4's contained simultaneous pass are production,
   with the alternatives retained in 48a–48f and 49a–49f. Their contracts live in
   `design/screens/product/27b-spell-effects.html` and `docs/SPELLS.md`.
+- The platform push (study 57e, chosen 2026-09-02) is the one page
+  transition: 420 ms, transform and opacity only, `src/ui/page-motion.ts`.
+  The Neon Wipe it replaced animated clip-path and a beam's `left` on
+  full-screen blurred overlays and heated the phone. Opaque overlays no
+  longer carry `backdrop-filter`; only `#ovAway`, `#ovPass` and `#ovFirst` do,
+  and the backdrop drift pauses under any open page.
 
 ## Documentation map
 

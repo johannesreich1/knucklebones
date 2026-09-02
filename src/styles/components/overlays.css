@@ -1,8 +1,16 @@
 /* ============ OVERLAYS ============ */
 :where(#kbroot) .ov{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:18px;padding:30px var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 30px);background-color:#04050c;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+  gap:18px;padding:30px var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 30px);background-color:#04050c;
   opacity:0;pointer-events:none;visibility:hidden;transition:opacity .28s,visibility 0s .28s}
 :where(#kbroot) .ov.on{opacity:1;pointer-events:auto;visibility:visible;transition:opacity .28s}
+/* THE BLUR BELONGS ONLY TO ROOMS THAT SHOW THE TABLE. Every overlay used to
+   blur its backdrop under that opaque fill — invisible, but a backdrop-filter
+   forces everything beneath it to stay live, so the drifting blurred
+   backdrop and every stacked layer were re-composited on every frame, two
+   overlays deep in the online menu. That was the phone running hot in a menu
+   at rest (measured 2026-09-02). The three translucent rooms keep the blur;
+   an opaque page has nothing to blur. */
+:where(#kbroot) :is(#ovAway,#ovPass,#ovFirst){-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
 /* The chunk-download die is a WAIT, not a room. Its destination may now paint
    from cache with no full-screen die of its own, and holding this one for the
    generic .28s exit puts a second spinner over a finished screen. It leaves at

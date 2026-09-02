@@ -1,3 +1,4 @@
+import { waitForOverlayTransitions } from '../../support/overlay-transitions.mjs';
 import {
   beginReducedRollProbe,
   readReducedRollProbe,
@@ -17,7 +18,7 @@ export async function runReducedMotionScenarios(suite) {
   const rp = await rm.newPage();
   rp.on('pageerror', e => errs.push('RM: ' + e.message));
   await rp.goto(F); await rp.waitForTimeout(400);
-  await rp.tap('#btnSettingsHome'); await rp.waitForTimeout(250);
+  await rp.tap('#btnSettingsHome'); await rp.waitForTimeout(250); await waitForOverlayTransitions(rp, '.ov');
   out.reducedSystemDefault = await rp.evaluate(() => ({
     state: window.__kb.S.reducedMotion,
     jsFlag: window.__kb.reduced,
@@ -36,7 +37,7 @@ export async function runReducedMotionScenarios(suite) {
   await rp.evaluate(() => document.querySelectorAll('#fx .particle').forEach((particle) => particle.remove()));
   await rp.tap('#motionSeg button[data-rm="1"]'); await rp.waitForTimeout(100);
   await rp.tap('#faceSeg button[data-f="nums"]'); await rp.waitForTimeout(100);
-  await rp.tap('#btnSettingsBack'); await rp.waitForTimeout(200);
+  await rp.tap('#btnSettingsBack'); await rp.waitForTimeout(200); await waitForOverlayTransitions(rp, '.ov');
   await rp.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
   // Force the human opener so this measures the shared roll/placement view,
   // not an AI thinking delay. Reduced motion must resolve the face without
@@ -228,7 +229,7 @@ export async function runReducedMotionScenarios(suite) {
   const mp = await manual.newPage();
   mp.on('pageerror', e => errs.push('RM SETTING: ' + e.message));
   await mp.goto(F); await mp.waitForTimeout(400);
-  await mp.tap('#btnSettingsHome'); await mp.waitForTimeout(300);
+  await mp.tap('#btnSettingsHome'); await mp.waitForTimeout(300); await waitForOverlayTransitions(mp, '.ov');
   await mp.tap('#motionSeg button[data-rm="1"]'); await mp.waitForTimeout(150);
   out.reducedSetting = await mp.evaluate(() => ({
     state: window.__kb.S.reducedMotion,

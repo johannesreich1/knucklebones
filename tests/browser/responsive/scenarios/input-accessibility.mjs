@@ -1,3 +1,4 @@
+import { waitForOverlayTransitions } from '../../support/overlay-transitions.mjs';
 import { shot } from '../../../shot.mjs';
 
 export async function runInputAccessibilityScenarios(suite) {
@@ -34,9 +35,9 @@ export async function runInputAccessibilityScenarios(suite) {
   await gp.goto(F); await gp.waitForTimeout(400);
   // numerals is a HOME setting now — the in-game gear became the quit modal
   // (hud-settings' settings-navigation scenario)
-  await gp.tap('#btnSettingsHome'); await gp.waitForTimeout(400);
+  await gp.tap('#btnSettingsHome'); await gp.waitForTimeout(400); await waitForOverlayTransitions(gp, '.ov');
   await gp.tap('#faceSeg button[data-f="nums"]'); await gp.waitForTimeout(250);
-  await gp.tap('#btnSettingsBack'); await gp.waitForTimeout(400);
+  await gp.tap('#btnSettingsBack'); await gp.waitForTimeout(400); await waitForOverlayTransitions(gp, '.ov');
   const settingsClosed = await gp.evaluate(() => !document.getElementById('ovSettings').classList.contains('on'));
   // Numbers are a live-duel presentation, not a global rewrite of the die as
   // a brand/profile component. Read the visible pixels on Home before play.

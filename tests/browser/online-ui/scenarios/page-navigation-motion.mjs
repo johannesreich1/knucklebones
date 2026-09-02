@@ -1,13 +1,18 @@
-const WIPE_IDS = [
-  'kb-page-neon-beam',
-  'kb-page-neon-source',
-  'kb-page-neon-target',
-];
+import { waitForMotionIdle } from '../../support/page-motion-idle.mjs';
+
+/* THE PUSH (design 57e, selected 2026-09-02): the page on top slides in from
+   the right, the page underneath parallaxes a third of the way out under a
+   scrim. A reused shell (Online) also moves an opaque slab with the arriving
+   panel and brings the shell title in, so its runs own two more timelines
+   than a cross-overlay run. */
+const PUSH_IDS = ['kb-page-push-scrim', 'kb-page-push-source', 'kb-page-push-target'];
+const PANEL_IDS = [...PUSH_IDS, 'kb-page-push-slab', 'kb-page-push-title'].sort();
 const BACK_IDS = [
   'kb-duel-bracket-p1',
   'kb-duel-bracket-p2',
-  ...WIPE_IDS,
+  ...PUSH_IDS,
 ].sort();
+const PANEL_BACK_IDS = ['kb-duel-bracket-p1', 'kb-duel-bracket-p2', ...PANEL_IDS].sort();
 
 /* Installed before app code. It gives each WAAPI object a stable identity so
    a hydration test can distinguish one continuing wipe from a replacement
@@ -23,14 +28,14 @@ const RECORD_PAGE_MOTION = () => {
     return target.id || target.querySelector?.('.panel')?.id
       || target.getAttribute('class') || target.tagName.toLowerCase();
   };
-  const clipAllows = (owner, childBox) => {
+  /* A pushed page paints wherever its transformed box is: a child is on
+     screen when its centre sits inside its owner's box AND the viewport. */
+  const withinOwner = (owner, childBox) => {
     if (!(owner instanceof Element) || !childBox) return true;
     const ownerBox = owner.getBoundingClientRect();
-    const clip = getComputedStyle(owner).clipPath;
-    const leftPercent = Number(clip.match(/([0-9.]+)%\)$/)?.[1] ?? 0);
-    const paintedLeft = ownerBox.left + ownerBox.width * leftPercent / 100;
     const centre = childBox.left + childBox.width / 2;
-    return centre >= paintedLeft && centre <= ownerBox.right;
+    return centre >= ownerBox.left && centre <= ownerBox.right
+      && centre >= 0 && centre <= innerWidth;
   };
   const loaderReading = (source, target) => {
     const panel = document.getElementById('onLoading');
@@ -38,7 +43,7 @@ const RECORD_PAGE_MOTION = () => {
     const box = loader?.getBoundingClientRect();
     const style = loader ? getComputedStyle(loader) : null;
     const clipOwner = target?.contains(loader) ? target : source?.contains(loader) ? source : null;
-    const withinClip = clipAllows(clipOwner, box);
+    const withinClip = withinOwner(clipOwner, box);
     const opacity = Number(style?.opacity ?? 0);
     const logicallyVisible = !!panel && (!panel.hidden
       || panel.classList.contains('page-motion-loader-hold'));
@@ -65,11 +70,10 @@ const RECORD_PAGE_MOTION = () => {
       return { revealed: false, interactive: false };
     }
     const targetBox = target.getBoundingClientRect();
-    const clip = getComputedStyle(target).clipPath;
-    const leftPercent = Number(clip.match(/([0-9.]+)%\)$/)?.[1] ?? 0);
     const centreX = box.left + box.width / 2;
     const centreY = box.top + box.height / 2;
-    const revealed = centreX >= targetBox.left + targetBox.width * leftPercent / 100;
+    const revealed = centreX >= targetBox.left && centreX <= targetBox.right
+      && centreX >= 0 && centreX <= innerWidth;
     const hit = revealed ? document.elementFromPoint(centreX, centreY) : null;
     return { revealed, interactive: !!hit && (hit === back || back.contains(hit)) };
   };
@@ -97,8 +101,8 @@ const RECORD_PAGE_MOTION = () => {
 
   const sample = () => {
     const animations = document.getAnimations({ subtree: true }).filter(managed);
-    const sourceAnimation = animations.find((animation) => animation.id === 'kb-page-neon-source');
-    const targetAnimation = animations.find((animation) => animation.id === 'kb-page-neon-target');
+    const sourceAnimation = animations.find((animation) => animation.id === 'kb-page-push-source');
+    const targetAnimation = animations.find((animation) => animation.id === 'kb-page-push-target');
     const source = sourceAnimation?.effect?.target;
     const target = targetAnimation?.effect?.target;
     if (source?.id === 'ovStart' && target?.id === 'ovOnline') {
@@ -107,7 +111,7 @@ const RECORD_PAGE_MOTION = () => {
         direction: document.getElementById('kbroot')?.dataset.pageMotionDirection ?? null,
         sourceId: source.id,
         targetId: target.id,
-        targetClip: getComputedStyle(target).clipPath,
+        targetTransform: getComputedStyle(target).transform,
         targetOpacity: Number(getComputedStyle(target).opacity),
         loader: loaderReading(source, target),
         back: backReading(target),
@@ -140,9 +144,9 @@ const HOLD_ACCOUNT_ENTRY_MOTION = () => {
   const inspect = () => {
     if (!state.armed) return;
     const animations = managed();
-    const source = animations.find((animation) => animation.id === 'kb-page-neon-source')
+    const source = animations.find((animation) => animation.id === 'kb-page-push-source')
       ?.effect?.target;
-    const target = animations.find((animation) => animation.id === 'kb-page-neon-target')
+    const target = animations.find((animation) => animation.id === 'kb-page-push-target')
       ?.effect?.target;
     const accountDestination = document.getElementById('onLoading')
       ?.dataset.pageMotionFor === 'onAccount';
@@ -196,9 +200,9 @@ const HOLD_RESULT_ENTRY_MOTION = () => {
   const inspect = () => {
     if (!state.armed) return;
     const animations = managed();
-    const source = animations.find((animation) => animation.id === 'kb-page-neon-source')
+    const source = animations.find((animation) => animation.id === 'kb-page-push-source')
       ?.effect?.target;
-    const target = animations.find((animation) => animation.id === 'kb-page-neon-target')
+    const target = animations.find((animation) => animation.id === 'kb-page-push-target')
       ?.effect?.target;
     if (!source?.id || target?.id !== 'ovEnd') return;
     state.held = true;
@@ -257,29 +261,29 @@ async function readMotionState(page) {
       return rect.width > 0 && rect.height > 0 && style.display !== 'none'
         && style.visibility !== 'hidden' && Number(style.opacity) > .05;
     };
-    const clipAllows = (owner, childBox) => {
+    const withinOwner = (owner, childBox) => {
       if (!(owner instanceof Element) || !childBox) return true;
       const ownerBox = owner.getBoundingClientRect();
-      const clip = getComputedStyle(owner).clipPath;
-      const leftPercent = Number(clip.match(/([0-9.]+)%\)$/)?.[1] ?? 0);
-      const paintedLeft = ownerBox.left + ownerBox.width * leftPercent / 100;
       const centre = childBox.left + childBox.width / 2;
-      return centre >= paintedLeft && centre <= ownerBox.right;
+      return centre >= ownerBox.left && centre <= ownerBox.right
+        && centre >= 0 && centre <= innerWidth;
     };
 
-    const source = effectTarget('kb-page-neon-source');
-    const target = effectTarget('kb-page-neon-target');
+    const source = effectTarget('kb-page-push-source');
+    const target = effectTarget('kb-page-push-target');
     const sourceBox = box(source), targetBox = box(target);
     const loaderPanel = document.getElementById('onLoading');
     const loader = loaderPanel?.querySelector('.ldwait');
     const loaderBox = box(loader);
     const loaderStyle = loader ? getComputedStyle(loader) : null;
     const clipOwner = target?.contains(loader) ? target : source?.contains(loader) ? source : null;
-    const loaderWithinClip = clipAllows(clipOwner, loaderBox);
+    const loaderWithinClip = withinOwner(clipOwner, loaderBox);
     const loaderOpacity = Number(loaderStyle?.opacity ?? 0);
     const ready = document.getElementById('onLadder');
     const readyStyle = ready ? getComputedStyle(ready) : null;
     const readyBox = box(ready);
+    const title = document.getElementById('onTitle');
+    const titleStyle = title ? getComputedStyle(title) : null;
     const back = document.getElementById('btnOnlineBack');
     const backBox = back?.getBoundingClientRect();
     const backHit = backBox
@@ -303,6 +307,15 @@ async function readMotionState(page) {
       targetContainsLoader: !!loader && !!target?.contains(loader),
       direction: document.getElementById('kbroot')?.dataset.pageMotionDirection ?? null,
       active: document.getElementById('kbroot')?.classList.contains('page-motion-active') ?? false,
+      /* the reused shell's one title: the owner's report was that a cached
+         page showed its details before the motion finished, and the title
+         swapping in the first frame is exactly that */
+      title: {
+        text: title?.textContent?.trim() ?? '',
+        opacity: Number(titleStyle?.opacity ?? 1),
+        transform: titleStyle?.transform ?? 'none',
+      },
+      viewportWidth: innerWidth,
       loader: {
         hidden: loaderPanel?.hidden ?? null,
         held: loaderPanel?.classList.contains('page-motion-loader-hold') ?? false,
@@ -361,25 +374,13 @@ async function readMotionState(page) {
         loaderUnderBody: !!loaderPanel?.parentElement?.classList.contains('pbody'),
         ladderUnderBody: !!ready?.parentElement?.classList.contains('pbody'),
       },
-      beamCount: document.querySelectorAll('.page-wipe-beam').length,
       transientCount: document.querySelectorAll(
-        '.page-motion-source,.page-motion-target,.page-motion-stage,.page-motion-cleanup,.page-motion-panel-layer',
+        '.page-motion-source,.page-motion-target,.page-motion-stage,.page-motion-cleanup,.page-motion-panel-layer,.page-motion-within',
       ).length,
     };
   });
 }
 
-async function waitForMotionIdle(page) {
-  await page.waitForFunction(() => {
-    const managed = document.getAnimations({ subtree: true })
-      .filter((animation) => /^(kb-page-|kb-duel-bracket-)/.test(animation.id));
-    return !document.getElementById('kbroot')?.classList.contains('page-motion-active')
-      && managed.length === 0
-      && !document.querySelector(
-        '.page-wipe-beam,.page-motion-source,.page-motion-target,.page-motion-stage,.page-motion-cleanup,.page-motion-panel-layer',
-      );
-  }, null, { timeout: 1600 });
-}
 
 async function motionSample(page, { delay = 40, progress = .2 } = {}) {
   if (delay) await page.waitForTimeout(delay);
@@ -652,7 +653,7 @@ export async function runPageNavigationMotionScenarios(suite) {
       && homeEntry.probeResult.first?.direction === 'forward'
       && homeEntry.probeResult.first.sourceId === 'ovStart'
       && homeEntry.probeResult.first.targetId === 'ovOnline'
-      && exactIds(homeEntry.probeResult.first.ids, WIPE_IDS)
+      && exactIds(homeEntry.probeResult.first.ids, PUSH_IDS)
       && homePainted?.sourceId === 'ovStart'
       && homePainted.targetId === 'ovOnline'
       && homePainted.loader.containedByTarget
@@ -661,8 +662,8 @@ export async function runPageNavigationMotionScenarios(suite) {
       && homePainted.loader.withinClip
       && homePainted.targetOpacity > 0
       && homeEntry.probeResult.back?.back.interactive
-      && exactIds(homeEntry.probeResult.calls.map((call) => call.id).sort(), WIPE_IDS),
-  'Home to Ladder does not wipe in a visibly painted loading die as part of #ovOnline',
+      && exactIds(homeEntry.probeResult.calls.map((call) => call.id).sort(), PUSH_IDS),
+  'Home to Ladder does not push in a visibly painted loading die as part of #ovOnline',
   homeEntry.probeResult);
   check(homeEntry.errs.length === 0, 'page errors during Home to Ladder entry motion', homeEntry.errs);
 
@@ -774,7 +775,7 @@ export async function runPageNavigationMotionScenarios(suite) {
   check(slow.probeResult?.direction === 'forward'
       && slow.probeResult.sourceId === 'onAccount'
       && slow.probeResult.targetId === 'onLoading'
-      && exactIds(slow.probeResult.ids, WIPE_IDS)
+      && exactIds(slow.probeResult.ids, PANEL_IDS)
       && slow.probeResult.loader.painted
       && slow.probeResult.loader.opacity > .05
       && slow.probeResult.targetContainsLoader
@@ -798,7 +799,7 @@ export async function runPageNavigationMotionScenarios(suite) {
       await resetMotionAudit(page);
       await page.click('#btnLadder');
       await page.waitForFunction(() => document.getAnimations({ subtree: true })
-        .some((animation) => animation.id === 'kb-page-neon-target'));
+        .some((animation) => animation.id === 'kb-page-push-target'));
       const beforeHydration = await readMotionState(page);
       await page.waitForFunction(() => document.getElementById('onLadder')?.hidden === false,
         null, { timeout: 15000 });
@@ -813,7 +814,7 @@ export async function runPageNavigationMotionScenarios(suite) {
   const hydrated = fast.probeResult?.hydrated;
   const hydratedCallIds = hydrated?.calls.map((call) => call.id).sort();
   check(beforeHydration?.ready.hidden === true
-      && exactIds(beforeHydration.ids, WIPE_IDS)
+      && exactIds(beforeHydration.ids, PANEL_IDS)
       && hydrated?.sourceId === 'onAccount'
       && hydrated.targetId === 'onLoading'
       && hydrated.loader.hidden === true
@@ -824,9 +825,9 @@ export async function runPageNavigationMotionScenarios(suite) {
       && hydrated.ready.visibility === 'hidden'
       && hydrated.ready.inert
       && !hydrated.ready.painted
-      && exactIds(hydrated.ids, WIPE_IDS)
-      && exactIds(hydratedCallIds, WIPE_IDS)
-      && sameAnimationTokens(beforeHydration, hydrated, WIPE_IDS),
+      && exactIds(hydrated.ids, PANEL_IDS)
+      && exactIds(hydratedCallIds, PANEL_IDS)
+      && sameAnimationTokens(beforeHydration, hydrated, PANEL_IDS),
   'fast Ladder hydration replaced the entry wipe or exposed ready Ladder behind its held die',
   { beforeHydration, hydrated });
   const fastSettled = fast.probeResult?.settled;
@@ -842,9 +843,9 @@ export async function runPageNavigationMotionScenarios(suite) {
       && fastSettled.ladder.own && fastSettled.ladder.scrollTop > 0
       && fastSettled.ladder.ownInViewport
       && fastSettled.ladder.ownCentreError <= 80
-      && fastSettled.ids.length === 0 && fastSettled.beamCount === 0
+      && fastSettled.ids.length === 0
       && fastSettled.transientCount === 0
-      && exactIds(fastSettled.calls.map((call) => call.id).sort(), WIPE_IDS),
+      && exactIds(fastSettled.calls.map((call) => call.id).sort(), PANEL_IDS),
   'fast Ladder hydration did not settle once into clean ready content', fastSettled);
   check(fast.errs.length === 0, 'page errors during fast Ladder hydration', fast.errs);
 
@@ -899,7 +900,7 @@ export async function runPageNavigationMotionScenarios(suite) {
   const landed = interrupted.probeResult?.landed;
   check(landed?.homeOn && !landed.onlineOn
       && !landed.active && landed.ids.length === 0
-      && landed.beamCount === 0 && landed.transientCount === 0
+      && landed.transientCount === 0
       && !landed.loader.held && !landed.ready.deferred,
   'Back during hydration did not land cleanly on Home', landed);
   check(interrupted.errs.length === 0, 'page errors during Back from held hydration', interrupted.errs);
@@ -989,7 +990,7 @@ export async function runPageNavigationMotionScenarios(suite) {
   check(owned?.departing.direction === 'back'
       && owned.departing.sourceId === 'onLoading'
       && owned.departing.targetId === 'onLadder'
-      && exactIds(owned.departing.ids, BACK_IDS)
+      && exactIds(owned.departing.ids, PANEL_BACK_IDS)
       && owned.departing.panelDom.layers === 1
       && owned.departing.panelDom.loaderNodes === 1
       && owned.departing.panelDom.ladderNodes === 1
@@ -1024,6 +1025,7 @@ export async function runPageNavigationMotionScenarios(suite) {
       await page.click('#btnAvatar');
       const forward = await motionSample(page);
       await waitForMotionIdle(page);
+      const forwardSettled = await readMotionState(page);
       await page.click('#btnOnlineBack');
       /* Profile is already cached by the time Avatar opened, so Back wipes
          straight back into it. There is no loading page to wait for. */
@@ -1034,14 +1036,26 @@ export async function runPageNavigationMotionScenarios(suite) {
       await page.waitForFunction(() => document.getElementById('onAccount')?.hidden === false,
         null, { timeout: 15000 });
       await waitForMotionIdle(page);
-      return { forward, back, settled: await readMotionState(page) };
+      return { forward, forwardSettled, back, settled: await readMotionState(page) };
     },
   });
   out.pageNavigationMotion.profileAvatar = subpage.probeResult;
+  /* The reported bug: a cached page's details were on screen in the first
+     frame while the motion was still running. Sampled at 20% of the push the
+     arriving panel is still well right of where it lands and the shell title
+     — already naming the destination — is still coming in with it. */
+  const arriving = subpage.probeResult?.forward;
+  const arrived = subpage.probeResult?.forwardSettled;
+  check(arriving?.title.text !== '' && arriving?.title.text === arrived?.title.text
+      && arriving.title.opacity < .95 && arriving.title.transform !== 'none'
+      && arriving.targetBox?.left > arriving.viewportWidth * .2
+      && arrived.title.opacity === 1 && arrived.title.transform === 'none',
+  'the cached Avatar page and the shell title were in place before the push had travelled',
+  { arriving, arrived });
   check(subpage.probeResult?.forward.direction === 'forward'
       && subpage.probeResult.forward.sourceId === 'onAccount'
       && subpage.probeResult.forward.targetId === 'onAvatar'
-      && exactIds(subpage.probeResult.forward.ids, WIPE_IDS)
+      && exactIds(subpage.probeResult.forward.ids, PANEL_IDS)
       && overlapsViewport(subpage.probeResult.forward),
   'Profile and Avatar do not overlap as one forward page transition',
   subpage.probeResult?.forward);
@@ -1049,7 +1063,7 @@ export async function runPageNavigationMotionScenarios(suite) {
       && subpage.probeResult.back.sourceId === 'onAvatar'
       && subpage.probeResult.back.targetId === 'onAccount'
       && !subpage.probeResult.back.loader.painted
-      && exactIds(subpage.probeResult.back.ids, BACK_IDS)
+      && exactIds(subpage.probeResult.back.ids, PANEL_BACK_IDS)
       && overlapsViewport(subpage.probeResult.back),
   'Avatar Back does not wipe straight back into the cached Profile',
   subpage.probeResult?.back);

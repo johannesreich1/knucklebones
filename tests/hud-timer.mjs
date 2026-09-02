@@ -1,3 +1,4 @@
+import { waitForOverlayTransitions } from './browser/support/overlay-transitions.mjs';
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
 import { shot } from './shot.mjs';
@@ -32,7 +33,7 @@ await ctx.addInitScript(noSW);
   p.on('pageerror', e => errs.push(label + ': ' + e.message));
   await p.goto(F); await p.waitForTimeout(400);
 // pills are tutorial-only, and the tutorial is behind HOW TO PLAY now
-await p.tap('#btnLearn'); await p.waitForTimeout(320);
+await p.tap('#btnLearn'); await p.waitForTimeout(320); await waitForOverlayTransitions(p, '.ov');
 await p.tap('#btnLearnTut'); await p.waitForTimeout(400);
   await p.tap('#coach'); await p.waitForTimeout(300);    // dismiss the welcome step
   for (let i = 0; i < 60; i++) {                         // reach the first choose

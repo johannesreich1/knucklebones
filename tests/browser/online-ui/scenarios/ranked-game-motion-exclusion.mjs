@@ -124,8 +124,8 @@ export async function runRankedGameMotionExclusionScenarios({ visitChromium, out
       && reading.gameFrames >= 2 && reading.sheetFrames >= 2,
   'the ranked motion exclusion fixture did not paint Queue, reveal, game, and sheet', reading);
   check(!!reading && reading.queueExposureFrames >= 1
-      && reading.firstQueueExposure?.ids.includes('kb-page-neon-source')
-      && reading.firstQueueExposure.ids.includes('kb-page-neon-target'),
+      && reading.firstQueueExposure?.ids.includes('kb-page-push-source')
+      && reading.firstQueueExposure.ids.includes('kb-page-push-target'),
   'the ranked exclusion probe never overlapped the real Queue with Home-to-Online page motion',
   { frames: reading?.queueExposureFrames, first: reading?.firstQueueExposure });
   check(!!reading && reading.revealExposureFrames === 0,

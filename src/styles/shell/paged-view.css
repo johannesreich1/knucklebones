@@ -26,12 +26,37 @@
 :where(#kbroot) .page-back .back-bracket--p2{stroke:var(--p2);filter:drop-shadow(0 0 5px color-mix(in srgb,var(--p2) 58%,transparent))}
 @media (max-width:359px){:where(#kbroot) .page-back .cico-back{width:27px;height:27px}}
 
-/* The ONE Neon Wipe stage. Routing code changes only logical visibility; the
-   controller gives the departing and arriving surfaces a temporary paint
-   layer, then removes it without waking the generic overlay fade again. */
+/* The ONE page-motion stage (ui/page-motion.ts, the platform push). Routing
+   code changes only logical visibility; the controller gives the departing
+   and arriving surfaces a temporary paint layer, then removes it without
+   waking the generic overlay fade again. Only transform and opacity are
+   promised — the compositor can keep those — and a moving page never blurs
+   its backdrop: the wipe this replaced clip-animated two full-screen blurred
+   overlays and heated the phone (measured 2026-09-02). */
 #kbroot .page-motion-source,#kbroot .page-motion-target{
-  visibility:visible!important;pointer-events:none!important;transition:none!important;will-change:clip-path,transform,opacity}
-/* Once the wipe has visually reached the arriving header, Back is already a
+  visibility:visible!important;pointer-events:none!important;transition:none!important;
+  will-change:transform,opacity;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+/* THE PUSH'S TWO PAINTS. The page on top carries a left-edge shadow so it
+   reads as a sheet sliding over the room; the page underneath wears a scrim
+   that the controller darkens as the page above covers it. Which is which
+   flips with the direction: forward, the target is on top; Back, the source. */
+#kbroot .ov:is(.page-motion-target.page-motion-forward,.page-motion-source.page-motion-back){
+  box-shadow:-12px 0 32px rgba(0,0,0,.55)}
+#kbroot .ov:is(.page-motion-source.page-motion-forward,.page-motion-target.page-motion-back)::after,
+#kbroot .page-motion-within::after{content:"";position:absolute;inset:0;z-index:150;
+  background:#000;opacity:0;pointer-events:none}
+/* A REUSED SHELL (Online) moves transparent panels over its own aurora, so
+   the shell paints what a full-screen page carries for free: an opaque slab
+   (z2) that travels with the panel on top (z3) over the panel underneath (z1)
+   and the scrim (z1, painted after it), all beneath the pinned header (z4).
+   The title animates too, and background-clip:text under a filter is the
+   combination Safari drops the clip on while animating — no glow for 420ms. */
+#kbroot .page-motion-within::before{content:"";position:absolute;inset:0;z-index:2;
+  background:var(--aurora);background-color:#04050c;box-shadow:-12px 0 32px rgba(0,0,0,.55)}
+#kbroot .page-motion-within::after{z-index:1}
+#kbroot .page-motion-within>.shead{z-index:4}
+#kbroot .page-motion-within>.shead>.ttl{filter:none}
+/* Once the push has visually reached the arriving header, Back is already a
    real escape hatch. All other target-page input stays suppressed, while tap
    and the edge-swipe both commit through that same Back control. */
 #kbroot .page-motion-target [data-page-back]{pointer-events:auto!important}
@@ -55,9 +80,9 @@
 #kbroot .ov.page-motion-cleanup:not(.on){visibility:hidden!important}
 /* A page transition is itself the wait reveal: the target die travels with
    the page from frame one, so the generic 200ms anti-flash grace would hide
-   almost the whole 280ms wipe. Hydration is held until this timeline ends. */
+   half the 420ms push. Hydration is held until this timeline ends. */
 #kbroot #onLoading.page-motion-loader-revealed .ldwait{animation-delay:0s}
-/* Reused-shell panels cannot share their normal flex flow during a wipe. The
+/* Reused-shell panels cannot share their normal flex flow during a push. The
    controller moves the one real outgoing node into this viewport-aligned
    layer, then returns it to a comment anchor; no DOM/ID clone and no second
    page implementation are introduced. */
@@ -65,10 +90,6 @@
   width:var(--page-panel-w);height:var(--page-panel-h);display:flex;flex-direction:column;
   max-width:none;margin:0;overflow:visible;pointer-events:none}
 #kbroot .page-motion-panel-layer>.panel{width:100%;height:100%;min-height:0;max-width:none;margin:0;flex:0 0 auto}
-#kbroot .page-wipe-beam{position:absolute;z-index:140;top:0;bottom:0;left:0;width:3px;
-  pointer-events:none;opacity:0;background:linear-gradient(180deg,var(--p1),#fff 48%,var(--p2));
-  box-shadow:0 0 8px color-mix(in srgb,var(--p1) 78%,transparent),
-             0 0 17px color-mix(in srgb,var(--p2) 62%,transparent)}
 /* ===== THE PAGED VIEW: one header, pinned; one body, scrolling =====
    EVERY view with a title and a back button is this shape, and it is ONE
    shape: Back never scrolls away from the thumb, and the content runs to the
@@ -244,7 +265,7 @@
    confirm the check itself works by making the filter absurd first
    (invert(1) saturate(3) is unmissable) before trusting a subtle version. */
 :where(#kbroot) .pbody{display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;
-  margin:0;flex:1 1 auto;min-height:0;overflow-y:auto;
+  margin:0;flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;
   /* the top padding is exactly the fade's height, so a resting list clears it
      entirely and only content actually scrolling away is touched */
   /* the top padding is the band's own height, so a resting list starts below

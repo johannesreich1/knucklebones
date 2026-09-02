@@ -1,3 +1,4 @@
+import { waitForOverlayTransitions } from '../../support/overlay-transitions.mjs';
 /* ONE ENTRY OF ONE LIBRARY, AS HOW TO PLAY SHOWS IT: opened from Home, read in
    the copy and the hue it is actually painted in, then left again through the
    Learn pages' single shared Back header. It reports facts and judges nothing —
@@ -6,7 +7,7 @@
    implementation for every library page, and the only place it can be caught
    wearing a second button (or a ✕) is on a library that is really open. */
 export async function readLearnLibraryEntry(page, button, ov, id) {
-  await page.tap('#btnLearn'); await page.waitForTimeout(320);
+  await page.tap('#btnLearn'); await page.waitForTimeout(320); await waitForOverlayTransitions(page, '.ov');
   await page.tap(button); await page.waitForTimeout(420);
   const r = await page.evaluate(([ov, id]) => {
     const o = document.getElementById(ov);
@@ -35,6 +36,6 @@ export async function readLearnLibraryEntry(page, button, ov, id) {
     child: document.getElementById(ov)?.classList.contains('on') ?? false,
     learn: document.getElementById('ovLearn').classList.contains('on'),
   }), ov);
-  await page.tap('#btnLearnBack'); await page.waitForTimeout(340);
+  await page.tap('#btnLearnBack'); await page.waitForTimeout(340); await waitForOverlayTransitions(page, '.ov');
   return r;
 }

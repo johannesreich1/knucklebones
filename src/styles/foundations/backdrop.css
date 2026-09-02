@@ -24,6 +24,12 @@
    belt under every translucent overlay was the "horizontal background"
    reported all evening. Any overlay up = grid out. */
 #kbroot:has(.ov.on) #bg::after{opacity:0}
-@keyframes drift{from{transform:translate3d(-3%,-2%,0) scale(1)}to{transform:translate3d(4%,3%,0) scale(1.12)}}
+/* The drift exists for the live table. Every page is opaque, so under one it
+   is invisible — and it still cost a re-composite of a 160%-viewport blurred
+   layer per frame, forever, in every menu. Pause it there (2026-09-02). */
+#kbroot:has(.ov.on) #bg::before{animation-play-state:paused}
+/* Translate only: moving a blurred layer is a compositor transform, but
+   scaling it re-rasterises the blur on every frame. */
+@keyframes drift{from{transform:translate3d(-3%,-2%,0)}to{transform:translate3d(4%,3%,0)}}
 :where(#kbroot) #vig{position:fixed;inset:0;z-index:1;pointer-events:none;
   box-shadow:inset 0 0 140px 40px rgba(0,0,0,.85)}
