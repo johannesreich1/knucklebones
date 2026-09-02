@@ -122,7 +122,8 @@ const bootProfileRead = bootSource.indexOf('await myProfile()', curveVerificatio
 check(curveVerification >= 0 && bootProfileRead > curveVerification,
   'boot could cache a freshly mapped profile rating before verifying its curve');
 const homeChipSource = readFileSync('src/ui/homechip.ts', 'utf8');
-check(homeChipSource.includes('cachedLadderCurveVersion() === null ? null'),
+check(homeChipSource.includes('profile.curveVersion ?? cachedLadderCurveVersion()')
+  && homeChipSource.includes('curveVersion === null ? null'),
   'Home did not withhold cached points while their league curve is unknown');
 
 emitReport({ problems, errs: [] }, problems.length);

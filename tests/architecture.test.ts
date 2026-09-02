@@ -45,7 +45,24 @@ for (const file of noCheckFiles) {
  * Authored module size budgets
  * ---------------------------------------------------------------------- */
 
-const SIZE_ALLOWLIST = new Map<string, string>();
+const SIZE_ALLOWLIST = new Map<string, string>([
+  /* 2026-09-02 integration of three stopped streams (page motion, progression
+     v2, cached Profile). Each entry names the split that removes it. */
+  ['src/ui/page-motion.ts',
+    'one navigation controller; split the hydration hold and the reconcile loop into owners'],
+  ['src/online/screens/account-screen.ts',
+    'Profile show() grew the standing wait and rune authority; move applyStanding out'],
+  ['src/online/screens/result-screen.ts',
+    'progression hold plus cover routing; move the progression hold to its owner'],
+  ['tests/browser/legal.mjs',
+    'motion sampling joined the matrix; split the sheet-stack cases out'],
+  ['tests/browser/online-ui/harness/routes.mjs',
+    'rune, equipment and progression stubs; move the rune stubs beside profile-routes'],
+  ['tests/browser/online-ui/scenarios/page-navigation-motion.mjs',
+    'one probe per page seam; split by surface (entry, result, account)'],
+  ['tests/profile-back-navigation.mjs',
+    'one line over after the identity stub; split the ladder walk out on the next touch'],
+]);
 
 const EXCLUDED_DIRS = /\/(?:fixtures|generated|snapshots|vendor)\//;
 const authored = [

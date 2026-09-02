@@ -52,8 +52,14 @@
    a third of the width and made the row twice as tall as the other two */
 :where(#kbroot) #onAccount .fact > b,:where(#kbroot) #onAccount .fact > .factvalue{display:block;font-size:clamp(13.5px,3.4vw,15px);font-weight:900;color:var(--txt);
   white-space:nowrap}
-:where(#kbroot) #onAccount .fact > .factvalue{height:16px;line-height:16px}
-:where(#kbroot) #onAccount #accRank .ldclock{display:inline-grid;vertical-align:middle}
+/* The inline loading die borrows the VALUE's line box, never the reverse.
+   Top-aligned, the 16px die sits inside the strut the number will occupy
+   (16/17/18px at 13.5/14.6/15px), so the tile is the same height with the
+   die as with the number (online-ui loading-panels holds this). Forcing the
+   value to the die's 16px clipped the 15px landscape number's 18px content
+   area one pixel into its caption, and vertical-align:middle sank the die
+   below the strut into the caption row. */
+:where(#kbroot) #onAccount #accRank .ldclock{display:inline-grid;vertical-align:top}
 :where(#kbroot) #onAccount .fact .n1,:where(#kbroot) #onAccount .fact .n2{font-size:clamp(13.5px,3.4vw,15px)}
 /* display:block because text-indent only applies to block containers — as a
    plain inline the indent is ignored and the caption stays half a space left */

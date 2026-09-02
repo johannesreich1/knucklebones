@@ -87,6 +87,7 @@ export async function runOnlineLoadingPanelScenarios(suite) {
         const tile = document.getElementById('btnRank')?.getBoundingClientRect();
         const loader = document.querySelector('#accRank .die.ldclock');
         const loaderRect = loader?.getBoundingClientRect();
+        const caption = document.querySelector('#btnRank > span:not(.factvalue)')?.getBoundingClientRect();
         return {
           accountVisible: visible(document.getElementById('onAccount')),
           fullLoaderHidden: !visible(document.querySelector('#onLoading .ldwait')),
@@ -98,6 +99,7 @@ export async function runOnlineLoadingPanelScenarios(suite) {
           rankBusy: document.getElementById('btnRank')?.getAttribute('aria-busy'),
           loaderVisible: visible(loader),
           loaderSize: loaderRect ? [loaderRect.width, loaderRect.height] : null,
+          loaderCaptionGap: loaderRect && caption ? caption.top - loaderRect.bottom : null,
           loaderNumeral: loader?.querySelector('.num')
             ? getComputedStyle(loader.querySelector('.num')).display : null,
           visibleLoaders: [...document.querySelectorAll('.die.ldclock')].filter(visible).length,
@@ -161,6 +163,7 @@ export async function runOnlineLoadingPanelScenarios(suite) {
   'a complete cached Profile was not painted before its remote refresh', cached?.before);
   check(cached?.before?.rankBusy === 'true' && cached.before.loaderVisible
       && cached.before.loaderSize?.every((size) => Math.abs(size - 16) <= .5)
+      && (cached.before.loaderCaptionGap ?? -1) >= 0
       && cached.before.loaderNumeral === 'none' && cached.before.visibleLoaders === 1,
   'rank did not own the one visible, pips-only inline loading die', cached?.before);
   check(cached?.beforeRankAccessible === 1 && cached.afterRankAccessible === 1

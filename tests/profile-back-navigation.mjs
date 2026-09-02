@@ -106,6 +106,13 @@ try {
 
   await page.route('**/auth/v1/**', (r) => r.fulfill({ status: 200, contentType: 'application/json',
     body: JSON.stringify(r.request().url().includes('token') ? SESSION : { keys: [] }) }));
+  /* ACCOUNT ACCESS reads provider links from an Edge Function, not REST; a
+     cold Profile will not paint without that answer (account-screen.ts), and
+     an unanswered call would reach the live backend. A guest with nothing
+     attached is the honest shape here. */
+  await page.route('**/functions/v1/identity-status', (r) => r.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ gameCenterLinked: false, appleLinked: false, appleRevocationReady: false }) }));
   /* ONE handler for the whole REST surface, switching on the path: route order
      is not something a suite should have to reason about. */
   await page.route('**/rest/v1/**', (r) => {

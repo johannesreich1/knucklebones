@@ -99,7 +99,7 @@ const refreshedStanding = { ...snapshot.standing, points: 500, rank: 5, percenti
 cacheStanding(accountId, refreshedStanding, false);
 assert.deepEqual(readProfileCache(), {
   accountId: normalized, nickname: 'CachedPlayer', rating: 500,
-  avatar: 'die:5:cy', rank: 5, apex: false,
+  avatar: 'die:5:cy', rank: 5, apex: false, curveVersion: 1,
 });
 assert.deepEqual(readAccountProfileCache()?.standing, refreshedStanding,
   'a standing confirmed outside Profile left its complete fallback stale');

@@ -14,12 +14,19 @@ export async function waitForOverlayTransitions(page, selector) {
 
     for (let pass = 0; pass < 3; pass++) {
       const running = document.getAnimations({ subtree: true })
-        .filter((animation) => ((overlays.includes(animation.effect?.target)
-          && (animation.transitionProperty === 'opacity'
-            || animation.transitionProperty === 'visibility'))
-          || animation.id.startsWith('kb-page-')
-          || animation.id.startsWith('kb-duel-bracket-'))
-          && (animation.playState === 'pending' || animation.playState === 'running'));
+        .filter((animation) => {
+          const target = animation.effect?.target;
+          /* A revealed page hands its content a discrete visibility transition
+             of its own (reduce-motion's blanket duration, an authored .btn
+             one); until that lands the control is neither visible nor
+             hit-testable. */
+          const inside = overlays.some((overlay) => overlay === target || overlay.contains(target));
+          return (animation.id.startsWith('kb-page-')
+            || animation.id.startsWith('kb-duel-bracket-')
+            || (inside && (animation.transitionProperty === 'visibility'
+              || (overlays.includes(target) && animation.transitionProperty === 'opacity'))))
+            && (animation.playState === 'pending' || animation.playState === 'running');
+        });
       if (!running.length) break;
       await Promise.allSettled(running.map((animation) => animation.finished));
       await frame();

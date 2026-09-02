@@ -1,6 +1,7 @@
 import { RESOURCES } from '../../../../src/i18n/catalogs.ts';
 import { LOCALE_REGISTRY } from '../../../../src/i18n/locale.ts';
 import { installOnlineRoutes } from '../../online-ui/harness/routes.mjs';
+import { waitForOverlayTransitions } from '../../support/overlay-transitions.mjs';
 import { checkReachableTargets, checkSurface, frame,
   inspectSurface } from '../../localization/harness/layout-inspection.mjs';
 import { inspectRuneSheets } from './profile-rune-sheets.mjs';
@@ -80,6 +81,12 @@ async function waitForPanel(page, id, requiredSelectors = []) {
         && style.visibility !== 'hidden' && Number(style.opacity) !== 0;
     });
   }, { panelId: id, requiredSelectors }, { timeout: 15000 });
+  /* `hidden` is an early, non-visual event under page motion: the arriving
+     panel is pointer-events:none and inert except its Back control for the
+     wipe (page-motion.ts), and a hydrated panel is held invisible under the
+     pinned die until that run lands. Probe hit ownership only once the shared
+     motion and the reveal transitions it hands its content have settled. */
+  await waitForOverlayTransitions(page, '#ovOnline');
   await frame(page);
 }
 
@@ -228,6 +235,7 @@ async function inspectRankedResult(suite, page, label) {
   });
   await page.waitForSelector('#ovEnd.on', { timeout: 15000 });
   await page.waitForSelector('#endPlates > *');
+  await waitForOverlayTransitions(page, '#ovEnd');
   await frame(page);
   const result = await inspectSurface(page, '#ovEnd', [
     '#endTitle', '#endSub', '#endMeta', '#endPlates > *',

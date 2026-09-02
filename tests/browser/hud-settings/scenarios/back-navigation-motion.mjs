@@ -156,6 +156,26 @@ async function captureTargetInputLock(page) {
 export async function runBackNavigationMotionScenarios(suite) {
   const { page, out, check } = suite;
 
+  /* The language scenario before this one leaves an explicit non-English
+     override behind, and the shared Back control's label follows the locale.
+     This scenario reads that label in English, so it owns the precondition:
+     walk the real picker to English rather than assume the previous owner's
+     end state. */
+  await page.evaluate(() => window.__kb.goHome());
+  await page.waitForTimeout(100);
+  await page.evaluate(() => document.getElementById('btnSettingsHome')?.click());
+  await page.waitForTimeout(250);
+  for (let attempts = 0; attempts < 12; attempts++) {
+    const name = await page.$eval('#languageValue', (element) => element.textContent?.trim());
+    if (name === 'English') break;
+    await page.evaluate(() => document.getElementById('languageNext')?.click());
+    await page.waitForTimeout(100);
+  }
+  /* Leave through Settings' own Back and let its wipe land, so the scenario
+     below starts from a closed Settings page exactly as its taps assume. */
+  await page.evaluate(() => document.getElementById('btnSettingsBack')?.click());
+  await page.waitForFunction(() => !document.getElementById('ovSettings')?.classList.contains('on')
+    && !document.getElementById('kbroot')?.classList.contains('page-motion-active'));
   await page.evaluate(() => window.__kb.goHome());
   await page.waitForTimeout(100);
   out.duelBrackets = await page.evaluate(() => {

@@ -94,14 +94,26 @@ function fitEndTitle(): void {
   const root = title.closest('#kbroot') as HTMLElement | null;
   const viewportWidth = root?.getBoundingClientRect().width || window.innerWidth;
   const limit = Math.min(clip.clientWidth, viewportWidth * .9);
-  /* The UNTRANSFORMED box. A bounding rect includes the win entrance's opening
-     scale(3.2), so an observer waking mid-animation read a 299px word as 958px
-     and permanently refitted VICTORY to 20px — on some rounds and not others.
-     The h1 is a flex item, so offsetWidth shrink-wraps to its text. */
-  const naturalWidth = title.offsetWidth;
+  /* The UNTRANSFORMED, UNROUNDED box. A bounding rect includes the win
+     entrance's opening scale(3.2), so an observer waking mid-animation read a
+     299px word as 958px and permanently refitted VICTORY to 20px — on some
+     rounds and not others. The h1 is a flex item, so its used width
+     shrink-wraps to its text; offsetWidth rounds that to a whole pixel, and a
+     ratio taken from the rounded figure lands a long word up to a pixel past
+     the 90% lane (measured: ZWYCIĘSTWO 288.86px in a 288px lane). */
+  const naturalWidth = parseFloat(getComputedStyle(title).width) || title.offsetWidth;
   if (!(limit > 0 && naturalWidth > limit)) return;
   const naturalSize = parseFloat(getComputedStyle(title).fontSize);
-  title.style.setProperty('--fitted-verdict', `${naturalSize * limit / naturalWidth}px`);
+  let fitted = naturalSize * limit / naturalWidth;
+  title.style.setProperty('--fitted-verdict', `${fitted}px`);
+  /* Glyph advances round per glyph at a fractional size, so the word can land
+     a fraction of a pixel past the lane the ratio aimed at (measured: up to
+     0.7px over on a ten-glyph verdict). One measured correction converges. */
+  const fittedWidth = parseFloat(getComputedStyle(title).width);
+  if (fittedWidth > limit) {
+    fitted *= limit / fittedWidth;
+    title.style.setProperty('--fitted-verdict', `${fitted}px`);
+  }
 }
 
 function paintCopy(spec: EndSpec): void {

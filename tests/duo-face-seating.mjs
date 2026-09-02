@@ -272,7 +272,7 @@ await sp.evaluate(() => {
   opener.focus();
   opener.click();
 });
-await sp.waitForTimeout(400);
+await waitForOverlayTransitions(sp, '#ovImprint, #ovStart');
 const legalOpened = await sp.evaluate(() => document.getElementById('ovImprint').classList.contains('on'));
 check(legalOpened, 'the shared legal controller did not open its synthetic matrix door', out.small);
 out.small.legalOpened = legalOpened;
@@ -306,16 +306,18 @@ check(out.legalPage.focused && out.legalPage.backgroundInert,
 check(out.legalPage.backSize[0] <= 30 && out.legalPage.backSize[1] <= 30
   && out.legalPage.effective44,
       'legal Back artwork or its effective 44px target regressed', out.legalPage);
-await sp.tap('#btnImprintBack'); await sp.waitForTimeout(300);
+/* Back wipes the page away for 280ms; Home's borrowed inert lock and the
+   opener's focus return only when that motion settles, so wait for it. */
+await sp.tap('#btnImprintBack'); await waitForOverlayTransitions(sp, '#ovImprint, #ovStart');
 out.legalPage.closed = await sp.evaluate(() => !document.getElementById('ovImprint').classList.contains('on')
     && document.getElementById('ovStart').classList.contains('on')
     && !document.getElementById('ovStart').inert
     && document.activeElement?.id === 'legalTestOpener');
 check(out.legalPage.closed, 'legal Back did not restore Home, interactivity, and opener focus', out.legalPage);
 await sp.evaluate(() => document.getElementById('legalTestOpener').click());
-await sp.waitForTimeout(100);
+await waitForOverlayTransitions(sp, '#ovImprint, #ovStart');
 await sp.keyboard.press('Escape');
-await sp.waitForTimeout(300);
+await waitForOverlayTransitions(sp, '#ovImprint, #ovStart');
 out.legalPage.escapeClosed = await sp.evaluate(() => !document.getElementById('ovImprint').classList.contains('on')
   && !document.getElementById('ovStart').inert && document.activeElement?.id === 'legalTestOpener');
 check(out.legalPage.escapeClosed, 'legal Escape bypassed the shared accessible close path', out.legalPage);

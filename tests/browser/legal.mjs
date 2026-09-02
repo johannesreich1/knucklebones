@@ -49,6 +49,22 @@ async function waitForMotionIdle(page) {
   }, null, { timeout: 1500 });
 }
 
+/* Close runs the shared back wipe: the page beneath stays inert and the
+   opener regains focus only when that wipe lands. Sample what the player is
+   left with after the landing, not the first frame of the departure. */
+async function closeLegalPage(page, legalPage) {
+  await page.evaluate((pageId) => {
+    document.querySelector(`[data-legal-page="${pageId}"] [data-legal-close]`).click();
+  }, legalPage);
+  await waitForMotionIdle(page);
+  return page.evaluate((pageId) => {
+    const overlay = document.querySelector(`[data-legal-page="${pageId}"]`);
+    return !overlay.classList.contains('on')
+      && !document.getElementById('ovStart').inert
+      && document.activeElement?.id === 'legalMatrixOpener';
+  }, legalPage);
+}
+
 async function sampleMotion(page, expectedIds) {
   await page.waitForFunction((expected) => {
     const ids = document.getAnimations({ subtree: true })
@@ -296,15 +312,10 @@ async function inspectOpenLocaleRepaint(page, viewport) {
     };
     anchor.previousSibling?.remove();
     anchor.remove();
-    overlay.querySelector('[data-legal-close]').click();
-    return new Promise((resolve) => requestAnimationFrame(() => {
-      result.closed = !overlay.classList.contains('on')
-        && !document.getElementById('ovStart').inert
-        && document.activeElement?.id === 'legalMatrixOpener';
-      resolve(result);
-    }));
+    return result;
   }, { bodyHtml: expectedLegalBody(to.id, legalPage, LEGAL_RELEASE.facts),
     longUrl: LONG_URL });
+  after.closed = await closeLegalPage(page, legalPage);
   check(before.locale === from.id && after.locale === to.id,
     `${viewport}: an open legal page did not follow registry locale cycling`, { before, after });
   check(after.open && after.focused && after.title === expected.title,
@@ -443,17 +454,13 @@ try {
               return normalize(article) === normalize(template.content.firstElementChild);
             })(),
           };
-          overlay.querySelector('[data-legal-close]').click();
-          await new Promise((resolve) => requestAnimationFrame(resolve));
-          result.closed = !overlay.classList.contains('on')
-            && !document.getElementById('ovStart').inert
-            && document.activeElement?.id === 'legalMatrixOpener';
           return result;
         }, {
           locale: locale.id,
           legalPage,
           sharedBody: expectedLegalBody(locale.id, legalPage, LEGAL_RELEASE.facts),
         });
+        observation.closed = await closeLegalPage(page, legalPage);
         observations.push(observation);
         const label = `${viewport}/${locale.id}/${legalPage}`;
         check(observation.titleLines <= 1.1 && observation.titleFits,

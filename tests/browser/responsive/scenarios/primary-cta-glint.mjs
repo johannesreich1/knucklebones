@@ -1,6 +1,7 @@
 import { holdAndCancel } from '../../support/press-feedback.mjs';
 import { RESOURCES } from '../../../../src/i18n/catalogs.ts';
 import { LOCALE_REGISTRY } from '../../../../src/i18n/locale.ts';
+import { waitForOverlayTransitions } from '../../support/overlay-transitions.mjs';
 
 const near = (actual, expected) => Math.abs(actual - expected) <= .01;
 
@@ -247,6 +248,10 @@ export async function runPrimaryCtaGlintScenarios(suite) {
     const next = LOCALE_REGISTRY[index + 1];
     await compactPage.waitForFunction((id) => document.documentElement.dataset.locale === id, next.id);
     await compactPage.click('#btnSettingsBack');
+    /* Back runs the shared page wipe; the fixed grace ends inside its last
+       frames, where a transformed Home reports 24.999996px icons. Measure the
+       landed page. */
+    await waitForOverlayTransitions(compactPage, '#ovStart');
     await compactPage.waitForTimeout(300);
   }
   out.primaryCtaCompactLocales = compactLocales;

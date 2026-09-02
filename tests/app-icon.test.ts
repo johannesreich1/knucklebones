@@ -253,13 +253,14 @@ cacheStanding(ACCOUNT_A, { points: 1200, rank: 7, population: 100, percentile: 7
 cacheProfileAvatar(ACCOUNT_A, 'die:2:mg');
 assert.deepEqual(readProfileCacheForAccount(ACCOUNT_A), {
   accountId: ACCOUNT_A.toLowerCase(), nickname: 'Alpha', rating: 1200,
-  avatar: 'die:2:mg', rank: 7, apex: false,
+  avatar: 'die:2:mg', rank: 7, apex: false, curveVersion: 1,
 });
 cacheProfileIdentity({
   accountId: ACCOUNT_B, nickname: 'Beta', rating: 300, avatar: 'die:1:green',
 });
 assert.deepEqual(readProfileCache(), {
   accountId: ACCOUNT_B.toLowerCase(), nickname: 'Beta', rating: 300, avatar: 'die:1:green',
+  curveVersion: 1,
 }, 'the new account inherited presentation from the old account');
 assert.equal(readProfileCacheForAccount(ACCOUNT_A), null);
 
