@@ -201,7 +201,22 @@ export async function runOnlineLoadingPanelScenarios(suite) {
       ]);
       await page.waitForFunction(() => !document.getElementById('onAccount')
         ?.hasAttribute('data-account-pending'));
-      const state = await page.evaluate(() => ({
+      const state = await page.evaluate(() => {
+        /* A die the player can see: laid out AND painted. A closed overlay
+           keeps its die in the tree at visibility:hidden, and a box count
+           alone would report it as a second loader. */
+        const painted = (element) => {
+          const rect = element.getBoundingClientRect();
+          if (!(rect.width > 0 && rect.height > 0)) return false;
+          for (let node = element; node; node = node.parentElement) {
+            const style = getComputedStyle(node);
+            if (style.display === 'none' || style.visibility === 'hidden'
+              || Number(style.opacity) < .1) return false;
+          }
+          return true;
+        };
+        const dice = [...document.querySelectorAll('.die.ldclock')].filter(painted);
+        return {
         profileVisible: document.getElementById('onAccount')?.hidden === false,
         fullLoaderHidden: document.getElementById('onLoading')?.hidden === true,
         name: document.getElementById('accName')?.textContent,
@@ -210,17 +225,15 @@ export async function runOnlineLoadingPanelScenarios(suite) {
         seatDisabled: document.getElementById('accSeat')?.disabled,
         rankBusy: document.getElementById('btnRank')?.getAttribute('aria-busy'),
         inlineRankLoader: !!document.querySelector('#accRank .die.ldclock'),
-        visibleLoaders: [...document.querySelectorAll('.die.ldclock')]
-          .filter((element) => element.getClientRects().length > 0).length,
+        visibleLoaders: dice.length,
         /* Name the owner of every painted die: a bare count cannot say which
            surface is showing a second one. */
-        loaderOwners: [...document.querySelectorAll('.die.ldclock')]
-          .filter((element) => element.getClientRects().length > 0)
-          .map((element) => element.closest('[id]')?.id ?? '?'),
+        loaderOwners: dice.map((element) => element.closest('[id]')?.id ?? '?'),
         ovLoadState: (() => { const o = document.getElementById('ovLoad');
           if (!o) return null; const c = getComputedStyle(o);
           return { cls: o.className, opacity: c.opacity, visibility: c.visibility }; })(),
-      }));
+        };
+      });
       const runeCalls = routes.runeCalls();
       routes.releaseStanding();
       await routes.standingFinished;
