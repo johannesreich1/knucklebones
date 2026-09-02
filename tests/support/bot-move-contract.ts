@@ -18,7 +18,7 @@ import {
   type BotStanding,
 } from '../../src/core/ladder.ts';
 import {
-  botMove, botMoveWithShape, declinesFreeUpgrade, scoreColumns,
+  botMove, botMoveWithShape, botSearch, botSlipPick, declinesFreeUpgrade, scoreColumns,
 } from '../../src/core/bot.ts';
 import { seeded } from './policy-duel-bench.ts';
 
@@ -156,4 +156,21 @@ export function checkBotMoveContract(check: Check): void {
   botMoveWithShape(mid, AI, 4, { ...GROUPS[4].bot, slip: 0, openerSlip: 0 }, CLASSIC, searching.random);
   check(searching.draws() > 2,
     'a zero-slip shape must draw nothing but search jitter', searching.draws());
+  // botMoveWithShape IS botSlipPick ?? botSearch on one stream: the ranked
+  // turn builder applies the two halves itself (the cast decided on the
+  // un-slipped search, the one slip on the placement) and must decide
+  // exactly as the composed move would.
+  for (const shape of [GROUPS[0].bot, APEX.bot]) {
+    for (const [seat, board] of [[AI, botAsAI], [ME, botAsME]] as const) {
+      const composed = botMoveWithShape(board, seat, 6, shape, CLASSIC, seeded(77));
+      const stream = seeded(77);
+      const split = botSlipPick(board, seat, 6, shape, CLASSIC, stream)
+        ?? botSearch(board, seat, 6, shape, CLASSIC, stream);
+      check(composed === split, 'botSlipPick ?? botSearch diverged from botMoveWithShape',
+        { seat, shape, composed, split });
+    }
+  }
+  const declined = counting();
+  check(botSlipPick(mid, AI, 4, { ...GROUPS[4].bot, slip: 0 }, CLASSIC, declined.random) === null
+      && declined.draws() === 0, 'a zero-slip shape must draw nothing when asked to slip');
 }

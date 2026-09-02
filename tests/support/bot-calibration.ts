@@ -52,11 +52,12 @@ export const LEARNER: Policy = { depth: 1, oppW: 1, risk: 0.6 };
    suite already near its shard budget. */
 export const NOVICE_RUNE_FLOOR = { humanFirst: 0.38, botFirst: 0.40 } as const;
 export const RUNE_CELL_BASELINE: Readonly<Record<string, { humanFirst: number; botFirst: number }>> = {
-  ivory: { humanFirst: 0.5935, botFirst: 0.583 },
-  silver: { humanFirst: 0.56, botFirst: 0.606 },
-  gold: { humanFirst: 0.5425, botFirst: 0.61 },
-  obsidian: { humanFirst: 0.57, botFirst: 0.596 },
-  neon: { humanFirst: 0.547, botFirst: 0.583 },
+  // Measured 2026-09-02 with the cast decided on merit at each shape's castDemand.
+  ivory: { humanFirst: 0.562, botFirst: 0.5255 },
+  silver: { humanFirst: 0.512, botFirst: 0.5645 },
+  gold: { humanFirst: 0.516, botFirst: 0.5595 },
+  obsidian: { humanFirst: 0.5175, botFirst: 0.5365 },
+  neon: { humanFirst: 0.5125, botFirst: 0.5195 },
 };
 export function runeCell(index: number, humanFirst: boolean): number {
   if (index <= 2) return humanFirst ? NOVICE_RUNE_FLOOR.humanFirst : NOVICE_RUNE_FLOOR.botFirst;

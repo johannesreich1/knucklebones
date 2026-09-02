@@ -1,7 +1,7 @@
 // One authoritative protocol-v2 bot turn. Ranked Edge Functions use this
 // helper after a human placement and when a bot opens either Rune Trial or
 // equipped ordinary ranked.
-import { botMove, botSlip } from './bot.ts';
+import { botSearch, botSlipPick } from './bot.ts';
 import {
   appendRankedAction,
   type RankedActionRow,
@@ -11,7 +11,7 @@ import {
 import { poolSequence } from './dice.ts';
 import { botShapeAt, type BotStanding, type LadderCurveVersion } from './ladder.ts';
 import { LIMITED, legalCols, type Mode } from './rules.ts';
-import { machineCastPlan, spellById } from './spells.ts';
+import { machineCastPlan, spellById, type MachineCastPlan } from './spells.ts';
 
 export interface RankedBotTurnInput {
   seed: string;
@@ -37,20 +37,21 @@ export function appendRankedBotTurn(
   let { state } = input;
   if (state.over || state.nextDie === null || state.actionCount !== input.rows.length) return null;
   const who = state.turn;
+  const shape = botShapeAt(input.bot, input.curveVersion);
   const rows = [...input.rows];
   const actions: RankedActionRow[] = [];
   const spell = spellById(input.dealt[who]);
-  let coordinatedPlacement: number | null = null;
-
-  /* Rune spells are a second source of strength on top of the calibrated
-     placement policy. Give them the same league/seat handicap: on a slip the
-     bot passes this cast window, then still makes its mandatory placement.
-     This keeps Rune Trial human-favoured in both seats without changing who
-     opens. The placement makes its own independent slip decision below. */
   const canCast = spell !== null && (state.charges[who][spell.id] ?? 0) > 0;
-  const skipsCast = canCast
-    && input.random() < botSlip(botShapeAt(input.bot, input.curveVersion), who);
-  if (spell && canCast && !skipsCast) {
+  let plan: MachineCastPlan | null = null;
+
+  /* The cast is decided on merit at the shape's own demand (a conservative
+     league holds a rune it knows would pay — an error of omission), and its
+     placement preview is the UN-slipped shape: a coordinated follow-up column
+     (WARD, SUNDER) or a registry veto judges a real plan, never a coin-flip
+     column. The league/seat slip is applied exactly once per turn, to the
+     placement below, never to the cast. Draws here are search jitter only,
+     and only for a rune that projects a root charm. */
+  if (spell && canCast) {
     const bagLeft = input.mode === LIMITED
       ? poolSequence(input.seed).length - state.drawCount
       : null;
@@ -62,24 +63,16 @@ export function appendRankedBotTurn(
       bagLeft,
       charm: state.charm,
     };
-    const plan = machineCastPlan(
+    plan = machineCastPlan(
       state.st,
       who,
       spell,
       castContext,
-      16,
-      (rootCharm) => botMove(
-        state.st,
-        who,
-        state.nextDie!,
-        input.bot,
-        input.mode,
-        input.curveVersion,
-        input.random,
-        rootCharm,
+      shape.castDemand,
+      (rootCharm) => botSearch(
+        state.st, who, state.nextDie!, shape, input.mode, input.random, rootCharm,
       ),
     );
-    coordinatedPlacement = plan.placement;
     if (plan.target !== null) {
       if (spell.commitsOnAim) {
         const aimed = appendRankedAction(input.seed, rows, input.mode, input.dealt, {
@@ -106,15 +99,17 @@ export function appendRankedBotTurn(
   if (!state.over && state.nextDie !== null) {
     const legal = legalCols(state.st[who]);
     if (!legal.length) return null;
-    const placedCol = coordinatedPlacement ?? botMove(
-      state.st,
-      who,
-      state.nextDie,
-      input.bot,
-      input.mode,
-      input.curveVersion,
-      input.random,
-    );
+    /* The one handicap: a slip replaces the placement (one roll, one pick).
+       Otherwise the un-slipped preview is the answer when a cast just made
+       one — WARD and SUNDER leave the boards and the die untouched, so it is
+       still exact — else an ordinary search. The follow-up to a cast sees the
+       charm it projected. A plan whose cast was vetoed is never reused. */
+    const cast = plan !== null && plan.target !== null;
+    const charm = cast ? plan!.rootCharm ?? undefined : undefined;
+    const placedCol = botSlipPick(state.st, who, state.nextDie, shape, input.mode, input.random, charm)
+      ?? (cast && plan!.placement !== null
+        ? plan!.placement
+        : botSearch(state.st, who, state.nextDie, shape, input.mode, input.random, charm));
     if (!legal.includes(placedCol)) return null;
     const placed = appendRankedAction(input.seed, rows, input.mode, input.dealt, {
       kind: 'place',

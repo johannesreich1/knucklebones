@@ -1,7 +1,7 @@
 // The shared authoritative bot turn: src/core/ranked-bot-turn.ts. One module
 // for every ranked bot commit — the immediate lower-rated opener, the reply
-// after a human placement, the league slip that gates the Rune cast window,
-// and FATE meeting an exhausted LIMITED bag.
+// after a human placement, the cast decided on merit with the league slip
+// landing once on the placement, and FATE meeting an exhausted LIMITED bag.
 //
 // check/eq arrive as closures from the entry suite: they push into the entry's
 // `problems` array, which is what its exit code reads. A support module with
@@ -13,8 +13,8 @@ import {
   type RankedActionState,
   type RankedRuneDeal,
 } from '../../src/core/ranked-actions.ts';
-import { appendRankedBotTurn } from '../../src/core/ranked-bot-turn.ts';
-import { LADDER_CURVE_V1, LADDER_CURVE_V2 } from '../../src/core/ladder.ts';
+import { appendRankedBotTurn, type RankedBotTurnResult } from '../../src/core/ranked-bot-turn.ts';
+import { LADDER_CURVE_V1, LADDER_CURVE_V2, type LadderCurveVersion } from '../../src/core/ladder.ts';
 import { AI, CLASSIC, LIMITED, ME, legalCols, type Player } from '../../src/core/rules.ts';
 
 type Check = (condition: boolean, message: string, detail?: unknown) => void;
@@ -31,14 +31,15 @@ export interface RankedBotTurnCaseHarness {
   opening: RankedActionState;
 }
 
-/* A ranked bot's league slip also passes its Rune cast window. The low draw
-   proves the handicap; the high draw proves it did not disable spells. Both
-   cases are HAND-FOUND seeded replays whose whole purpose is to land on one
-   specific seat's FATE turn holding nextDie === 1 — re-deriving their columns
-   more cleanly lands on a different replay, and the suite silently stops
-   testing the cast window while still passing. Only the fixture, the seat and
-   the sentences differ; the two-draw drive is one implementation. */
-interface CastSlipCase {
+/* A ranked bot casts on MERIT; its league/seat slip lands once, on the
+   placement. Every draw slipping must still cast; the placement then slips
+   (one roll, one pick) or searches. Both cases are HAND-FOUND seeded replays
+   whose whole purpose is to land on one specific seat's FATE turn holding
+   nextDie === 1 — re-deriving their columns more cleanly lands on a different
+   replay, and the suite silently stops testing the cast window while still
+   passing. Only the fixture, the seat and the sentences differ; the drive is
+   one implementation. */
+interface CastCase {
   /** Names this fixture inside its own build/arrival failures. */
   fixture: string;
   seed: string;
@@ -47,8 +48,8 @@ interface CastSlipCase {
   seat: Player;
   steps: number;
   placedCol: (state: RankedActionState, step: number) => number;
-  slipped: string;
-  kept: string;
+  castOnMerit: string;
+  placesAfterCast: string;
 }
 
 /** Fixed columns; this replay never consults the board it is building. */
@@ -56,19 +57,19 @@ const REPLY_COLUMNS = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1];
 /** Indexes into whatever is legal at each step, so a full column cannot stall it. */
 const OPENER_PATTERN = [1, 1, 0];
 
-const CAST_SLIP_CASES: readonly CastSlipCase[] = [
+const CAST_CASES: readonly CastCase[] = [
   {
-    fixture: 'cast-slip',
+    fixture: 'cast-on-merit',
     seed: 'cast-fixture-0',
     dealt: ['fate', 'ward'],
     seat: AI,
     steps: REPLY_COLUMNS.length,
     placedCol: (_state, step) => REPLY_COLUMNS[step],
-    slipped: 'a bot cast through its league slip instead of passing the Rune window',
-    kept: 'the Rune handicap disabled casting instead of making it probabilistic',
+    castOnMerit: 'a slipping bot passed its Rune window instead of casting on merit',
+    placesAfterCast: 'a bot that cast did not search its placement when its slip did not fire',
   },
   {
-    fixture: 'opener cast-slip',
+    fixture: 'opener cast-on-merit',
     seed: 'cast-slip-fixture-1-fate-0',
     dealt: ['nudge', 'fate'],
     seat: ME,
@@ -77,12 +78,19 @@ const CAST_SLIP_CASES: readonly CastSlipCase[] = [
       const legal = legalCols(state.st[state.turn]);
       return legal[OPENER_PATTERN[step % OPENER_PATTERN.length] % legal.length];
     },
-    slipped: 'a bot opener cast through its league slip instead of passing the Rune window',
-    kept: 'the opener Rune handicap disabled casting instead of making it probabilistic',
+    castOnMerit: 'a slipping bot opener passed its Rune window instead of casting on merit',
+    placesAfterCast: 'a bot opener that cast did not search its placement when its slip did not fire',
   },
 ];
 
-function runCastSlipCase(check: Check, testCase: CastSlipCase): void {
+/** A draw stream that counts how many numbers the turn consumed. */
+const counting = (values: number[]) => {
+  let n = 0;
+  return { random: () => values[n++] ?? 0.5, draws: () => n };
+};
+const kinds = (turn: RankedBotTurnResult | null) => turn?.actions.map((a) => a.kind).join() ?? '';
+
+function runCastCase(check: Check, testCase: CastCase): void {
   const { fixture, seed, dealt, seat } = testCase;
   const rows: RankedActionRow[] = [];
   let state = rebuildRankedActions(seed, rows, CLASSIC, dealt);
@@ -97,53 +105,42 @@ function runCastSlipCase(check: Check, testCase: CastSlipCase): void {
   }
   check(state.turn === seat && state.nextDie === 1,
     `${fixture} fixture did not reach the intended bot FATE turn`, state);
-  const skippedCast = appendRankedBotTurn({
-    seed, rows, state, mode: CLASSIC, dealt, bot: { points: 800, apex: false },
-    curveVersion: LADDER_CURVE_V2, random: () => 0,
-  });
-  // A counter per case: a shared one would leak draw state between fixtures.
-  let castDraw = 0;
-  const keptCast = appendRankedBotTurn({
-    seed, rows, state, mode: CLASSIC, dealt, bot: { points: 800, apex: false },
-    curveVersion: LADDER_CURVE_V2, random: () => castDraw++ === 0 ? 0.99 : 0.5,
-  });
-  check(skippedCast?.actions.length === 1 && skippedCast.actions[0].kind === 'place'
-    && skippedCast.state.charges[seat].fate === 2,
-    testCase.slipped, skippedCast);
-  check(keptCast !== null
-    && keptCast.actions.some(({ kind, rune_id }) => kind === 'cast' && rune_id === 'fate')
-    && keptCast.state.charges[seat].fate === 1,
-    testCase.kept, keptCast);
+  /* A depth-one shape (800 points is BONE on v2) draws one jitter value per
+     legal column when it searches; a slip draws its roll and its pick. FATE
+     leaves the board untouched, so the column count is the fixture's. */
+  const searchDraws = 1 + legalCols(state.st[seat]).length;
+  const turnFor = (draws: number[], points = 800, curveVersion: LadderCurveVersion = LADDER_CURVE_V2) => {
+    const stream = counting(draws);
+    const turn = appendRankedBotTurn({
+      seed, rows, state, mode: CLASSIC, dealt, bot: { points, apex: false },
+      curveVersion, random: stream.random,
+    });
+    return { turn, draws: stream.draws() };
+  };
+
+  // Every draw slips: merit still casts, then the ONE handicap lands on the
+  // placement — one roll, one pick, nothing else.
+  const slipped = turnFor([0]);
+  check(kinds(slipped.turn) === 'cast,place' && slipped.turn!.state.charges[seat].fate === 1
+    && slipped.draws === 2, testCase.castOnMerit, slipped);
+  // No slip: the cast, then a searched placement.
+  const searched = turnFor([0.99]);
+  check(kinds(searched.turn) === 'cast,place' && searched.turn!.state.charges[seat].fate === 1
+    && searched.draws === searchDraws, testCase.placesAfterCast, { searched, searchDraws });
 
   /* During the dormant v2 rollout the same rating belongs to different
-     groups on the two curves. Keep the match-owned curve observable here:
-     720 is IVORY on v1 (0.60 slip) and BONE on v2 (0.70 slip), so the same
-     0.65 draw must preserve the cast on v1 and skip it on v2. This catches a
-     caller or either half of this helper silently falling back to v2. */
-  if (fixture === 'cast-slip') {
-    const stagedTurn = (curveVersion: typeof LADDER_CURVE_V1 | typeof LADDER_CURVE_V2) => {
-      let draw = 0;
-      const values = [0.65, 0.99, 0.5];
-      return appendRankedBotTurn({
-        seed,
-        rows,
-        state,
-        mode: CLASSIC,
-        dealt,
-        bot: { points: 720, apex: false },
-        curveVersion,
-        random: () => values[draw++] ?? 0.5,
-      });
-    };
-    const v1Turn = stagedTurn(LADDER_CURVE_V1);
-    const v2Turn = stagedTurn(LADDER_CURVE_V2);
-    check(v1Turn !== null
-      && v1Turn.actions.some(({ kind, rune_id }) => kind === 'cast' && rune_id === 'fate')
-      && v1Turn.state.charges[seat].fate === 1
-      && v2Turn?.actions.length === 1 && v2Turn.actions[0].kind === 'place'
-      && v2Turn.state.charges[seat].fate === 2,
-    'ranked bot turn ignored the match-owned ladder curve during staged rollout',
-    { v1Turn, v2Turn });
+     groups on the two curves. Keep the match-owned curve observable through
+     the placement: 720 is IVORY on v1 (0.60 slip) and BONE on v2 (0.70
+     slip), so the same 0.65 roll searches on v1 and slips on v2 while both
+     cast. This catches a caller or either half of this helper silently
+     falling back to v2. */
+  if (fixture === 'cast-on-merit') {
+    const v1 = turnFor([0.65], 720, LADDER_CURVE_V1);
+    const v2 = turnFor([0.65], 720, LADDER_CURVE_V2);
+    check(kinds(v1.turn) === 'cast,place' && kinds(v2.turn) === 'cast,place'
+      && v1.draws === searchDraws && v2.draws === 2,
+    'ranked bot turn ignored the match-owned ladder curve on its placement slip',
+    { v1, v2, searchDraws });
   }
 }
 
@@ -182,7 +179,7 @@ export function runRankedBotTurnCases(harness: RankedBotTurnCaseHarness): void {
     random: () => 0,
   }) === null, 'ranked bot opener accepted a state/version mismatch');
 
-  for (const testCase of CAST_SLIP_CASES) runCastSlipCase(check, testCase);
+  for (const testCase of CAST_CASES) runCastCase(check, testCase);
 
   // The die already in hand counts as drawn. On the final LIMITED turn FATE
   // must see an empty bag, decline its redraw, and let the bot place that die.

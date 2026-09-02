@@ -5,7 +5,7 @@
 // Run: mise exec -- node --experimental-strip-types tests/rune-bot-fairness.test.ts
 import { searchRoot } from '../src/core/ai.ts';
 import { randStream } from '../src/core/dice.ts';
-import { GROUPS, LADDER_CURVE_V2 } from '../src/core/ladder.ts';
+import { GROUPS, LADDER_CURVE_V2, MERIT_CAST_DEMAND } from '../src/core/ladder.ts';
 import {
   appendRankedAction,
   rankedActionTotal,
@@ -70,7 +70,7 @@ function appendHumanTurn(
       draw: () => state.nextDie!,
       bagLeft: null,
       charm: state.charm,
-    }, 16, (rootCharm) => humanMove(state, who, random, rootCharm));
+    }, MERIT_CAST_DEMAND, (rootCharm) => humanMove(state, who, random, rootCharm));
     coordinatedPlacement = plan.placement;
 
     if (plan.target !== null) {

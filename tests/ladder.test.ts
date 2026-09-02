@@ -318,10 +318,10 @@ eq([marginDraw.aDelta.finish, marginDraw.bDelta.finish, marginDraw.da, marginDra
    numbers were tuned by simulation (2026-08-20; full curve corrected
    2026-08-26 after the 0–0 seat-perspective report); botbench keeps the
    human-favoured outcome curve honest, this table just pins the shapes. */
-eq(GROUPS.map((g) => [g.bot.depth, g.bot.risk, g.bot.oppW, g.bot.slip, g.bot.openerSlip]), [
-  [1, 0, -0.5, 0.70, 0.70], [1, 0, 0, 0.70, 0.70], [1, 0.25, 0.05, 0.60, 0.60],
-  [1, 0.6, 1, 0.72, 0.675], [2, 1.2, 1, 0.68, 0.67],
-  [3, 1.2, 1, 0.68, 0.66], [4, 1.2, 1, 0.66, 0.65],
+eq(GROUPS.map((g) => [g.bot.depth, g.bot.risk, g.bot.oppW, g.bot.slip, g.bot.openerSlip, g.bot.castDemand]), [
+  [1, 0, -0.5, 0.70, 0.70, 16], [1, 0, 0, 0.70, 0.70, 16], [1, 0.25, 0.05, 0.60, 0.60, 16],
+  [1, 0.6, 1, 0.72, 0.675, 24], [2, 1.2, 1, 0.68, 0.67, 16],
+  [3, 1.2, 1, 0.68, 0.66, 16], [4, 1.2, 1, 0.66, 0.65, 16],
 ], 'the per-group bot shapes drifted from LADDER.md §4');
 const standing = (points: number, apex = false) => ({ points, apex });
 eq(botShapeAt(standing(148)), GROUPS[0].bot, 'a bot with STONE points must play the STONE shape');

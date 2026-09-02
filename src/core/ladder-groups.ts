@@ -11,14 +11,23 @@ export const LADDER_CURVE_VERSION: LadderCurveVersion = LADDER_CURVE_V2;
      depth — expectimax plies
      risk  — how much it fears what the opponent can destroy
      oppW  — how much of the opponent board its evaluation sees
-     slip / openerSlip — random-build share for either seat. */
+     slip / openerSlip — random-build share for either seat
+     castDemand — points of score difference it demands before casting a
+       rune. MERIT_CAST_DEMAND is offline Normal's line and the reference
+       human's; above it a bot holds a rune it knows would pay — an error of
+       omission, never ignorance of the rune. */
 export interface BotShape {
   depth: number;
   risk: number;
   oppW: number;
   slip: number;
   openerSlip: number;
+  castDemand: number;
 }
+
+/** The cast demand a rune is worth casting at: offline Normal's, and the
+    reference human's in tests/rune-bot-fairness.test.ts. */
+export const MERIT_CAST_DEMAND = 16;
 
 /* Who a bot IS when it decides. `apex` is the POSITION the board projection
    resolves (private.ladder_board, read through player_standing) and is never
@@ -41,13 +50,13 @@ export interface Group {
    progression cadence, not calibrated play. The production-weighted bench
    owns these values (docs/LADDER.md, tests/botbench.test.ts). */
 const GROUP_BOTS: readonly BotShape[] = Object.freeze([
-  Object.freeze({ depth: 1, risk: 0, oppW: -0.5, slip: 0.70, openerSlip: 0.70 }),
-  Object.freeze({ depth: 1, risk: 0, oppW: 0, slip: 0.70, openerSlip: 0.70 }),
-  Object.freeze({ depth: 1, risk: 0.25, oppW: 0.05, slip: 0.60, openerSlip: 0.60 }),
-  Object.freeze({ depth: 1, risk: 0.6, oppW: 1, slip: 0.72, openerSlip: 0.675 }),
-  Object.freeze({ depth: 2, risk: 1.2, oppW: 1, slip: 0.68, openerSlip: 0.67 }),
-  Object.freeze({ depth: 3, risk: 1.2, oppW: 1, slip: 0.68, openerSlip: 0.66 }),
-  Object.freeze({ depth: 4, risk: 1.2, oppW: 1, slip: 0.66, openerSlip: 0.65 }),
+  Object.freeze({ depth: 1, risk: 0, oppW: -0.5, slip: 0.70, openerSlip: 0.70, castDemand: 16 }),
+  Object.freeze({ depth: 1, risk: 0, oppW: 0, slip: 0.70, openerSlip: 0.70, castDemand: 16 }),
+  Object.freeze({ depth: 1, risk: 0.25, oppW: 0.05, slip: 0.60, openerSlip: 0.60, castDemand: 16 }),
+  Object.freeze({ depth: 1, risk: 0.6, oppW: 1, slip: 0.72, openerSlip: 0.675, castDemand: 24 }),
+  Object.freeze({ depth: 2, risk: 1.2, oppW: 1, slip: 0.68, openerSlip: 0.67, castDemand: 16 }),
+  Object.freeze({ depth: 3, risk: 1.2, oppW: 1, slip: 0.68, openerSlip: 0.66, castDemand: 16 }),
+  Object.freeze({ depth: 4, risk: 1.2, oppW: 1, slip: 0.66, openerSlip: 0.65, castDemand: 16 }),
 ]);
 
 const makeGroup = (id: string, floor: number, width: number, botIndex: number): Readonly<Group> =>

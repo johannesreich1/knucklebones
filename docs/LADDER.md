@@ -514,14 +514,18 @@ cancels the opening advantage without changing matchmaking, and is why the
 bot-opens column above stays human-favoured too.
 
 The gate uses the real `botMove`, derives the exact outcome weights from the
-ranked registry, and measures both seat orders. Rune Trial gets the same
-league/seat slip on the bot's cast decision: a slipped bot passes that cast
-window but still places. The 1,000-game-per-seat production replay in
-`tests/rune-bot-fairness.test.ts` puts a simple active human at 54.3–61.0% in
-every IVORY+ league/seat (NEON: 54.7% / 58.3%). A player who never uses a dealt
-rune can still be an underdog in that outcome; the permanent-pool gate
-therefore substitutes an even harsher 38% / 40% Rune share and proves the
-league aggregate remains human-favoured. A random mover also remains favoured
+ranked registry, and measures both seat orders. In Rune Trial the bot decides
+its cast on merit at its shape's `castDemand` (offline Normal's 16 points of
+score difference at every league except SILVER, which holds a rune until it is
+worth 24 — an error of omission, never ignorance of the rune), previews the
+follow-up placement with its un-slipped search, and receives its league/seat
+slip exactly once, on the placement. The 1,000-game-per-seat production replay
+in `tests/rune-bot-fairness.test.ts` puts a simple active human at 51.2–56.5% in
+every IVORY+ league/seat (NEON: 51.2% / 51.9%), and pins each cell exactly in
+`tests/support/bot-calibration.ts` for the league aggregates. A player who
+never uses a dealt rune can still be an underdog in that outcome; at IVORY,
+where Rune Trial is new, the permanent-pool gate substitutes an even harsher
+38% / 40% Rune share and proves the league aggregate remains human-favoured. A random mover also remains favoured
 in STONE (about 69.6% when opening, 54.3% when the bot opens), so the first
 league supports learning by play rather than requiring the builder model.
 

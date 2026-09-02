@@ -84,50 +84,60 @@ export function botMove(st: GameState, botIdx: Player, die: number, bot: BotStan
   return botMoveWithShape(st, botIdx, die, botShapeAt(bot, curveVersion), mode, rand, rootCharm);
 }
 
+/* The slip, when it fires: draw one rolls it, draw two picks among the
+   candidates. Null means the shape searches this turn. The statement order
+   is deliberately the inline original's, down to the short-circuit: `slip > 0
+   &&` means a zero-slip bot draws NOTHING, so the stream advances differently
+   for zero- and non-zero-slip shapes. Rewrite this as a tidier expression and
+   you change which numbers later draws get — a replay difference, not a
+   style difference. */
+export function botSlipPick(st: GameState, botIdx: Player, die: number, shape: BotShape,
+                            mode: Mode, rand: () => number, rootCharm?: CharmSt): number | null {
+  const slip = botSlip(shape, botIdx);
+  if (!(slip > 0 && rand() < slip)) return null;
+  let choices = legalCols(st[botIdx]);
+  /* A negative opponent weight is an onboarding promise, not merely a
+     search hint: STONE actively spares the player's board. Its old random
+     slip ignored that promise and could accidentally string together the
+     strongest possible counters (including a live first-match double-six
+     wipe).
+
+     ME is also the opening seat. A bot may legitimately occupy it, but the
+     league curve must not flip from human-favoured to bot-
+     favoured just because the bot received that handicap. Its slipped moves
+     therefore become safe random builds too. A promoted bot seated second
+     retains the ordinary any-column slip. In either case, choose among the
+     columns that cost the opponent the least visible score. */
+  if (shape.oppW < 0 || botIdx === ME) {
+    const scored = scoreColumns(st, botIdx, die, mode, rootCharm);
+    let leastLoss = Infinity;
+    for (const score of scored) leastLoss = Math.min(leastLoss, score.oppLoss);
+    choices = scored.filter((score) => score.oppLoss === leastLoss).map((score) => score.col);
+  }
+  return choices[Math.floor(rand() * choices.length)];
+}
+
+/** The shape's search, exactly as the un-slipped branch has always run it. */
+export function botSearch(st: GameState, botIdx: Player, die: number, shape: BotShape,
+                          mode: Mode, rand: () => number, rootCharm?: CharmSt): number {
+  return searchRoot(st, botIdx, die, shape.depth, {
+    mode,
+    random: rand,
+    riskWeight: shape.risk,
+    opponentWeight: shape.oppW,
+    rootCharm,
+  }).c;
+}
+
 /* The same decision for a shape named directly. The bench measures a league
    by its shape, and a retune sweep tries shapes the registry does not hold
-   yet; both must run the exact statements production runs. */
+   yet; both must run the exact statements production runs. The ranked turn
+   builder applies the two halves itself — the cast decided on the un-slipped
+   search, the one slip on the placement — and must decide exactly as this
+   composition would (tests/support/bot-move-contract.ts pins it). */
 export function botMoveWithShape(st: GameState, botIdx: Player, die: number, shape: BotShape,
                                  mode: Mode, rand: () => number, rootCharm?: CharmSt): number {
-  const slip = botSlip(shape, botIdx);
-  const legal = legalCols(st[botIdx]);
-  if (!legal.length) return -1;                 // nothing to play: the caller is asking too late
-
-  /* The statement order below is deliberately the inline original's, down to
-     the short-circuit: `slip > 0 &&` means a zero-slip bot draws NOTHING,
-     so the stream advances differently for zero- and non-zero-slip shapes. Rewrite
-     this as a tidier expression and you change which numbers later draws get —
-     which is a replay difference, not a style difference. */
-  let col: number;
-  if (slip > 0 && rand() < slip) {
-    let choices = legal;
-    /* A negative opponent weight is an onboarding promise, not merely a
-       search hint: STONE actively spares the player's board. Its old random
-       slip ignored that promise and could accidentally string together the
-       strongest possible counters (including a live first-match double-six
-       wipe).
-
-       ME is also the opening seat. A bot may legitimately occupy it, but the
-       league curve must not flip from human-favoured to bot-
-       favoured just because the bot received that handicap. Its slipped moves
-       therefore become safe random builds too. A promoted bot seated second
-       retains the ordinary any-column slip. In either case, choose among the
-       columns that cost the opponent the least visible score. */
-    if (shape.oppW < 0 || botIdx === ME) {
-      const scored = scoreColumns(st, botIdx, die, mode, rootCharm);
-      let leastLoss = Infinity;
-      for (const score of scored) leastLoss = Math.min(leastLoss, score.oppLoss);
-      choices = scored.filter((score) => score.oppLoss === leastLoss).map((score) => score.col);
-    }
-    col = choices[Math.floor(rand() * choices.length)];
-  } else {
-    col = searchRoot(st, botIdx, die, shape.depth, {
-      mode,
-      random: rand,
-      riskWeight: shape.risk,
-      opponentWeight: shape.oppW,
-      rootCharm,
-    }).c;
-  }
-  return col;
+  if (!legalCols(st[botIdx]).length) return -1;   // nothing to play: the caller is asking too late
+  return botSlipPick(st, botIdx, die, shape, mode, rand, rootCharm)
+    ?? botSearch(st, botIdx, die, shape, mode, rand, rootCharm);
 }
