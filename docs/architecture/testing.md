@@ -290,7 +290,8 @@ typed helper expresses the common action.
   enforces per-league floors, bands, at least 2pp of separation from GOLD up,
   the LEARNER floor and the unforced-error ceiling; `tests/bot-knowledge.test.ts`
   proves each mode's aware search beats a Classic-eval twin, so what a bot knows
-  is league-independent; `tests/rune-bot-fairness.test.ts` pins its own
+  is league-independent; `tests/rune-cast-duel.test.ts` proves each rune's
+  caster beats a holder dealt the same rune; `tests/rune-bot-fairness.test.ts` pins its own
   production-path cell in bot-calibration and botbench weights that pin into the
   league aggregates; `tests/ladder.test.ts` holds docs/LADDER.md §4 to the same
   pinned cells. Known-red cells live in `CALIBRATION_DEBT` / `KNOWLEDGE_DEBT`

@@ -11,7 +11,7 @@ import {
 import { poolSequence } from './dice.ts';
 import { botShapeAt, type BotStanding, type LadderCurveVersion } from './ladder.ts';
 import { LIMITED, legalCols, type Mode } from './rules.ts';
-import { machineCastPlan, spellById, type MachineCastPlan } from './spells.ts';
+import { machineCastPlan, placementCharm, spellById, type MachineCastPlan } from './spells.ts';
 
 export interface RankedBotTurnInput {
   seed: string;
@@ -106,7 +106,12 @@ export function appendRankedBotTurn(
        still exact — else an ordinary search. The follow-up to a cast sees the
        charm it projected. A plan whose cast was vetoed is never reused. */
     const cast = plan !== null && plan.target !== null;
-    const context = { rootCharm: cast ? plan!.rootCharm ?? undefined : undefined, bounty: state.bounty };
+    /* A cast hands its own projected charm to the follow-up; every other
+       placement still has to see the marks already on the boards. */
+    const context = {
+      rootCharm: cast ? plan!.rootCharm ?? undefined : placementCharm(state.charm),
+      bounty: state.bounty,
+    };
     const placedCol = botSlipPick(state.st, who, state.nextDie, shape, input.mode, input.random, context)
       ?? (cast && plan!.placement !== null
         ? plan!.placement

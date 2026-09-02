@@ -63,6 +63,19 @@ export function placeGain(
   return immediatePlacementGain(st, who, die, mode, { charm });
 }
 
+/* The charm an ordinary PLACEMENT search must see: every persistent WARD
+   mark on either board — they change what a column scores and what a destroy
+   can reach — but deliberately NOT a pending one-shot SUNDER, which belongs
+   to the cast that projects it (a coordinated cast passes its own charm
+   instead). Undefined when nothing is live, so the charm-free hot path keeps
+   allocating nothing. Offline and ranked ask this one question. */
+export function placementCharm(charm: CharmSt): CharmSt | undefined {
+  if (!charm.wards[AI].some(Boolean) && !charm.wards[ME].some(Boolean)) return undefined;
+  const searchCharm = cloneCharm(charm);
+  searchCharm.sunder = [false, false];
+  return searchCharm;
+}
+
 /* The one-column valuation WARD's catalog policy needs. */
 export function colScoreOf(col: number[]): number {
   let score = 0;

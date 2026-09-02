@@ -1,11 +1,11 @@
 // Local CPU policy. Search and scoring stay pure in core/; this typed seam
 // selects difficulty and tutorial behaviour from the live game state.
 import { searchRoot } from '../core/ai.ts';
+import { placementCharm } from '../core/spells.ts';
 import {
   AI,
   ME,
   SPEC,
-  cloneCharm,
   colScore,
   legalCols,
   type CharmSt,
@@ -41,15 +41,11 @@ export function aiChoose(rootCharm?: CharmSt): number {
   }
 
   /* An explicit projected charm belongs to a coordinated cast preview. An
-     ordinary choice still needs every persistent WARD, but deliberately not
-     a pending one-shot SUNDER: Normal's 5% coordination slip is defined as a
-     blind final placement for that spell. Keeping this split here also leaves
-     the charm-free hot path allocation-free. */
-  let searchCharm = rootCharm;
-  if (!searchCharm && (S.charm.wards[AI].some(Boolean) || S.charm.wards[ME].some(Boolean))) {
-    searchCharm = cloneCharm(S.charm);
-    searchCharm.sunder = [false, false];
-  }
+     ordinary choice asks core for the placement charm — every persistent WARD,
+     never a pending one-shot SUNDER, since Normal's 5% coordination slip is
+     defined as a blind final placement for that spell. Ranked asks core the
+     same question (core/ranked-bot-turn.ts). */
+  const searchCharm = rootCharm ?? placementCharm(S.charm);
 
   const filled = state[AI].flat().length + state[ME].flat().length;
   let column: number;

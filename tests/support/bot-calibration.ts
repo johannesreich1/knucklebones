@@ -54,11 +54,11 @@ export const NOVICE_RUNE_FLOOR = { humanFirst: 0.38, botFirst: 0.40 } as const;
 export const RUNE_CELL_BASELINE: Readonly<Record<string, { humanFirst: number; botFirst: number }>> = {
   // Measured 2026-09-02 at the retuned shapes (cast on merit, free-upgrade
   // rule, bounty-aware search).
-  ivory: { humanFirst: 0.526, botFirst: 0.5245 },
+  ivory: { humanFirst: 0.526, botFirst: 0.5225 },
   silver: { humanFirst: 0.529, botFirst: 0.601 },
-  gold: { humanFirst: 0.5025, botFirst: 0.5315 },
-  obsidian: { humanFirst: 0.475, botFirst: 0.509 },
-  neon: { humanFirst: 0.456, botFirst: 0.5045 },
+  gold: { humanFirst: 0.5025, botFirst: 0.54 },
+  obsidian: { humanFirst: 0.4755, botFirst: 0.51 },
+  neon: { humanFirst: 0.455, botFirst: 0.505 },
 };
 export function runeCell(index: number, humanFirst: boolean): number {
   if (index <= 2) return humanFirst ? NOVICE_RUNE_FLOOR.humanFirst : NOVICE_RUNE_FLOOR.botFirst;

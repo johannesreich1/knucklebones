@@ -489,7 +489,7 @@ same policy; their points still affect pairing and which group policy applies.
 | BONE | 1 | 0 | builds blind (`oppW 0`) | 70 / 70% | 16 | any column | **62.7%** | **61.8%** |
 | IVORY | 1 | 0.25 | glances (`oppW 0.05`) | 70 / 70% | 16 | never declines 8 | **52.6%** | **53.2%** |
 | SILVER | 1 | 0.6 | yes | 84 / 79.5% | 32 | never declines 8 | **52.5%** | **53.7%** |
-| GOLD | 2 | 1.2 | yes | 78 / 74% | 16 | never declines 8 | **51.6%** | **51.8%** |
+| GOLD | 2 | 1.2 | yes | 78 / 74% | 20 | never declines 8 | **51.6%** | **51.8%** |
 | OBSIDIAN | 3 | 1.2 | yes | 74 / 70% | 16 | never declines 8 | **48.8%** | **49.5%** |
 | NEON | 4 | 1.2 | yes | 58 / 61% | 24 | never declines 8 | **46.4%** | **46.3%** |
 
@@ -576,14 +576,17 @@ bot-opens column above stays human-favoured too.
 The gate uses the real `botMove`, derives the exact outcome weights from the
 ranked registry, and measures both seat orders. In Rune Trial the bot decides
 its cast on merit at its shape's `castDemand` (offline Normal's 16 points of
-score difference at most leagues; SILVER holds a rune until it is worth 32 and
-NEON until 24 — an error of omission, never ignorance of the rune), previews
-the follow-up placement with its un-slipped search, and receives its league/seat
-slip exactly once, on the placement. The 1,000-game-per-seat production replay
-in `tests/rune-bot-fairness.test.ts` puts a simple active human at 45.6–60.1% in
-every IVORY+ league/seat (NEON: 45.6% / 50.5%, the apex at its 45% floor), and
-pins each cell exactly in `tests/support/bot-calibration.ts` for the league
-aggregates. A player who
+score difference at IVORY; SILVER holds a rune until it is worth 32, GOLD until
+20 and NEON until 24 — an error of omission, never ignorance of the rune),
+previews the follow-up placement with its un-slipped search, and receives its
+league/seat slip exactly once, on the placement. Its placements see the
+persistent WARD marks on both boards, as the offline CPU always has. The
+1,000-game-per-seat production replay in `tests/rune-bot-fairness.test.ts` puts
+a simple active human at 45.5–60.1% in every IVORY+ league/seat (NEON: 45.5% /
+50.5%, the apex at its 45% floor), and pins each cell exactly in
+`tests/support/bot-calibration.ts` for the league aggregates. Whether the bot
+spends each rune WELL is a separate cell: `tests/rune-cast-duel.test.ts` plays
+a caster against a holder dealt the same rune, and every rune's caster wins. A player who
 never uses a dealt rune can still be an underdog in that outcome; at IVORY,
 where Rune Trial is new, the permanent-pool gate substitutes an even harsher
 38% / 40% Rune share and proves the league aggregate remains human-favoured. A random mover also remains favoured

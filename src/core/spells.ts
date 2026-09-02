@@ -33,6 +33,7 @@ export {
   immediatePlacementGain,
   machineCast,
   machineCastPlan,
+  placementCharm,
   NORMAL_CHARM_COORDINATION_SLIP_RATE,
   placeGain,
   swingOf,

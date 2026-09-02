@@ -183,6 +183,44 @@ export function runRankedBotTurnCases(harness: RankedBotTurnCaseHarness): void {
 
   for (const testCase of CAST_CASES) runCastCase(check, testCase);
 
+  /* A ranked bot must PLACE with its eyes open. Persistent WARD marks change
+     what a column is worth and what a destroy can reach, and the offline CPU
+     has always handed them to its search (src/flow/game-ai.ts). The ranked
+     placement did not: it passed no charm at all, so a bot answered a warded
+     board as though the mark were not there. Here p1 wards its own first
+     column and places; the bare bot seat then holds a 2 whose best column is
+     1 with the mark in sight and 0 without, and its draw refuses the slip so
+     the search is what answers. */
+  const wardSeed = 'ward-fixture-0';
+  const wardDeal: RankedRuneDeal = [null, 'ward'];
+  const wardRows: RankedActionRow[] = [];
+  let wardState = rebuildRankedActions(wardSeed, wardRows, CLASSIC, wardDeal);
+  if (!wardState) throw new Error('WARD fixture did not initialize');
+  for (const intent of [
+    { kind: 'cast', rune_id: 'ward', target_col: 0 },
+    { kind: 'place', placed_col: 0 },
+  ] as const) {
+    const appended = appendRankedAction(wardSeed, wardRows, CLASSIC, wardDeal, intent);
+    if (!appended) throw new Error(`WARD fixture could not append ${intent.kind}`);
+    wardRows.push(appended.row);
+    wardState = appended.state;
+  }
+  check(wardState.turn === AI && wardState.nextDie === 2
+    && wardState.charm.wards[ME][0] === 1 && (wardState.charges[AI].ward ?? 0) === 0,
+    'WARD fixture did not reach the bare bot seat facing a live mark', wardState);
+  const wardTurn = appendRankedBotTurn({
+    seed: wardSeed,
+    rows: wardRows,
+    state: wardState,
+    mode: CLASSIC,
+    dealt: wardDeal,
+    bot: { points: 2490, apex: false },      // GOLD: depth 2, full board sight
+    curveVersion: LADDER_CURVE_V2,
+    random: () => 0.99,                      // refuse the slip: the search answers
+  });
+  check(wardTurn?.actions.length === 1 && wardTurn.actions[0].placed_col === 1,
+    'a ranked bot placed blind to a live WARD mark', wardTurn?.actions);
+
   // The die already in hand counts as drawn. On the final LIMITED turn FATE
   // must see an empty bag, decline its redraw, and let the bot place that die.
   const limitedBotSeed = 'audit-31';

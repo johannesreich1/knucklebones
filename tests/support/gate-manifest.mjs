@@ -120,6 +120,7 @@ export const GATE_SUITES = Object.freeze([
   typed('rune-ward-sensitivity'),
   typed('rune-sunder-sensitivity'),
   typed('rune-bot-fairness'),
+  typed('rune-cast-duel'),
   typed('ranked-client-contract'),
   typed('online-api'),
   typed('online-watchdog'),
@@ -203,7 +204,7 @@ export const CI_SHARDS = Object.freeze({
     'apple-identity', 'i18n-length-report', 'spell-ai', 'modes',
     'production-migrations', 'migration-ledger', 'app-icon', 'native-startup', 'trial-snapshot',
     'production-functions', 'production-test-data', 'apple-server',
-    'game-center-lifecycle', 'rune-bot-fairness',
+    'game-center-lifecycle', 'rune-bot-fairness', 'rune-cast-duel',
   ]),
 });
 

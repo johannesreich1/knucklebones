@@ -388,6 +388,17 @@ ahead (dead on a shared local screen where both players see everything).
 
 ## 5. How a spell gets measured
 
+`tests/rune-cast-duel.test.ts` — the gate cell, and the only one that asks
+whether the BOT spends a rune well: for every entry of the registry, a bot
+dealt the rune and allowed to cast it plays a bot of the same league shape
+dealt the same rune that never casts, on the same seeded dice through the
+production action log, seats alternating. Casting must never be worse than
+holding. Measured 2026-09-02 at GOLD over 600 games each: FATE 61.3%, PILFER
+68.7%, SUNDER 59.6%, ANVIL 55.6%, NUDGE 54.8%, WARD 51.6%. WARD is the
+narrowest — consistent with the COLUMN SHIELD inactivity noted below — and
+the floor is parity, so a `cpuCast` that starts spending charges into worse
+positions fails the gate rather than showing up as a balance argument later.
+
 `tools/spellsim.ts` — seeded self-play, pure Node, **not** a gate. Placement
 play is the offline Medium anchor (depth 2, risk 0.9), the same yardstick
 `tests/botbench.test.ts` measures the bot ladder against.
