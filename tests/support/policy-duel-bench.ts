@@ -16,7 +16,7 @@ import {
 import { searchRoot } from '../../src/core/ai.ts';
 import { makeBag } from '../../src/core/dice.ts';
 import { botMoveWithShape, declinesFreeUpgrade, scoreColumns } from '../../src/core/bot.ts';
-import type { BotShape } from '../../src/core/ladder.ts';
+import { FREE_UPGRADE_THRESHOLD, type BotShape } from '../../src/core/ladder.ts';
 
 /* mulberry32, NOT a bare LCG: MINSTD's lattice swung near-deterministic
    policy duels by ±7pp run to run (the colshield decomposition, 2026-08-21
@@ -82,7 +82,8 @@ export function policyGame(bot: Policy, human: Policy, humanFirst: boolean, worl
     const col = pick(policy, st, turn, die, decisionRandom);
     if (tally && turn === botIdx) {
       tally.placements++;
-      if (declinesFreeUpgrade(scoreColumns(st, turn, die, world), col)) tally.errors++;
+      const threshold = bot.shape?.freeUpgrade ?? FREE_UPGRADE_THRESHOLD;
+      if (declinesFreeUpgrade(scoreColumns(st, turn, die, world), col, threshold)) tally.errors++;
     }
     const destroyed = applyMove(st, turn, col, die, world);
     if (world === BOUNTY) bounty[turn] += destroyed;

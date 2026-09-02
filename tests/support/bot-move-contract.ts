@@ -173,4 +173,19 @@ export function checkBotMoveContract(check: Check): void {
   const declined = counting();
   check(botSlipPick(mid, AI, 4, { ...GROUPS[4].bot, slip: 0 }, CLASSIC, declined.random) === null
       && declined.draws() === 0, 'a zero-slip shape must draw nothing when asked to slip');
+  // THE PHOTOGRAPHED MOVE, at the move level (2026-09-02): an Obsidian shape
+  // seated AI on that position, slipping (roll 0) and picking with 0.5,
+  // played the middle column for 18 when either side paid 26. A slip may
+  // still build badly, walk into a destroy, miss a kill or spare you; it
+  // may never decline eight free points with the human's board untouched
+  // either way. The rule filters the candidates and draws nothing itself:
+  // the roll and the pick are still the only two draws.
+  let photographedDraws = 0;
+  const stacked = botMoveWithShape(photographed, AI, 4, GROUPS[5].bot, ROWSWITCH, () => {
+    photographedDraws++;
+    return photographedDraws === 1 ? 0 : 0.5;
+  });
+  check(stacked !== 1 && photographedDraws === 2,
+    'a slipped Obsidian bot stacked the third 4 for 18 when either side paid 26',
+    { stacked, draws: photographedDraws });
 }

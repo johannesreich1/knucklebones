@@ -284,6 +284,21 @@ typed helper expresses the common action.
   import a lazy feature merely to expose a test hook.
 - Architecture gates are ratchets: no new dependency cycle, unchecked file,
   unapproved oversized authored module, CSS graph cycle, or eager/lazy leak.
+- Bot calibration gates are ratchets too. `tests/botbench.test.ts` measures
+  every league in both seats over the real ranked wheel against the reference
+  humans in `tests/support/bot-calibration.ts` (RANDOM, NEWCOMER, LEARNER) and
+  enforces per-league floors, bands, at least 2pp of separation from GOLD up,
+  the LEARNER floor and the unforced-error ceiling; `tests/bot-knowledge.test.ts`
+  proves each mode's aware search beats a Classic-eval twin, so what a bot knows
+  is league-independent; `tests/rune-bot-fairness.test.ts` pins its own
+  production-path cell in bot-calibration and botbench weights that pin into the
+  league aggregates; `tests/ladder.test.ts` holds docs/LADDER.md §4 to the same
+  pinned cells. Known-red cells live in `CALIBRATION_DEBT` / `KNOWLEDGE_DEBT`
+  with the release that clears them, and a listed cell FAILS the moment it
+  clears its bar, so the lists can only shrink. Regeneration order when the
+  engine changes: run rune-bot-fairness direct and paste its cells, then
+  botbench and paste `LEAGUE_CELL_BASELINE` plus the `ladderSection4` rows into
+  docs/LADDER.md.
 
 Game-completion loops intentionally allow 900–1200 ticks. Destruction-heavy
 random games exceeded smaller budgets on CI; do not reduce them as a speed
@@ -443,6 +458,13 @@ Each of these cost a real debugging session, and each looked like something else
 first. They are recorded with the measurement that settled them, because in
 every case reasoning harder produced a confident wrong answer and measuring
 produced the right one in minutes.
+
+- **A policy duel seeded only through its injected stream still reads the
+  global `Math.random`.** `core/ai.ts` draws its tie-break jitter from the
+  stream the caller passes, so an A/B probe that seeds the injected stream but
+  leaves the ambient one alone reported ~16% false mismatches (LADDER.md
+  appendix). The bench now keys every draw — dice, human and bot decisions —
+  from the game seed and reads no ambient randomness at all.
 
 **A report over 64KB loses its tail — but only under the gate.** A suite prints
 one JSON report and forces its own exit. Under `run-all` stdout is a PIPE, and

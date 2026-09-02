@@ -15,7 +15,15 @@ export const LADDER_CURVE_VERSION: LadderCurveVersion = LADDER_CURVE_V2;
      castDemand — points of score difference it demands before casting a
        rune. MERIT_CAST_DEMAND is offline Normal's line and the reference
        human's; above it a bot holds a rune it knows would pay — an error of
-       omission, never ignorance of the rune. */
+       omission, never ignorance of the rune
+     freeUpgrade — the attention a slip keeps: it never lands on a column
+       another beats by this many own points with the identical effect on
+       the opponent. FREE_UPGRADE_THRESHOLD is the measured knee; Infinity
+       switches the rule off, which only the two onboarding leagues justify:
+       their search is itself a builder, so the rule's gain cannot be bought
+       back with slip (measured 2026-09-02: BONE sat at 57% from slip 0.70 to
+       0.80), and with it STONE's slips build well enough that a random
+       opener loses to it. A beginner at its own board is what they are. */
 export interface BotShape {
   depth: number;
   risk: number;
@@ -23,7 +31,17 @@ export interface BotShape {
   slip: number;
   openerSlip: number;
   castDemand: number;
+  freeUpgrade: number;
 }
+
+/* A free upgrade declined: another legal column with the IDENTICAL effect on
+   the opponent's board and at least this many more points on the bot's own.
+   The photographed move (2026-09-02) was exactly this gap — a third 4 stacked
+   for 18 under ROWS when either side column paid 26 with the human's board
+   untouched either way — and the threshold has a measured knee: 12 misses
+   that move, 4 spends four more share points removing errors nobody would
+   notice. */
+export const FREE_UPGRADE_THRESHOLD = 8;
 
 /** The cast demand a rune is worth casting at: offline Normal's, and the
     reference human's in tests/rune-bot-fairness.test.ts. */
@@ -48,15 +66,20 @@ export interface Group {
 
 /* Bot shapes are deliberately unchanged by the curve migration: v2 changes
    progression cadence, not calibrated play. The production-weighted bench
-   owns these values (docs/LADDER.md, tests/botbench.test.ts). */
+   owns these values (docs/LADDER.md §4, tests/botbench.test.ts; floors and
+   bands in tests/support/bot-calibration.ts); tools/bot-slip-sweep.ts is the
+   instrument a retune uses to choose them. From IVORY up the slip rates are
+   what pay for the free-upgrade rule, and the opener rate sits below the
+   second-seat rate because a bot that answers your placement is harder to
+   weaken by slipping. */
 const GROUP_BOTS: readonly BotShape[] = Object.freeze([
-  Object.freeze({ depth: 1, risk: 0, oppW: -0.5, slip: 0.70, openerSlip: 0.70, castDemand: 16 }),
-  Object.freeze({ depth: 1, risk: 0, oppW: 0, slip: 0.70, openerSlip: 0.70, castDemand: 16 }),
-  Object.freeze({ depth: 1, risk: 0.25, oppW: 0.05, slip: 0.60, openerSlip: 0.60, castDemand: 16 }),
-  Object.freeze({ depth: 1, risk: 0.6, oppW: 1, slip: 0.72, openerSlip: 0.675, castDemand: 24 }),
-  Object.freeze({ depth: 2, risk: 1.2, oppW: 1, slip: 0.68, openerSlip: 0.67, castDemand: 16 }),
-  Object.freeze({ depth: 3, risk: 1.2, oppW: 1, slip: 0.68, openerSlip: 0.66, castDemand: 16 }),
-  Object.freeze({ depth: 4, risk: 1.2, oppW: 1, slip: 0.66, openerSlip: 0.65, castDemand: 16 }),
+  Object.freeze({ depth: 1, risk: 0, oppW: -0.5, slip: 0.70, openerSlip: 0.70, castDemand: 16, freeUpgrade: Infinity }),
+  Object.freeze({ depth: 1, risk: 0, oppW: 0, slip: 0.70, openerSlip: 0.70, castDemand: 16, freeUpgrade: Infinity }),
+  Object.freeze({ depth: 1, risk: 0.25, oppW: 0.05, slip: 0.70, openerSlip: 0.70, castDemand: 16, freeUpgrade: FREE_UPGRADE_THRESHOLD }),
+  Object.freeze({ depth: 1, risk: 0.6, oppW: 1, slip: 0.84, openerSlip: 0.795, castDemand: 32, freeUpgrade: FREE_UPGRADE_THRESHOLD }),
+  Object.freeze({ depth: 2, risk: 1.2, oppW: 1, slip: 0.78, openerSlip: 0.74, castDemand: 16, freeUpgrade: FREE_UPGRADE_THRESHOLD }),
+  Object.freeze({ depth: 3, risk: 1.2, oppW: 1, slip: 0.74, openerSlip: 0.70, castDemand: 16, freeUpgrade: FREE_UPGRADE_THRESHOLD }),
+  Object.freeze({ depth: 4, risk: 1.2, oppW: 1, slip: 0.62, openerSlip: 0.63, castDemand: 16, freeUpgrade: FREE_UPGRADE_THRESHOLD }),
 ]);
 
 const makeGroup = (id: string, floor: number, width: number, botIndex: number): Readonly<Group> =>

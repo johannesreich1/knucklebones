@@ -17,21 +17,13 @@ import {
 } from './rules.ts';
 import { searchRoot } from './ai.ts';
 import {
-  botShapeAt, type BotShape, type BotStanding, type LadderCurveVersion,
+  FREE_UPGRADE_THRESHOLD, botShapeAt, type BotShape, type BotStanding, type LadderCurveVersion,
 } from './ladder.ts';
 
 /** The same league shape has a separately calibrated slip rate when it opens. */
 export function botSlip(shape: BotShape, botIdx: Player): number {
   return botIdx === ME ? shape.openerSlip : shape.slip;
 }
-
-/* A free upgrade declined: another legal column with the IDENTICAL effect on
-   the opponent's board and at least this many more points on the bot's own.
-   The photographed move was exactly this gap (a third 4 stacked for 18 under
-   ROWS when either side column paid 26 with the human's board untouched
-   either way); the threshold has a measured knee — 12 misses that move, 4
-   spends four more share points removing errors nobody would notice. */
-export const FREE_UPGRADE_THRESHOLD = 8;
 
 /** What one legal column is worth at depth 0 under the mode's own totals. */
 export interface ColumnScore {
@@ -64,11 +56,14 @@ export function scoreColumns(st: GameState, botIdx: Player, die: number, mode: M
 }
 
 /* Whether playing `col` declines a free upgrade: some other column costs the
-   opponent exactly as much and pays the bot at least the threshold more. */
-export function declinesFreeUpgrade(scored: readonly ColumnScore[], col: number): boolean {
+   opponent exactly as much and pays the bot at least `threshold` more. The
+   threshold is the shape's attention (BotShape.freeUpgrade); the measured
+   knee is the default. */
+export function declinesFreeUpgrade(scored: readonly ColumnScore[], col: number,
+                                    threshold = FREE_UPGRADE_THRESHOLD): boolean {
   const mine = scored.find((score) => score.col === col);
   return mine !== undefined && scored.some((other) => other.col !== col
-    && other.oppLoss === mine.oppLoss && other.own >= mine.own + FREE_UPGRADE_THRESHOLD);
+    && other.oppLoss === mine.oppLoss && other.own >= mine.own + threshold);
 }
 
 /* The column this bot plays, and nothing else — no board mutation, no logging.
@@ -84,6 +79,40 @@ export function botMove(st: GameState, botIdx: Player, die: number, bot: BotStan
   return botMoveWithShape(st, botIdx, die, botShapeAt(bot, curveVersion), mode, rand, rootCharm);
 }
 
+/* Where a slip may land. Two terms, one filter, and it draws nothing.
+
+   What a column costs YOU: a negative opponent weight is an onboarding
+   promise, not merely a search hint — STONE actively spares the player's
+   board, and its old any-column slip could string together the strongest
+   possible counters (including a live first-match double-six wipe). ME is
+   also the opening seat: a bot may occupy it, but the league curve must not
+   flip to bot-favoured just because the bot received that handicap, so a bot
+   opener's slipped moves are safe builds too. In either case the pool is the
+   columns that cost the opponent the least visible score.
+
+   What a column costs the BOT: a slip may never decline a free upgrade —
+   another column with the identical effect on the opponent that pays at
+   least the shape's freeUpgrade threshold more is a move no rule-knowing
+   player makes, so it leaves the pool (docs/LADDER.md §4). Everything else
+   a slip could do it still can: build badly, walk into a destroy, miss a
+   kill, spare you. The pool cannot empty: the best-own column of every
+   opponent-loss class is never a free upgrade declined, and a sparing pool
+   shares one class. STONE alone keeps the any-column slip (Infinity): its
+   onboarding promise is unconditional, and measured with the rule its slips
+   build well enough that a random opener loses to it. */
+export function slipCandidates(st: GameState, botIdx: Player, die: number, shape: BotShape,
+                               mode: Mode, rootCharm?: CharmSt): number[] {
+  const scored = scoreColumns(st, botIdx, die, mode, rootCharm);
+  let pool = scored;
+  if (shape.oppW < 0 || botIdx === ME) {
+    let leastLoss = Infinity;
+    for (const score of scored) leastLoss = Math.min(leastLoss, score.oppLoss);
+    pool = scored.filter((score) => score.oppLoss === leastLoss);
+  }
+  return pool.filter((score) => !declinesFreeUpgrade(scored, score.col, shape.freeUpgrade))
+    .map((score) => score.col);
+}
+
 /* The slip, when it fires: draw one rolls it, draw two picks among the
    candidates. Null means the shape searches this turn. The statement order
    is deliberately the inline original's, down to the short-circuit: `slip > 0
@@ -95,25 +124,7 @@ export function botSlipPick(st: GameState, botIdx: Player, die: number, shape: B
                             mode: Mode, rand: () => number, rootCharm?: CharmSt): number | null {
   const slip = botSlip(shape, botIdx);
   if (!(slip > 0 && rand() < slip)) return null;
-  let choices = legalCols(st[botIdx]);
-  /* A negative opponent weight is an onboarding promise, not merely a
-     search hint: STONE actively spares the player's board. Its old random
-     slip ignored that promise and could accidentally string together the
-     strongest possible counters (including a live first-match double-six
-     wipe).
-
-     ME is also the opening seat. A bot may legitimately occupy it, but the
-     league curve must not flip from human-favoured to bot-
-     favoured just because the bot received that handicap. Its slipped moves
-     therefore become safe random builds too. A promoted bot seated second
-     retains the ordinary any-column slip. In either case, choose among the
-     columns that cost the opponent the least visible score. */
-  if (shape.oppW < 0 || botIdx === ME) {
-    const scored = scoreColumns(st, botIdx, die, mode, rootCharm);
-    let leastLoss = Infinity;
-    for (const score of scored) leastLoss = Math.min(leastLoss, score.oppLoss);
-    choices = scored.filter((score) => score.oppLoss === leastLoss).map((score) => score.col);
-  }
+  const choices = slipCandidates(st, botIdx, die, shape, mode, rootCharm);
   return choices[Math.floor(rand() * choices.length)];
 }
 

@@ -1,6 +1,8 @@
 // The ladder's numbers, pinned. Every table here is copied from
 // docs/LADDER.md — if the two ever disagree, one of them is a bug, and this
 // file is the one that fails the gate.
+import { readFileSync } from 'node:fs';
+import { LEAGUE_CELL_BASELINE } from './support/bot-calibration.ts';
 import {
   SCALE, K, DENOM, START, LOSS_MULT, MIN_GAIN, MAX_LOSS,
   LADDER_CURVE_V1, LADDER_CURVE_V2, LADDER_CURVE_VERSION,
@@ -318,10 +320,13 @@ eq([marginDraw.aDelta.finish, marginDraw.bDelta.finish, marginDraw.da, marginDra
    numbers were tuned by simulation (2026-08-20; full curve corrected
    2026-08-26 after the 0–0 seat-perspective report); botbench keeps the
    human-favoured outcome curve honest, this table just pins the shapes. */
-eq(GROUPS.map((g) => [g.bot.depth, g.bot.risk, g.bot.oppW, g.bot.slip, g.bot.openerSlip, g.bot.castDemand]), [
-  [1, 0, -0.5, 0.70, 0.70, 16], [1, 0, 0, 0.70, 0.70, 16], [1, 0.25, 0.05, 0.60, 0.60, 16],
-  [1, 0.6, 1, 0.72, 0.675, 24], [2, 1.2, 1, 0.68, 0.67, 16],
-  [3, 1.2, 1, 0.68, 0.66, 16], [4, 1.2, 1, 0.66, 0.65, 16],
+eq(GROUPS.map((g) => [
+  g.bot.depth, g.bot.risk, g.bot.oppW, g.bot.slip, g.bot.openerSlip, g.bot.castDemand,
+  Number.isFinite(g.bot.freeUpgrade) ? g.bot.freeUpgrade : 'any column',
+]), [
+  [1, 0, -0.5, 0.70, 0.70, 16, 'any column'], [1, 0, 0, 0.70, 0.70, 16, 'any column'],
+  [1, 0.25, 0.05, 0.70, 0.70, 16, 8], [1, 0.6, 1, 0.84, 0.795, 32, 8], [2, 1.2, 1, 0.78, 0.74, 16, 8],
+  [3, 1.2, 1, 0.74, 0.70, 16, 8], [4, 1.2, 1, 0.62, 0.63, 16, 8],
 ], 'the per-group bot shapes drifted from LADDER.md §4');
 const standing = (points: number, apex = false) => ({ points, apex });
 eq(botShapeAt(standing(148)), GROUPS[0].bot, 'a bot with STONE points must play the STONE shape');
@@ -343,7 +348,6 @@ eq(botShapeAt(standing(4400), LADDER_CURVE_V1), GROUPS_V1[GROUPS_V1.length - 2].
    weakness that reads as a beginner rather than a drunk */
 eq(botShapeAt(standing(0)).oppW < 0, true, 'the STONE bot must actively spare the player');
 eq(botShapeAt(standing(0)).slip >= 0.3, true, 'a brand-new player must meet a bot that blunders');
-eq(botShapeAt(standing(6090, true)).slip, 0.66, 'NEON must approach parity from the human-favoured side');
 /* Search understanding still tightens on the way up. Slip is the measured
    counterweight that keeps deeper search from making any bot the favourite. */
 {
@@ -363,5 +367,22 @@ eq(botPairBand(9999), 2200, "the apex borrows OBSIDIAN's width");
 eq(matchBand(20), 750, 'a crowded band should stay tight');
 eq(matchBand(0), 4500, 'an empty band should open all the way');
 eq(matchBand(6) > matchBand(12), true, 'a sparser band must be wider');
+
+/* ---- §4's published cells are the bench's ------------------------------- */
+/* docs/LADDER.md §4 prints the human-share cells botbench measures; the
+   bench pins them in bot-calibration and this check holds the doc to the pin,
+   so the table can never again publish a number the gate no longer measures
+   (GOLD's bot-opens cell read 55.0 while the bench measured 53.4). Paste the
+   bench's `ladderSection4` rows into the doc when the baseline moves. */
+{
+  const ladder = readFileSync('docs/LADDER.md', 'utf8');
+  const section4 = ladder.split('\n## 4b.')[0].split('\n## 4.')[1] ?? '';
+  for (const [id, cell] of Object.entries(LEAGUE_CELL_BASELINE)) {
+    const row = new RegExp(`^\\| ${id.toUpperCase()} \\|.*\\*\\*([\\d.]+)%\\*\\* \\| \\*\\*([\\d.]+)%\\*\\* \\|$`, 'm')
+      .exec(section4);
+    eq(row && [Number(row[1]), Number(row[2])], [cell.humanOpens, cell.botOpens],
+      `docs/LADDER.md §4's ${id} row is stale — paste botbench's ladderSection4 output`);
+  }
+}
 
 console.log(JSON.stringify({ groups: GROUPS.length, problems, errs }, null, 2));

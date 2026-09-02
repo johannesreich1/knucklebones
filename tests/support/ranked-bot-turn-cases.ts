@@ -129,17 +129,19 @@ function runCastCase(check: Check, testCase: CastCase): void {
     && searched.draws === searchDraws, testCase.placesAfterCast, { searched, searchDraws });
 
   /* During the dormant v2 rollout the same rating belongs to different
-     groups on the two curves. Keep the match-owned curve observable through
-     the placement: 720 is IVORY on v1 (0.60 slip) and BONE on v2 (0.70
-     slip), so the same 0.65 roll searches on v1 and slips on v2 while both
-     cast. This catches a caller or either half of this helper silently
-     falling back to v2. */
+     groups on the two curves, and the match-owned curve must stay observable
+     in BOTH halves of the turn: 1,300 points is SILVER on v1 (cast demand
+     32, slip 0.84) and IVORY on v2 (demand 16, slip 0.70). On this fixture
+     FATE is worth casting at 16 but not at 32, so v2 casts and v1 holds; and
+     the same 0.75 roll slips at 0.84 (two draws) but searches at 0.70. This
+     catches a caller or either half of this helper silently falling back to
+     v2. */
   if (fixture === 'cast-on-merit') {
-    const v1 = turnFor([0.65], 720, LADDER_CURVE_V1);
-    const v2 = turnFor([0.65], 720, LADDER_CURVE_V2);
-    check(kinds(v1.turn) === 'cast,place' && kinds(v2.turn) === 'cast,place'
-      && v1.draws === searchDraws && v2.draws === 2,
-    'ranked bot turn ignored the match-owned ladder curve on its placement slip',
+    const v1 = turnFor([0.75], 1300, LADDER_CURVE_V1);
+    const v2 = turnFor([0.75], 1300, LADDER_CURVE_V2);
+    check(kinds(v1.turn) === 'place' && v1.draws === 2
+      && kinds(v2.turn) === 'cast,place' && v2.draws === searchDraws,
+    'ranked bot turn ignored the match-owned ladder curve in its cast demand or placement slip',
     { v1, v2, searchDraws });
   }
 }

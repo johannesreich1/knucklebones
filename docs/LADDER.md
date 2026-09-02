@@ -459,6 +459,15 @@ bench masked it by always seating the bot p2 and by calling a p1 destroyer a
 "stacking newcomer." The live match replay made the inversion visible: the bot
 countered four times, including a pair of sixes.*
 
+*Rewritten 2026-09-02 after a photographed OBSIDIAN match: the bot stacked a
+third 4 for 18 when either side column paid 26 with the human's board untouched
+either way. The audit behind it found that the any-column slip carried the whole
+difficulty curve — refusing every dominated move turned each top-league bot
+from a slight underdog into a heavy favourite — and that the single flat
+"never beat a newcomer" floor made GOLD, OBSIDIAN and NEON one league. The
+table below is its result: two promises instead of one, a slip that may err but
+never declines a free upgrade, and the apex measured as a position.*
+
 Now **a bot plays the shape of its own group** — the shape is a field of the
 group registry (`core/ladder.ts GROUPS[].bot`, read by `botShapeAt(standing)` from
 the bot's points AND its apex position — NEON is a position, so a bot above the
@@ -474,24 +483,56 @@ The shape changes **at group boundaries, not continuously per point**. A
 301-point BONE bot and a 700-point BONE bot therefore make decisions with the
 same policy; their points still affect pairing and which group policy applies.
 
-| group | depth | risk | sees your board | slip p2 / p1 | human opens | bot opens |
-|---|---:|---:|---|---:|---:|---:|
-| STONE | 1 | 0 | **spares it** (`oppW -0.5`) | 70 / 70% | **79.0%** | **66.9%** |
-| BONE | 1 | 0 | builds blind (`oppW 0`) | 70 / 70% | **62.1%** | **63.8%** |
-| IVORY | 1 | 0.25 | glances (`oppW 0.05`) | 60 / 60% | **56.1%** | **57.2%** |
-| SILVER | 1 | 0.6 | yes | 72 / 67.5% | **54.2%** | **55.7%** |
-| GOLD | 2 | 1.2 | yes | 68 / 67% | **53.1%** | **55.0%** |
-| OBSIDIAN | 3 | 1.2 | yes | 68 / 66% | **~52.7%** | **53.7%** |
-| NEON | 4 | 1.2 | yes | 66 / 65% | **52.1%** | **53.1%** |
+| group | depth | risk | sees your board | slip p2 / p1 | cast demand | attention | human opens | bot opens |
+|---|---:|---:|---|---:|---:|---|---:|---:|
+| STONE | 1 | 0 | **spares it** (`oppW -0.5`) | 70 / 70% | 16 | any column | **80.1%** | **64.8%** |
+| BONE | 1 | 0 | builds blind (`oppW 0`) | 70 / 70% | 16 | any column | **62.7%** | **61.8%** |
+| IVORY | 1 | 0.25 | glances (`oppW 0.05`) | 70 / 70% | 16 | never declines 8 | **52.6%** | **53.4%** |
+| SILVER | 1 | 0.6 | yes | 84 / 79.5% | 32 | never declines 8 | **52.5%** | **53.7%** |
+| GOLD | 2 | 1.2 | yes | 78 / 74% | 16 | never declines 8 | **51.6%** | **51.8%** |
+| OBSIDIAN | 3 | 1.2 | yes | 74 / 70% | 16 | never declines 8 | **48.8%** | **49.5%** |
+| NEON | 4 | 1.2 | yes | 62 / 63% | 16 | never declines 8 | **46.7%** | **46.6%** |
 
 The last two columns are the **human's production-weighted board-policy share**
-against the same simple, seat-neutral builder (a draw contributes half); Rune
-Trial uses its Classic board cell here and receives the separate production-
-path spell check below. This is the balancing contract: bots get stronger by
-league and approach parity, but their calibrated aggregate share never exceeds
-50% in either legal seat. The seeded calibration used at least 800 games per
-outcome, with larger confirmation runs. `tests/botbench.test.ts` keeps both
-seat curves honest and `tests/ladder.test.ts` pins the shape numbers.
+against NEWCOMER — a seat-neutral depth-one builder that never looks at your
+board (a draw contributes half); Rune Trial uses the measured cell described
+below. This is the balancing contract, and it now makes **two promises**
+(`tests/support/bot-calibration.ts` holds the numbers, `tests/botbench.test.ts`
+enforces them in both legal seat orders):
+
+- **A newcomer is favoured through GOLD**, at 50% or more in either seat. Above
+  GOLD the apex may be a genuine favourite over a player who never attacks —
+  OBSIDIAN's floor is 47%, NEON's 45% — but never a points drain: at level
+  rating a win pays +80 and a loss −60, so the human nets points at any share
+  above 42.9% (43.3% under v2's finish-margin transfer).
+- **Anyone who looks at your board is favoured everywhere.** LEARNER — depth
+  one, full board sight, a modest risk sense: the first thing anyone learns is
+  "see the six, kill the six" — holds at least 60% against every league; it
+  measures about 70% against OBSIDIAN and NEON. The learner-to-expert gap is a
+  single point: seeing the opponent is everything, thinking deeper is almost
+  nothing.
+
+From GOLD up each league is measurably harder than the one below — at least
+2pp in both seats — which is what makes the three top badges three opponents.
+Search depth is not the knob that separates them (depth 2, 3 and 4 at equal
+slip measure within a point of each other, because search reaches a quarter
+of the moves); slip is, and NEON's rate sits well below OBSIDIAN's on purpose.
+
+**Weakness comes from errors, never from ignorance.** Every league's bot
+evaluates under the real mode and knows every rune (`tests/bot-knowledge.test.ts`
+proves the mode-aware search beats a Classic-eval twin, `tests/rune-cast-duel`
+that each rune's caster beats its holder); what changes with league is how
+often it errs and how badly. Each row of the table is a mistake a person who
+knows the rules makes:
+
+| the habit | knob | who has it | reads as |
+|---|---|---|---|
+| never attacks | `oppW ≤ 0` | STONE, BONE | the beginner who hasn't learned to look across the table |
+| doesn't defend | `risk ≈ 0` | IVORY, SILVER | learned to kill, not yet to fear an open column of sixes |
+| thinks one roll ahead | `depth 1` | through SILVER | sees the board, not the next die |
+| holds a rune it knows would pay | `cast demand` | SILVER | an error of omission, never ignorance of the rune |
+| lapses of attention | `slip` + `attention` | everyone, rate falling with league | a decent-not-best column |
+| a move no rule-knower would make | — | STONE, BONE | see the attention column |
 
 **`oppW` is the floor's knob, and NEGATIVE is the floor's floor** (retuned
 2026-08-21: "if I lose 50% in the beginning, I quit"). Slip alone cannot
@@ -505,7 +546,26 @@ That meaning is now **root-player-relative**, so it survives either seat.
 STONE's random slip also honours it: the bot still builds in a random column,
 but only among columns that cost the opponent the least visible score. The old
 any-column slip is how a nominal blunder produced the live double-six wipe.
-Higher groups retain the ordinary any-column slip when seated second.
+
+**A slip may never decline a free upgrade** — the *attention* column. A slipped
+placement lands on any legal column except one that another column beats by
+eight or more points on the bot's own board with the identical effect on yours
+(`core/bot.ts slipCandidates`; the bench's unforced-error metric reads the same
+predicate, so the two cannot disagree). Eight is not a free choice: the
+photographed gap was exactly eight, and the threshold has a measured knee — 12
+misses that move, 4 spends four more share points removing errors nobody would
+notice. Everything else a slip could do it still can: build badly, walk into a
+destroy, miss a kill, spare you. Measured, the rule removed every such decline
+from IVORY up (4.1–4.7% of placements before, 0% after) and made each league
+4–9pp stronger, which the slip rates in the table pay back — from IVORY up the
+opener rate sits below the second-seat rate because a bot that answers your
+placement is harder to weaken by slipping (NEON's cells put it the other way
+round). STONE and BONE keep the any-column slip: their search is itself a
+builder, so slip cannot buy the rule's gain back (BONE sat at 57% from slip
+0.70 to 0.80), and with it STONE's slips build well enough that a random
+opener loses to it — and STONE's promise, a random mover stays favoured, is
+unconditional. A beginner at its own board is what the two onboarding leagues
+are.
 
 A genuinely lower-rated bot may still earn the opening seat — this change does
 **not** restore "human always opens." Instead, every bot opener gets a measured
@@ -517,7 +577,7 @@ The gate uses the real `botMove`, derives the exact outcome weights from the
 ranked registry, and measures both seat orders. In Rune Trial the bot decides
 its cast on merit at its shape's `castDemand` (offline Normal's 16 points of
 score difference at every league except SILVER, which holds a rune until it is
-worth 24 — an error of omission, never ignorance of the rune), previews the
+worth 32 — an error of omission, never ignorance of the rune), previews the
 follow-up placement with its un-slipped search, and receives its league/seat
 slip exactly once, on the placement. The 1,000-game-per-seat production replay
 in `tests/rune-bot-fairness.test.ts` puts a simple active human at 51.2–56.5% in
