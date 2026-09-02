@@ -27,7 +27,7 @@ takes the `authenticated` role and has a normal `auth.uid()`.
 | Game Center → a session | `supabase/functions/gc-auth/` (`verify.ts` is the pure crypto) |
 | Game Center lifecycle + proof bridge | `src/native/game-center.ts` and `native/plugins/gamecenter/` |
 | Profile avatar vocabulary and account-scoped presentation | `src/profile-avatar.ts`, `src/profile-cache.ts`, and `src/online/identity/profile.ts` |
-| Profile avatar → native launcher | `src/native/app-icon.ts` and `native/plugins/appicon/` |
+| Settings colour pair → native launcher | `src/app-icon-registry.ts`, `src/native/app-icon.ts` and `native/plugins/appicon/` |
 | Public rate-limit boundary | `cloudflare/identity-gateway/` |
 | Apple code exchange + deletion revocation | `supabase/functions/apple-token-register/`, `apple-revocation-retry/`, and `_shared/apple.ts` |
 | The native bridges | `@capawesome/capacitor-apple-sign-in`, `native/plugins/gamecenter/`, and `native/plugins/appicon/` |
@@ -49,42 +49,37 @@ that pending destination rather than allowing it to route later under Home.
 
 ## Profile identity on this device
 
-The profile avatar is presentation, not account proof. It has 42 server-owned
-values — six die faces crossed with seven hues — while authentication still
-depends only on the rung above. The default `die:5:cy` is also the native
-primary launcher icon; the other 41 profile values are pre-bundled native
-alternates. They are available only in the installed iOS and Android apps.
-Public web/PWA/standalone/widget icons and loading screens stay the fixed cyan
-five, and their Settings surfaces do not expose the launcher control.
+The profile avatar is presentation, not account proof. It is a die face the
+player picks plus a hue that is not picked at all: since 2026-09-02 the hue is
+"your colour" from Settings (cyan and gold while colour-blind mode is on), so
+the avatar an opponent sees is the colour this player throws with. The server
+row keeps the `die:<face>:<hue>` shape and its 42 values; the client writes
+the hue on save and realigns a row whose hue drifted from Settings (a colour
+changed offline, or another device wrote the row). Authentication still
+depends only on the rung above.
 
-The native Settings control is an explicit, off-by-default choice to use the
-profile die as the app icon. Its preference belongs to that installation; it is
-not profile data, is not synchronized between devices, and is never written to
-Supabase. Enabling it reconciles the current confirmed avatar. Disabling it
-immediately restores the primary icon.
-
-The eager profile cache includes the owning Supabase account id. Legacy cache
-without an owner may paint Home but cannot select a launcher, and a response
-that started under one session re-checks that session before it may publish.
-Only a successful avatar write or a successful owner-scoped profile read can
-request an alternate icon, and only while the device-local choice is enabled;
-picker previews and refused writes cannot. The native coordinator serializes
-requests and lets only the latest revision settle the final presentation.
-Explicit Off, sign-out, deletion, fresh-guest creation, and a detected
-provider/account replacement request the primary before another account can
-reconcile its avatar. While the choice is disabled, boot also performs one
-primary reconciliation per startup. Besides enforcing the default, that
-repairs an installation that received the briefly released automatic icon
-behaviour before the explicit choice was added.
+The app icon is not profile identity. It is the split die of design study 56b:
+one six-face die whose left pip column wears "your colour" and whose right
+column wears the opponent's, fixed cyan-and-magenta for everyone. The
+installed iOS and Android apps additionally bundle the same die in every
+ordered pair of the seven duel hues (42 launchers, `src/app-icon-registry.ts`)
+so that a device can opt into "App icon in my colours" in Settings. That choice
+belongs to the installation: it is not profile data, is not synchronized
+between devices, and is never written to Supabase. Enabling it applies the
+pair the player currently sees; changing a colour or colour-blind mode while
+it is on moves the launcher; disabling it restores the primary at once. Boot
+performs one primary reconciliation while it is off. Sign-out, deletion and
+account replacement leave the launcher alone — it is a colour setting, not
+an account's. Public web/PWA/standalone/widget icons and loading screens stay
+fixed, and their Settings surfaces do not expose the control.
 
 Launcher selection is deliberately failure-isolated. An unavailable native
 bridge, iOS rejection, Android component/configuration error, or delayed OEM
-launcher refresh never changes the Supabase result and never rolls back a
-successful profile save. A later confirmed profile read can retry. iOS owns the
-confirmation alert for a real `setAlternateIconName` change; Android can prove
-PackageManager alias state but cannot promise when a launcher redraws it. This
-side effect therefore conveys no authentication, ownership, or synchronization
-guarantee beyond the profile value itself.
+launcher refresh never changes a Settings write and never blocks startup. The
+native coordinator serializes requests and lets only the latest revision
+settle. iOS owns the confirmation alert for a real `setAlternateIconName`
+change; Android can prove PackageManager alias state but cannot promise when
+a launcher redraws it.
 
 ## Connection failures are not sign-out
 

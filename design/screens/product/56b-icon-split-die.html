@@ -1,0 +1,97 @@
+<!-- meta name="Icon 02 — Split die" group="5b · The launcher icon" subtitle="CHOSEN AND SHIPPED 2026-09-02 — one big six owned by both players — the left pip column cyan, the right magenta, cut on a single seam over the charcoal ground. Faces are fixed by the design — the profile avatar never moves them" height=1106 sizes="md" links="iOS launch, Home, Profile" -->
+<style>
+  /* ONE die, two owners. The app's own die token twice — the same six at the
+     same spot, tilted the shipped 7° — mine clipped to its left pip column,
+     the opponent's to its right, so the launcher is a single die that nobody
+     owns alone. The face is fixed on purpose: the shipped icon follows the
+     profile avatar, and this board asks whether the mark should stop that. */
+  /* the geometry, once: --d is the die's box; the token literal below must say
+     the same number (a token cannot read a variable). 96 of 120 keeps the
+     tilted corner at ~(42,54) from centre, inside the squircle's corner. */
+  .ia2 .icomark{--d:96px}
+  .ia2 .icomark .icopos{left:calc((120px - var(--d))/2);top:calc((120px - var(--d))/2);transform:rotate(7deg)}
+  /* the ground stays charcoal; each owner's hue only leans in from the die's
+     outer corner, the way the die's own glow would light the ground */
+  .ia2 .icoframe{background:
+    radial-gradient(54% 60% at 14% 72%,rgba(var(--p1-rgb),.16),transparent 70%),
+    radial-gradient(54% 60% at 86% 28%,rgba(var(--p2-rgb),.16),transparent 70%),
+    linear-gradient(#2e2e31,#111113)}
+  /* the cut — card-local; the winner's single implementation moves to
+     tools/appicon.mjs. Each owner keeps its half of the die, glow included:
+     the polygon overshoots the box on every side but the seam, so only the
+     seam is hard. The die's glass is translucent, so its body is whatever
+     lies beneath it: each wrapper is the die's own box and carries that
+     owner's plate, weighted so the two halves read as one weight (the
+     die's white highlight greys cyan more than it greys magenta, so cyan
+     gets a little more) — and the die lifts off the ground without a rule
+     ever touching .die. */
+  .ia2 .ia2l,.ia2 .ia2r{border-radius:min(var(--r),calc(var(--d)*.25 + 1.5px))}
+  .ia2 .ia2l{clip-path:polygon(-40% -40%,50.4% -40%,50.4% 140%,-40% 140%);
+    background:linear-gradient(168deg,rgba(var(--p1-rgb),.40),rgba(var(--p1-rgb),.28) 60%,rgba(var(--p1-rgb),.36))}
+  .ia2 .ia2r{clip-path:polygon(49.6% -40%,140% -40%,140% 140%,49.6% 140%);
+    background:linear-gradient(168deg,rgba(var(--p2-rgb),.42),rgba(var(--p2-rgb),.28) 60%,rgba(var(--p2-rgb),.38))}
+  /* the seam — where the two lights meet. A white core two units wide, each
+     hue glowing off it on its own side, so the cut reads as light rather than
+     a wall and is still a line at 29. */
+  .ia2 .ia2seam{width:var(--d);height:var(--d);pointer-events:none}
+  .ia2 .ia2seam::after{content:"";position:absolute;left:0;right:0;top:1px;bottom:1px;
+    background:linear-gradient(90deg,transparent 36%,rgba(var(--p1-rgb),.30) 50%,rgba(var(--p2-rgb),.30) 50%,transparent 64%)}
+  .ia2 .ia2seam::before{content:"";position:absolute;left:calc(50% - 1px);top:1px;bottom:1px;width:2px;z-index:1;
+    background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.95) 10%,rgba(255,255,255,.95) 90%,rgba(255,255,255,.55));
+    box-shadow:-1px 0 6px rgba(var(--p1-rgb),.9),1px 0 6px rgba(var(--p2-rgb),.9),0 0 2px rgba(255,255,255,.7)}
+</style>
+<div class="stage ia2"><div class="bgfx"></div><div class="scr">
+  <div class="icohead">
+    <div class="eyebrow">Chosen and shipped 2026-09-02 · launcher · dark appearance</div>
+    <h1>ICON 02 · SPLIT DIE</h1>
+    <p>One big six, owned by both players: the left column of pips is mine, the right is the opponent's, and a single seam between them is the whole duel.</p>
+  </div>
+
+  <div class="icohero">
+    <!-- the split wrappers and the seam below are card-local; the winner's single implementation moves to tools/appicon.mjs -->
+    <div class="icoframe" style="--S:180"><div class="icomark">
+      <i class="icopos ia2l">{{die:6:p1:96}}</i>
+      <i class="icopos ia2r">{{die:6:p2:96}}</i>
+      <i class="icopos ia2seam"></i>
+    </div></div>
+    <span class="cap2">App Store · 1024 · dark appearance</span>
+  </div>
+  <!-- the iOS light appearance: the same die on the system light ground,
+       rendered by the shipped generator itself (the {{appicon}} token's
+       `:light` variant carries its own ground) -->
+  <div class="icohero" style="margin-top:12px">
+    <div class="icoframe" style="--S:180;background:none;box-shadow:0 8px 22px rgba(0,0,0,.35)">{{appicon:180:light}}</div>
+    <span class="cap2">App Store · 1024 · light appearance</span>
+  </div>
+
+  <div class="icohome"><div class="icorow">
+    <div class="icoapp">{{appicon:60}}<span class="nm">Shipped</span></div>
+    <div class="icoapp"><div class="icoframe" style="--S:60"><div class="icomark">
+      <i class="icopos ia2l">{{die:6:p1:96}}</i>
+      <i class="icopos ia2r">{{die:6:p2:96}}</i>
+      <i class="icopos ia2seam"></i>
+    </div></div><span class="nm">Knucklebones</span></div>
+    <div class="icoapp"><span class="icotile"></span><span class="nm">Settings</span></div>
+    <div class="icoapp"><span class="icotile"></span><span class="nm">Notes</span></div>
+  </div></div>
+
+  <div class="icosizes">
+    <div class="icosize"><div class="icoframe" style="--S:60"><div class="icomark">
+      <i class="icopos ia2l">{{die:6:p1:96}}</i>
+      <i class="icopos ia2r">{{die:6:p2:96}}</i>
+      <i class="icopos ia2seam"></i>
+    </div></div><span class="cap2">Home · 60</span></div>
+    <div class="icosize"><div class="icoframe" style="--S:40"><div class="icomark">
+      <i class="icopos ia2l">{{die:6:p1:96}}</i>
+      <i class="icopos ia2r">{{die:6:p2:96}}</i>
+      <i class="icopos ia2seam"></i>
+    </div></div><span class="cap2">Spotlight · 40</span></div>
+    <div class="icosize"><div class="icoframe" style="--S:29"><div class="icomark">
+      <i class="icopos ia2l">{{die:6:p1:96}}</i>
+      <i class="icopos ia2r">{{die:6:p2:96}}</i>
+      <i class="icopos ia2seam"></i>
+    </div></div><span class="cap2">Settings · 29</span></div>
+  </div>
+
+  <div class="note" style="margin-top:14px"><b>Why a split.</b> One die owned by two players: the same six, cut on a seam, one hue on the left pip column and the other on the right. The face and its pips are fixed by the design — the profile never moves them. <b>Shipped 2026-09-02</b> as the app icon (tools/appicon.mjs, the card's own drawing moved there): the default icon is fixed cyan-and-magenta for everyone, and a device that switches on "App icon in my colours" in Settings gets the same die in its own "your colour" / "opponent colour" pair from a pre-bundled set of the 42 ordered pairs. The launcher tiles across this board show the shipped mark. The dark appearance keeps the charcoal ground; only the hue lit under each half of the die changes.</div>
+</div></div>

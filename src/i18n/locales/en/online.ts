@@ -142,19 +142,9 @@ export const enOnline = {
     runeGuideSeatBody: 'Tap the rune seat in your league ring to choose a collected rune.',
   },
   avatar: {
-    instruction: 'Pick a face and a colour',
+    instruction: 'Pick a face',
     save: 'Save',
     faceLabel: 'Die face {{face}}',
-    colourLabel: '{{colour}} die colour',
-    colours: {
-      cy: 'cyan',
-      mg: 'magenta',
-      gold: 'gold',
-      green: 'green',
-      violet: 'violet',
-      orange: 'orange',
-      blue: 'blue',
-    },
   },
   history: {
     empty: 'No ranked matches yet.',

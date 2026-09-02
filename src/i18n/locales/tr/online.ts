@@ -134,19 +134,9 @@ export const trOnline = {
     runeGuideSeatBody: 'Topladığın bir rünü seçmek için lig halkandaki rün yuvasına dokun.',
   },
   avatar: {
-    instruction: 'Bir yüz ve renk seç',
+    instruction: 'Bir yüz seç',
     save: 'Kaydet',
     faceLabel: 'Zar yüzü {{face}}',
-    colourLabel: '{{colour}} renkli zar',
-    colours: {
-      cy: 'camgöbeği',
-      mg: 'macenta',
-      gold: 'altın',
-      green: 'yeşil',
-      violet: 'mor',
-      orange: 'turuncu',
-      blue: 'mavi',
-    },
   },
   history: {
     empty: 'Henüz dereceli maç yok.',

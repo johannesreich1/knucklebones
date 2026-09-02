@@ -39,15 +39,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die1Cy"
+            android:name=".launcher.SplitCyGold"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_1_cy"
+            android:icon="@mipmap/ic_split_cy_gold"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-1-cy" />
+                android:value="split-cy-gold" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -55,15 +55,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die1Mg"
+            android:name=".launcher.SplitCyGreen"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_1_mg"
+            android:icon="@mipmap/ic_split_cy_green"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-1-mg" />
+                android:value="split-cy-green" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -71,15 +71,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die1Gold"
+            android:name=".launcher.SplitCyViolet"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_1_gold"
+            android:icon="@mipmap/ic_split_cy_violet"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-1-gold" />
+                android:value="split-cy-violet" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -87,15 +87,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die1Green"
+            android:name=".launcher.SplitCyOrange"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_1_green"
+            android:icon="@mipmap/ic_split_cy_orange"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-1-green" />
+                android:value="split-cy-orange" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -103,15 +103,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die1Violet"
+            android:name=".launcher.SplitCyBlue"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_1_violet"
+            android:icon="@mipmap/ic_split_cy_blue"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-1-violet" />
+                android:value="split-cy-blue" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -119,15 +119,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die1Orange"
+            android:name=".launcher.SplitMgCy"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_1_orange"
+            android:icon="@mipmap/ic_split_mg_cy"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-1-orange" />
+                android:value="split-mg-cy" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -135,15 +135,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die1Blue"
+            android:name=".launcher.SplitMgGold"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_1_blue"
+            android:icon="@mipmap/ic_split_mg_gold"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-1-blue" />
+                android:value="split-mg-gold" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -151,15 +151,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die2Cy"
+            android:name=".launcher.SplitMgGreen"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_2_cy"
+            android:icon="@mipmap/ic_split_mg_green"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-2-cy" />
+                android:value="split-mg-green" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -167,15 +167,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die2Mg"
+            android:name=".launcher.SplitMgViolet"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_2_mg"
+            android:icon="@mipmap/ic_split_mg_violet"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-2-mg" />
+                android:value="split-mg-violet" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -183,15 +183,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die2Gold"
+            android:name=".launcher.SplitMgOrange"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_2_gold"
+            android:icon="@mipmap/ic_split_mg_orange"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-2-gold" />
+                android:value="split-mg-orange" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -199,15 +199,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die2Green"
+            android:name=".launcher.SplitMgBlue"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_2_green"
+            android:icon="@mipmap/ic_split_mg_blue"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-2-green" />
+                android:value="split-mg-blue" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -215,15 +215,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die2Violet"
+            android:name=".launcher.SplitGoldCy"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_2_violet"
+            android:icon="@mipmap/ic_split_gold_cy"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-2-violet" />
+                android:value="split-gold-cy" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -231,15 +231,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die2Orange"
+            android:name=".launcher.SplitGoldMg"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_2_orange"
+            android:icon="@mipmap/ic_split_gold_mg"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-2-orange" />
+                android:value="split-gold-mg" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -247,15 +247,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die2Blue"
+            android:name=".launcher.SplitGoldGreen"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_2_blue"
+            android:icon="@mipmap/ic_split_gold_green"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-2-blue" />
+                android:value="split-gold-green" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -263,15 +263,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die3Cy"
+            android:name=".launcher.SplitGoldViolet"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_3_cy"
+            android:icon="@mipmap/ic_split_gold_violet"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-3-cy" />
+                android:value="split-gold-violet" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -279,15 +279,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die3Mg"
+            android:name=".launcher.SplitGoldOrange"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_3_mg"
+            android:icon="@mipmap/ic_split_gold_orange"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-3-mg" />
+                android:value="split-gold-orange" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -295,15 +295,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die3Gold"
+            android:name=".launcher.SplitGoldBlue"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_3_gold"
+            android:icon="@mipmap/ic_split_gold_blue"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-3-gold" />
+                android:value="split-gold-blue" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -311,15 +311,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die3Green"
+            android:name=".launcher.SplitGreenCy"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_3_green"
+            android:icon="@mipmap/ic_split_green_cy"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-3-green" />
+                android:value="split-green-cy" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -327,15 +327,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die3Violet"
+            android:name=".launcher.SplitGreenMg"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_3_violet"
+            android:icon="@mipmap/ic_split_green_mg"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-3-violet" />
+                android:value="split-green-mg" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -343,15 +343,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die3Orange"
+            android:name=".launcher.SplitGreenGold"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_3_orange"
+            android:icon="@mipmap/ic_split_green_gold"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-3-orange" />
+                android:value="split-green-gold" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -359,15 +359,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die3Blue"
+            android:name=".launcher.SplitGreenViolet"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_3_blue"
+            android:icon="@mipmap/ic_split_green_violet"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-3-blue" />
+                android:value="split-green-violet" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -375,15 +375,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die4Cy"
+            android:name=".launcher.SplitGreenOrange"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_4_cy"
+            android:icon="@mipmap/ic_split_green_orange"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-4-cy" />
+                android:value="split-green-orange" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -391,15 +391,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die4Mg"
+            android:name=".launcher.SplitGreenBlue"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_4_mg"
+            android:icon="@mipmap/ic_split_green_blue"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-4-mg" />
+                android:value="split-green-blue" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -407,15 +407,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die4Gold"
+            android:name=".launcher.SplitVioletCy"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_4_gold"
+            android:icon="@mipmap/ic_split_violet_cy"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-4-gold" />
+                android:value="split-violet-cy" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -423,15 +423,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die4Green"
+            android:name=".launcher.SplitVioletMg"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_4_green"
+            android:icon="@mipmap/ic_split_violet_mg"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-4-green" />
+                android:value="split-violet-mg" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -439,15 +439,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die4Violet"
+            android:name=".launcher.SplitVioletGold"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_4_violet"
+            android:icon="@mipmap/ic_split_violet_gold"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-4-violet" />
+                android:value="split-violet-gold" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -455,15 +455,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die4Orange"
+            android:name=".launcher.SplitVioletGreen"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_4_orange"
+            android:icon="@mipmap/ic_split_violet_green"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-4-orange" />
+                android:value="split-violet-green" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -471,15 +471,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die4Blue"
+            android:name=".launcher.SplitVioletOrange"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_4_blue"
+            android:icon="@mipmap/ic_split_violet_orange"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-4-blue" />
+                android:value="split-violet-orange" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -487,15 +487,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die5Mg"
+            android:name=".launcher.SplitVioletBlue"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_5_mg"
+            android:icon="@mipmap/ic_split_violet_blue"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-5-mg" />
+                android:value="split-violet-blue" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -503,15 +503,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die5Gold"
+            android:name=".launcher.SplitOrangeCy"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_5_gold"
+            android:icon="@mipmap/ic_split_orange_cy"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-5-gold" />
+                android:value="split-orange-cy" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -519,15 +519,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die5Green"
+            android:name=".launcher.SplitOrangeMg"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_5_green"
+            android:icon="@mipmap/ic_split_orange_mg"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-5-green" />
+                android:value="split-orange-mg" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -535,15 +535,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die5Violet"
+            android:name=".launcher.SplitOrangeGold"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_5_violet"
+            android:icon="@mipmap/ic_split_orange_gold"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-5-violet" />
+                android:value="split-orange-gold" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -551,15 +551,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die5Orange"
+            android:name=".launcher.SplitOrangeGreen"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_5_orange"
+            android:icon="@mipmap/ic_split_orange_green"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-5-orange" />
+                android:value="split-orange-green" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -567,15 +567,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die5Blue"
+            android:name=".launcher.SplitOrangeViolet"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_5_blue"
+            android:icon="@mipmap/ic_split_orange_violet"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-5-blue" />
+                android:value="split-orange-violet" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -583,15 +583,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die6Cy"
+            android:name=".launcher.SplitOrangeBlue"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_6_cy"
+            android:icon="@mipmap/ic_split_orange_blue"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-6-cy" />
+                android:value="split-orange-blue" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -599,15 +599,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die6Mg"
+            android:name=".launcher.SplitBlueCy"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_6_mg"
+            android:icon="@mipmap/ic_split_blue_cy"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-6-mg" />
+                android:value="split-blue-cy" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -615,15 +615,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die6Gold"
+            android:name=".launcher.SplitBlueMg"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_6_gold"
+            android:icon="@mipmap/ic_split_blue_mg"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-6-gold" />
+                android:value="split-blue-mg" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -631,15 +631,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die6Green"
+            android:name=".launcher.SplitBlueGold"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_6_green"
+            android:icon="@mipmap/ic_split_blue_gold"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-6-green" />
+                android:value="split-blue-gold" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -647,15 +647,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die6Violet"
+            android:name=".launcher.SplitBlueGreen"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_6_violet"
+            android:icon="@mipmap/ic_split_blue_green"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-6-violet" />
+                android:value="split-blue-green" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -663,15 +663,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die6Orange"
+            android:name=".launcher.SplitBlueViolet"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_6_orange"
+            android:icon="@mipmap/ic_split_blue_violet"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-6-orange" />
+                android:value="split-blue-violet" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -679,15 +679,15 @@
         </activity-alias>
 
         <activity-alias
-            android:name=".launcher.Die6Blue"
+            android:name=".launcher.SplitBlueOrange"
             android:enabled="false"
             android:exported="true"
-            android:icon="@mipmap/ic_profile_die_6_blue"
+            android:icon="@mipmap/ic_split_blue_orange"
             android:label="@string/app_name"
             android:targetActivity=".MainActivity">
             <meta-data
                 android:name="knucklebones.profileIcon"
-                android:value="die-6-blue" />
+                android:value="split-blue-orange" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

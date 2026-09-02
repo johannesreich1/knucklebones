@@ -134,19 +134,9 @@ export const itOnline = {
     runeGuideSeatBody: 'Tocca lo spazio runa nell’anello della lega per scegliere una runa raccolta.',
   },
   avatar: {
-    instruction: 'Scegli una faccia e un colore',
+    instruction: 'Scegli una faccia',
     save: 'Salva',
     faceLabel: 'Faccia {{face}} del dado',
-    colourLabel: 'Dado di colore {{colour}}',
-    colours: {
-      cy: 'ciano',
-      mg: 'magenta',
-      gold: 'oro',
-      green: 'verde',
-      violet: 'viola',
-      orange: 'arancione',
-      blue: 'blu',
-    },
   },
   history: {
     empty: 'Nessuna partita classificata.',

@@ -3,61 +3,70 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { APP_ID } from '../../src/config.ts';
 import {
-  DEFAULT_AVATAR,
-  PROFILE_AVATARS,
-  appIconIdForAvatar,
-  parseAvatar,
-} from '../../src/profile-avatar.ts';
-import { diePipCells } from '../../src/ui/die-markup.ts';
+  DEFAULT_ICON_PAIR,
+  ICON_PAIRS,
+  appIconIdForPair,
+  pairIconName,
+} from '../../src/app-icon-registry.ts';
+import { HUE_IDS } from '../../src/state.ts';
+import {
+  HUE_ROTATION_PAIRS,
+  SPLIT_ICON_PAD,
+  verifySplitDieCutouts,
+  verifySplitDiePips,
+} from './split-die-geometry.ts';
 import { filesUnder } from './ios-artifacts.ts';
-import { pixelAt, readPngPixels, rgbDistance } from './png-pixels.ts';
+import { pixelAt, readPngPixels } from './png-pixels.ts';
 
 type Check = (ok: boolean, message: string) => void;
 type Json = Record<string, any>;
 
-export interface AndroidProfileIconSpec {
-  readonly avatar: string;
-  readonly face: number;
-  readonly hue: string;
+export interface AndroidPairIconSpec {
+  readonly pair: string;
+  readonly p1: string;
+  readonly p2: string;
   readonly icon: string;
   readonly primary: boolean;
   readonly androidAlias: string;
   readonly androidResource: string;
 }
 
-/* A new profile avatar must create a native expectation automatically; tests
-   never maintain a seventh face/hue registry beside the product owner. */
-const unorderedSpecs: readonly AndroidProfileIconSpec[] = PROFILE_AVATARS.map((avatar) => {
-  const { face, hue } = parseAvatar(avatar);
-  const primary = avatar === DEFAULT_AVATAR;
-  const icon = appIconIdForAvatar(avatar);
-  const titleHue = hue[0]!.toUpperCase() + hue.slice(1);
+/* A new duel hue must create its native expectations automatically; tests
+   never maintain a second pair registry beside src/app-icon-registry.ts. */
+const title = (hue: string): string => hue[0]!.toUpperCase() + hue.slice(1);
+const unorderedSpecs: readonly AndroidPairIconSpec[] = ICON_PAIRS.map((pair) => {
+  const icon = appIconIdForPair(pair);
+  const primary = icon === 'primary';
   return {
-    avatar, face, hue, icon, primary,
-    androidAlias: `${APP_ID}.launcher.${primary ? 'Primary' : `Die${face}${titleHue}`}`,
-    androidResource: primary ? 'ic_launcher' : `ic_profile_${icon.replaceAll('-', '_')}`,
+    pair: pairIconName(pair),
+    p1: pair.p1,
+    p2: pair.p2,
+    icon,
+    primary,
+    androidAlias: `${APP_ID}.launcher.${primary ? 'Primary' : `Split${title(pair.p1)}${title(pair.p2)}`}`,
+    androidResource: primary ? 'ic_launcher' : `ic_${icon.replaceAll('-', '_')}`,
   };
 });
 const primarySpec = unorderedSpecs.find(({ primary }) => primary)!;
-export const ANDROID_PROFILE_ICON_SPECS: readonly AndroidProfileIconSpec[] = Object.freeze([
+export const ANDROID_PAIR_ICON_SPECS: readonly AndroidPairIconSpec[] = Object.freeze([
   primarySpec,
   ...unorderedSpecs.filter(({ primary }) => !primary),
 ]);
-const ALTERNATES = ANDROID_PROFILE_ICON_SPECS.filter(({ primary }) => !primary);
+const ALTERNATES = ANDROID_PAIR_ICON_SPECS.filter(({ primary }) => !primary);
 const DENSITIES: ReadonlyArray<readonly [string, number]> = [
   ['ldpi', 36], ['mdpi', 48], ['hdpi', 72], ['xhdpi', 96],
   ['xxhdpi', 144], ['xxxhdpi', 192],
 ];
+/* One shared themed layer: the OS tints it, so no pair needs its own. */
+const MONOCHROME_RESOURCE = 'ic_launcher_monochrome';
 
 const attr = (source: string, name: string): string | null =>
   new RegExp(`\\bandroid:${name}=["']([^"']+)["']`).exec(source)?.[1] ?? null;
-const legacyFile = (res: string, spec: AndroidProfileIconSpec, density: string) =>
+const legacyFile = (res: string, spec: AndroidPairIconSpec, density: string) =>
   `${res}/mipmap-${density}/${spec.androidResource}.png`;
-const foregroundFile = (res: string, spec: AndroidProfileIconSpec, density: string) =>
+const foregroundFile = (res: string, spec: AndroidPairIconSpec, density: string) =>
   `${res}/mipmap-${density}/${spec.androidResource}_foreground.png`;
-const monochromeFile = (res: string, face: number, density: string) =>
-  `${res}/mipmap-${density}/ic_profile_face_${face}_monochrome.png`;
-const adaptiveFile = (res: string, spec: AndroidProfileIconSpec, api: 26 | 33) =>
+const adaptiveFile = (res: string, spec: AndroidPairIconSpec, api: 26 | 33) =>
   `${res}/mipmap-anydpi-v${api}/${spec.androidResource}.xml`;
 
 function pngInfo(file: string): { width: number; height: number; colorType: number } | null {
@@ -74,57 +83,29 @@ function ignored(file: string): boolean {
   } catch { return false; }
 }
 
-function pipPoint(cell: number): readonly [number, number] {
-  const positions = [.26, .5, .74];
-  const x = .15 + positions[cell % 3]! * .7;
-  const y = .15 + positions[Math.floor(cell / 3)]! * .7;
-  const angle = 7 * Math.PI / 180;
-  const dx = x - .5;
-  const dy = y - .5;
-  return [
-    .5 + Math.cos(angle) * dx - Math.sin(angle) * dy,
-    .5 + Math.sin(angle) * dx + Math.cos(angle) * dy,
-  ];
-}
-
-function hueRgb(hue: string) {
-  const tokens = readFileSync('src/styles/foundations/tokens.css', 'utf8');
-  const match = new RegExp(`--${hue}:#([0-9a-f]{6})`, 'i').exec(tokens);
-  if (!match) return null;
-  const value = Number.parseInt(match[1]!, 16);
-  return { red: value >> 16, green: (value >> 8) & 0xff, blue: value & 0xff, alpha: 255 };
-}
-
-function minimumOpaqueDistance(
-  png: ReturnType<typeof readPngPixels>,
-  target: NonNullable<ReturnType<typeof hueRgb>>,
-): number {
-  let closest = Infinity;
-  for (let y = 0; y < png.height; y++) {
-    for (let x = 0; x < png.width; x++) {
-      const pixel = png.pixel(x, y);
-      if (pixel.alpha >= 160) closest = Math.min(closest, rgbDistance(pixel, target));
-    }
-  }
-  return closest;
-}
-
 export function verifyAndroidProfileIconResources(check: Check, res: string): void {
-  check(ANDROID_PROFILE_ICON_SPECS.length === 42 && ALTERNATES.length === 41
-    && ANDROID_PROFILE_ICON_SPECS.filter(({ primary }) => primary).length === 1,
-  'Android must derive one primary and 41 alternates from the 42 profile avatars');
+  check(ANDROID_PAIR_ICON_SPECS.length === 42 && ALTERNATES.length === 41
+    && ANDROID_PAIR_ICON_SPECS.filter(({ primary }) => primary).length === 1
+    && primarySpec.pair === pairIconName(DEFAULT_ICON_PAIR),
+  'Android must derive one primary and 41 alternates from the 42 ordered colour pairs');
+  for (const spec of ALTERNATES) {
+    check(spec.androidAlias === `${APP_ID}.launcher.Split${title(spec.p1)}${title(spec.p2)}`
+      && spec.androidResource === `ic_split_${spec.p1}_${spec.p2}`,
+    `${spec.icon} must name its Android alias Split<P1><P2> and its resource ic_split_<p1>_<p2>`);
+  }
   const expected = [
     ...ALTERNATES.flatMap((spec) => DENSITIES.flatMap(([density]) => [
       legacyFile(res, spec, density), foregroundFile(res, spec, density),
     ])),
-    ...[1, 2, 3, 4, 5, 6].flatMap((face) => DENSITIES.map(([density]) =>
-      monochromeFile(res, face, density))),
     ...ALTERNATES.flatMap((spec) => ([26, 33] as const).map((api) => adaptiveFile(res, spec, api))),
   ].map((file) => file.slice(res.length + 1)).sort();
-  const actual = filesUnder(res).filter((file) =>
-    /^mipmap-[^/]+\/ic_profile_(?:die_|face_)/.test(file)).sort();
+  const resources = filesUnder(res);
+  const actual = resources.filter((file) => /^mipmap-[^/]+\/ic_(?:split_|profile_)/.test(file)).sort();
   check(JSON.stringify(actual) === JSON.stringify(expected),
-    `Android profile-icon matrix expected ${expected.length} resources, found ${actual.length}`);
+    `Android pair-icon matrix expected ${expected.length} resources (41 pairs x 6 densities x legacy+foreground `
+    + `+ 41 x 2 adaptive XML), found ${actual.length}`);
+  check(!resources.some((file) => file.includes('ic_profile_')),
+    'the retired per-avatar ic_profile_* launcher resources must be gone');
 
   for (const [density, size] of DENSITIES) {
     for (const spec of ALTERNATES) {
@@ -135,11 +116,6 @@ export function verifyAndroidProfileIconResources(check: Check, res: string): vo
       check(foreground?.width === size && foreground.height === size && foreground.colorType === 6,
         `${foregroundFile(res, spec, density)} must be a transparent ${size}px RGBA foreground`);
     }
-    for (let face = 1; face <= 6; face++) {
-      const info = pngInfo(monochromeFile(res, face, density));
-      check(info?.width === size && info.height === size && info.colorType === 6,
-        `${monochromeFile(res, face, density)} must be a transparent ${size}px themed cutout`);
-    }
   }
   for (const spec of ALTERNATES) {
     for (const api of [26, 33] as const) {
@@ -149,50 +125,34 @@ export function verifyAndroidProfileIconResources(check: Check, res: string): vo
         && xml.includes(`@mipmap/${spec.androidResource}_foreground`),
       `${file} must combine the shared gradient with its exact foreground`);
       check(api === 33
-        ? xml.includes('<monochrome>') && xml.includes(`@mipmap/ic_profile_face_${spec.face}_monochrome`)
+        ? xml.includes('<monochrome>') && xml.includes(`@mipmap/${MONOCHROME_RESOURCE}`)
         : !xml.includes('<monochrome>'),
-      `${file} must ${api === 33 ? 'include face monochrome' : 'contain no monochrome layer'}`);
+      `${file} must ${api === 33 ? `reference the shared @mipmap/${MONOCHROME_RESOURCE}` : 'contain no monochrome layer'}`);
     }
   }
 
-  const colourProbes = [1, 2, 3, 4, 5, 6].map((face) => face === 5
-    ? `${res}/mipmap-xxxhdpi/ic_launcher_foreground.png`
-    : foregroundFile(res, ALTERNATES.find((spec) => spec.face === face && spec.hue === 'cy')!, 'xxxhdpi'));
-  const monoProbes = [1, 2, 3, 4, 5, 6].map((face) => monochromeFile(res, face, 'xxxhdpi'));
-  if ([...colourProbes, ...monoProbes].every(existsSync)) {
-    for (let face = 1; face <= 6; face++) {
-      const colour = readPngPixels(colourProbes[face - 1]!);
-      const mono = readPngPixels(monoProbes[face - 1]!);
-      const cells = new Set(diePipCells(face));
-      let lit = 0;
-      let cut = 0;
-      for (let cell = 0; cell < 9; cell++) {
-        const [x, y] = pipPoint(cell);
-        const colourPixel = pixelAt(colour, x, y);
-        const monoPixel = pixelAt(mono, x, y);
-        if (colourPixel.alpha >= 200) lit++;
-        if (monoPixel.alpha <= 8) cut++;
-        check(cells.has(cell)
-          ? colourPixel.alpha >= 200 && monoPixel.alpha <= 8
-          : colourPixel.alpha <= 96 && monoPixel.alpha >= 240,
-        `Android face ${face} cell ${cell} lost its luminous-pip/cutout anatomy`);
-      }
-      check(lit === face && cut === face,
-        `Android face ${face} needs ${face} visible pips/cutouts, found ${lit}/${cut}`);
-      check(pixelAt(colour, .03, .03).alpha <= 32 && pixelAt(mono, .03, .03).alpha === 0,
-        `Android face ${face} layers must retain transparent outer corners`);
-    }
+  /* The primary launcher: six lit pips, cyan on the left, magenta on the
+     right, and the shared themed layer cut through all six plus the seam. */
+  const primaryForeground = `${res}/mipmap-xxxhdpi/ic_launcher_foreground.png`;
+  const monochrome = `${res}/mipmap-xxxhdpi/${MONOCHROME_RESOURCE}.png`;
+  if (existsSync(primaryForeground) && existsSync(monochrome)) {
+    const foreground = readPngPixels(primaryForeground);
+    verifySplitDiePips(check, foreground, primaryForeground, DEFAULT_ICON_PAIR, SPLIT_ICON_PAD, { coreAlpha: 250 });
+    check(pixelAt(foreground, .03, .03).alpha <= 32,
+      `${primaryForeground} must retain transparent outer corners`);
+    verifySplitDieCutouts(check, readPngPixels(monochrome), monochrome, SPLIT_ICON_PAD);
   }
-  const hueProbes = ALTERNATES.filter(({ face }) => face === 1);
-  if (hueProbes.length === 7
-    && hueProbes.every((spec) => existsSync(foregroundFile(res, spec, 'xxxhdpi')))) {
-    for (const spec of hueProbes) {
-      const target = hueRgb(spec.hue);
-      const png = readPngPixels(foregroundFile(res, spec, 'xxxhdpi'));
-      const distance = target ? minimumOpaqueDistance(png, target) : Infinity;
-      check(target !== null && distance <= 18,
-        `Android ${spec.icon} lacks its ${spec.hue} pixels; nearest RGB distance ${distance}`);
-    }
+  /* A few alternates: each hue once per column across the rotation. */
+  const hueProbes = HUE_ROTATION_PAIRS
+    .map((pair) => ALTERNATES.find((spec) => spec.p1 === pair.p1 && spec.p2 === pair.p2))
+    .filter((spec): spec is AndroidPairIconSpec => spec !== undefined);
+  check(hueProbes.length === HUE_ROTATION_PAIRS.length - 1,
+    'the hue-rotation probes must cover every alternate pair in the rotation');
+  for (const spec of hueProbes) {
+    const file = foregroundFile(res, spec, 'xxxhdpi');
+    if (!existsSync(file)) continue;
+    verifySplitDiePips(check, readPngPixels(file), file, { p1: spec.p1, p2: spec.p2 } as never,
+      SPLIT_ICON_PAD, { coreAlpha: 250 });
   }
 
   const provenanceFile = 'native/profile-app-icons.manifest.json';
@@ -202,37 +162,37 @@ export function verifyAndroidProfileIconResources(check: Check, res: string): vo
     `${provenanceFile} must be a tracked source-to-native record`);
   if (!provenance) return;
   const variants = provenance.variants?.map((variant: Json) => ({
-    avatar: variant.avatar, icon: variant.icon,
+    pair: variant.pair, icon: variant.icon,
     androidAlias: variant.androidAlias, androidResource: variant.androidResource,
   }));
-  const expectedVariants = ANDROID_PROFILE_ICON_SPECS.map((spec) => ({
-    avatar: spec.avatar, icon: spec.icon,
+  const expectedVariants = ANDROID_PAIR_ICON_SPECS.map((spec) => ({
+    pair: spec.pair, icon: spec.icon,
     androidAlias: spec.androidAlias, androidResource: spec.androidResource,
   }));
-  check(provenance.schemaVersion === 1 && provenance.generatedBy === 'tools/appicon.mjs'
+  check(provenance.schemaVersion === 2 && provenance.generatedBy === 'tools/appicon.mjs'
     && provenance.commands?.android === 'mise exec -- npm run native:assets:android'
-    && provenance.registry?.primaryAvatar === DEFAULT_AVATAR
+    && provenance.registry?.primaryPair === pairIconName(DEFAULT_ICON_PAIR)
     && provenance.registry?.primaryIcon === 'primary' && provenance.registry?.count === 42
     && provenance.registry?.sha256 === createHash('sha256')
-      .update(JSON.stringify(PROFILE_AVATARS)).digest('hex'),
-  `${provenanceFile} must pin the generator and exact 42-avatar registry`);
+      .update(JSON.stringify(ICON_PAIRS)).digest('hex'),
+  `${provenanceFile} must pin the generator and exact 42-pair registry`);
   check(JSON.stringify(variants) === JSON.stringify(expectedVariants),
-    `${provenanceFile} must map every avatar to its Android alias/resource`);
+    `${provenanceFile} must map every pair to its Android alias/resource`);
   const sources = new Set(provenance.sourceComponents?.map((entry: Json) => entry.path));
   const contracts = new Set(provenance.nativeContracts?.map((entry: Json) => entry.path));
-  check(['tools/appicon.mjs', 'tools/profile-app-icons.mjs', 'src/profile-avatar.ts', 'src/ui/die-markup.ts']
+  check(['tools/appicon.mjs', 'tools/profile-app-icons.mjs', 'src/app-icon-registry.ts', 'src/ui/die-markup.ts']
     .every((file) => sources.has(file))
     && ['native/android/app/src/main/AndroidManifest.xml',
       'native/plugins/appicon/android/src/main/java/com/appavaria/knucklebones/appicon/AppIconPlugin.java']
       .every((file) => contracts.has(file)),
-  `${provenanceFile} must bind renderer/profile sources to the Android manifest/bridge`);
+  `${provenanceFile} must bind renderer/registry sources to the Android manifest/bridge`);
   const assets = new Map(provenance.assets?.map((entry: Json) => [entry.path, entry]));
   const uncovered = expected.map((file) => `${res}/${file}`).filter((file) => {
     const entry = assets.get(file) as Json | undefined;
     return !entry || entry.missing || !entry.bytes || !/^[0-9a-f]{64}$/.test(entry.sha256 ?? '');
   });
   check(uncovered.length === 0,
-    `${provenanceFile} lacks hashed coverage for ${uncovered.length} Android profile resources`);
+    `${provenanceFile} lacks hashed coverage for ${uncovered.length} Android pair-icon resources`);
 }
 
 export function verifyAndroidProfileIconShell(
@@ -273,6 +233,8 @@ export function verifyAndroidProfileIconShell(
   const java = readFileSync(javaFile, 'utf8');
   const enable = java.indexOf('setComponentState(selected, selectedState(selected))');
   const disable = java.indexOf('for (Alias alias : aliases.values())', enable);
+  const hueAlternation = HUE_IDS.join('|');
+  const hardCodedPairId = new RegExp(`split-(?:${hueAlternation})-(?:${hueAlternation})`);
   check(/@CapacitorPlugin\(name\s*=\s*["']AppIcon["']\)/.test(java)
     && /public void getState\(PluginCall call\)/.test(java)
     && /public void setIcon\(PluginCall call\)/.test(java)
@@ -281,8 +243,8 @@ export function verifyAndroidProfileIconShell(
   check(java.includes('knucklebones.profileIcon') && java.includes('GET_ACTIVITIES')
     && java.includes('GET_META_DATA') && java.includes('MATCH_DISABLED_COMPONENTS')
     && java.includes('activity.targetActivity == null') && java.includes('putIfAbsent(icon, alias)')
-    && !/die-[1-6]-(?:cy|mg|gold|green|violet|orange|blue)/.test(java),
-  `${javaFile} must discover the manifest registry rather than hard-code it`);
+    && !hardCodedPairId.test(java),
+  `${javaFile} must discover the manifest registry rather than hard-code pair ids`);
   check((java.match(/synchronized \(COMPONENT_STATE_LOCK\)/g) ?? []).length >= 2
     && java.includes('Build.VERSION_CODES.TIRAMISU') && java.includes('setComponentEnabledSettings(settings)')
     && java.includes('PackageManager.ComponentEnabledSetting') && java.includes('DONT_KILL_APP')
@@ -307,7 +269,7 @@ export function verifyAndroidProfileIconShell(
     && !main.includes('android.intent.action.MAIN') && !main.includes('android.intent.category.LAUNCHER'),
   'MainActivity must be declared before its aliases and delegate every launcher filter to them');
   check(aliases.length === 42 && new Set(aliases.map((block) => attr(block, 'name'))).size === 42,
-    `Android manifest must contain 42 uniquely named profile aliases, found ${aliases.length}`);
+    `Android manifest must contain 42 uniquely named launcher aliases, found ${aliases.length}`);
   const byIcon = new Map(aliases.map((block) => {
     const metadata = [...block.matchAll(/<meta-data\b[\s\S]*?\/>/g)]
       .map((match) => match[0]).filter((entry) => attr(entry, 'name') === 'knucklebones.profileIcon');
@@ -315,9 +277,9 @@ export function verifyAndroidProfileIconShell(
   }));
   check(byIcon.size === 42
     && JSON.stringify([...byIcon.keys()].sort())
-      === JSON.stringify(ANDROID_PROFILE_ICON_SPECS.map(({ icon }) => icon).sort()),
-  'Android alias metadata must contain every canonical profile icon exactly once');
-  for (const spec of ANDROID_PROFILE_ICON_SPECS) {
+      === JSON.stringify(ANDROID_PAIR_ICON_SPECS.map(({ icon }) => icon).sort()),
+  'Android alias metadata must contain every canonical launcher icon id exactly once');
+  for (const spec of ANDROID_PAIR_ICON_SPECS) {
     const block = byIcon.get(spec.icon) ?? '';
     check(attr(block, 'name') === spec.androidAlias.slice(APP_ID.length)
       && attr(block, 'enabled') === String(spec.primary)

@@ -9,7 +9,7 @@ export const ptSettings = {
   yourColour: 'Sua cor',
   opponentColour: 'Cor do oponente',
   sound: 'Som',
-  profileAppIcon: 'Usar o dado do perfil como ícone',
+  appIconColours: 'Ícone do app com as minhas cores',
   accessibility: 'Acessibilidade',
   diceFaces: 'Faces dos dados',
   pips: 'PONTOS',

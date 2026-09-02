@@ -134,19 +134,9 @@ export const idOnline = {
     runeGuideSeatBody: 'Ketuk slot rune pada lingkaran liga untuk memilih rune yang telah dikumpulkan.',
   },
   avatar: {
-    instruction: 'Pilih sisi dan warna',
+    instruction: 'Pilih sisi',
     save: 'Simpan',
     faceLabel: 'Sisi dadu {{face}}',
-    colourLabel: 'Warna dadu {{colour}}',
-    colours: {
-      cy: 'sian',
-      mg: 'magenta',
-      gold: 'emas',
-      green: 'hijau',
-      violet: 'ungu',
-      orange: 'jingga',
-      blue: 'biru',
-    },
   },
   history: {
     empty: 'Belum ada pertandingan peringkat.',

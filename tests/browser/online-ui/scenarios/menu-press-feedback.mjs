@@ -18,14 +18,13 @@ export async function runOnlineMenuPressFeedbackScenarios(suite) {
       await page.click('#btnAvatar');
       await page.waitForSelector('#onAvatar:not([hidden])');
       const avatarFace = await holdAndCancel(page, '#avFaces button');
-      const avatarHue = await holdAndCancel(page, '#avHues button');
       const avatarStillOpen = await page.locator('#onAvatar').evaluate((panel) => !panel.hidden);
       await page.click('#btnOnlineBack');
       await page.waitForSelector('#onAccount:not([hidden])');
 
       return {
         history, avatarDoor, ladderDoor, accountAction, classPress,
-        avatarFace, avatarHue, panelAfterCancel, avatarStillOpen,
+        avatarFace, panelAfterCancel, avatarStillOpen,
       };
     },
   });
@@ -41,8 +40,6 @@ export async function runOnlineMenuPressFeedbackScenarios(suite) {
     'account .btn lost its existing press strength', a?.accountAction);
   check(near(a?.avatarFace.held, .97) && restored(a.avatarFace),
     'avatar face choice lacks shared press feedback', a?.avatarFace);
-  check(near(a?.avatarHue.held, .9) && restored(a.avatarHue),
-    'avatar hue choice lost its stronger press feedback', a?.avatarHue);
   check(near(a?.classPress.held, .97) && restored(a.classPress),
     'online control does not respond to the shared .pressing state', a?.classPress);
 

@@ -1,17 +1,19 @@
-# Knucklebones profile app icons
+# Knucklebones launcher icons
 
-This local Capacitor plugin can apply the signed-in profile avatar to the iOS
-or Android launcher. It does not choose an avatar or persist account state: the
-canonical 42-value registry lives in `src/profile-avatar.ts`, while
-`src/native/app-icon.ts` owns an off-by-default, installation-local Settings
-choice that is never written to Supabase. Web/PWA/widget builds do not expose
-the choice and keep the fixed primary icon.
+This local Capacitor plugin can switch the iOS or Android launcher to the
+split-die icon in the device's own Settings colour pair. It does not choose
+colours or persist account state: the canonical 42-value registry (every
+ordered pair of the seven duel hues, `split-cy-mg` being the compiled primary)
+lives in `src/app-icon-registry.ts`, while `src/native/app-icon.ts` owns an
+off-by-default, installation-local Settings choice that is never written to
+Supabase. Web/PWA/widget builds do not expose the choice and keep the fixed
+primary icon.
 
-Enabling the choice applies the current confirmed avatar. Later successful
-profile reads and saves call this bridge only while it remains enabled. Explicit
-Off, sign-out, and account replacement restore primary, and disabled startup
-performs one idempotent primary reconciliation per launch. That startup reset
-also repairs installs exposed to the briefly released automatic behaviour.
+Enabling the choice applies the pair the player currently sees (colour-blind
+mode pins cyan-vs-gold); a colour change while it is on calls this bridge
+again. Explicit Off restores primary, and disabled startup performs one
+idempotent primary reconciliation per launch — which also repairs installs
+that still carry a retired avatar-driven alternate.
 
 ## Bridge contract
 
@@ -19,9 +21,9 @@ The injected plugin name is `AppIcon`.
 
 - `getState()` resolves `{ supported, icon }`.
 - `setIcon({ icon })` resolves `{ supported, icon, changed }`.
-- `icon` is `primary` for `die:5:cy`; every other accepted value is the exact
-  `die-<face>-<hue>` id generated from the profile registry.
-- Repeating the selected value is idempotent. Profile persistence never rolls
+- `icon` is `primary` for the cyan-magenta pair; every other accepted value is
+  the exact `split-<p1>-<p2>` id generated from the launcher registry.
+- Repeating the selected value is idempotent. A Settings change never rolls
   back when this cosmetic side effect is unavailable or rejected, and launcher
   failure never blocks startup.
 
@@ -54,6 +56,6 @@ grayscale Tinted face keeps pip cutouts. iOS derives Clear from the monochrome
 source; SpringBoard still owns the final Clear/Tinted material and tint.
 
 The native splash, in-app loading mark, PWA, standalone page, and widget remain
-the fixed cyan five because they render before profile state exists or outside
+the fixed cyan five because they render before Settings state exists or outside
 the native launcher bridge. The native splash uses a full-canvas radial glow so
 its larger mark has no clipped square around it.

@@ -60,9 +60,8 @@ import { bindLearnPageBack } from '../ui/learn-page.ts';
 import { tap } from '../ui/tap.ts';
 import { isEmbed } from '../ui/embed.ts';
 import { hueLabel } from '../ui/hue.ts';
-import { isProfileAvatar } from '../profile-avatar.ts';
 import { readProfileCache } from '../profile-cache.ts';
-import { setProfileAppIconEnabled } from '../native/app-icon.ts';
+import { setAppIconColoursEnabled, syncAppIconColours } from '../native/app-icon.ts';
 import { bindOnlineDoors } from './online-door.ts';
 import { bindPickerRow, eventButton } from './picker-row.ts';
 
@@ -88,6 +87,18 @@ function bindSegment(selector: string, key: string, apply: (value: string) => vo
   });
 }
 
+/* Two things wear "your colour" beyond the table: the device's launcher icon
+   (when opted in) and the profile avatar other players see. The avatar write
+   needs the online chunk, so it is only asked for when a profile is cached —
+   a signed-out device has no avatar to keep true. */
+function followSettingsColours(): void {
+  void syncAppIconColours(S);
+  if (!readProfileCache()?.accountId) return;
+  void import('../online/identity/profile.ts')
+    .then(({ alignAvatarHue }) => alignAvatarHue())
+    .catch(() => undefined);
+}
+
 function huePicker(selector: string, write: (hue: string) => void): void {
   const picker = $(selector);
   picker.innerHTML = DUELHUES.map((hue) =>
@@ -108,6 +119,7 @@ function huePicker(selector: string, write: (hue: string) => void): void {
     syncSettingsUI();
     updateRecord();
     saveStats();
+    followSettingsColours();
     syncUserSettings();
     Sfx.unlock();
     Sfx.tap();
@@ -299,10 +311,7 @@ export function bindMenus(root: HTMLElement): void {
   bindSegment('#seatSeg', 'seat', (value) => { S.seat = oneOf(SEATS, value, S.seat); });
   bindSegment('#sndSeg', 's', (value) => { S.sound = value === '1'; }, true);
   bindSegment('#appIconSeg', 'ai', (value) => {
-    const cached = readProfileCache();
-    const avatar = cached?.accountId && isProfileAvatar(cached.avatar)
-      ? cached.avatar : undefined;
-    void setProfileAppIconEnabled(value === '1', avatar);
+    void setAppIconColoursEnabled(value === '1', S);
   });
   bindSegment('#faceSeg', 'f', (value) => { S.numerals = value === 'nums'; }, true);
 
@@ -313,7 +322,10 @@ export function bindMenus(root: HTMLElement): void {
   syncPracticePicks();
   subscribeRuneCollection(() => { normalizeLocalChoice(S.mode); syncPracticePicks(); saveStats(); });
   subscribeProgressionStatus(() => { normalizeLocalChoice(S.mode); syncPracticePicks(); saveStats(); });
-  bindSegment('#cbSeg', 'b', (value) => { S.colorblind = value === '1'; }, true);
+  bindSegment('#cbSeg', 'b', (value) => {
+    S.colorblind = value === '1';
+    followSettingsColours();
+  }, true);
   bindSegment('#motionSeg', 'rm', (value) => { S.reducedMotion = value === '1'; }, true);
 
   tap($('#btnPlay'), () => { Sfx.unlock(); Sfx.tap(); void startLocal(); });

@@ -177,10 +177,9 @@ async function inspectAuth(suite, page, label, locale) {
 
 async function inspectAvatar(suite, page, label) {
   return assertPanel(suite, page, `avatar-${label}`, [
-    '#onAvatar .lbl', '#avFaces button', '#avHues button', '#btnAvatarSave',
+    '#onAvatar .lbl', '#avFaces button', '#btnAvatarSave',
   ], [
-    '#avFaces button:nth-of-type(1)', '#avFaces button:nth-of-type(6)',
-    '#avHues button:nth-of-type(1)', '#avHues button:nth-of-type(6)', '#btnAvatarSave',
+    '#avFaces button:nth-of-type(1)', '#avFaces button:nth-of-type(6)', '#btnAvatarSave',
   ]);
 }
 

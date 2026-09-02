@@ -1,7 +1,12 @@
-// The app icon is the Home screen's actual neon die, not a hand-drawn cousin:
-// dieMarkup supplies the face and the app's CSS supplies its glass, chosen hue,
-// border, glow and pips. profile-app-icons.mjs expands this renderer across the
-// complete profile registry so the 42 native launcher identities cannot drift.
+// The app icon is the SPLIT DIE (design study 56b, chosen 2026-09-02): one
+// six-face Home die, its left pip column in one duel hue and its right column
+// in the other, cut on a bright seam. dieMarkup supplies the face and the app's
+// CSS supplies its glass, border, glow and pips — the halves and the seam are
+// the only drawing here. The default pair is fixed cyan-and-magenta and never
+// follows the player; profile-app-icons.mjs expands the same renderer across
+// every ordered pair of duel hues so a device that opts into its own colours
+// gets a pre-bundled launcher. iconSVG() below is still the single Home die:
+// the launch screen (splash.mjs) keeps it.
 //
 //   mise exec -- node tools/appicon.mjs           regenerate the shipped icon set
 //   mise exec -- node tools/appicon.mjs --dry     render one preview, write no shipped asset
@@ -12,9 +17,14 @@ import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { dieMarkup, diePipCells } from '../src/ui/die-markup.ts';
+import { DEFAULT_ICON_PAIR } from '../src/app-icon-registry.ts';
 import { inlineCssGraph } from './css-graph.mjs';
 
 export const APP_ICON_PAD = .15;
+/* The split die is authored in a 120-unit square with a 96-unit die (the
+   card's own proportions), so the launcher's die box is 80% of the canvas. */
+export const SPLIT_ICON_PAD = .1;
+export const SPLIT_ICON_FACE = 6;
 export const MASKABLE_ICON_PAD = .2;
 export const APP_ICON_TILT_DEG = 7;
 export const ANDROID_ADAPTIVE_INSET = '10%';
@@ -31,15 +41,16 @@ const PIPS = [[.26, .26], [.74, .26], [.5, .5], [.26, .74], [.74, .74]];
    15% restores the slightly larger launcher mark selected before the compact
    pass; maskable icons get 20% because an unknown launcher shape can crop
    their outer fifth. The shared 7° clockwise tilt keeps the face lively. */
-/* The authored iOS Light and Dark renditions deliberately share this quiet
-   charcoal ground and the complete Home-die shimmer. Tinted stays a separate
+/* iOS Dark keeps the quiet charcoal ground; iOS Light (Any) sits the same dark
+   split die on the system light gradient, the way Maps and Photos wear a light
+   tile in light mode (owner call, 2026-09-02). Tinted stays a separate
    monochrome source because iOS owns that material and tint. */
 const THEME = {
   dark:  {
     canvasTop: SYSTEM_DARK_GRADIENT.top, canvasBottom: SYSTEM_DARK_GRADIENT.bottom,
   },
   light: {
-    canvasTop: SYSTEM_DARK_GRADIENT.top, canvasBottom: SYSTEM_DARK_GRADIENT.bottom,
+    canvasTop: SYSTEM_LIGHT_GRADIENT.top, canvasBottom: SYSTEM_LIGHT_GRADIENT.bottom,
   },
 };
 const xmlText = (source) => source.replaceAll('&', '&amp;').replaceAll('<', '&lt;');
@@ -79,11 +90,85 @@ export function iconSVG(
     `</div></div></foreignObject></svg>`;
 }
 
+/* THE SPLIT DIE. The card's single implementation (56b) moved here: two of the
+   app's own six-face dice at the same spot, tilted the shipped 7°, one clipped
+   to its left pip column and lit by "your colour", the other to its right
+   column and lit by the opponent's, meeting on a white seam that glows in
+   both hues. The die's glass is translucent, so each half stands on a plate
+   of its owner's hue; the ground is the charcoal launcher gradient with a
+   wash of each hue leaning in from the die's outer corners. The hues are
+   pinned to RAW tokens on the canvas — the pair is the icon's, never the
+   page's --p1/--p2. Authored at 120 units and scaled to the canvas. */
+const SPLIT_CSS = `
+.split{position:absolute;left:0;top:0;width:120px;height:120px;transform-origin:0 0;overflow:hidden}
+.split .half,.split .seam,.split .plate{position:absolute;left:12px;top:12px;width:96px;height:96px;
+  display:block;line-height:0;transform-origin:50% 50%;transform:rotate(${APP_ICON_TILT_DEG}deg);
+  border-radius:min(var(--r),calc(96px*.25 + 1.5px))}
+.split .die{animation:none}
+.split .pip{transition:none}
+.split .left{clip-path:polygon(-40% -40%,50.4% -40%,50.4% 140%,-40% 140%);
+  background:linear-gradient(168deg,rgba(var(--p1-rgb),.40),rgba(var(--p1-rgb),.28) 60%,rgba(var(--p1-rgb),.36))}
+.split .right{clip-path:polygon(49.6% -40%,140% -40%,140% 140%,49.6% 140%);
+  background:linear-gradient(168deg,rgba(var(--p2-rgb),.42),rgba(var(--p2-rgb),.28) 60%,rgba(var(--p2-rgb),.38))}
+.split .seam{pointer-events:none}
+/* on a light ground the translucent glass would read pastel: the light
+   rendition stands the die on an opaque charcoal plate with a soft shadow */
+.split .plate{display:none;background:linear-gradient(160deg,#1e1f25,#0d0e12);
+  box-shadow:0 10px 26px rgba(0,0,0,.28),0 0 0 1px rgba(0,0,0,.06)}
+.appicon-canvas.light .split .plate{display:block}
+.appicon-canvas.light .split .left{background:linear-gradient(168deg,rgba(var(--p1-rgb),.44),rgba(var(--p1-rgb),.30) 60%,rgba(var(--p1-rgb),.40))}
+.appicon-canvas.light .split .right{background:linear-gradient(168deg,rgba(var(--p2-rgb),.46),rgba(var(--p2-rgb),.30) 60%,rgba(var(--p2-rgb),.42))}
+.split .seam::after{content:"";position:absolute;left:0;right:0;top:1px;bottom:1px;
+  background:linear-gradient(90deg,transparent 36%,rgba(var(--p1-rgb),.30) 50%,rgba(var(--p2-rgb),.30) 50%,transparent 64%)}
+.split .seam::before{content:"";position:absolute;left:calc(50% - 1px);top:1px;bottom:1px;width:2px;z-index:1;
+  background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.95) 10%,rgba(255,255,255,.95) 90%,rgba(255,255,255,.55));
+  box-shadow:-1px 0 6px rgba(var(--p1-rgb),.9),1px 0 6px rgba(var(--p2-rgb),.9),0 0 2px rgba(255,255,255,.7)}
+`;
+const hueVars = (pair) => ['p1', 'p2'].map((slot, index) => {
+  const hue = index === 0 ? pair.p1 : pair.p2;
+  return `--${slot}:var(--${hue});--${slot}-rgb:var(--${hue}-rgb);--${slot}-hi:var(--${hue}-hi);`;
+}).join('');
+
+export function splitDieIconSVG(
+  S = 512,
+  pad = SPLIT_ICON_PAD,
+  theme = 'dark',
+  transparent = false,
+  pair = DEFAULT_ICON_PAIR,
+) {
+  const T = THEME[theme] ?? THEME.dark;
+  const box = S * (1 - pad * 2);
+  const scale = box / 96;
+  const offset = (S - 120 * scale) / 2;
+  const die = (owner) => dieMarkup(SPLIT_ICON_FACE, {
+    classes: `${owner} appicon-die`,
+    size: 96,
+    inlineStyle: 'transform:none!important;',
+  });
+  const light = theme === 'light';
+  const wash = light ? .2 : .16;
+  const ground = transparent ? 'transparent' :
+    `radial-gradient(54% 60% at 14% 72%,rgba(var(--p1-rgb),${wash}),transparent 70%),` +
+    `radial-gradient(54% 60% at 86% 28%,rgba(var(--p2-rgb),${wash}),transparent 70%),` +
+    `linear-gradient(${T.canvasTop},${T.canvasBottom})`;
+  return `<svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" xmlns="http://www.w3.org/2000/svg">` +
+    `<foreignObject x="0" y="0" width="${S}" height="${S}">` +
+    `<div xmlns="http://www.w3.org/1999/xhtml" id="kbroot" style="width:${S}px;height:${S}px">` +
+    `<style>${xmlText(HOME_DIE_CSS)}${xmlText(SPLIT_CSS)}</style>` +
+    `<div class="appicon-canvas${light ? ' light' : ''}" style="${hueVars(pair)}width:${S}px;height:${S}px;position:relative;overflow:hidden;background:${ground}">` +
+    `<div class="split" style="transform:translate(${offset}px,${offset}px) scale(${scale})">` +
+    `<i class="plate"></i>` +
+    `<i class="half left">${die('p1')}</i>` +
+    `<i class="half right">${die('p2')}</i>` +
+    `<i class="seam"></i>` +
+    `</div></div></div></foreignObject></svg>`;
+}
+
 /* Adaptive foregrounds must carry alpha: Android supplies and independently
    masks the background layer. Keep the mark otherwise identical to the
    shipped icon so the adaptive, round and legacy launchers remain one design. */
-export function adaptiveForegroundSVG(S = 1024, face = 5, hue = 'cy') {
-  return iconSVG(S, APP_ICON_PAD, 'dark', true, face, hue);
+export function adaptiveForegroundSVG(S = 1024, pair = DEFAULT_ICON_PAIR) {
+  return splitDieIconSVG(S, SPLIT_ICON_PAD, 'dark', true, pair);
 }
 
 export function iconBackgroundSVG(S = 1024) {
@@ -96,10 +181,14 @@ export function iconBackgroundSVG(S = 1024) {
 
 /* @capacitor/assets 3.0.5 does not emit Android 13's monochrome layer. This
    extra source is an alpha mask for the Android project to resize alongside
-   the generated adaptive foreground. Android applies the user's own tint, so
-   gradients and glow intentionally disappear while the five-face survives. */
-export function monochromeIconSVG(S = 1024, pad = APP_ICON_PAD, face = 5) {
-  const m = S * pad, box = S - m * 2, r = box * .235, pr = box * .092;
+   the generated adaptive foreground; iOS Tinted reads the same drawing.
+   The OS applies its own tint, so hue and glow disappear — which is why the
+   split's SEAM is cut into the mask like the pips: without it a tinted icon
+   would be an unmarked die. The mask shares the split die's geometry (the
+   card's 14-of-96 corner and 78%-of-cell pips) and is pair-independent, so
+   one drawing serves every launcher variant. */
+export function monochromeIconSVG(S = 1024, pad = SPLIT_ICON_PAD, face = SPLIT_ICON_FACE, seam = true) {
+  const m = S * pad, box = S - m * 2, r = box * (14 / 96), pr = box * .09;
   const positions = [.26, .5, .74];
   const holes = diePipCells(face).map((cell) => {
     const x = positions[cell % 3];
@@ -107,10 +196,16 @@ export function monochromeIconSVG(S = 1024, pad = APP_ICON_PAD, face = 5) {
     return `<circle cx="${(m + x * box).toFixed(2)}" cy="${(m + y * box).toFixed(2)}" ` +
       `r="${pr.toFixed(2)}" fill="#000"/>`;
   }).join('');
+  /* the seam: a hair over 2% of the die, but never under 1.5px, so ldpi keeps it */
+  const seamWidth = Math.max(box * .021, 1.5);
+  const cut = seam
+    ? `<rect x="${(S / 2 - seamWidth / 2).toFixed(2)}" y="${m.toFixed(2)}" width="${seamWidth.toFixed(2)}"` +
+      ` height="${box.toFixed(2)}" fill="#000"/>`
+    : '';
   return `<svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" xmlns="http://www.w3.org/2000/svg">` +
     `<defs><mask id="die"><rect width="${S}" height="${S}" fill="#000"/>` +
     `<rect x="${m.toFixed(2)}" y="${m.toFixed(2)}" width="${box.toFixed(2)}" height="${box.toFixed(2)}"` +
-    ` rx="${r.toFixed(2)}" fill="#fff"/>${holes}</mask></defs>` +
+    ` rx="${r.toFixed(2)}" fill="#fff"/>${holes}${cut}</mask></defs>` +
     `<g transform="rotate(${APP_ICON_TILT_DEG} ${S / 2} ${S / 2})">` +
     `<rect width="${S}" height="${S}" fill="#fff" mask="url(#die)"/></g></svg>`;
 }
@@ -123,21 +218,18 @@ const TARGETS = [
   { file: 'public/icon-192.png', size: 192 },
   { file: 'public/icon-512.png', size: 512 },
   { file: 'public/icon-maskable-512.png', size: 512, pad: MASKABLE_ICON_PAD },
-  /* Light and Dark deliberately use the exact same authored pixels, including
-     the dark system-style ground and full shimmer. Copying the completed PNG
-     makes that identity byte-exact instead of trusting two raster passes.
-     Tinted remains an authored grayscale source for iOS-owned appearances. */
+  /* an unknown launcher shape crops the outer fifth; the seam and the pip
+     columns stay inside it at the maskable pad */
+  /* Any/Light wears the system light ground, Dark the charcoal one; the die,
+     its tilt and its pips are the same drawing on both. Tinted remains an
+     authored grayscale source for iOS-owned appearances. */
   { file: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png', size: 1024, theme: 'light' },
-  {
-    file: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-Dark-512@2x.png',
-    size: 1024,
-    copyFrom: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png',
-  },
+  { file: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-Dark-512@2x.png', size: 1024, theme: 'dark' },
   {
     file: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-Tinted-512@2x.png',
     size: 1024,
     transparent: true,
-    svg: () => monochromeIconSVG(1024, APP_ICON_PAD, 5),
+    svg: () => monochromeIconSVG(1024),
   },
 ];
 
@@ -146,8 +238,8 @@ const TARGETS = [
    generator also writes its density-specific tracked resources directly; the
    v33 adaptive-icon XML wires that layer into themed launchers. */
 const ANDROID_TARGETS = [
-  { file: 'native/assets/icon-only.png', size: 1024, svg: () => iconSVG(1024) },
-  { file: 'native/assets/icon-foreground.png', size: 1024, transparent: true, svg: adaptiveForegroundSVG },
+  { file: 'native/assets/icon-only.png', size: 1024, svg: () => splitDieIconSVG(1024) },
+  { file: 'native/assets/icon-foreground.png', size: 1024, transparent: true, svg: () => adaptiveForegroundSVG(1024) },
   { file: 'native/assets/icon-background.png', size: 1024, svg: () => iconBackgroundSVG() },
   { file: 'native/assets/icon-monochrome.png', size: 1024, transparent: true, svg: () => monochromeIconSVG() },
   ...[
@@ -217,8 +309,8 @@ const androidFinalize = args.includes('--android-finalize');
    and only the foreground receives the launcher's safe-zone inset. */
 if (androidFinalize) {
   writeAndroidAdaptiveResources();
-  const { finalizeAndroidProfileIcons } = await import('./profile-app-icons.mjs');
-  finalizeAndroidProfileIcons({
+  const { finalizeAndroidPairIcons } = await import('./profile-app-icons.mjs');
+  finalizeAndroidPairIcons({
     appIconPad: APP_ICON_PAD,
     appIconTiltDeg: APP_ICON_TILT_DEG,
     adaptiveInset: ANDROID_ADAPTIVE_INSET,
@@ -237,7 +329,7 @@ try {
     return buf;
   };
   if (dry) {
-    const buf = await shot(iconSVG(1024), 1024);
+    const buf = await shot(splitDieIconSVG(1024), 1024);
     writeFileSync('icon-preview.png', buf);
     console.log('wrote icon-preview.png — no shipped asset touched');
   } else {
@@ -245,7 +337,7 @@ try {
     for (const t of targets) {
       const buf = t.copyFrom ? readFileSync(t.copyFrom) : await shot(
         t.svg ? t.svg()
-          : iconSVG(t.size, t.pad, t.theme, t.transparent, 5, 'cy', t.renderOuterGlow),
+          : splitDieIconSVG(t.size, t.pad ?? SPLIT_ICON_PAD, t.theme, t.transparent),
         t.size,
         t.transparent,
       );
@@ -253,27 +345,27 @@ try {
       writeFileSync(t.file, buf);
       console.log(`${t.file}  ${t.size}x${t.size}` +
         `${t.pad ? '  (maskable safe zone)' : ''}${t.theme === 'light' ? '  (light appearance)' : ''}` +
-        `${t.copyFrom ? '  (matches light appearance)' : ''}` +
+        `${t.theme === 'dark' ? '  (dark appearance)' : ''}` +
         `${t.transparent ? '  (transparent)' : ''}`);
     }
     if (android) {
       writeAndroidAdaptiveResources();
     }
-    const profileIcons = await import('./profile-app-icons.mjs');
+    const pairIcons = await import('./profile-app-icons.mjs');
     const shared = {
       shot,
-      iconSVG,
+      splitDieIconSVG,
       adaptiveForegroundSVG,
       monochromeIconSVG,
-      appIconPad: APP_ICON_PAD,
+      appIconPad: SPLIT_ICON_PAD,
       appIconTiltDeg: APP_ICON_TILT_DEG,
       adaptiveInset: ANDROID_ADAPTIVE_INSET,
       darkGradient: SYSTEM_DARK_GRADIENT,
     };
-    if (android) await profileIcons.generateAndroidProfileIcons(shared);
-    else await profileIcons.generateIosProfileIcons(shared);
+    if (android) await pairIcons.generateAndroidPairIcons(shared);
+    else await pairIcons.generateIosPairIcons(shared);
     await page.close();
-    console.log(`${android ? 'Android source icon set' : 'icon set'} regenerated from the Home neon die`);
+    console.log(`${android ? 'Android source icon set' : 'icon set'} regenerated from the split die`);
   }
 } finally { await browser.close(); }
 }

@@ -134,19 +134,9 @@ export const frOnline = {
     runeGuideSeatBody: 'Touchez l’emplacement de rune dans l’anneau de ligue pour choisir une rune obtenue.',
   },
   avatar: {
-    instruction: 'Choisissez une face et une couleur',
+    instruction: 'Choisissez une face',
     save: 'Enregistrer',
     faceLabel: 'Face de dé {{face}}',
-    colourLabel: 'Couleur de dé {{colour}}',
-    colours: {
-      cy: 'cyan',
-      mg: 'magenta',
-      gold: 'or',
-      green: 'vert',
-      violet: 'violet',
-      orange: 'orange',
-      blue: 'bleu',
-    },
   },
   history: {
     empty: 'Aucune partie classée pour le moment.',

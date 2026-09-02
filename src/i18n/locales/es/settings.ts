@@ -9,7 +9,7 @@ export const esSettings = {
   yourColour: 'Tu color',
   opponentColour: 'Color del rival',
   sound: 'Sonido',
-  profileAppIcon: 'Usar el dado del perfil como icono',
+  appIconColours: 'Icono de la app con mis colores',
   accessibility: 'Accesibilidad',
   diceFaces: 'Caras de los dados',
   pips: 'PUNTOS',

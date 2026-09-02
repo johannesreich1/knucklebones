@@ -134,19 +134,9 @@ export const ptOnline = {
     runeGuideSeatBody: 'Toque no espaço de runa do anel da liga para escolher uma runa coletada.',
   },
   avatar: {
-    instruction: 'Escolha uma face e uma cor',
+    instruction: 'Escolha uma face',
     save: 'Salvar',
     faceLabel: 'Face {{face}} do dado',
-    colourLabel: 'Dado {{colour}}',
-    colours: {
-      cy: 'ciano',
-      mg: 'magenta',
-      gold: 'dourado',
-      green: 'verde',
-      violet: 'violeta',
-      orange: 'laranja',
-      blue: 'azul',
-    },
   },
   history: {
     empty: 'Nenhuma partida ranqueada ainda.',

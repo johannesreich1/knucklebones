@@ -120,7 +120,6 @@ async function probeAvatarSwitchBeforeSave(page, routes) {
     avatarOpen: document.getElementById('onAvatar')?.hidden === false,
   }));
   await page.click('#avFaces button[data-face="2"]');
-  await page.click('#avHues button[data-hue="mg"]');
   const patches = [];
   const recordPatch = (request) => {
     const patch = profilePatch(request);

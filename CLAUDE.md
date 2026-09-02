@@ -95,6 +95,15 @@ differs. A second near-copy is a design failure, not a shortcut.
   built there bakes an EMPTY identity-gateway URL and its `data-build` differs
   from the one the device should run — report the tag from the tree the sync
   actually ran in, never the release worktree's.
+- **A worktree gate needs the main checkout's environment.** Copy `.env` into
+  the worktree before `tools/release-main.mjs`: without it the built app bakes
+  an empty identity-gateway URL and `online-ui-entry`'s `offline-entry` scenario
+  is red on untouched `main` (a request the harness stub never matches). Run
+  `npm ci` in `native/` for real — a symlinked `native/node_modules` makes
+  `cap sync` rewrite `Podfile`, `Podfile.lock` and `capacitor.settings.gradle`
+  with resolved absolute paths, which `native:verify` reports as drift. The root
+  `node_modules` may stay a symlink. A worktree with `.env` builds the same
+  `data-build` tag the device should run.
 - **One gate per repository, and it queues.** `tests/run-all.mjs` takes a lock
   named after the shared `.git` directory, so every worktree of this clone
   waits its turn; a separate clone is unaffected. Worktrees CAN gate in

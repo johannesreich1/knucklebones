@@ -19,6 +19,14 @@ import {
   readPngPixels,
   rgbDistance,
 } from './png-pixels.ts';
+import {
+  LEFT_CELLS,
+  RIGHT_CELLS,
+  SPLIT_PIP_CELLS,
+  pipPoint,
+  platePoint,
+  seamPoint,
+} from './split-die-geometry.ts';
 
 type Check = (ok: boolean, message: string) => void;
 
@@ -239,8 +247,13 @@ export function verifyIosShellContract(check: Check): {
   for (const name of ['splash-2732x2732-2.png', 'splash-2732x2732-1.png', 'splash-2732x2732.png']) {
     check(splashNames.has(name), `${SPLASH_CATALOG} does not reference ${name}`);
   }
-  check(sameBytes(nativeAssets[0].path, nativeAssets[1].path),
-    'the iOS Dark app icon must be byte-identical to Light so both modes keep the same shimmer');
+  /* LIGHT AND DARK ARE TWO GROUNDS, ONE DIE (owner call, 2026-09-02): the
+     Any/light rendition stands the split die on the system light gradient the
+     way Maps and Photos wear a light tile, Dark keeps the charcoal one. They
+     were byte-identical before that; requiring identity now would forbid the
+     light appearance outright. */
+  check(!sameBytes(nativeAssets[0].path, nativeAssets[1].path),
+    'the iOS Light and Dark app icons are identical, so light mode lost its light ground');
 
   const lightPixels = readPngPixels(nativeAssets[0].path);
   const darkPixels = readPngPixels(nativeAssets[1].path);
@@ -248,56 +261,83 @@ export function verifyIosShellContract(check: Check): {
   check(lightPixels.colorType === 2 && !lightPixels.hasTransparency,
     'the iOS Any/light app icon must remain an opaque RGB PNG');
   check(darkPixels.colorType === 2 && !darkPixels.hasTransparency,
-    'the iOS Dark app icon must use the same opaque charcoal rendition as Light');
+    'the iOS Dark app icon must remain an opaque RGB PNG');
   check(tintedPixels?.colorType === 6 && tintedPixels.hasTransparency,
     'the iOS Tinted app icon must carry a transparent grayscale die for system tinting');
-  const launcherInkBounds = colorBounds(lightPixels);
-  const launcherInkWidth = launcherInkBounds
-    ? (launcherInkBounds.right - launcherInkBounds.left + 1) / lightPixels.width
-    : 0;
-  check(launcherInkBounds !== null && launcherInkWidth >= .74 && launcherInkWidth <= .76,
-    `the restored larger iOS neon die should occupy about 75% of the icon including its glow, found ${launcherInkWidth}`);
-  const topInk = colorRowBounds(lightPixels, .4);
-  const bottomInk = colorRowBounds(lightPixels, .6);
-  const topCenter = topInk ? (topInk.left + topInk.right) / (2 * lightPixels.width) : 0;
-  const bottomCenter = bottomInk ? (bottomInk.left + bottomInk.right) / (2 * lightPixels.width) : 0;
-  check(topInk !== null && bottomInk !== null
-    && topCenter - bottomCenter >= .02 && topCenter - bottomCenter <= .03,
-    `the iOS die should have a subtle clockwise tilt, found row centers ${topCenter} and ${bottomCenter}`);
-  const launcherPips = [[.36, .32], [.68, .36], [.5, .5], [.32, .64], [.64, .68]] as const;
-  for (const [x, y] of launcherPips) {
-    const darkPip = pixelAt(darkPixels, x, y);
-    const lightPip = pixelAt(lightPixels, x, y);
-    check(darkPip.alpha >= 250 && lightPip.alpha === 255,
-      `the Home neon pip at ${x},${y} must be filled in both iOS appearances`);
-    for (const [appearance, pip] of [['Dark', darkPip], ['Any/light', lightPip]] as const) {
-      check(pip.red >= 150 && pip.green >= 240 && pip.blue >= 250 && colorSpread(pip) >= 50,
-        `the iOS ${appearance} pip at ${x},${y} must keep its cyan-to-white luminosity`);
+  for (const [appearance, pixels] of [['Any/light', lightPixels], ['Dark', darkPixels]] as const) {
+    /* the die plus its glow: authored at 80% of the canvas, carried to ~.90 */
+    const inkBounds = colorBounds(pixels);
+    const inkWidth = inkBounds ? (inkBounds.right - inkBounds.left + 1) / pixels.width : 0;
+    check(inkBounds !== null && inkWidth >= .88 && inkWidth <= .94,
+      `the iOS ${appearance} split die should occupy about 90% of the icon including its glow, found ${inkWidth}`);
+    const topInk = colorRowBounds(pixels, .4);
+    const bottomInk = colorRowBounds(pixels, .6);
+    const topCenter = topInk ? (topInk.left + topInk.right) / (2 * pixels.width) : 0;
+    const bottomCenter = bottomInk ? (bottomInk.left + bottomInk.right) / (2 * pixels.width) : 0;
+    check(topInk !== null && bottomInk !== null
+      && topCenter - bottomCenter >= .02 && topCenter - bottomCenter <= .036,
+      `the iOS ${appearance} die should have a subtle clockwise tilt, found row centers ${topCenter} and ${bottomCenter}`);
+    /* THE SPLIT ITSELF. The left pip column wears "your colour" and the right
+       wears the opponent's, in both appearances: an icon whose columns are one
+       hue is the single-die mark this replaced. Pips are white-cored, so the
+       hue shows as the direction of the cast rather than a saturated pixel. */
+    for (const cell of LEFT_CELLS) {
+      const [x, y] = pipPoint(cell);
+      const pip = pixelAt(pixels, x, y);
+      check(pip.alpha === 255 && pip.green >= 240 && pip.blue >= 250 && pip.blue - pip.red >= 25,
+        `the iOS ${appearance} pip at cell ${cell} must be lit and cast toward the p1 hue`);
     }
+    for (const cell of RIGHT_CELLS) {
+      const [x, y] = pipPoint(cell);
+      const pip = pixelAt(pixels, x, y);
+      check(pip.alpha === 255 && pip.red >= 250 && pip.red - pip.green >= 55 && pip.blue <= 235,
+        `the iOS ${appearance} pip at cell ${cell} must be lit and cast toward the p2 hue`);
+    }
+    const [lx, ly] = platePoint('left');
+    const [rx, ry] = platePoint('right');
+    const leftPlate = pixelAt(pixels, lx, ly);
+    const rightPlate = pixelAt(pixels, rx, ry);
+    check(leftPlate.green - leftPlate.red >= 80 && leftPlate.blue - leftPlate.red >= 90,
+      `the iOS ${appearance} left half must stand on the p1 plate`);
+    check(rightPlate.red - rightPlate.green >= 80 && rightPlate.red - rightPlate.blue >= 30,
+      `the iOS ${appearance} right half must stand on the p2 plate`);
+    const [sx, sy] = seamPoint();
+    const seam = pixelAt(pixels, sx, sy);
+    check(seam.alpha === 255 && Math.min(seam.red, seam.green, seam.blue) >= 230
+      && colorSpread(seam) <= 20,
+    `the iOS ${appearance} die lost the white seam between its two halves`);
   }
-  const darkFrame = pixelAt(darkPixels, .5, .15);
-  const lightFrame = pixelAt(lightPixels, .5, .15);
-  check(darkFrame.alpha >= 140
-    && darkFrame.green - darkFrame.red >= 100
-    && darkFrame.blue - darkFrame.red >= 110
-    && lightFrame.green - lightFrame.red >= 90
-    && lightFrame.blue - lightFrame.red >= 100,
-  'the iOS Home die must keep its cyan neon frame in both appearances');
-  const lightGlassShadow = pixelAt(lightPixels, .5, .78);
-  check(colorSpread(lightGlassShadow) <= 5
-    && lightGlassShadow.red >= 15 && lightGlassShadow.red <= 30,
-  'the iOS Any/light die must retain a neutral dark glass body rather than a washed-out light slab');
+  /* the two grounds: near-white for Any/light, charcoal for Dark */
   const lightGroundTop = pixelAt(lightPixels, .04, .04);
   const lightGroundBottom = pixelAt(lightPixels, .04, .96);
-  check(rgbDistance(lightGroundTop, lightGroundBottom) >= 20
-    && Math.max(lightGroundTop.red, lightGroundTop.green, lightGroundTop.blue) <= 55
-    && Math.max(lightGroundBottom.red, lightGroundBottom.green, lightGroundBottom.blue) <= 30,
-  'the iOS Any/light icon must preserve the requested dark system-style gradient');
+  check(Math.min(lightGroundTop.red, lightGroundTop.green, lightGroundTop.blue) >= 245
+    && colorSpread(lightGroundTop) <= 6,
+  'the iOS Any/light icon must sit on the system light gradient, not the charcoal one');
+  check(rgbDistance(lightGroundTop, lightGroundBottom) >= 20,
+    'the iOS Any/light ground lost its gradient');
+  const darkGroundTop = pixelAt(darkPixels, .04, .04);
+  const darkGroundBottom = pixelAt(darkPixels, .04, .96);
+  check(rgbDistance(darkGroundTop, darkGroundBottom) >= 20
+    && Math.max(darkGroundTop.red, darkGroundTop.green, darkGroundTop.blue) <= 55
+    && Math.max(darkGroundBottom.red, darkGroundBottom.green, darkGroundBottom.blue) <= 40,
+  'the iOS Dark icon must preserve the charcoal system-style gradient');
   if (tintedPixels) {
-    const tintedBody = pixelAt(tintedPixels, .52, .333);
-    const tintedPip = pixelAt(tintedPixels, .5, .5);
-    check(tintedBody.alpha >= 220 && colorSpread(tintedBody) <= 1 && tintedPip.alpha <= 32,
-      'the iOS authored Tinted icon must be a grayscale die with transparent pip cutouts');
+    /* the OS tints this one flat, so hue carries nothing: the seam has to be a
+       cutout like the pips, or a tinted icon is an unmarked die */
+    const [bx, by] = platePoint('left');
+    const tintedBody = pixelAt(tintedPixels, bx, by);
+    check(tintedBody.alpha >= 220 && colorSpread(tintedBody) <= 1,
+      'the iOS authored Tinted icon must be a solid grayscale die');
+    for (const cell of SPLIT_PIP_CELLS) {
+      const [x, y] = pipPoint(cell);
+      check(pixelAt(tintedPixels, x, y).alpha <= 32,
+        `the iOS Tinted pip at cell ${cell} must remain a transparent cutout`);
+    }
+    for (const fy of [.3, .5, .7]) {
+      const [x, y] = seamPoint(fy);
+      check(pixelAt(tintedPixels, x, y).alpha <= 32,
+        `the iOS Tinted die must cut its seam at ${fy} of its height`);
+    }
   }
   const splashPixels = readPngPixels(nativeAssets[3].path);
   const splashTop = pixelAt(splashPixels, .04, .04);

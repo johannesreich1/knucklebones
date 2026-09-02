@@ -9,7 +9,7 @@ export const frSettings = {
   yourColour: 'Votre couleur',
   opponentColour: 'Couleur adverse',
   sound: 'Son',
-  profileAppIcon: 'Utiliser le dé de profil comme icône',
+  appIconColours: 'Icône de l\'app à mes couleurs',
   accessibility: 'Accessibilité',
   diceFaces: 'Faces des dés',
   pips: 'POINTS',

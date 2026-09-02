@@ -10,7 +10,6 @@ import {
   resetGuestGameCenterLink, restoreGameCenterAutomatically,
 } from './identity.ts';
 import { gameCenterState, waitForGameCenter } from '../../native/game-center.ts';
-import { resetProfileAppIcon } from '../../native/app-icon.ts';
 import { clearProfileCache, readProfileCache } from '../../profile-cache.ts';
 import { readAuthSession, type AuthSessionRead } from './session-read.ts';
 import { clearSessionSnapshots, reconcileSessionSnapshots } from './session-snapshots.ts';
@@ -84,7 +83,6 @@ const MANUAL_AUTH = 'knucklebones.online.manual-auth';
 
 function resetProfilePresentation(): void {
   clearProfileCache();
-  void resetProfileAppIcon();
 }
 
 export async function signOut(): Promise<void> {

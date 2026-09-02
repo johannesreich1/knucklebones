@@ -134,19 +134,9 @@ export const koOnline = {
     runeGuideSeatBody: '리그 링의 룬 슬롯을 눌러 수집한 룬을 고르세요.',
   },
   avatar: {
-    instruction: '눈과 색상을 고르세요',
+    instruction: '눈을 고르세요',
     save: '저장',
     faceLabel: '주사위 눈 {{face}}',
-    colourLabel: '{{colour}} 주사위 색상',
-    colours: {
-      cy: '시안',
-      mg: '마젠타',
-      gold: '골드',
-      green: '그린',
-      violet: '바이올렛',
-      orange: '오렌지',
-      blue: '블루',
-    },
   },
   history: {
     empty: '아직 랭크 매치가 없습니다.',

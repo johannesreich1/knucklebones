@@ -134,19 +134,9 @@ export const deOnline = {
     runeGuideSeatBody: 'Tippe auf den Runenplatz in deinem Liga-Ring, um eine gesammelte Rune auszuwählen.',
   },
   avatar: {
-    instruction: 'Wähle eine Fläche und eine Farbe',
+    instruction: 'Wähle eine Fläche',
     save: 'Speichern',
     faceLabel: 'Würfelfläche {{face}}',
-    colourLabel: 'Würfelfarbe {{colour}}',
-    colours: {
-      cy: 'Cyan',
-      mg: 'Magenta',
-      gold: 'Gold',
-      green: 'Grün',
-      violet: 'Violett',
-      orange: 'Orange',
-      blue: 'Blau',
-    },
   },
   history: {
     empty: 'Noch keine Ranglistenspiele.',

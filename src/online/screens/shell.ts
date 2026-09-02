@@ -218,10 +218,11 @@ const OVERLAY = `
   </div>
 
   <div class="panel" id="onAvatar" hidden>
-    <div class="lbl" style="text-align:center" data-i18n="online:avatar.instruction">Pick a face and a colour</div>
+    <!-- faces only: the avatar's colour is "your colour" from Settings, so a
+         player's avatar and the dice they throw are one colour by construction -->
+    <div class="lbl" style="text-align:center" data-i18n="online:avatar.instruction">Pick a face</div>
     <div class="avpreview" id="avPreview"></div>
     <div class="avgrid" id="avFaces"></div>
-    <div class="avgrid hues" id="avHues"></div>
     <div class="err" id="onAvErr"></div>
     <button class="btn primary" id="btnAvatarSave" data-page-motion-direction="back"
       data-i18n="online:avatar.save">Save</button>

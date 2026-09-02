@@ -224,6 +224,12 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   full-screen blurred overlays and heated the phone. Opaque overlays no
   longer carry `backdrop-filter`; only `#ovAway`, `#ovPass` and `#ovFirst` do,
   and the backdrop drift pauses under any open page.
+- The app icon is the split die (study 56b, chosen 2026-09-02): one six-face
+  die, left pip column in "your colour", right column in the opponent's, fixed
+  cyan-and-magenta by default. Installed apps bundle every ordered pair of the
+  seven duel hues so a device can opt into "App icon in my colours" in
+  Settings; the profile avatar's hue picker is gone and the avatar wears
+  Settings' "your colour". `src/app-icon-registry.ts`, `tools/appicon.mjs`.
 
 ## Documentation map
 

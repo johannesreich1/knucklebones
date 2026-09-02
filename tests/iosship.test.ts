@@ -32,7 +32,13 @@
 // proves the repo's own iOS manifests agree with each other and with the build.
 import { existsSync, readFileSync } from 'node:fs';
 import { APP_ID } from '../src/config.ts';
-import { DEFAULT_AVATAR, PROFILE_AVATARS, appIconIdForAvatar } from '../src/profile-avatar.ts';
+import {
+  DEFAULT_ICON_PAIR,
+  ICON_PAIRS,
+  appIconIdForPair,
+  pairIconName,
+} from '../src/app-icon-registry.ts';
+import { HUE_IDS } from '../src/state.ts';
 import { verifyIosPayloadContract } from './support/ios-payload-contract.ts';
 import { verifyIosPodContract, verifyPodParsersCouldFail } from './support/ios-pod-contract.ts';
 import { verifyIosShellContract } from './support/ios-shell-contract.ts';
@@ -133,10 +139,10 @@ check(/s\.name\s*=\s*['"]KnucklebonesAppIcon['"]/.test(appIconPodspec)
 `${APP_ICON_PODSPEC} must compile the Swift bridge against Capacitor/UIKit for iOS 15`);
 
 const appIconSwift = readFileSync(APP_ICON_SWIFT, 'utf8');
-const profileHues = [...new Set(PROFILE_AVATARS.map((avatar) => avatar.split(':')[2]))];
 const swiftHueLiteral = (appIconSwift.match(/\bhues\s*=\s*\[([^\]]+)\]/) || [])[1] ?? '';
 const swiftHues = [...swiftHueLiteral.matchAll(/["']([^"']+)["']/g)].map((match) => match[1]);
-const expectedAlternates = PROFILE_AVATARS.map(appIconIdForAvatar).filter((icon) => icon !== 'primary');
+const expectedAlternates = ICON_PAIRS.map(appIconIdForPair).filter((icon) => icon !== 'primary');
+const pairPrimaryId = pairIconName(DEFAULT_ICON_PAIR);
 const getStateContract = appIconSwift.slice(
   appIconSwift.indexOf('@objc func getState'),
   appIconSwift.indexOf('@objc func setIcon'),
@@ -150,20 +156,24 @@ check(/@objc\(AppIconPlugin\)/.test(appIconSwift)
   && /CAPPluginMethod\(name:\s*["']getState["'],\s*returnType:\s*CAPPluginReturnPromise\)/.test(appIconSwift)
   && /CAPPluginMethod\(name:\s*["']setIcon["'],\s*returnType:\s*CAPPluginReturnPromise\)/.test(appIconSwift),
 `${APP_ICON_SWIFT} must expose promise-based AppIcon.getState/setIcon bridge methods`);
-check(DEFAULT_AVATAR === 'die:5:cy' && expectedAlternates.length === 41
+/* The Swift allow-list is a deliberate second copy of the registry: every
+   ordered pair of the seven hues, minus the compiled cyan-magenta primary. */
+check(pairPrimaryId === 'split-cy-mg' && expectedAlternates.length === 41
   && /primaryID\s*=\s*["']primary["']/.test(appIconSwift)
-  && /profilePrimaryID\s*=\s*["']die-5-cy["']/.test(appIconSwift)
-  && JSON.stringify(swiftHues) === JSON.stringify(profileHues)
-  && /for face in 1\.\.\.6/.test(appIconSwift)
-  && /if id != profilePrimaryID/.test(appIconSwift),
-`${APP_ICON_SWIFT} allow-list must derive the exact 41 alternates while keeping die:5:cy primary`);
+  && new RegExp(`pairPrimaryID\\s*=\\s*["']${pairPrimaryId}["']`).test(appIconSwift)
+  && JSON.stringify(swiftHues) === JSON.stringify(HUE_IDS)
+  && /for p1 in hues \{/.test(appIconSwift)
+  && /for p2 in hues where p2 != p1 \{/.test(appIconSwift)
+  && /let id = "split-\\\(p1\)-\\\(p2\)"/.test(appIconSwift)
+  && /if id != pairPrimaryID/.test(appIconSwift),
+`${APP_ICON_SWIFT} allow-list must derive the 41 ordered-pair alternates from the seven hues while keeping ${pairPrimaryId} primary`);
 check(/UIApplication\.shared/.test(getStateContract)
   && /supportsAlternateIcons/.test(getStateContract)
   && /alternateIconName/.test(getStateContract)
   && /["']supported["']/.test(getStateContract) && /["']icon["']/.test(getStateContract)
   && !/["']changed["']/.test(getStateContract),
 `${APP_ICON_SWIFT} getState must return only supported/current icon from UIKit`);
-check(/guard requested != Self\.profilePrimaryID/.test(setIconContract)
+check(/guard requested != Self\.pairPrimaryID/.test(setIconContract)
   && /guard requested == Self\.primaryID \|\| Self\.alternateIDs\.contains\(requested\)/.test(setIconContract)
   && /requested == Self\.primaryID \? nil : requested/.test(setIconContract)
   && compareOffset >= 0 && mutationOffset > compareOffset

@@ -12,6 +12,16 @@ import {
   readPngPixels,
   rgbDistance,
 } from './png-pixels.ts';
+import { MASKABLE_ICON_PAD } from '../../tools/appicon.mjs';
+import {
+  LEFT_CELLS,
+  RIGHT_CELLS,
+  SPLIT_ICON_PAD,
+  SPLIT_PIP_CELLS,
+  pipPoint,
+  platePoint,
+  seamPoint,
+} from './split-die-geometry.ts';
 
 type Check = (ok: boolean, message: string) => void;
 
@@ -114,49 +124,79 @@ export function verifyAndroidResourceContract(
   const foregroundWidth = foregroundBounds
     ? (foregroundBounds.right - foregroundBounds.left + 1) / foreground.width
     : 0;
-  check(foregroundBounds !== null && foregroundWidth >= .74 && foregroundWidth <= .76,
-    `the restored larger Android neon die should occupy about 75% of its layer including glow, found ${foregroundWidth}`);
+  check(foregroundBounds !== null && foregroundWidth >= .84 && foregroundWidth <= .89,
+    `the Android split die should occupy about 86% of its layer including glow, found ${foregroundWidth}`);
   const topInk = alphaRowBounds(foreground, .4);
   const bottomInk = alphaRowBounds(foreground, .6);
   const topCenter = topInk ? (topInk.left + topInk.right) / (2 * foreground.width) : 0;
   const bottomCenter = bottomInk ? (bottomInk.left + bottomInk.right) / (2 * foreground.width) : 0;
   check(topInk !== null && bottomInk !== null
-    && topCenter - bottomCenter >= .02 && topCenter - bottomCenter <= .03,
+    && topCenter - bottomCenter >= .02 && topCenter - bottomCenter <= .036,
     `the Android die should have a subtle clockwise tilt, found row centers ${topCenter} and ${bottomCenter}`);
   const maskableBounds = colorBounds(maskable);
   const maskableWidth = maskableBounds
     ? (maskableBounds.right - maskableBounds.left + 1) / maskable.width
     : 0;
-  check(maskableBounds !== null && maskableWidth >= .64 && maskableWidth <= .65,
+  check(maskableBounds !== null && maskableWidth >= .70 && maskableWidth <= .75,
     `the PWA maskable die's visible rounded bounds must stay inside its safe zone, found ${maskableWidth}`);
-  for (const [x, y] of [[.38, .346], [.654, .38], [.5, .5], [.346, .62], [.62, .654]]) {
-    const pip = pixelAt(maskable, x, y);
-    check(pip.red >= 150 && pip.green >= 240 && pip.blue >= 250,
-      `the PWA maskable launcher pip at ${x},${y} must be filled and luminous`);
+  /* THE SPLIT, on every Android surface: "your colour" lights the left pip
+     column, the opponent's the right. A layer whose columns are one hue is
+     the single-die mark this replaced. The pips are white-cored, so the hue
+     shows as which side of white the pixel falls on. */
+  const litLeft = (pixel: ReturnType<typeof pixelAt>): boolean =>
+    pixel.green >= 235 && pixel.blue >= 245 && pixel.blue >= pixel.red;
+  const litRight = (pixel: ReturnType<typeof pixelAt>): boolean =>
+    pixel.red >= 250 && pixel.red - pixel.green >= 40;
+  for (const [surface, pixels, pad] of [
+    ['adaptive foreground', foreground, SPLIT_ICON_PAD],
+    ['legacy launcher', legacy, SPLIT_ICON_PAD],
+    ['round launcher', legacyRound, SPLIT_ICON_PAD],
+    ['PWA maskable', maskable, MASKABLE_ICON_PAD],
+  ] as const) {
+    for (const cell of LEFT_CELLS) {
+      const [x, y] = pipPoint(cell, pad);
+      check(litLeft(pixelAt(pixels, x, y)),
+        `the Android ${surface} pip at cell ${cell} must be lit and cast toward the p1 hue`);
+    }
+    for (const cell of RIGHT_CELLS) {
+      const [x, y] = pipPoint(cell, pad);
+      check(litRight(pixelAt(pixels, x, y)),
+        `the Android ${surface} pip at cell ${cell} must be lit and cast toward the p2 hue`);
+    }
+    const [sx, sy] = seamPoint(.5, pad);
+    const seam = pixelAt(pixels, sx, sy);
+    check(Math.min(seam.red, seam.green, seam.blue) >= 225 && colorSpread(seam) <= 22,
+      `the Android ${surface} lost the white seam between its two halves`);
   }
-  const launcherPips = [[.36, .32], [.68, .36], [.5, .5], [.32, .64], [.64, .68]] as const;
-  for (const [x, y] of launcherPips) {
-    const adaptivePip = pixelAt(foreground, x, y);
-    check(adaptivePip.alpha >= 250
-      && adaptivePip.red >= 145 && adaptivePip.green >= 238 && adaptivePip.blue >= 248,
-      `the Android adaptive Home pip at ${x},${y} must be filled and luminous`);
-    for (const dx of [-.018, 0, .018]) {
-      for (const dy of [-.018, 0, .018]) {
+  /* The themed layer is tinted flat by the OS, so its whole meaning is the
+     silhouette: six pip cutouts AND the seam, or it is an unmarked die. */
+  for (const cell of SPLIT_PIP_CELLS) {
+    const [x, y] = pipPoint(cell);
+    for (const dx of [-.014, 0, .014]) {
+      for (const dy of [-.014, 0, .014]) {
         check(pixelAt(monochrome, x + dx, y + dy).alpha === 0,
-          `the Android themed-icon pip around ${x},${y} must be a substantial transparent cutout`);
+          `the Android themed-icon pip around cell ${cell} must be a substantial transparent cutout`);
       }
     }
-    for (const raster of [legacy, legacyRound]) {
-      const pip = pixelAt(raster, x, y);
-      check(pip.red >= 110 && pip.green >= 235 && pip.blue >= 248,
-        `the Android legacy launcher pip at ${x},${y} must remain cyan-to-white and luminous`);
-    }
   }
+  for (const fy of [.3, .5, .7]) {
+    const [x, y] = seamPoint(fy);
+    check(pixelAt(monochrome, x, y).alpha === 0,
+      `the Android themed icon must cut its seam at ${fy} of its height`);
+  }
+  const [monoBodyX, monoBodyY] = platePoint('left');
+  const monoBody = pixelAt(monochrome, monoBodyX, monoBodyY);
+  check(monoBody.alpha >= 220 && colorSpread(monoBody) <= 1,
+    'the Android themed icon must keep a solid grayscale body between its cutouts');
   for (const raster of [legacy, legacyRound]) {
-    const glassShadow = pixelAt(raster, .5, .78);
-    check(colorSpread(glassShadow) <= 5
-      && glassShadow.red <= 25 && glassShadow.green <= 30 && glassShadow.blue <= 32,
-    'Android legacy launcher art must preserve the Home die\'s neutral dark glass body');
+    const [lx, ly] = platePoint('left');
+    const [rx, ry] = platePoint('right');
+    const leftPlate = pixelAt(raster, lx, ly);
+    const rightPlate = pixelAt(raster, rx, ry);
+    check(leftPlate.green - leftPlate.red >= 80 && leftPlate.blue - leftPlate.red >= 90,
+      'the Android legacy launcher left half must stand on the p1 plate');
+    check(rightPlate.red - rightPlate.green >= 80 && rightPlate.red - rightPlate.blue >= 30,
+      'the Android legacy launcher right half must stand on the p2 plate');
   }
   const backgroundTop = pixelAt(background, .5, .04);
   const backgroundBottom = pixelAt(background, .5, .96);

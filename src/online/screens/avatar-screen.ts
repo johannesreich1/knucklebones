@@ -1,10 +1,8 @@
 import { ME } from '../../core/rules.ts';
-import { formatNumber, subscribeLocale, t, type LocaleKey } from '../../i18n/index.ts';
+import { formatNumber, subscribeLocale, t } from '../../i18n/index.ts';
 import { Sfx } from '../../ui/audio.ts';
 import {
   AVATAR_FACES,
-  AVATAR_HUES,
-  AV_HUES,
   DEFAULT_AVATAR,
   canonicalProfileAvatar,
   parseAvatar,
@@ -17,7 +15,7 @@ import { $, byId } from '../../ui/dom.ts';
 import { loaderDie } from '../../ui/loader.ts';
 import { readAccountProfileCache } from '../../profile-cache.ts';
 import { repaintOnlineMessage } from '../message-copy.ts';
-import { myProfileLookup, setAvatar } from '../identity/profile.ts';
+import { myProfileLookup, setAvatar, settingsAvatarHue } from '../identity/profile.ts';
 import { showOnlinePanel } from './shell.ts';
 
 export interface AvatarScreen {
@@ -38,11 +36,10 @@ export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScre
     avatarError = render;
     $('#onAvErr').textContent = render();
   };
-  /* Derived from the same registry the swatches are, so a new hue cannot be
-     offered without a name to announce it — the second copy of this list is
-     how BLUE came to be missing from the picker entirely. */
-  const colourName = (id: string): string =>
-    t('online', `avatar.colours.${id}` as LocaleKey<'online'>);
+  /* The picker chooses a FACE. Its colour is "your colour" from Settings, so
+     the avatar and the dice a player throws are one colour by construction. */
+  const withSettingsHue = (avatar: ProfileAvatar): ProfileAvatar =>
+    profileAvatar(parseAvatar(avatar).face, settingsAvatarHue());
 
   const paintLabels = (): void => {
     const panel = byId('onAvatar');
@@ -50,11 +47,6 @@ export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScre
     $('#avFaces').querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
       button.setAttribute('aria-label', t('online', 'avatar.faceLabel', {
         face: formatNumber(Number(button.dataset.face)),
-      }));
-    });
-    $('#avHues').querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
-      button.setAttribute('aria-label', t('online', 'avatar.colourLabel', {
-        colour: colourName(button.dataset.hue ?? ''),
       }));
     });
   };
@@ -72,7 +64,7 @@ export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScre
        remains inert until this owner has supplied either a fresh row or its
        complete account-bound snapshot. */
     ownerAccountId = null;
-    pick = canonicalProfileAvatar(cached?.profile.avatar ?? null);
+    pick = withSettingsHue(canonicalProfileAvatar(cached?.profile.avatar ?? null));
     const save = $('#btnAvatarSave') as HTMLButtonElement;
     save.disabled = true;
     showOnlinePanel('onAvatar');
@@ -92,15 +84,13 @@ export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScre
       await showAccount();
       return;
     }
-    pick = canonicalProfileAvatar(profileResult.ok
-      ? profileResult.profile.avatar : cached?.profile.avatar ?? null);
+    pick = withSettingsHue(canonicalProfileAvatar(profileResult.ok
+      ? profileResult.profile.avatar : cached?.profile.avatar ?? null));
     const draw = (): void => {
       const current = parseAvatar(pick);
       paintAvatar($('#avPreview'), pick, 86);
       $('#avFaces').querySelectorAll('button').forEach((button) =>
         button.classList.toggle('on', +(button as HTMLElement).dataset.face! === current.face));
-      $('#avHues').querySelectorAll('button').forEach((button) =>
-        button.classList.toggle('on', (button as HTMLElement).dataset.hue === current.hue));
     };
     if (!$('#avFaces').firstChild) {
       for (const face of AVATAR_FACES) {
@@ -110,23 +100,10 @@ export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScre
         button.appendChild(makeDie(face, ME));
         button.addEventListener('click', () => {
           Sfx.tap();
-          pick = profileAvatar(face, parseAvatar(pick).hue);
+          pick = profileAvatar(face, settingsAvatarHue());
           draw();
         });
         $('#avFaces').appendChild(button);
-      }
-      for (const hue of AVATAR_HUES) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.dataset.hue = hue;
-        button.className = 'hue';
-        button.style.setProperty('--h', AV_HUES[hue]);
-        button.addEventListener('click', () => {
-          Sfx.tap();
-          pick = profileAvatar(parseAvatar(pick).face, hue);
-          draw();
-        });
-        $('#avHues').appendChild(button);
       }
       paintLabels();
     }

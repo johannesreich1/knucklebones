@@ -1,8 +1,13 @@
-// Deterministic native expansion of the shared Home neon-die renderer.
-// appicon.mjs owns the renderer and primary files; this module owns the 42-way
-// profile registry mapping, iOS alternates, Android aliases/resources and the
-// provenance manifest. It deliberately receives render functions from
-// appicon.mjs so importing either module never triggers a circular build.
+// Deterministic native expansion of the split-die launcher (appicon.mjs owns
+// the renderer and primary files). This module owns the 42-way colour-pair
+// registry, iOS alternates, Android aliases/resources and the provenance
+// manifest. It deliberately receives render functions from appicon.mjs so
+// importing either module never triggers a circular build.
+//
+// Every ordered pair of distinct duel hues is a launcher: the primary is the
+// fixed cyan-and-magenta die, the 41 others exist so a device that opts into
+// "app icon in my colours" (Settings) can be handed a pre-bundled icon —
+// iOS and Android cannot render one at runtime.
 import { createHash } from 'node:crypto';
 import {
   existsSync,
@@ -15,11 +20,11 @@ import { dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { APP_ID } from '../src/config.ts';
 import {
-  DEFAULT_AVATAR,
-  PROFILE_AVATARS,
-  appIconIdForAvatar,
-  parseAvatar,
-} from '../src/profile-avatar.ts';
+  DEFAULT_ICON_PAIR,
+  ICON_PAIRS,
+  appIconIdForPair,
+  pairIconName,
+} from '../src/app-icon-registry.ts';
 import { inlineCssGraph } from './css-graph.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -46,34 +51,35 @@ const write = (file, contents) => {
   writeFileSync(destination, contents);
 };
 const hash = (file) => createHash('sha256').update(readFileSync(absolute(file))).digest('hex');
+const title = (hue) => hue[0].toUpperCase() + hue.slice(1);
 
-function profileIconSpec(avatar) {
-  const { face, hue } = parseAvatar(avatar);
-  const icon = appIconIdForAvatar(avatar);
-  const primary = avatar === DEFAULT_AVATAR;
-  const titleHue = hue[0].toUpperCase() + hue.slice(1);
+/* One spec per ordered pair. The alias/resource names are derived from the
+   icon id so a pair added to the roster names itself everywhere at once. */
+function pairIconSpec(pair) {
+  const icon = appIconIdForPair(pair);
+  const primary = icon === 'primary';
   return Object.freeze({
-    avatar,
-    face,
-    hue,
+    pair: pairIconName(pair),
+    p1: pair.p1,
+    p2: pair.p2,
     icon,
     primary,
     iosCatalog: primary ? 'AppIcon' : icon,
-    androidAlias: `${APP_ID}.launcher.${primary ? 'Primary' : `Die${face}${titleHue}`}`,
-    androidResource: primary ? 'ic_launcher' : `ic_profile_${icon.replaceAll('-', '_')}`,
+    androidAlias: `${APP_ID}.launcher.${primary ? 'Primary' : `Split${title(pair.p1)}${title(pair.p2)}`}`,
+    androidResource: primary ? 'ic_launcher' : `ic_${icon.replaceAll('-', '_')}`,
   });
 }
 
-const registrySpecs = PROFILE_AVATARS.map(profileIconSpec);
-export const PRIMARY_PROFILE_ICON = registrySpecs.find(({ primary }) => primary);
-export const ALTERNATE_PROFILE_ICONS = Object.freeze(registrySpecs.filter(({ primary }) => !primary));
-export const PROFILE_ICON_SPECS = Object.freeze([
-  PRIMARY_PROFILE_ICON,
-  ...ALTERNATE_PROFILE_ICONS,
+const registrySpecs = ICON_PAIRS.map(pairIconSpec);
+export const PRIMARY_PAIR_ICON = registrySpecs.find(({ primary }) => primary);
+export const ALTERNATE_PAIR_ICONS = Object.freeze(registrySpecs.filter(({ primary }) => !primary));
+export const PAIR_ICON_SPECS = Object.freeze([
+  PRIMARY_PAIR_ICON,
+  ...ALTERNATE_PAIR_ICONS,
 ]);
 
-if (!PRIMARY_PROFILE_ICON || PROFILE_ICON_SPECS.length !== 42 || ALTERNATE_PROFILE_ICONS.length !== 41) {
-  throw new Error('profile app-icon registry must contain one primary and 41 alternates');
+if (!PRIMARY_PAIR_ICON || PAIR_ICON_SPECS.length !== 42 || ALTERNATE_PAIR_ICONS.length !== 41) {
+  throw new Error('launcher icon registry must contain one primary and 41 alternates');
 }
 
 const iosCatalogPath = (spec) => `${IOS_CATALOG_ROOT}/${spec.iosCatalog}.appiconset`;
@@ -111,11 +117,11 @@ const androidLegacyFile = (spec, density) =>
   `native/android/app/src/main/res/mipmap-${density}/${spec.androidResource}.png`;
 const androidForegroundFile = (spec, density) =>
   `native/android/app/src/main/res/mipmap-${density}/${spec.androidResource}_foreground.png`;
-const androidMonochromeFile = (face, density) =>
-  `native/android/app/src/main/res/mipmap-${density}/ic_profile_face_${face}_monochrome.png`;
 const androidAdaptiveFile = (spec, api) =>
   `native/android/app/src/main/res/mipmap-anydpi-v${api}/${spec.androidResource}.xml`;
 
+/* The themed (monochrome) layer is pair-independent — the OS tints it — so
+   every alternate shares the primary's ic_launcher_monochrome. */
 const adaptiveIconXML = (spec, api, adaptiveInset) => `<?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@drawable/ic_launcher_background" />
@@ -123,13 +129,13 @@ const adaptiveIconXML = (spec, api, adaptiveInset) => `<?xml version="1.0" encod
         <inset android:drawable="@mipmap/${spec.androidResource}_foreground" android:inset="${adaptiveInset}" />
     </foreground>
 ${api >= 33 ? `    <monochrome>
-        <inset android:drawable="@mipmap/ic_profile_face_${spec.face}_monochrome" android:inset="${adaptiveInset}" />
+        <inset android:drawable="@mipmap/ic_launcher_monochrome" android:inset="${adaptiveInset}" />
     </monochrome>
 ` : ''}</adaptive-icon>
 `;
 
 function writeAndroidAdaptiveResources(adaptiveInset) {
-  for (const spec of ALTERNATE_PROFILE_ICONS) {
+  for (const spec of ALTERNATE_PAIR_ICONS) {
     for (const api of [26, 33]) {
       write(androidAdaptiveFile(spec, api), adaptiveIconXML(spec, api, adaptiveInset));
     }
@@ -164,7 +170,7 @@ function writeAndroidLauncherAliases() {
   if (start < 0 || end < start) {
     throw new Error(`${ANDROID_MANIFEST} is missing its generated profile-icon alias markers`);
   }
-  const block = `${ALIAS_START}\n${PROFILE_ICON_SPECS.map(aliasXML).join('\n\n')}\n${ALIAS_END}`;
+  const block = `${ALIAS_START}\n${PAIR_ICON_SPECS.map(aliasXML).join('\n\n')}\n${ALIAS_END}`;
   writeFileSync(file, source.slice(0, start) + block + source.slice(end + ALIAS_END.length));
 }
 
@@ -175,7 +181,7 @@ function expectedGeneratedFiles() {
     'public/icon-512.png',
     'public/icon-maskable-512.png',
   ];
-  const ios = PROFILE_ICON_SPECS.flatMap((spec) => [
+  const ios = PAIR_ICON_SPECS.flatMap((spec) => [
     iosContentsFile(spec),
     iosLightFile(spec),
     iosDarkFile(spec),
@@ -193,13 +199,11 @@ function expectedGeneratedFiles() {
       `native/android/app/src/main/res/mipmap-anydpi-v${api}/${name}.xml`)),
   ];
   const androidAlternates = [
-    ...ALTERNATE_PROFILE_ICONS.flatMap((spec) => ANDROID_DENSITIES.flatMap(([density]) => [
+    ...ALTERNATE_PAIR_ICONS.flatMap((spec) => ANDROID_DENSITIES.flatMap(([density]) => [
       androidLegacyFile(spec, density),
       androidForegroundFile(spec, density),
     ])),
-    ...[1, 2, 3, 4, 5, 6].flatMap((face) => ANDROID_DENSITIES.map(([density]) =>
-      androidMonochromeFile(face, density))),
-    ...ALTERNATE_PROFILE_ICONS.flatMap((spec) => [26, 33].map((api) =>
+    ...ALTERNATE_PAIR_ICONS.flatMap((spec) => [26, 33].map((api) =>
       androidAdaptiveFile(spec, api))),
   ];
   return [...web, ...ios, ...androidPrimary, ...androidAlternates].sort();
@@ -215,7 +219,7 @@ function writeProvenanceManifest({ appIconPad, appIconTiltDeg, adaptiveInset, da
     'tools/appicon.mjs',
     'tools/profile-app-icons.mjs',
     'src/config.ts',
-    'src/profile-avatar.ts',
+    'src/app-icon-registry.ts',
     'src/state.ts',
     'src/ui/die-markup.ts',
     ...HOME_DIE_GRAPH.files.map((file) => relative(ROOT, file).split(sep).join('/')),
@@ -228,7 +232,7 @@ function writeProvenanceManifest({ appIconPad, appIconTiltDeg, adaptiveInset, da
     'native/plugins/appicon/android/src/main/java/com/appavaria/knucklebones/appicon/AppIconPlugin.java',
   ];
   const manifest = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedBy: 'tools/appicon.mjs',
     commands: {
       webAndIos: 'mise exec -- node tools/appicon.mjs',
@@ -237,23 +241,24 @@ function writeProvenanceManifest({ appIconPad, appIconTiltDeg, adaptiveInset, da
     sourceComponents: [...new Set(sourcePaths)].sort().map(manifestEntry),
     nativeContracts: contractPaths.map(manifestEntry),
     design: {
+      mark: 'split die: one six-face die, left pip column in p1, right column in p2, cut on a seam',
       launcherDiePadding: appIconPad,
       launcherTiltDegrees: appIconTiltDeg,
       androidAdaptiveInset: adaptiveInset,
       darkGradient,
       iosAuthoredAppearances: ['light', 'dark', 'tinted'],
-      iosLightDarkArtwork: 'byte-identical opaque charcoal gradient with full neon shimmer',
+      iosLightDarkArtwork: 'light appearance on the system light gradient, dark appearance on the charcoal gradient; one split die',
       iosSystemDerivedAppearances: ['clear'],
-      androidMonochrome: 'system-tinted face cutout; hue and glow intentionally omitted',
+      androidMonochrome: 'system-tinted six-face cutout with the seam; hue and glow intentionally omitted',
     },
     registry: {
-      primaryAvatar: DEFAULT_AVATAR,
+      primaryPair: pairIconName(DEFAULT_ICON_PAIR),
       primaryIcon: 'primary',
-      count: PROFILE_ICON_SPECS.length,
-      sha256: createHash('sha256').update(JSON.stringify(PROFILE_AVATARS)).digest('hex'),
+      count: PAIR_ICON_SPECS.length,
+      sha256: createHash('sha256').update(JSON.stringify(ICON_PAIRS)).digest('hex'),
     },
-    variants: PROFILE_ICON_SPECS.map((spec) => ({
-      avatar: spec.avatar,
+    variants: PAIR_ICON_SPECS.map((spec) => ({
+      pair: spec.pair,
       icon: spec.icon,
       iosCatalog: spec.iosCatalog,
       androidAlias: spec.androidAlias,
@@ -264,63 +269,54 @@ function writeProvenanceManifest({ appIconPad, appIconTiltDeg, adaptiveInset, da
   write(MANIFEST_FILE, `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
-export async function generateIosProfileIcons({
+export async function generateIosPairIcons({
   shot,
-  iconSVG,
+  splitDieIconSVG,
   monochromeIconSVG,
   appIconPad,
   appIconTiltDeg,
   adaptiveInset,
   darkGradient,
 }) {
-  for (const spec of PROFILE_ICON_SPECS) write(iosContentsFile(spec), IOS_CONTENTS);
-  for (const spec of ALTERNATE_PROFILE_ICONS) {
-    const light = await shot(
-      iconSVG(1024, appIconPad, 'light', false, spec.face, spec.hue), 1024, false,
-    );
-    write(iosLightFile(spec), light);
-    write(iosDarkFile(spec), light);
-    const tinted = await shot(monochromeIconSVG(1024, appIconPad, spec.face), 1024, true);
+  for (const spec of PAIR_ICON_SPECS) write(iosContentsFile(spec), IOS_CONTENTS);
+  /* the tinted drawing is pair-independent: render it once, copy it 41 times */
+  const tinted = await shot(monochromeIconSVG(1024, appIconPad), 1024, true);
+  for (const spec of ALTERNATE_PAIR_ICONS) {
+    const pair = { p1: spec.p1, p2: spec.p2 };
+    write(iosLightFile(spec), await shot(splitDieIconSVG(1024, appIconPad, 'light', false, pair), 1024, false));
+    write(iosDarkFile(spec), await shot(splitDieIconSVG(1024, appIconPad, 'dark', false, pair), 1024, false));
     write(iosTintedFile(spec), tinted);
   }
   writeAndroidLauncherAliases();
   writeProvenanceManifest({ appIconPad, appIconTiltDeg, adaptiveInset, darkGradient });
-  console.log(`generated ${ALTERNATE_PROFILE_ICONS.length} iOS alternate app-icon catalogs`);
+  console.log(`generated ${ALTERNATE_PAIR_ICONS.length} iOS alternate app-icon catalogs`);
 }
 
-export async function generateAndroidProfileIcons({
+export async function generateAndroidPairIcons({
   shot,
-  iconSVG,
+  splitDieIconSVG,
   adaptiveForegroundSVG,
-  monochromeIconSVG,
   appIconPad,
   appIconTiltDeg,
   adaptiveInset,
   darkGradient,
 }) {
-  for (const spec of ALTERNATE_PROFILE_ICONS) {
+  for (const spec of ALTERNATE_PAIR_ICONS) {
+    const pair = { p1: spec.p1, p2: spec.p2 };
     for (const [density, size] of ANDROID_DENSITIES) {
-      const legacy = await shot(
-        iconSVG(size, appIconPad, 'dark', false, spec.face, spec.hue), size, false,
-      );
+      const legacy = await shot(splitDieIconSVG(size, appIconPad, 'dark', false, pair), size, false);
       write(androidLegacyFile(spec, density), legacy);
-      const foreground = await shot(adaptiveForegroundSVG(size, spec.face, spec.hue), size, true);
+      const foreground = await shot(adaptiveForegroundSVG(size, pair), size, true);
       write(androidForegroundFile(spec, density), foreground);
     }
   }
-  for (const face of [1, 2, 3, 4, 5, 6]) {
-    for (const [density, size] of ANDROID_DENSITIES) {
-      const monochrome = await shot(monochromeIconSVG(size, appIconPad, face), size, true);
-      write(androidMonochromeFile(face, density), monochrome);
-    }
-  }
   writeAndroidAdaptiveResources(adaptiveInset);
   writeAndroidLauncherAliases();
   writeProvenanceManifest({ appIconPad, appIconTiltDeg, adaptiveInset, darkGradient });
-  console.log(`generated ${ALTERNATE_PROFILE_ICONS.length} Android alternate launcher resources`);
+  console.log(`generated ${ALTERNATE_PAIR_ICONS.length} Android alternate launcher resources`);
 }
 
-export function finalizeAndroidProfileIcons({
+export function finalizeAndroidPairIcons({
   appIconPad,
   appIconTiltDeg,
   adaptiveInset,
@@ -329,5 +325,5 @@ export function finalizeAndroidProfileIcons({
   writeAndroidAdaptiveResources(adaptiveInset);
   writeAndroidLauncherAliases();
   writeProvenanceManifest({ appIconPad, appIconTiltDeg, adaptiveInset, darkGradient });
-  console.log('finalized Android profile-icon aliases, adaptive XML and provenance');
+  console.log('finalized Android launcher aliases, adaptive XML and provenance');
 }

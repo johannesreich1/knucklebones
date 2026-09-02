@@ -115,25 +115,33 @@ CSS shadow, because either path truncates the glow into a visible square. The
 same source feeds every tracked Android portrait/landscape and normal/night
 splash rendition.
 
-### Profile-driven launcher icons
+### The split-die launcher and its colour-pair variants
 
-`src/profile-avatar.ts` owns the canonical profile/avatar vocabulary: six die
-faces crossed with the seven `HUE_IDS` entries, for 42 values. `die:5:cy` is
-the installed app's primary cyan-five icon. Every other value maps mechanically
-from `die:<face>:<hue>` to the native id `die-<face>-<hue>`; native bridges
-accept no arbitrary catalog, component, or resource name.
+The app icon is the split die (design 56b, chosen 2026-09-02): one six-face
+Home die, its left pip column in "your colour" and its right column in the
+opponent's, cut on a white seam, on the charcoal launcher ground. `tools/appicon.mjs`
+draws it from the app's own die markup and CSS (`splitDieIconSVG`); the single
+cyan five (`iconSVG`) survives only for the launch screen. The default pair is
+fixed cyan-and-magenta and never follows the player.
+
+`src/app-icon-registry.ts` owns the launcher vocabulary: every ordered pair of
+distinct `HUE_IDS` entries, 42 values, `split-cy-mg` being the compiled primary.
+The other 41 exist so the installed apps can offer "App icon in my colours"
+(Settings, device-local, off by default): the same die in the pair the player
+currently sees. Native bridges accept no arbitrary catalog, component, or
+resource name.
 
 The icon set is generated compiler input, not 41 hand-maintained designs.
-`mise exec -- node tools/appicon.mjs` renders the fixed web icons plus iOS from
-the shared die markup and CSS. `mise exec -- npm run native:assets:android`
-renders Android and runs the Android finalizer. Both refresh the tracked
+`mise exec -- node tools/appicon.mjs` renders the fixed web icons plus iOS.
+`mise exec -- npm run native:assets:android` renders Android and runs the
+Android finalizer. Both refresh the tracked
 `native/profile-app-icons.manifest.json`; after the Android finalizer it is the
 complete deterministic record of:
 
 - its schema version and generator/source components;
-- the primary avatar and launcher id;
-- all 42 avatar-to-iOS-catalog and avatar-to-Android-alias/resource mappings;
-- SHA-256 hashes for every generated profile-icon asset.
+- the primary pair and launcher id;
+- all 42 pair-to-iOS-catalog and pair-to-Android-alias/resource mappings;
+- SHA-256 hashes for every generated launcher asset.
 
 The manifest contains no timestamp, so the same sources produce the same bytes
 and provenance. Verification derives the registry from source, checks complete
@@ -144,14 +152,16 @@ On iOS, `AppIcon.appiconset` is the primary and the other 41 values each have
 an alternate app-icon catalog. Debug and Release list the exact alternates in
 `ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES`; Xcode then generates
 `CFBundlePrimaryIcon` and `CFBundleAlternateIcons`, so those keys do not belong
-as a second manual registry in source `Info.plist`. Every catalog gives its
-Any/Light and Dark entries byte-identical opaque artwork: the requested
-charcoal gradient, the same full neon shimmer, and no appearance-specific
-change to die size, tilt, hue, or pips. A separate grayscale Tinted rendition
-keeps its pips as transparent cutouts. iOS derives Clear from that authored
-monochrome source; the final Clear and Tinted pixels remain system-owned and
-therefore require device visual acceptance rather than a checked-in color
-claim.
+as a second manual registry in source `Info.plist`. Every catalog carries two
+opaque renditions of one drawing: Any/Light stands the dark split die on the
+system light gradient (the way Maps and Photos wear a light tile in light
+mode), Dark keeps the charcoal gradient; die size, tilt, hues and pips never
+change between them. A separate grayscale Tinted rendition
+keeps its pips and its seam as transparent cutouts — without the seam a tinted
+icon would be an unmarked die — and, being pair-independent, is the same
+drawing in every catalog. iOS derives Clear from that authored monochrome
+source; the final Clear and Tinted pixels remain system-owned and therefore
+require device visual acceptance rather than a checked-in color claim.
 The Capacitor bridge compares `UIApplication.alternateIconName` before calling
 `setAlternateIconName`, keeping launch reconciliation silent when the correct
 icon is already selected. A real change uses the system API and therefore shows
@@ -159,7 +169,8 @@ iOS's system confirmation alert. An OS error leaves the old launcher selected.
 
 On Android, 42 exported launcher `activity-alias` entries target the same
 `MainActivity`. Each alias carries its canonical `knucklebones.profileIcon`
-metadata and one generated icon resource; exactly one alias is enabled. Android
+metadata (the launcher id, `primary` or `split-<p1>-<p2>`) and one generated
+icon resource (`ic_split_<p1>_<p2>`); exactly one alias is enabled. Android
 13+ applies the complete component-state change atomically. On API 24–32 the
 bridge enables the requested alias before disabling the old one, preferring a
 temporary duplicate over making the installed app unreachable. The selected
@@ -168,25 +179,27 @@ owned by the installed launcher: pixels can refresh after a cache delay, and
 some OEM launchers may replace or remove an existing manually placed Home item
 instead of repainting it in place. The app must not claim that launcher pixels
 have refreshed. Aliases omit a separate `roundIcon`: adaptive masking supplies
-the round path on API 26+, while the legacy alias bitmap is round-safe. Android
-themed icons preserve the selected face and cut-out pip silhouette, but the OS
-owns their monochrome tint, so the profile hue is deliberately absent there.
+the round path on API 26+, while the legacy alias bitmap is round-safe. Every
+alias shares the one `ic_launcher_monochrome` themed layer (the six-face die
+with its seam), because the OS owns the tint and the pair is absent there.
 
 The catalogs and aliases make the capability available; they do not activate
 it automatically. The installed iOS/Android Settings control is off by default
 and records its choice only for that installation, never in Supabase. Enabling
-it applies the current confirmed profile die, and later confirmed profile reads
-or saves reconcile only while it remains enabled. Explicit Off, sign-out, or an
-account replacement restores primary. While disabled, startup performs one
-idempotent primary reconciliation so new installs keep the default and installs
-that saw the briefly released automatic behaviour are repaired. Bridge or
-launcher failures remain cosmetic and never block startup or profile state.
+it applies the pair the player currently sees (colour-blind mode pins
+cyan-vs-gold); changing a colour while it is on moves the launcher; Off
+restores primary. While disabled, startup performs one idempotent primary
+reconciliation so new installs keep the default and installs that saw the
+retired avatar-driven icons are repaired. Sign-out and deletion do not touch
+the launcher. Bridge or launcher failures remain cosmetic and never block
+startup or Settings state.
 
-Only the native launcher is profile-driven. The primary public/PWA/standalone
-and widget art, plus iOS/Android splash and in-app loading art, remain the fixed
-cyan neon five. Web/PWA/widget Settings do not render the native icon choice.
-Startup never waits for icon reconciliation, and an icon error cannot become an
-account, profile, or navigation failure.
+Only the native launcher can wear the device's colour pair. The public/PWA/
+standalone and widget icons are the fixed cyan-and-magenta split die; the
+iOS/Android splash and in-app loading art remain the single cyan neon five.
+Web/PWA/widget Settings do not render the native icon choice. Startup never
+waits for icon reconciliation, and an icon error cannot become an account,
+Settings, or navigation failure.
 
 The release shell is portrait-only on iOS and Android. The universal iOS target
 explicitly requests the temporary full-screen compatibility mode so its

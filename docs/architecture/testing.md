@@ -334,15 +334,16 @@ primary reset; stale-account rejection; latest-wins serialization; unavailable
 bridges; and cosmetic native failures. Browser contracts require the control to
 appear only when the native iOS/Android bridge exists and to be absent from the
 web/PWA/widget Settings layout, whose icon remains fixed. The disabled-boot
-case also pins the repair path for installs exposed to the briefly released
-automatic behaviour. Native shell contracts pin the local plugin packages and
+case also pins the repair path for installs that still carry a retired
+avatar-driven alternate. Native shell contracts pin the local plugin packages and
 registration, iOS's primary plus exact 41 alternate catalogs/build settings,
 Android's exact 42 aliases and component state policy, iOS Any/Dark/Tinted and
 Android adaptive/legacy/monochrome resource contracts, and the timestamp-free
 `native/profile-app-icons.manifest.json` mappings and hashes. Pixel contracts
-require every Dark rendition to be byte-identical to its opaque, shimmering
-Light partner; they also reject a washed-out neon die, a non-cutout Tinted
-face, and any hard seam in the full-canvas native splash glow.
+require every Light rendition to sit on the system light ground and every Dark
+rendition on the charcoal one, the same die on both; they also reject a die whose pip columns are not in the two
+pair hues, a Tinted face without its pip and seam cutouts, and any hard seam
+in the full-canvas native splash glow.
 Regenerating twice must leave the manifest and representative assets
 byte-identical. None of those checks proves that SpringBoard or an OEM launcher
 has repainted its pixels.

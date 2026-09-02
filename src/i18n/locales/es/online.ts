@@ -134,19 +134,9 @@ export const esOnline = {
     runeGuideSeatBody: 'Toca el espacio de runa del anillo de liga para elegir una runa conseguida.',
   },
   avatar: {
-    instruction: 'Elige una cara y un color',
+    instruction: 'Elige una cara',
     save: 'Guardar',
     faceLabel: 'Cara {{face}} del dado',
-    colourLabel: 'Dado de color {{colour}}',
-    colours: {
-      cy: 'cian',
-      mg: 'magenta',
-      gold: 'dorado',
-      green: 'verde',
-      violet: 'violeta',
-      orange: 'naranja',
-      blue: 'azul',
-    },
   },
   history: {
     empty: 'Sin partidas clasificatorias.',

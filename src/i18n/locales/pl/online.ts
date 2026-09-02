@@ -138,19 +138,9 @@ export const plOnline = {
     runeGuideSeatBody: 'Dotknij miejsca na runę w pierścieniu ligi, aby wybrać zdobytą runę.',
   },
   avatar: {
-    instruction: 'Wybierz ściankę i kolor',
+    instruction: 'Wybierz ściankę',
     save: 'Zapisz',
     faceLabel: 'Ścianka kości {{face}}',
-    colourLabel: 'Kolor kości: {{colour}}',
-    colours: {
-      cy: 'cyjan',
-      mg: 'magenta',
-      gold: 'złoty',
-      green: 'zielony',
-      violet: 'fioletowy',
-      orange: 'pomarańczowy',
-      blue: 'niebieski',
-    },
   },
   history: {
     empty: 'Nie rozegrano jeszcze meczów rankingowych.',

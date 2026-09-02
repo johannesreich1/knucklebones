@@ -6,13 +6,21 @@
 import { supa } from '../api/client.ts';
 import { onlineMessage } from '../message-copy.ts';
 import { currentUser } from './session.ts';
-import { DEFAULT_AVATAR, type ProfileAvatar } from '../../profile-avatar.ts';
-import { syncProfileAppIcon } from '../../native/app-icon.ts';
+import {
+  DEFAULT_AVATAR,
+  isProfileAvatar,
+  parseAvatar,
+  profileAvatar,
+  type AvatarHue,
+  type ProfileAvatar,
+} from '../../profile-avatar.ts';
 import {
   cacheProfileAvatar,
   cacheProfileClaim,
   cacheProfileIdentity,
+  readProfileCache,
 } from '../../profile-cache.ts';
+import { S } from '../../state.ts';
 
 export interface Profile { id: string; nickname: string; rating: number; created_at?: string; avatar?: string | null; named_at?: string | null; }
 
@@ -44,8 +52,10 @@ export async function myProfileLookup(): Promise<ProfileLookup> {
     return { ok: false, reason: 'account-mismatch' };
   }
 
-  /* Only the account that still owns the browser may repaint Home or the
-     device launcher when its row lands. */
+  /* Only the account that still owns the browser may repaint Home when its
+     row lands. A row whose hue drifted from Settings (this device changed
+     "your colour" while offline, or another device wrote the row) is
+     realigned in the background; the cached copy is what paints meanwhile. */
   const avatar = profile.avatar ?? DEFAULT_AVATAR;
   cacheProfileIdentity({
     accountId: requestedUser.id,
@@ -53,7 +63,9 @@ export async function myProfileLookup(): Promise<ProfileLookup> {
     rating: profile.rating,
     avatar,
   });
-  void syncProfileAppIcon(avatar);
+  if (isProfileAvatar(avatar) && parseAvatar(avatar).hue !== settingsAvatarHue()) {
+    void alignAvatarHue();
+  }
   return { ok: true, profile: { ...profile, avatar } };
 }
 
@@ -90,6 +102,25 @@ export async function claimName(
   return { ok: true };
 }
 
+/** The avatar's hue is "your colour" from Settings — the picker offers faces
+ * only. Colour-blind mode pins the displayed pair to cyan-vs-gold, and the
+ * avatar follows what the player sees. */
+export function settingsAvatarHue(): AvatarHue {
+  return (S.colorblind ? 'cy' : S.p1Hue) as AvatarHue;
+}
+
+/** Keep the persisted avatar's hue equal to Settings' "your colour", so
+ * opponents see the colour this player plays in. No-op signed out, when the
+ * hue already matches, or when the cached row is not this device's. */
+export async function alignAvatarHue(): Promise<void> {
+  const cached = readProfileCache();
+  if (!cached?.accountId || !isProfileAvatar(cached.avatar)) return;
+  const { face, hue } = parseAvatar(cached.avatar);
+  const wanted = settingsAvatarHue();
+  if (hue === wanted) return;
+  await setAvatar(cached.accountId, profileAvatar(face, wanted));
+}
+
 /* The avatar is a die face and a hue — "die:5:cy". 42 identities, no storage
    bucket, no moderation, and no user-generated-image obligations at review.
    The string shape is the seam: a later value can be "img:<path>". */
@@ -109,6 +140,5 @@ export async function setAvatar(
   }
   if (error) return { ok: false, reason: 'error', message: onlineMessage('errors.generic') };
   cacheProfileAvatar(expectedAccountId, avatar);
-  void syncProfileAppIcon(avatar);
   return { ok: true };
 }

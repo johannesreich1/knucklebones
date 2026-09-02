@@ -1,6 +1,8 @@
 // The profile avatar code is shared by eager Home/native startup and the lazy
 // online profile flow, so its vocabulary stays pure and DOM/Supabase-free.
-// Every valid profile value is one of six faces in the single duel-hue roster.
+// Every valid profile value is one of six faces in the single duel-hue roster;
+// the hue is "your colour" from Settings (the picker offers faces only), and
+// the launcher icon no longer reads the avatar at all (app-icon-registry.ts).
 import { HUE_IDS } from './state.ts';
 
 export const AVATAR_FACES = [1, 2, 3, 4, 5, 6] as const;
@@ -8,9 +10,6 @@ export type AvatarFace = typeof AVATAR_FACES[number];
 export type AvatarHue = typeof HUE_IDS[number];
 export const AVATAR_HUES: readonly AvatarHue[] = Object.freeze([...HUE_IDS]);
 export type ProfileAvatar = `die:${AvatarFace}:${AvatarHue}`;
-type ProfileAppIconName = `die-${AvatarFace}-${AvatarHue}`;
-export type AlternateAppIcon = Exclude<ProfileAppIconName, 'die-5-cy'>;
-export type AppIconId = 'primary' | AlternateAppIcon;
 
 export interface ParsedAvatar {
   readonly face: AvatarFace;
@@ -46,20 +45,4 @@ export function parseAvatar(value: unknown): ParsedAvatar {
 
 export function profileAvatar(face: AvatarFace, hue: AvatarHue): ProfileAvatar {
   return `die:${face}:${hue}`;
-}
-
-/**
- * The cyan five is compiled as the primary icon. Every other profile avatar
- * names one pre-bundled alternate; unknown/future avatar kinds stay primary.
- */
-export function alternateAppIconForAvatar(value: unknown): AlternateAppIcon | null {
-  const avatar = canonicalProfileAvatar(value);
-  if (avatar === DEFAULT_AVATAR) return null;
-  const { face, hue } = parseAvatar(avatar);
-  return `die-${face}-${hue}` as AlternateAppIcon;
-}
-
-/** Capacitor's cross-platform bridge spells the native null/default as primary. */
-export function appIconIdForAvatar(value: unknown): AppIconId {
-  return alternateAppIconForAvatar(value) ?? 'primary';
 }

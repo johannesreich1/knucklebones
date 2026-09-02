@@ -22,13 +22,12 @@ import { bindLegalPages } from './ui/legal.ts';
 import { subscribeLocale } from './i18n/index.ts';
 import { cancelPass, repaintPassLocale } from './flow/pass-card.ts';
 import { userPreferencesRevision } from './preferences.ts';
-import { isProfileAvatar } from './profile-avatar.ts';
-import { readProfileCache } from './profile-cache.ts';
+import { S } from './state.ts';
 import {
-  profileAppIconAvailable,
-  profileAppIconEnabled,
-  resetProfileAppIcon,
-  syncProfileAppIcon,
+  appIconAvailable,
+  appIconColoursEnabled,
+  resetAppIcon,
+  syncAppIconColours,
 } from './native/app-icon.ts';
 import { initializeGameCenter } from './native/game-center.ts';
 import { bindPageMotion } from './ui/page-motion.ts';
@@ -58,15 +57,14 @@ export function boot(embed: boolean): void {
   refreshHomeChip();
 
   if (!embed) {
-    /* Alternate launchers are an explicit device choice. While enabled, only
-       a valid account-scoped cache may reconcile before the fresh row lands.
-       While disabled, native boot restores primary; this also cleans up the
-       briefly released automatic behavior without exposing anything on web. */
-    const cached = readProfileCache();
-    if (!profileAppIconEnabled() && profileAppIconAvailable()) {
-      void resetProfileAppIcon();
-    } else if (cached?.accountId && isProfileAvatar(cached.avatar)) {
-      void syncProfileAppIcon(cached.avatar);
+    /* The coloured launcher is an explicit device choice. While enabled, the
+       icon follows the Settings pair loadStats() already restored; while
+       disabled, native boot restores primary — which also retires the
+       profile-driven icons of 2026-09-02 without exposing anything on web. */
+    if (!appIconColoursEnabled() && appIconAvailable()) {
+      void resetAppIcon();
+    } else {
+      void syncAppIconColours(S);
     }
     // GameKit owns device-level authentication and may already be signed in.
     // Start it after the first Home paint, without waiting and without

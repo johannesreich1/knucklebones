@@ -9,7 +9,7 @@ export const idSettings = {
   yourColour: 'Warna Anda',
   opponentColour: 'Warna lawan',
   sound: 'Suara',
-  profileAppIcon: 'Gunakan dadu profil sebagai ikon aplikasi',
+  appIconColours: 'Ikon aplikasi dengan warnaku',
   accessibility: 'Aksesibilitas',
   diceFaces: 'Tampilan dadu',
   pips: 'TITIK',

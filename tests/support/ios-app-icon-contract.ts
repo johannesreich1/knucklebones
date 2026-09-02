@@ -10,14 +10,43 @@ import {
 } from 'node:fs';
 import { APP_ID } from '../../src/config.ts';
 import {
-  DEFAULT_AVATAR,
-  PROFILE_AVATARS,
-  appIconIdForAvatar,
-  parseAvatar,
-} from '../../src/profile-avatar.ts';
-import { colorSpread, pixelAt, readPngPixels, rgbDistance } from './png-pixels.ts';
+  DEFAULT_ICON_PAIR,
+  ICON_PAIRS,
+  appIconIdForPair,
+  pairIconName,
+  type IconPair,
+} from '../../src/app-icon-registry.ts';
+import { HUE_IDS } from '../../src/state.ts';
+import { diePipCells } from '../../src/ui/die-markup.ts';
+import {
+  colorBounds,
+  colorRowBounds,
+  colorSpread,
+  pixelAt,
+  readPngPixels,
+  rgbDistance,
+  type RgbaPixel,
+} from './png-pixels.ts';
+import {
+  HUE_ROTATION_PAIRS,
+  MASKABLE_ICON_PAD,
+  SPLIT_ICON_FACE,
+  SPLIT_ICON_PAD,
+  SPLIT_ICON_TILT_DEG,
+  SPLIT_PIP_CELLS,
+  hueRgb,
+  splitDieBodyExtent,
+  splitDieInkWidth,
+  splitDiePoint,
+  splitDieTilt,
+  splitPipCentre,
+  verifySplitDieCutouts,
+  verifySplitDieGlass,
+  verifySplitDiePips,
+} from './split-die-geometry.ts';
 
 type Check = (ok: boolean, message: string) => void;
+type Png = ReturnType<typeof readPngPixels>;
 type ManifestEntry = Readonly<{
   path?: string;
   bytes?: number;
@@ -25,36 +54,41 @@ type ManifestEntry = Readonly<{
   missing?: boolean;
 }>;
 
+const appIconGeneratorSource = readFileSync('tools/appicon.mjs', 'utf8');
 const XCODE = 'native/ios/App/App.xcodeproj/project.pbxproj';
 const CATALOG_ROOT = 'native/ios/App/App/Assets.xcassets';
 const MANIFEST_FILE = 'native/profile-app-icons.manifest.json';
 const PROFILE_GENERATOR = 'tools/profile-app-icons.mjs';
 const APP_ICON_GENERATOR = 'tools/appicon.mjs';
+const DIE_STYLES = 'src/styles/game/dice.css';
+const HUE_TOKENS = 'src/styles/foundations/tokens.css';
 const LIGHT_FILE = 'AppIcon-512@2x.png';
 const DARK_FILE = 'AppIcon-Dark-512@2x.png';
 const TINTED_FILE = 'AppIcon-Tinted-512@2x.png';
 const CONTENTS_FILE = 'Contents.json';
 
-const iconSpecs = PROFILE_AVATARS.map((avatar) => {
-  const { face, hue } = parseAvatar(avatar);
-  const canonicalAlternate = `die-${face}-${hue}` as const;
-  const icon = appIconIdForAvatar(avatar);
+/* ======================= THE REGISTRY EXPANSION ======================= */
+const iconSpecs = ICON_PAIRS.map((pair) => {
+  const icon = appIconIdForPair(pair);
   return {
-    avatar,
-    face,
-    hue,
+    pair: pairIconName(pair),
+    p1: pair.p1,
+    p2: pair.p2,
     icon,
-    iosCatalog: icon === 'primary' ? 'AppIcon' : canonicalAlternate,
+    iosCatalog: icon === 'primary' ? 'AppIcon' : icon,
   };
 });
 const primary = iconSpecs.find(({ icon }) => icon === 'primary');
 const alternates = iconSpecs.filter(({ icon }) => icon !== 'primary');
-
 const json = (value: unknown): string => JSON.stringify(value);
 const sha256 = (file: string): string =>
   createHash('sha256').update(readFileSync(file)).digest('hex');
 const catalogFile = (catalog: string, file: string): string =>
   `${CATALOG_ROOT}/${catalog}.appiconset/${file}`;
+const catalogFor = (pair: IconPair): string => {
+  const icon = appIconIdForPair(pair);
+  return icon === 'primary' ? 'AppIcon' : icon;
+};
 
 function xcodeStringList(body: string, setting: string): string[] | null {
   const match = body.match(new RegExp(`${setting}\\s*=\\s*\\(([\\s\\S]*?)\\);`));
@@ -64,10 +98,10 @@ function xcodeStringList(body: string, setting: string): string[] | null {
 }
 
 function verifyPngHeader(check: Check, file: string, expectedColorType: 2 | 6): void {
-  check(existsSync(file), `${file} is absent; regenerate the profile app-icon catalogs`);
+  check(existsSync(file), `${file} is absent; regenerate the launcher app-icon catalogs`);
   if (!existsSync(file)) return;
   // Read only IHDR for all 126 renditions. The representative visual checks
-  // below decode seven files instead of repeatedly scanning the whole set.
+  // below decode seven catalogs instead of repeatedly scanning the whole set.
   const header = Buffer.alloc(29);
   const descriptor = openSync(file, 'r');
   let bytesRead = 0;
@@ -122,8 +156,8 @@ function verifyCatalog(check: Check, catalog: string): void {
   const lightFile = catalogFile(catalog, LIGHT_FILE);
   const darkFile = catalogFile(catalog, DARK_FILE);
   if (existsSync(lightFile) && existsSync(darkFile)) {
-    check(sha256(lightFile) === sha256(darkFile),
-      `${darkFile} must be byte-identical to its Light rendition so both modes keep the same shimmer`);
+    check(sha256(lightFile) !== sha256(darkFile),
+      `${darkFile} must be the charcoal rendition, not a copy of the system-light ${LIGHT_FILE}`);
   }
 }
 
@@ -150,47 +184,54 @@ function verifyBuildSettings(check: Check): void {
       'ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES',
     );
     check(json(actualAlternates) === json(expectedAlternates),
-      `${XCODE} App ${config.name} alternate names must exactly equal the 41 registry-derived IDs; `
+      `${XCODE} App ${config.name} alternate names must exactly equal the 41 registry-derived pair ids; `
       + `found ${json(actualAlternates)}`);
   }
 }
 
 function verifyProvenance(check: Check): Map<string, ManifestEntry> {
   check(existsSync(MANIFEST_FILE),
-    `${MANIFEST_FILE} is absent; run the profile app-icon generators before shipping`);
+    `${MANIFEST_FILE} is absent; run the launcher app-icon generators before shipping`);
   if (!existsSync(MANIFEST_FILE)) return new Map();
   const manifest = JSON.parse(readFileSync(MANIFEST_FILE, 'utf8'));
-  const registryHash = createHash('sha256').update(json(PROFILE_AVATARS)).digest('hex');
-  check(manifest.schemaVersion === 1 && manifest.generatedBy === 'tools/appicon.mjs'
+  const registryHash = createHash('sha256').update(json(ICON_PAIRS)).digest('hex');
+  check(manifest.schemaVersion === 2 && manifest.generatedBy === 'tools/appicon.mjs'
     && !Object.hasOwn(manifest, 'generatedAt'),
-  `${MANIFEST_FILE} must be deterministic schema 1 provenance without a timestamp`);
+  `${MANIFEST_FILE} must be deterministic schema 2 provenance without a timestamp`);
   check(manifest.commands?.webAndIos === 'mise exec -- node tools/appicon.mjs'
     && manifest.commands?.android === 'mise exec -- npm run native:assets:android',
   `${MANIFEST_FILE} must document both canonical regeneration commands`);
-  check(manifest.registry?.primaryAvatar === DEFAULT_AVATAR
+  check(manifest.registry?.primaryPair === pairIconName(DEFAULT_ICON_PAIR)
     && manifest.registry?.primaryIcon === 'primary'
     && manifest.registry?.count === 42
     && manifest.registry?.sha256 === registryHash,
-  `${MANIFEST_FILE} registry identity/hash must match the imported 42-avatar registry`);
-  check(json(manifest.design?.iosAuthoredAppearances) === json(['light', 'dark', 'tinted'])
+  `${MANIFEST_FILE} registry identity/hash must match the imported 42-pair registry`);
+  check(manifest.design?.mark
+      === 'split die: one six-face die, left pip column in p1, right column in p2, cut on a seam'
+    && manifest.design?.launcherTiltDegrees === SPLIT_ICON_TILT_DEG
+    && manifest.design?.androidAdaptiveInset === '10%'
+    && json(manifest.design?.darkGradient) === json({ top: '#313131', bottom: '#141414' })
+    && json(manifest.design?.iosAuthoredAppearances) === json(['light', 'dark', 'tinted'])
     && manifest.design?.iosLightDarkArtwork
-      === 'byte-identical opaque charcoal gradient with full neon shimmer'
-    && json(manifest.design?.iosSystemDerivedAppearances) === json(['clear']),
-  `${MANIFEST_FILE} must document identical Light/Dark artwork and system-derived Clear`);
+      === 'light appearance on the system light gradient, dark appearance on the charcoal gradient; one split die'
+    && json(manifest.design?.iosSystemDerivedAppearances) === json(['clear'])
+    && manifest.design?.androidMonochrome
+      === 'system-tinted six-face cutout with the seam; hue and glow intentionally omitted',
+  `${MANIFEST_FILE} must document the split die, its light/dark grounds, the tinted cutout and system-derived Clear`);
 
   const manifestOrder = primary ? [primary, ...alternates] : alternates;
-  const expectedVariants = manifestOrder.map(({ avatar, icon, iosCatalog }) => ({
-    avatar, icon, iosCatalog,
+  const expectedVariants = manifestOrder.map(({ pair, icon, iosCatalog }) => ({
+    pair, icon, iosCatalog,
   }));
   const actualVariants = Array.isArray(manifest.variants)
-    ? manifest.variants.map((variant: { avatar?: string; icon?: string; iosCatalog?: string }) => ({
-      avatar: variant.avatar,
+    ? manifest.variants.map((variant: { pair?: string; icon?: string; iosCatalog?: string }) => ({
+      pair: variant.pair,
       icon: variant.icon,
       iosCatalog: variant.iosCatalog,
     }))
     : [];
   check(json(actualVariants) === json(expectedVariants),
-    `${MANIFEST_FILE} must map the primary plus all 41 alternates to their exact iOS catalogs`);
+    `${MANIFEST_FILE} must map the primary plus all 41 alternate pairs to their exact iOS catalogs`);
 
   const provenance = [
     ...(Array.isArray(manifest.sourceComponents) ? manifest.sourceComponents : []),
@@ -202,10 +243,13 @@ function verifyProvenance(check: Check): Map<string, ManifestEntry> {
       `${MANIFEST_FILE} provenance for ${file || '<missing path>'} must match the current source bytes`);
   }
   for (const required of [
-    'tools/appicon.mjs',
-    'tools/profile-app-icons.mjs',
-    'src/profile-avatar.ts',
+    APP_ICON_GENERATOR,
+    PROFILE_GENERATOR,
+    'src/app-icon-registry.ts',
+    'src/state.ts',
     'src/ui/die-markup.ts',
+    DIE_STYLES,
+    HUE_TOKENS,
     XCODE,
     'native/plugins/appicon/ios/Sources/AppIconPlugin/AppIconPlugin.swift',
   ]) {
@@ -240,96 +284,53 @@ function verifyProvenance(check: Check): Map<string, ManifestEntry> {
 }
 
 function verifyRepresentativePixels(check: Check, assetMap: Map<string, ManifestEntry>): void {
-  const samples = [
-    [1, 'blue'], [2, 'mg'], [3, 'gold'], [4, 'green'],
-    [5, 'violet'], [6, 'orange'], [1, 'cy'],
-  ] as const;
-  const grid = [
-    ['tl', .354, .313], ['tm', .52, .333], ['tr', .687, .354],
-    ['ml', .333, .48], ['c', .5, .5], ['mr', .667, .52],
-    ['bl', .313, .646], ['bm', .48, .667], ['br', .646, .687],
-  ] as const;
-  const pips: Readonly<Record<number, readonly string[]>> = {
-    1: ['c'],
-    2: ['tl', 'br'],
-    3: ['tl', 'c', 'br'],
-    4: ['tl', 'tr', 'bl', 'br'],
-    5: ['tl', 'tr', 'c', 'bl', 'br'],
-    6: ['tl', 'tr', 'ml', 'mr', 'bl', 'br'],
-  };
-  const frames: Array<Readonly<{ hue: string; pixel: ReturnType<typeof pixelAt> }>> = [];
-  for (const [face, hue] of samples) {
-    const catalog = `die-${face}-${hue}`;
-    const file = catalogFile(catalog, LIGHT_FILE);
-    if (!existsSync(file)) continue;
-    const png = readPngPixels(file);
-    check(png.colorType === 2 && !png.hasTransparency,
-      `${file} must preserve the opaque charcoal launcher ground shared by Light and Dark`);
-    const expectedPips = new Set(pips[face]);
-    const actualPips = grid
-      .filter(([, x, y]) => {
-        const pixel = pixelAt(png, x, y);
-        return Math.max(pixel.red, pixel.green, pixel.blue) >= 180;
-      })
-      .map(([name]) => name);
-    check(json(actualPips) === json([...expectedPips]),
-      `${file} must show exactly ${face} luminous pips with unused pip cells cut out; found ${json(actualPips)}`);
-    for (const [name, x, y] of grid) {
-      if (expectedPips.has(name)) continue;
-      const pixel = pixelAt(png, x, y);
-      check(Math.max(pixel.red, pixel.green, pixel.blue) < 100,
-        `${file} unused ${name} pip cell must stay cut out rather than becoming another pip`);
-    }
-    const frame = pixelAt(png, .5, .15);
-    frames.push({ hue, pixel: frame });
-    check(frame.alpha === 255 && colorSpread(frame) >= 50,
-      `${file} must retain a strongly hue-colored neon frame`);
-    const manifestEntry = assetMap.get(file);
-    if (manifestEntry) {
-      check(manifestEntry.bytes === statSync(file).size && manifestEntry.sha256 === sha256(file),
-        `${MANIFEST_FILE} representative asset hash must match ${file}`);
-    }
-
+  let covered = 0;
+  for (const pair of HUE_ROTATION_PAIRS) {
+    const catalog = catalogFor(pair);
+    const lightFile = catalogFile(catalog, LIGHT_FILE);
+    const darkFile = catalogFile(catalog, DARK_FILE);
     const tintedFile = catalogFile(catalog, TINTED_FILE);
-    if (!existsSync(tintedFile)) continue;
-    const tinted = readPngPixels(tintedFile);
-    check(tinted.colorType === 6 && tinted.hasTransparency && pixelAt(tinted, .03, .03).alpha === 0,
-      `${tintedFile} must be a transparent grayscale source for iOS Tinted and Clear rendering`);
-    for (const [name, x, y] of grid) {
-      const pixel = pixelAt(tinted, x, y);
-      if (expectedPips.has(name)) {
-        check(pixel.alpha <= 32,
-          `${tintedFile} selected ${name} pip must remain a cutout in the tinted die`);
-      } else {
-        check(pixel.alpha >= 220 && colorSpread(pixel) <= 1,
-          `${tintedFile} unused ${name} cell must remain inside the solid grayscale die`);
+    if (!existsSync(lightFile) || !existsSync(darkFile) || !existsSync(tintedFile)) continue;
+    covered++;
+    for (const [appearance, file] of [['light', lightFile], ['dark', darkFile]] as const) {
+      const png = readPngPixels(file);
+      check(png.colorType === 2 && !png.hasTransparency,
+        `${file} must be an opaque rendition on its ${appearance} launcher ground`);
+      const corner = pixelAt(png, .04, .04);
+      const brightest = Math.max(corner.red, corner.green, corner.blue);
+      check(colorSpread(corner) <= 6 && (appearance === 'light' ? brightest >= 235 : brightest <= 55),
+        `${file} must stand on the ${appearance === 'light' ? 'system light' : 'charcoal'} ground; `
+        + `found rgb(${corner.red},${corner.green},${corner.blue}) at its top-left corner`);
+      verifySplitDiePips(check, png, file, pair, SPLIT_ICON_PAD);
+      verifySplitDieGlass(check, png, file, pair, SPLIT_ICON_PAD);
+      const manifestEntry = assetMap.get(file);
+      if (manifestEntry) {
+        check(manifestEntry.bytes === statSync(file).size && manifestEntry.sha256 === sha256(file),
+          `${MANIFEST_FILE} representative asset hash must match ${file}`);
       }
     }
+    verifySplitDieCutouts(check, readPngPixels(tintedFile), tintedFile, SPLIT_ICON_PAD);
   }
-  check(frames.length === samples.length,
-    'representative iOS pixel coverage requires all six faces and all seven hues');
-  for (let left = 0; left < frames.length; left++) {
-    for (let right = left + 1; right < frames.length; right++) {
-      check(rgbDistance(frames[left].pixel, frames[right].pixel) >= 40,
-        `representative ${frames[left].hue} and ${frames[right].hue} iOS frames must remain visibly distinct`);
-    }
-  }
+  check(covered === HUE_ROTATION_PAIRS.length,
+    `representative iOS pixel coverage requires all ${HUE_ROTATION_PAIRS.length} hue-rotation catalogs`);
 }
 
 export function verifyIosAppIconContract(check: Check): void {
-  const expectedHues = ['cy', 'mg', 'gold', 'green', 'violet', 'orange', 'blue'];
-  const actualFaces = [...new Set(iconSpecs.map(({ face }) => face))];
-  const actualHues = [...new Set(iconSpecs.map(({ hue }) => hue))];
-  check(DEFAULT_AVATAR === 'die:5:cy' && primary?.avatar === DEFAULT_AVATAR
-    && primary?.iosCatalog === 'AppIcon',
-  'src/profile-avatar.ts must map exactly die:5:cy to the compiled AppIcon primary');
-  check(json(actualFaces) === json([1, 2, 3, 4, 5, 6]) && json(actualHues) === json(expectedHues)
-    && iconSpecs.length === 42 && alternates.length === 41
-    && new Set(alternates.map(({ icon }) => icon)).size === 41,
-  'the imported profile registry must derive six faces, seven canonical hues, and 41 unique alternates');
+  check(SPLIT_ICON_FACE === 6 && SPLIT_PIP_CELLS.length === 6
+    && SPLIT_PIP_CELLS.every((cell) => cell % 3 !== 1),
+  `${APP_ICON_GENERATOR} must render the six face, whose pips fill the two columns beside the seam`);
+  check(json(DEFAULT_ICON_PAIR) === json({ p1: 'cy', p2: 'mg' })
+    && primary?.pair === 'split-cy-mg' && primary?.iosCatalog === 'AppIcon',
+  'src/app-icon-registry.ts must map exactly the cyan-magenta pair to the compiled AppIcon primary');
+  check(iconSpecs.length === 42 && alternates.length === 41
+    && new Set(alternates.map(({ icon }) => icon)).size === 41
+    && iconSpecs.every(({ p1, p2 }) => p1 !== p2)
+    && json([...new Set(iconSpecs.flatMap(({ p1, p2 }) => [p1, p2]))]) === json(HUE_IDS),
+  'the imported launcher registry must derive every ordered pair of the seven duel hues: 41 unique alternates');
   for (const spec of iconSpecs) {
-    const expected = spec.avatar === DEFAULT_AVATAR ? 'primary' : `die-${spec.face}-${spec.hue}`;
-    check(spec.icon === expected, `${spec.avatar} maps to ${spec.icon}, expected ${expected}`);
+    const expected = spec.pair === 'split-cy-mg' ? 'primary' : spec.pair;
+    check(spec.icon === expected && spec.pair === `split-${spec.p1}-${spec.p2}`,
+      `${spec.pair} maps to ${spec.icon}, expected ${expected}`);
   }
 
   verifyBuildSettings(check);
@@ -343,13 +344,17 @@ export function verifyIosAppIconContract(check: Check): void {
   for (const catalog of expectedCatalogs) verifyCatalog(check, catalog);
 
   const profileGenerator = readFileSync(PROFILE_GENERATOR, 'utf8');
-  const appIconGenerator = readFileSync(APP_ICON_GENERATOR, 'utf8');
-  check(/PROFILE_AVATARS\.map\(profileIconSpec\)/.test(profileGenerator)
-    && /for \(const spec of PROFILE_ICON_SPECS\) write\(iosContentsFile/.test(profileGenerator)
-    && /for \(const spec of ALTERNATE_PROFILE_ICONS\)/.test(profileGenerator)
+  check(/ICON_PAIRS\.map\(pairIconSpec\)/.test(profileGenerator)
+    && /for \(const spec of PAIR_ICON_SPECS\) write\(iosContentsFile/.test(profileGenerator)
+    && /for \(const spec of ALTERNATE_PAIR_ICONS\)/.test(profileGenerator)
+    && /splitDieIconSVG\(1024, appIconPad, 'light', false, pair\)/.test(profileGenerator)
+    && /splitDieIconSVG\(1024, appIconPad, 'dark', false, pair\)/.test(profileGenerator)
+    && /monochromeIconSVG\(1024, appIconPad\)/.test(profileGenerator)
     && /writeProvenanceManifest/.test(profileGenerator),
-  `${PROFILE_GENERATOR} must derive catalogs and provenance from the shared profile registry`);
-  check(/profileIcons\.generateIosProfileIcons\(shared\)/.test(appIconGenerator),
-    `${APP_ICON_GENERATOR} must invoke the complete iOS profile-icon expansion`);
+  `${PROFILE_GENERATOR} must derive catalogs, both grounds and provenance from the shared pair registry`);
+  check(/pairIcons\.generateIosPairIcons\(shared\)/.test(appIconGeneratorSource)
+    && /export function splitDieIconSVG\(/.test(appIconGeneratorSource)
+    && /export function monochromeIconSVG\(/.test(appIconGeneratorSource),
+  `${APP_ICON_GENERATOR} must invoke the complete iOS pair-icon expansion from the split-die renderer`);
   verifyRepresentativePixels(check, verifyProvenance(check));
 }

@@ -9,7 +9,7 @@ export const jaSettings = {
   yourColour: '自分の色',
   opponentColour: '相手の色',
   sound: 'サウンド',
-  profileAppIcon: 'プロフィールのダイスをアプリアイコンに使用',
+  appIconColours: 'アプリアイコンを自分の色に',
   accessibility: 'アクセシビリティ',
   diceFaces: 'ダイス表示',
   pips: '目',

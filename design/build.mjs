@@ -15,8 +15,10 @@
 //                              app's own die classes, space-separated, so a card
 //                              can picture a MULTIPLIED die (`p2 m2`) instead of
 //                              restating the shared dice CSS's gold in card CSS
-//   {{appicon[:px]}}             the shipped Home neon-die mark, including its
-//                              current launcher scale and clockwise tilt
+//   {{appicon[:px][:light]}}     the shipped launcher mark (the split die), at its
+//                              launcher scale and clockwise tilt; `:light` is the
+//                              iOS light appearance with its own light ground
+//   {{splashmark[:px]}}          the launch screen's mark — still the single cyan five
 //   {{mico:MODE[:px]}}          a mode icon — the APP's, imported below
 //   {{mhue:MODE}}               a mode's hue — likewise
 //   {{sico:SPELL[:px]}}         a rune icon — the APP's (ui/spellicons.ts)
@@ -58,7 +60,7 @@ import { spellById } from '../src/core/spells.ts';
 import { modeById } from '../src/core/modes.ts';
 import { libraryBody, libraryCards, pickerButtons, pickInfo, MODE_LIB, SPELL_LIB, MODE_PICKS, SPELL_PICKS } from '../src/ui/library.ts';
 import { inlineCssGraph } from '../tools/css-graph.mjs';
-import { APP_ICON_PAD, iconSVG } from '../tools/appicon.mjs';
+import { APP_ICON_PAD, SPLIT_ICON_PAD, iconSVG, splitDieIconSVG } from '../tools/appicon.mjs';
 import { discoverDesignScreens } from './screen-library.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -260,8 +262,19 @@ function avatarHtml(spec, size) {
   return dieMarkup(face, { classes: 'p1', size, inlineStyle: `--dc:${AV_HUES[hue]}` });
 }
 
-function appIconMarkup(size) {
-  const svg = iconSVG(512, APP_ICON_PAD, 'dark', true);
+function appIconMarkup(size, appearance) {
+  const svg = appearance === 'light'
+    ? splitDieIconSVG(512, SPLIT_ICON_PAD, 'light', false)
+    : splitDieIconSVG(512, SPLIT_ICON_PAD, 'dark', true);
+  const source = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+  return `<img class="appicon-mark" src="${source}" width="${size}" height="${size}" alt="">`;
+}
+
+/* The LAUNCH mark is not the app icon: the splash keeps the single cyan five
+   (tools/splash.mjs renders iconSVG without its outer glow), so a card that
+   pictures the launch screen asks for this rather than the split die. */
+function splashMarkMarkup(size) {
+  const svg = iconSVG(512, APP_ICON_PAD, 'dark', true, 5, 'cy', false);
   const source = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
   return `<img class="appicon-mark" src="${source}" width="${size}" height="${size}" alt="">`;
 }
@@ -348,7 +361,9 @@ for (const screen of screens) {
   }
 
   let body = src.slice(meta[0].length)
-    .replace(/\{\{appicon(?::(\d+))?\}\}/g, (_, size) => appIconMarkup(size ? +size : 44))
+    .replace(/\{\{appicon(?::(\d+))?(?::(light))?\}\}/g,
+      (_, size, appearance) => appIconMarkup(size ? +size : 44, appearance))
+    .replace(/\{\{splashmark(?::(\d+))?\}\}/g, (_, size) => splashMarkMarkup(size ? +size : 44))
     /* The class slot is a LIST, not one name: a die in play is `p2 m2` when its
        column holds a pair (ui/game/board.ts toggles m2/m3 on that count), and a
        card that could only ask for `p2` had to restate the shared dice CSS to show

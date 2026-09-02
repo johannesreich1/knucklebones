@@ -121,8 +121,8 @@ async function probeAccountFooter(page) {
 async function probeAvatarMutation(page, routes) {
   await page.click('#btnAvatar');
   await page.waitForSelector('#onAvatar:not([hidden])', { timeout: 5000 });
+  /* faces only: the hue is "your colour" from Settings (cyan in this fixture) */
   await page.click('#avFaces button[data-face="2"]');
-  await page.click('#avHues button[data-hue="mg"]');
   routes.failNextAccountProfileResponse();
   await page.click('#btnAvatarSave');
   await page.waitForFunction(() => {
@@ -240,8 +240,8 @@ export async function runAccountLifecycleScenarios(suite) {
   const avatarRun = await visit({ skipStandardProbes: true,
     returnAfterProbe: true, probe: probeAvatarMutation });
   out.avatarRefreshFailure = avatarRun.probeResult;
-  check(avatarRun.probeResult?.face === '2' && avatarRun.probeResult.hue === '#ff2fa0'
-      && avatarRun.probeResult.cached?.profile?.avatar === 'die:2:mg',
+  check(avatarRun.probeResult?.face === '2' && avatarRun.probeResult.hue === '#28e8ff'
+      && avatarRun.probeResult.cached?.profile?.avatar === 'die:2:cy',
   'a successful avatar change was lost when its immediate Profile refresh failed',
   avatarRun.probeResult);
   check(avatarRun.errs.length === 0,

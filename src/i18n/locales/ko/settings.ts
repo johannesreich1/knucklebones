@@ -9,7 +9,7 @@ export const koSettings = {
   yourColour: '내 색상',
   opponentColour: '상대 색상',
   sound: '소리',
-  profileAppIcon: '프로필 주사위를 앱 아이콘으로 사용',
+  appIconColours: '앱 아이콘을 내 색상으로',
   accessibility: '접근성',
   diceFaces: '주사위 표시',
   pips: '눈',

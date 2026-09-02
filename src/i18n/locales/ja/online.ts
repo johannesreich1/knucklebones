@@ -134,19 +134,9 @@ export const jaOnline = {
     runeGuideSeatBody: 'リーグリングのルーン枠をタップして、獲得済みルーンを選びます。',
   },
   avatar: {
-    instruction: '目と色を選んでください',
+    instruction: '目を選んでください',
     save: '保存',
     faceLabel: 'ダイスの目 {{face}}',
-    colourLabel: '{{colour}}のダイス',
-    colours: {
-      cy: 'シアン',
-      mg: 'マゼンタ',
-      gold: 'ゴールド',
-      green: 'グリーン',
-      violet: 'バイオレット',
-      orange: 'オレンジ',
-      blue: 'ブルー',
-    },
   },
   history: {
     empty: 'ランク戦の履歴はまだありません。',

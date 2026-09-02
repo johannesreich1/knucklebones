@@ -9,7 +9,7 @@ export const deSettings = {
   yourColour: 'Deine Farbe',
   opponentColour: 'Gegnerfarbe',
   sound: 'Ton',
-  profileAppIcon: 'Profilwürfel als App-Symbol verwenden',
+  appIconColours: 'App-Symbol in meinen Farben',
   accessibility: 'Barrierefreiheit',
   diceFaces: 'Würfelflächen',
   pips: 'AUGEN',
