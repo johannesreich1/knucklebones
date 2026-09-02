@@ -1,9 +1,9 @@
 // The ladder: one number a player climbs, and the groups it climbs through.
 //
 // Spec and the measurements behind every constant: docs/LADDER.md. This is the
-// ONE implementation — the client draws from it, the gate tests it, and the
-// Edge Functions import a copy of it (supabase/functions/*/core), exactly like
-// core/rules.ts. Pure by contract: no DOM, no timers, no randomness.
+// ONE implementation — the client draws from it, the gate tests it, and every
+// Edge Function that imports it uploads this file verbatim (tools/fnfiles.mjs),
+// exactly like core/rules.ts. Pure by contract: no DOM, no timers, no randomness.
 //
 // It is not Elo any more. Elo is zero-sum and centred; this starts at zero,
 // floors at zero, and pays a win more than a loss takes, so the ladder climbs
@@ -16,6 +16,7 @@ import {
   apexForCurve,
   groupsForCurve,
   type BotShape,
+  type BotStanding,
   type Group,
   type LadderCurveVersion,
 } from './ladder-groups.ts';
@@ -308,11 +309,14 @@ export function groupRingPeakState(
    tracks the player, but through pairing: matchmaking hands you bots near your
    rank, and those bots play their rank. Bots' points move through real
    settles, so a bot whose shape loses points sinks toward the group that
-   plays like it — the label stays honest by construction. */
+   plays like it — the label stays honest by construction. NEON is a POSITION:
+   the apex flag comes from the same board projection the ladder shows, so
+   points above the fallback floor without the rank play OBSIDIAN — boardGroup's
+   rule, consumed here, never copied. */
 export const botShapeAt = (
-  points: number,
+  bot: BotStanding,
   version: LadderCurveVersion = LADDER_CURVE_VERSION,
-): BotShape => groupOf(points, version).bot;
+): BotShape => boardGroup(bot.points, bot.apex, version).bot;
 
 /* How far from the human a BACKFILL bot may be: the human's own group width.
    The general matchBand below must open wide when the ladder is sparse or no

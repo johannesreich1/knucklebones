@@ -10,28 +10,32 @@ import {
 } from '../../src/core/rules.ts';
 import { searchRoot } from '../../src/core/ai.ts';
 import {
+  APEX,
   GROUPS,
   LADDER_CURVE_V1,
   LADDER_CURVE_V2,
   botShapeAt,
+  type BotStanding,
 } from '../../src/core/ladder.ts';
-import { botMove } from '../../src/core/bot.ts';
+import { botMove, botMoveWithShape } from '../../src/core/bot.ts';
 import { seeded } from './policy-duel-bench.ts';
 
 type Check = (ok: boolean, message: string, detail?: unknown) => void;
+
+const standing = (points: number, apex = false): BotStanding => ({ points, apex });
 
 export function checkBotMoveContract(check: Check): void {
   const st0: GameState = [emptyBoard(), emptyBoard()];
   // an OPENING move on an empty board is the case pvp-join newly depends on
   for (const g of GROUPS) {
-    const c = botMove(st0, ME, 4, g.floor + 10, CLASSIC, LADDER_CURVE_V2, seeded(7));
+    const c = botMove(st0, ME, 4, standing(g.floor + 10, g === APEX), CLASSIC, LADDER_CURVE_V2, seeded(7));
     check(c >= 0 && c < 3, 'botMove must open with a legal column: ' + g.id, c);
   }
   // deterministic given the SAME stream — replay and the gate both need this.
   const mid: GameState = [[[5, 5], [2], []], [[4], [6, 6], [1]]];
   for (const mode of [CLASSIC, COLSHIELD] as Mode[]) {
-    const a = botMove(mid, AI, 4, 2020, mode, LADDER_CURVE_V2, seeded(99));
-    const b = botMove(mid, AI, 4, 2020, mode, LADDER_CURVE_V2, seeded(99));
+    const a = botMove(mid, AI, 4, standing(2020), mode, LADDER_CURVE_V2, seeded(99));
+    const b = botMove(mid, AI, 4, standing(2020), mode, LADDER_CURVE_V2, seeded(99));
     check(a === b, 'botMove must be deterministic on one seeded stream', { mode, a, b });
   }
   // STONE's negative opponent weight is a promise across BOTH branches and
@@ -44,42 +48,43 @@ export function checkBotMoveContract(check: Check): void {
   };
   const botAsAI: GameState = [[[], [], []], [[6, 6], [], []]];
   const botAsME: GameState = [[[6, 6], [], []], [[], [], []]];
-  const sparedFromAI = botMove(botAsAI, AI, 6, 0, CLASSIC, LADDER_CURVE_V2, draws(0, 0));
-  const sparedFromME = botMove(botAsME, ME, 6, 0, CLASSIC, LADDER_CURVE_V2, draws(0, 0));
+  const sparedFromAI = botMove(botAsAI, AI, 6, standing(0), CLASSIC, LADDER_CURVE_V2, draws(0, 0));
+  const sparedFromME = botMove(botAsME, ME, 6, standing(0), CLASSIC, LADDER_CURVE_V2, draws(0, 0));
   check(sparedFromAI !== 0 && sparedFromME !== 0 && sparedFromAI === sparedFromME,
     'STONE random slip attacked a double six or changed meaning with its seat',
     { sparedFromAI, sparedFromME });
   const searchedFromAI = botMove(
-    botAsAI, AI, 6, 0, CLASSIC, LADDER_CURVE_V2, draws(0.99, 0.5, 0.5, 0.5),
+    botAsAI, AI, 6, standing(0), CLASSIC, LADDER_CURVE_V2, draws(0.99, 0.5, 0.5, 0.5),
   );
   const searchedFromME = botMove(
-    botAsME, ME, 6, 0, CLASSIC, LADDER_CURVE_V2, draws(0.99, 0.5, 0.5, 0.5),
+    botAsME, ME, 6, standing(0), CLASSIC, LADDER_CURVE_V2, draws(0.99, 0.5, 0.5, 0.5),
   );
   check(searchedFromAI === 1 && searchedFromME === 1,
     'STONE search reversed its negative opponent weight when the bot became p1/ME',
     { searchedFromAI, searchedFromME });
   const boneAttack = botMove(
-    botAsAI, AI, 6, GROUPS[1].floor, CLASSIC, LADDER_CURVE_V2, draws(0, 0),
+    botAsAI, AI, 6, standing(GROUPS[1].floor), CLASSIC, LADDER_CURVE_V2, draws(0, 0),
   );
   check(boneAttack === 0,
     'the bot-opener handicap leaked into a promoted bot seated second', boneAttack);
   const boneOpenerSpared = botMove(
-    botAsME, ME, 6, GROUPS[1].floor, CLASSIC, LADDER_CURVE_V2, draws(0, 0),
+    botAsME, ME, 6, standing(GROUPS[1].floor), CLASSIC, LADDER_CURVE_V2, draws(0, 0),
   );
   check(boneOpenerSpared !== 0,
     'a promoted bot opener turned its handicap slip into a double-six attack', boneOpenerSpared);
   // it must never answer with a column it cannot play
   const nearlyFull: GameState = [[[1, 2, 3], [1, 2, 3], [4]], [[], [], []]];
   for (let i = 0; i < 60; i++) {
+    const g = GROUPS[i % GROUPS.length];
     const c = botMove(
-      nearlyFull, AI, 1 + (i % 6), GROUPS[i % GROUPS.length].floor + 10,
+      nearlyFull, AI, 1 + (i % 6), standing(g.floor + 10, g === APEX),
       CLASSIC, LADDER_CURVE_V2, seeded(i),
     );
     check(legalCols(nearlyFull[AI]).includes(c), 'botMove returned an illegal column', { i, c });
   }
   // a full board has nothing to answer with, and says so rather than guessing
   const full: GameState = [[[1, 2, 3], [1, 2, 3], [1, 2, 3]], [[], [], []]];
-  check(botMove(full, AI, 4, 0, CLASSIC, LADDER_CURVE_V2, seeded(1)) === -1,
+  check(botMove(full, AI, 4, standing(0), CLASSIC, LADDER_CURVE_V2, seeded(1)) === -1,
     'a bot with no legal column must return -1');
   // Search options are per call: a ranked bot cannot change how the next
   // offline search in the same process plays.
@@ -87,11 +92,39 @@ export function checkBotMoveContract(check: Check): void {
     mode: CLASSIC, random: seeded(515), riskWeight: 0.9, opponentWeight: 1,
   }).c;
   const before = independent();
-  botMove(mid, AI, 4, 0, CLASSIC, LADDER_CURVE_V2, seeded(3)); // STONE: risk 0, oppW -0.5
+  botMove(mid, AI, 4, standing(0), CLASSIC, LADDER_CURVE_V2, seeded(3)); // STONE: risk 0, oppW -0.5
   const after = independent();
   check(before === after, 'botMove leaked configuration into an independent search', { before, after });
-  check(botShapeAt(0).oppW === -0.5, 'STONE is still the kill-averse shape botMove borrows', botShapeAt(0));
-  check(botShapeAt(300, LADDER_CURVE_V1) === GROUPS[1].bot
-      && botShapeAt(300, LADDER_CURVE_V2) === GROUPS[0].bot,
+  check(botShapeAt(standing(0)).oppW === -0.5,
+    'STONE is still the kill-averse shape botMove borrows', botShapeAt(standing(0)));
+  check(botShapeAt(standing(300), LADDER_CURVE_V1) === GROUPS[1].bot
+      && botShapeAt(standing(300), LADDER_CURVE_V2) === GROUPS[0].bot,
     'bot league classification ignored the authoritative staged curve');
+  // A shape named directly decides exactly as the standing that resolves to
+  // it: the bench measures shapes, production passes standings, one seam.
+  for (const [k, g] of GROUPS.entries()) {
+    const byShape = botMoveWithShape(mid, AI, 4, g.bot, CLASSIC, seeded(40 + k));
+    const byStanding = botMove(
+      mid, AI, 4, standing(g.floor + 10, g === APEX), CLASSIC, LADDER_CURVE_V2, seeded(40 + k),
+    );
+    check(byShape === byStanding, 'botMove and botMoveWithShape diverged for ' + g.id,
+      { byShape, byStanding });
+  }
+  // The apex POSITION, not the points, decides which shape a top bot plays.
+  // One draw between the two league slips: OBSIDIAN slips on it (any-column
+  // pick lands on column 1), NEON searches on it (kills the double six).
+  check(GROUPS[5].bot.slip > GROUPS[6].bot.slip,
+    'this contract needs NEON to slip less often than OBSIDIAN');
+  const between = (GROUPS[5].bot.slip + GROUPS[6].bot.slip) / 2;
+  const demoted = botMove(
+    botAsAI, AI, 6, standing(APEX.floor + 10, false), CLASSIC, LADDER_CURVE_V2,
+    draws(between, 0.5, 0.5, 0.5),
+  );
+  const crowned = botMove(
+    botAsAI, AI, 6, standing(APEX.floor + 10, true), CLASSIC, LADDER_CURVE_V2,
+    draws(between, 0.5, 0.5, 0.5),
+  );
+  check(demoted === 1 && crowned === 0,
+    'the apex POSITION, not the points, decides whether a top bot attacks the double six',
+    { demoted, crowned });
 }

@@ -129,7 +129,7 @@ function play(groupIndex: number, humanFirst: boolean, game: number): number {
         state,
         mode: CLASSIC,
         dealt,
-        rating: GROUPS[groupIndex].floor,
+        bot: { points: GROUPS[groupIndex].floor, apex: groupIndex === GROUPS.length - 1 },
         curveVersion: LADDER_CURVE_V2,
         random: botRandom,
       });

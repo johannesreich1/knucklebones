@@ -1,4 +1,4 @@
-import { settle, type Score } from "./core/ladder.ts";
+import { settle, type BotStanding, type Score } from "./core/ladder.ts";
 import {
   appendRankedAction,
   rankedActionTotal,
@@ -15,6 +15,7 @@ import {
 } from "./core/ranked-outcomes.ts";
 import { AI, ME, legalCols, type Player } from "./core/rules.ts";
 import { json, type AuthenticatedContext } from "../_shared/http.ts";
+import { botStanding, BotStandingUnavailable } from "../_shared/bot-standing.ts";
 import {
   commitMatchAction,
   committedMatchAction,
@@ -196,13 +197,22 @@ export async function actionMatch(context: AuthenticatedContext, input: ActionIn
     if (profileError) return json({ error: "profile-read-failed" }, 500);
     const profile = profileData as ProfileSummary | null;
     if (profile?.is_bot) {
+      /* NEON is a position: the bot's shape needs its board standing, not
+         only its points. */
+      let standing: BotStanding;
+      try {
+        standing = await botStanding(context.authed, nextId, profile.rating ?? 0, curveVersion);
+      } catch (error) {
+        if (error instanceof BotStandingUnavailable) return json({ error: "ladder-read-failed" }, 500);
+        throw error;
+      }
       const turn = appendRankedBotTurn({
         seed,
         rows: allRows,
         state,
         mode: outcome.mode,
         dealt,
-        rating: profile.rating ?? 0,
+        bot: standing,
         curveVersion,
         random: Math.random,
       });

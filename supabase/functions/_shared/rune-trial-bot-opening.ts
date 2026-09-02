@@ -8,6 +8,7 @@ import { rankedIntentOf } from "../core/ranked-action-validation.ts";
 import { appendRankedBotTurn } from "../core/ranked-bot-turn.ts";
 import { rankedOutcomeByMatch, usesRankedActionProtocol } from "../core/ranked-outcomes.ts";
 import { ME } from "../core/rules.ts";
+import { botStanding } from "./bot-standing.ts";
 import type { AuthenticatedContext, EdgeClient } from "./http.ts";
 import { commitMatchAction, MatchActionConflict } from "./match-action.ts";
 import {
@@ -84,13 +85,16 @@ export async function ensureRankedActionBotOpening<T extends { match: MatchRow }
     if (match.status !== "active" || match.action_version > 0) return current();
     throw new Error("ranked action bot opener found a mismatched replay");
   }
+  /* NEON is a position: the bot's shape needs its board standing, resolved
+     only once the opening is known to be this invocation's to make. */
+  const standing = await botStanding(context.authed, match.p1, profile.rating ?? 0, curveVersion);
   const turn = appendRankedBotTurn({
     seed,
     rows,
     state: before,
     mode: outcome.mode,
     dealt,
-    rating: profile.rating ?? 0,
+    bot: standing,
     curveVersion,
     random: Math.random,
   });

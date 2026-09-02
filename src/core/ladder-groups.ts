@@ -20,6 +20,16 @@ export interface BotShape {
   openerSlip: number;
 }
 
+/* Who a bot IS when it decides. `apex` is the POSITION the board projection
+   resolves (private.ladder_board, read through player_standing) and is never
+   inferred from points; `id` is the profile uuid, carried so a per-bot
+   personality can key on it. */
+export interface BotStanding {
+  points: number;
+  apex: boolean;
+  id?: string;
+}
+
 export interface Group {
   id: string;
   floor: number;

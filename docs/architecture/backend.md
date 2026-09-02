@@ -46,6 +46,10 @@ deployed function versions are not inferred from repository prose.
   authentication, match, and persistence operations.
 - `supabase/functions/_shared/` is the home for code reused by functions.
   Browser/Edge game rules remain in root `src/core/`; do not copy them there.
+- `supabase/functions/_shared/bot-standing.ts` resolves a bot's apex position
+  through the public `player_standing` projection before every bot decision,
+  reading with the caller's authenticated client (the projection is granted to
+  browser roles, not `service_role`); core `inApex` classifies the row.
 - `tools/fnfiles.mjs` and `tests/fnsync.test.ts` define and verify each
   function's deployable import closure.
 

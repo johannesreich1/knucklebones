@@ -25,7 +25,9 @@ const errs: string[] = [];
 Math.random = seeded(20260820);
 
 const RANDOM: Policy = { random: true };
-const rankedBot = (index: number): Policy => ({ botRating: GROUPS[index].floor });
+/* A league IS its shape: the bench measures the registry object itself, so
+   the apex row is always the NEON shape and never a points fallback. */
+const rankedBot = (index: number): Policy => ({ shape: GROUPS[index].bot });
 
 /* 1 · the onboarding promise. This bench used to make two mutually masking
    mistakes: it always put the bot in AI/p2, and search weights were evaluated
@@ -115,8 +117,8 @@ const withRuneFloor = (cell: ReturnType<typeof rankedBotPool>, humanFirst: boole
 const fullOutcomeCells = GROUPS.map((group, index) => {
   const games = curveGames(index, group.bot.depth);
   return {
-    humanFirst: rankedBotPool(group.floor, IVORY_POOL, NEWCOMER, true, games, 7200),
-    botFirst: rankedBotPool(group.floor, IVORY_POOL, NEWCOMER, false, games, 7200),
+    humanFirst: rankedBotPool(rankedBot(index), IVORY_POOL, NEWCOMER, true, games, 7200),
+    botFirst: rankedBotPool(rankedBot(index), IVORY_POOL, NEWCOMER, false, games, 7200),
   };
 });
 const leagueCurve = fullOutcomeCells.map((cell, index) => ({
@@ -177,8 +179,8 @@ if (leagueCurve[1].humanFirst.weighted - leagueCurve[2].humanFirst.weighted < 0.
   problems.push('BONE and IVORY are less than 3pp apart — the second promotion must be perceptible');
 }
 
-const stonePoolRandomFirst = rankedBotPool(GROUPS[0].floor, STONE_POOL, RANDOM, true, 600, 7900);
-const stonePoolRandomSecond = rankedBotPool(GROUPS[0].floor, STONE_POOL, RANDOM, false, 600, 7900);
+const stonePoolRandomFirst = rankedBotPool(rankedBot(0), STONE_POOL, RANDOM, true, 600, 7900);
+const stonePoolRandomSecond = rankedBotPool(rankedBot(0), STONE_POOL, RANDOM, false, 600, 7900);
 if (stonePoolRandomFirst.weighted < 0.60 || stonePoolRandomSecond.weighted < 0.50) {
   problems.push(`STONE punishes learning by play: random-human outcome share `
     + `${(stonePoolRandomFirst.weighted * 100).toFixed(1)}% / `

@@ -1,9 +1,10 @@
 import { AI, ME, isFull, legalCols, type Player, type Mode } from "./core/rules.ts";
 import { rebuild, matchTotal, type MatchState } from "./core/match.ts";
-import { settle, type Score } from "./core/ladder.ts";
+import { settle, type BotStanding, type Score } from "./core/ladder.ts";
 import { botMove } from "./core/bot.ts";
 import { rankedOutcomeByMatch } from "./core/ranked-outcomes.ts";
 import { json, type AuthenticatedContext, type EdgeClient } from "../_shared/http.ts";
+import { botStanding, BotStandingUnavailable } from "../_shared/bot-standing.ts";
 import {
   commitMatchCommand,
   committedMatchCommand,
@@ -165,8 +166,18 @@ export async function moveMatch(context: AuthenticatedContext, input: MoveInput)
     if (mover === myIdx && oppProf?.is_bot) {
       const botIdx = (1 - myIdx) as Player;
       const botDie = state.nextDie;
+      /* NEON is a position: the bot's shape needs its board standing, not
+         only its points. A standing the board cannot answer stops the move
+         rather than silently demoting the bot. */
+      let standing: BotStanding;
+      try {
+        standing = await botStanding(context.authed, oppId, oppProf.rating ?? 0, curveVersion);
+      } catch (error) {
+        if (error instanceof BotStandingUnavailable) return json({ error: "ladder-read-failed" }, 500);
+        throw error;
+      }
       const botCol = botMove(
-        state.st, botIdx, botDie, oppProf.rating ?? 0, mode, curveVersion, Math.random,
+        state.st, botIdx, botDie, standing, mode, curveVersion, Math.random,
       );
       if (botCol < 0) return json({ error: "corrupt-state" }, 500);
       const reply: CommandMove = {

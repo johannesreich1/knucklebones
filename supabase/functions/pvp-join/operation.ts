@@ -5,6 +5,7 @@ import {
   botPairBand,
   matchBand,
   SCALE,
+  type BotStanding,
   type LadderCurveVersion,
 } from "./core/ladder.ts";
 import {
@@ -15,6 +16,7 @@ import {
   type RankedPoolTier,
 } from "./core/ranked-outcomes.ts";
 import { json, type AuthenticatedContext } from "../_shared/http.ts";
+import { botStanding, BotStandingUnavailable } from "../_shared/bot-standing.ts";
 import { ensureRankedActionBotOpening } from "../_shared/rune-trial-bot-opening.ts";
 import {
   findOldestEligiblePartner,
@@ -212,7 +214,7 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
     queuedOpponent: string | null,
     underdogAccess: RankedParticipantAccess,
     favouriteAccess: RankedParticipantAccess,
-    bot?: { id: string; rating: number },
+    bot?: BotStanding & { id: string },
     botDebutOutcome?: string | null,
   ): Promise<StartedRankedMatch | null> => startProgressiveRankedMatch(svc, {
     requester: uid, season, underdog, favourite, queuedOpponent,
@@ -281,6 +283,16 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
     const bot = search.bot;
     if (bot) {
       const { underdog, favourite } = rankedBotSides(uid, myRating, bot.id, bot.rating);
+      /* NEON is a position: the bot's shape needs its board standing, not
+         only its points. The projection is public to browser roles, so it is
+         read through the caller's own client. */
+      let standing: BotStanding;
+      try {
+        standing = await botStanding(context.authed, bot.id, bot.rating, curveVersion);
+      } catch (error) {
+        if (error instanceof BotStandingUnavailable) return json({ error: "ladder-read-failed" }, 500);
+        throw error;
+      }
       try {
         const progression = curveVersion === LADDER_CURVE_V2
           ? await accessFor(uid) : { outcomes: undefined, pending_bot_debut: null };
@@ -300,7 +312,7 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
           null,
           underdog === uid ? humanAccess : botAccess,
           favourite === uid ? humanAccess : botAccess,
-          bot,
+          { ...standing, id: bot.id },
           progression.pending_bot_debut,
         );
         if (match) return matched(match.match, null, match.botMove);

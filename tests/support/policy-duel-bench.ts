@@ -1,6 +1,6 @@
 // The deterministic simulator the bot bench measures with: one policy, one
 // game, one seat-alternating duel, one keyed pool of games over a weighted mode
-// wheel. It is registry- and ladder-agnostic — it takes a bot rating and a pool
+// wheel. It is registry- and ladder-agnostic — it takes a bot SHAPE and a pool
 // as DATA and never learns a group name, so a retune edits the registry and the
 // bands, not this file.
 //
@@ -18,8 +18,8 @@ import {
 } from '../../src/core/rules.ts';
 import { searchRoot } from '../../src/core/ai.ts';
 import { makeBag } from '../../src/core/dice.ts';
-import { botMove } from '../../src/core/bot.ts';
-import { LADDER_CURVE_VERSION, type BotShape } from '../../src/core/ladder.ts';
+import { botMoveWithShape } from '../../src/core/bot.ts';
+import type { BotShape } from '../../src/core/ladder.ts';
 
 /* mulberry32, NOT a bare LCG: MINSTD's lattice swung near-deterministic
    policy duels by ±7pp run to run (the colshield decomposition, 2026-08-21
@@ -32,19 +32,16 @@ export const seeded = (a: number) => () => {
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 };
 
-export interface Policy extends Partial<BotShape> { random?: boolean; mode?: Mode; botRating?: number }
+/* `shape` routes the decision through the production bot seam (slip, sparing
+   filter, search); every other field describes a hand-rolled reference. */
+export interface Policy extends Partial<BotShape> { random?: boolean; mode?: Mode; shape?: BotShape }
 export type WeightedMode = readonly [name: string, mode: Mode, weight: number];
 
 const rnd = (n: number, random: () => number = Math.random) => Math.floor(random() * n);
 
 function pick(p: Policy, st: ReturnType<typeof emptyBoard>[], who: 0 | 1, die: number,
               random: () => number = Math.random): number {
-  if (p.botRating !== undefined) {
-    return botMove(
-      st as GameState, who, die, p.botRating, p.mode ?? CLASSIC,
-      LADDER_CURVE_VERSION, random,
-    );
-  }
+  if (p.shape) return botMoveWithShape(st as GameState, who, die, p.shape, p.mode ?? CLASSIC, random);
   const legal = legalCols(st[who]);
   if (p.random || (p.slip && random() < p.slip)) return legal[rnd(legal.length, random)];
   return searchRoot(st as never, who, die, p.depth ?? 1, {
@@ -110,12 +107,7 @@ function policyGame(bot: Policy, human: Policy, humanFirst: boolean, mode: Mode,
   return mine > theirs ? 1 : mine < theirs ? 0 : 0.5;
 }
 
-function rankedBotGame(botRating: number, human: Policy, humanFirst: boolean, mode: Mode,
-                       gameSeed: number): number {
-  return policyGame({ botRating }, human, humanFirst, mode, gameSeed);
-}
-
-export function rankedBotPool(botRating: number, pool: readonly WeightedMode[],
+export function rankedBotPool(bot: Policy, pool: readonly WeightedMode[],
                               human: Policy, humanFirst: boolean, gamesPerMode: number,
                               baseSeed: number) {
   const modes: Record<string, number> = {};
@@ -127,7 +119,7 @@ export function rankedBotPool(botRating: number, pool: readonly WeightedMode[],
       const gameSeed = (baseSeed
         + Math.imul(outcomeIndex + 1, 0x9E3779B1)
         + Math.imul(game + 1, 0x6D2B79F5)) | 0;
-      outcome += rankedBotGame(botRating, human, humanFirst, mode, gameSeed);
+      outcome += policyGame(bot, human, humanFirst, mode, gameSeed);
     }
     const rate = outcome / gamesPerMode;
     modes[name] = rate;

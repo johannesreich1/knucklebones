@@ -460,8 +460,10 @@ bench masked it by always seating the bot p2 and by calling a p1 destroyer a
 countered four times, including a pair of sixes.*
 
 Now **a bot plays the shape of its own group** — the shape is a field of the
-group registry (`core/ladder.ts GROUPS[].bot`, read by `botShapeAt(points)`),
-so the label IS the strength. Difficulty still tracks the player, but through
+group registry (`core/ladder.ts GROUPS[].bot`, read by `botShapeAt(standing)` from
+the bot's points AND its apex position — NEON is a position, so a bot above the
+apex floor without the top-1% rank plays OBSIDIAN, and a bot the board no longer
+lists is never in the apex), so the label IS the strength. Difficulty still tracks the player, but through
 **pairing**: `pvp-join` hands out bots within the player's own group width
 (`botPairBand`), and mints new ones inside the same cap when none is free.
 Bots' points move through real settles, so a bot whose shape loses drifts

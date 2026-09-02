@@ -151,36 +151,50 @@ for (const slug of ['pvp-join', 'pvp-rune-select', 'pvp-action']) {
   check(manifest[slug]?.includes('core/ranked-bot-turn.ts'),
     `${slug}'s deploy closure lost the shared authoritative ranked bot-turn builder`);
 }
+/* NEON is a position. Every function that moves a bot resolves its apex
+   standing through the one shared reader before asking core for a shape. */
+for (const slug of ['pvp-join', 'pvp-move', 'pvp-action', 'pvp-rune-select']) {
+  check(manifest[slug]?.includes('_shared/bot-standing.ts'),
+    `${slug}'s deploy closure lost the shared bot standing resolver — its bots would play by points alone`);
+}
 
 /* A match keeps the curve it started on throughout the staged v1 -> v2
    rollout. Bot policy is authoritative gameplay, so every production entry
    must carry that persisted/runtime curve into the shared decision helpers;
-   letting core default to the new curve would change dormant-v1 matches. */
+   letting core default to the new curve would change dormant-v1 matches.
+   The same seams must hand core the bot's resolved apex STANDING (a position
+   the board grants, never inferred from points) through the shared reader,
+   read with the caller's authenticated client. */
 const botCurveOwners = [
+  {
+    owner: 'pvp-join/operation.ts',
+    source: readFileSync(path.join(FN_DIR, 'pvp-join/operation.ts'), 'utf8'),
+    contract: /botStanding\(context\.authed,[\s\S]{0,2500}startMatch\(/,
+  },
   {
     owner: 'pvp-join/start.ts',
     source: readFileSync(path.join(FN_DIR, 'pvp-join/start.ts'), 'utf8'),
-    contract: /botMove\([\s\S]{0,300}input\.curveVersion,\s*Math\.random/,
+    contract: /botMove\([\s\S]{0,300}input\.bot,[\s\S]{0,200}input\.curveVersion,\s*Math\.random/,
   },
   {
     owner: 'pvp-move/operation.ts',
     source: readFileSync(path.join(FN_DIR, 'pvp-move/operation.ts'), 'utf8'),
-    contract: /const curveVersion = match\.curve_version;[\s\S]{0,6000}botMove\([\s\S]{0,300}curveVersion,\s*Math\.random/,
+    contract: /const curveVersion = match\.curve_version;[\s\S]{0,6000}botStanding\(context\.authed,[\s\S]{0,1500}botMove\([\s\S]{0,300}standing,[\s\S]{0,120}curveVersion,\s*Math\.random/,
   },
   {
     owner: 'pvp-action/operation.ts',
     source: readFileSync(path.join(FN_DIR, 'pvp-action/operation.ts'), 'utf8'),
-    contract: /const curveVersion = match\.curve_version;[\s\S]{0,9000}appendRankedBotTurn\(\{[\s\S]{0,500}curveVersion,[\s\S]{0,120}random: Math\.random/,
+    contract: /const curveVersion = match\.curve_version;[\s\S]{0,9000}botStanding\(context\.authed,[\s\S]{0,1500}appendRankedBotTurn\(\{[\s\S]{0,500}bot: standing,[\s\S]{0,200}curveVersion,[\s\S]{0,120}random: Math\.random/,
   },
   {
     owner: '_shared/rune-trial-bot-opening.ts',
     source: readFileSync(path.join(FN_DIR, '_shared/rune-trial-bot-opening.ts'), 'utf8'),
-    contract: /const curveVersion = match\.curve_version;[\s\S]{0,4000}appendRankedBotTurn\(\{[\s\S]{0,500}curveVersion,[\s\S]{0,120}random: Math\.random/,
+    contract: /const curveVersion = match\.curve_version;[\s\S]{0,4000}botStanding\(context\.authed,[\s\S]{0,1500}appendRankedBotTurn\(\{[\s\S]{0,500}bot: standing,[\s\S]{0,200}curveVersion,[\s\S]{0,120}random: Math\.random/,
   },
 ] as const;
 for (const { owner, source, contract } of botCurveOwners) {
   check(contract.test(source),
-    `${owner} does not pass its authoritative match/runtime curve into bot policy`);
+    `${owner} does not pass its authoritative curve and the bot's resolved apex standing into bot policy`);
 }
 
 /* Rune Trial is the first ranked protocol that ships the spell layer. Keep it

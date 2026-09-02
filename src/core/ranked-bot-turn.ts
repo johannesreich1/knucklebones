@@ -9,7 +9,7 @@ import {
   type RankedRuneDeal,
 } from './ranked-actions.ts';
 import { poolSequence } from './dice.ts';
-import { botShapeAt, type LadderCurveVersion } from './ladder.ts';
+import { botShapeAt, type BotStanding, type LadderCurveVersion } from './ladder.ts';
 import { LIMITED, legalCols, type Mode } from './rules.ts';
 import { machineCastPlan, spellById } from './spells.ts';
 
@@ -19,7 +19,8 @@ export interface RankedBotTurnInput {
   state: RankedActionState;
   mode: Mode;
   dealt: RankedRuneDeal;
-  rating: number;
+  /** The bot's own standing: points and whether the board ranks it in the apex. */
+  bot: BotStanding;
   curveVersion: LadderCurveVersion;
   random: () => number;
 }
@@ -48,7 +49,7 @@ export function appendRankedBotTurn(
      opens. The placement makes its own independent slip decision below. */
   const canCast = spell !== null && (state.charges[who][spell.id] ?? 0) > 0;
   const skipsCast = canCast
-    && input.random() < botSlip(botShapeAt(input.rating, input.curveVersion), who);
+    && input.random() < botSlip(botShapeAt(input.bot, input.curveVersion), who);
   if (spell && canCast && !skipsCast) {
     const bagLeft = input.mode === LIMITED
       ? poolSequence(input.seed).length - state.drawCount
@@ -71,7 +72,7 @@ export function appendRankedBotTurn(
         state.st,
         who,
         state.nextDie!,
-        input.rating,
+        input.bot,
         input.mode,
         input.curveVersion,
         input.random,
@@ -109,7 +110,7 @@ export function appendRankedBotTurn(
       state.st,
       who,
       state.nextDie,
-      input.rating,
+      input.bot,
       input.mode,
       input.curveVersion,
       input.random,

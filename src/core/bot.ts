@@ -16,7 +16,9 @@ import {
   type CharmSt, type GameState, type Mode, type Player,
 } from './rules.ts';
 import { searchRoot } from './ai.ts';
-import { botShapeAt, type BotShape, type LadderCurveVersion } from './ladder.ts';
+import {
+  botShapeAt, type BotShape, type BotStanding, type LadderCurveVersion,
+} from './ladder.ts';
 
 /** The same league shape has a separately calibrated slip rate when it opens. */
 export function botSlip(shape: BotShape, botIdx: Player): number {
@@ -24,15 +26,23 @@ export function botSlip(shape: BotShape, botIdx: Player): number {
 }
 
 /* The column this bot plays, and nothing else — no board mutation, no logging.
-   `rating` is the BOT's own points: a bot plays the shape of the group its own
-   rating sits in (docs/LADDER.md §4), never a shape derived from its opponent.
+   `bot` is the BOT's own standing: its points (a bot plays the shape of the
+   group its own points sit in, docs/LADDER.md §4) and whether the board ranks
+   it in the apex — never anything derived from its opponent.
 
    Search configuration is per call. The same injected random stream drives
    slips and tie-break jitter, so a caller can replay the whole decision. */
-export function botMove(st: GameState, botIdx: Player, die: number, rating: number,
+export function botMove(st: GameState, botIdx: Player, die: number, bot: BotStanding,
                         mode: Mode, curveVersion: LadderCurveVersion,
                         rand: () => number, rootCharm?: CharmSt): number {
-  const shape = botShapeAt(rating, curveVersion);
+  return botMoveWithShape(st, botIdx, die, botShapeAt(bot, curveVersion), mode, rand, rootCharm);
+}
+
+/* The same decision for a shape named directly. The bench measures a league
+   by its shape, and a retune sweep tries shapes the registry does not hold
+   yet; both must run the exact statements production runs. */
+export function botMoveWithShape(st: GameState, botIdx: Player, die: number, shape: BotShape,
+                                 mode: Mode, rand: () => number, rootCharm?: CharmSt): number {
   const slip = botSlip(shape, botIdx);
   const legal = legalCols(st[botIdx]);
   if (!legal.length) return -1;                 // nothing to play: the caller is asking too late

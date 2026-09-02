@@ -68,6 +68,8 @@ class BotOpeningService {
 
   async rpc(name: string, input: Record<string, unknown>) {
     this.calls.push({ name, input });
+    /* The public standing projection: no board row, so the bot is not in the apex. */
+    if (name === 'player_standing') return { data: [], error: null };
     if (name !== 'commit_match_action') {
       return { data: null, error: { message: `unexpected RPC ${name}` } };
     }
@@ -148,12 +150,15 @@ export async function verifyRuneTrialBotOpening(check: Check): Promise<void> {
 
     const botService = new BotOpeningService(openingMatch, seed, true);
     const botContext = {
-      user: { id: openingMatch.p2 }, authed: {}, service: () => botService,
+      user: { id: openingMatch.p2 }, authed: botService, service: () => botService,
     } as unknown as AuthenticatedContext;
     const opened = await ensureRuneTrialBotOpening(botContext, { match: openingMatch });
-    const command = botService.calls[0]?.input;
+    const commits = botService.calls.filter((call) => call.name === 'commit_match_action');
+    const command = commits[0]?.input;
     const actions = command?.p_actions as Array<{ kind?: string }> | undefined;
-    check(botService.calls.length === 1 && botService.calls[0].name === 'commit_match_action'
+    check(commits.length === 1
+        && botService.calls.some((call) =>
+          call.name === 'player_standing' && call.input.p === openingMatch.p1)
         && command?.p_actor === openingMatch.p1 && command?.p_auto === false
         && command?.p_expected_action_version === 0 && actions?.at(-1)?.kind === 'place'
         && opened.match.action_version === actions?.length && opened.match.turn === 0,
@@ -170,14 +175,16 @@ export async function verifyRuneTrialBotOpening(check: Check): Promise<void> {
     };
     const standardService = new BotOpeningService(equippedStandardMatch, seed, true);
     const standardContext = {
-      user: { id: equippedStandardMatch.p2 }, authed: {}, service: () => standardService,
+      user: { id: equippedStandardMatch.p2 }, authed: standardService, service: () => standardService,
     } as unknown as AuthenticatedContext;
     const standardOpened = await ensureRankedActionBotOpening(
       standardContext, { match: equippedStandardMatch },
     );
-    const standardCommand = standardService.calls[0]?.input;
+    const standardCommits = standardService.calls
+      .filter((call) => call.name === 'commit_match_action');
+    const standardCommand = standardCommits[0]?.input;
     const standardActions = standardCommand?.p_actions as Array<{ kind?: string }> | undefined;
-    check(standardService.calls.length === 1
+    check(standardCommits.length === 1
         && standardActions?.length === 1
         && standardActions[0].kind === 'place'
         && standardOpened.match.action_version === 1,
@@ -192,7 +199,7 @@ export async function verifyRuneTrialBotOpening(check: Check): Promise<void> {
       botService.match,
     );
     const racedContext = {
-      user: { id: openingMatch.p2 }, authed: {}, service: () => racedService,
+      user: { id: openingMatch.p2 }, authed: racedService, service: () => racedService,
     } as unknown as AuthenticatedContext;
     const raced = await ensureRuneTrialBotOpening(racedContext, { match: openingMatch });
     check(racedService.calls.length === 0
@@ -203,7 +210,7 @@ export async function verifyRuneTrialBotOpening(check: Check): Promise<void> {
     const humanMatch = { ...openingMatch, p1: 'lower-rated-human' };
     const humanService = new BotOpeningService(humanMatch, seed, false);
     const humanContext = {
-      user: { id: humanMatch.p1 }, authed: {}, service: () => humanService,
+      user: { id: humanMatch.p1 }, authed: humanService, service: () => humanService,
     } as unknown as AuthenticatedContext;
     const human = await ensureRuneTrialBotOpening(humanContext, { match: humanMatch });
     check(humanService.calls.length === 0 && humanService.profileReads === 1
@@ -213,7 +220,7 @@ export async function verifyRuneTrialBotOpening(check: Check): Promise<void> {
     const openedMatch = { ...openingMatch, action_version: 1, turn: 0 as const };
     const openedService = new BotOpeningService(openedMatch, seed, true);
     const openedContext = {
-      user: { id: openedMatch.p2 }, authed: {}, service: () => openedService,
+      user: { id: openedMatch.p2 }, authed: openedService, service: () => openedService,
     } as unknown as AuthenticatedContext;
     await ensureRuneTrialBotOpening(openedContext, { match: openedMatch });
     check(openedService.calls.length === 0 && openedService.profileReads === 0,

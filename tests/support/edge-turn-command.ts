@@ -14,15 +14,39 @@
  * with it, and the database re-check mapping its own conflicts back onto the
  * HTTP contract.
  */
+import { searchRoot } from '../../src/core/ai.ts';
+import { APEX, GROUPS } from '../../src/core/ladder.ts';
 import { rebuild, matchTotal } from '../../src/core/match.ts';
-import { rebuildRankedActions } from '../../src/core/ranked-actions.ts';
+import { appendRankedAction, rebuildRankedActions } from '../../src/core/ranked-actions.ts';
 import { AUTO_MS } from '../../supabase/functions/_shared/match-timing.ts';
 import type { MatchRow } from '../../supabase/functions/_shared/types.ts';
 import {
   EDGE_MODE, EDGE_SEED as SEED, EdgeOperationsService, actionEcho, actionTables, afterThreshold,
   beforeThreshold, buildTerminalLog, commitEcho, edgeContext, jsonBody, moveTables, standardMatch,
-  trialMatch, type EdgeOperations, type RpcRoute,
+  standingRoute, trialMatch, type EdgeOperations, type RpcRoute,
 } from './edge-operations.ts';
+
+/* NEON is a POSITION for bots too. A bot whose points outgrow OBSIDIAN keeps
+   OBSIDIAN's shape until the board's rank says otherwise (boardGroup's rule,
+   consumed by botShapeAt), so the same points must commit a DIFFERENT column
+   depending on the standing the board reports. One draw between the two
+   league slips decides it: OBSIDIAN slips on it (pick draw 0.5 of three
+   columns is column 1), NEON searches on it. Live 2026-09-02: nine v1 bots at
+   4,369–4,600 badged OBSIDIAN were playing NEON. */
+const APEX_POINTS = APEX.floor + 10;
+const APEX_HUMAN_COL = 0;
+const APEX_POPULATION = 203;
+const neonSearch = (st: Parameters<typeof searchRoot>[0], die: number) => searchRoot(
+  st, 0, die, APEX.bot.depth,
+  { mode: EDGE_MODE, random: () => 0.5, riskWeight: APEX.bot.risk, opponentWeight: APEX.bot.oppW },
+).c;
+async function withBetweenSlipsDraws<T>(run: () => Promise<T>): Promise<T> {
+  const ambient = Math.random;
+  const between = (GROUPS[5].bot.slip + GROUPS[6].bot.slip) / 2;
+  let drawn = 0;
+  Math.random = () => (drawn++ === 0 ? between : 0.5);
+  try { return await run(); } finally { Math.random = ambient; }
+}
 
 type Check = (ok: boolean, message: string, detail?: unknown) => void;
 
@@ -111,6 +135,56 @@ export async function runTurnCommandTests(
     && botReply?.col === botMoves[1].col && botReply?.die === botMoves[1].die,
   'the bot reply was not appended inside the same atomic move command',
   { status: withBot.status, botMoves, botReply });
+
+  // The apex is a position: a bot above the NEON floor plays NEON only when
+  // the board ranks it there, and the reply column proves which shape moved.
+  check(GROUPS[5].bot.slip > GROUPS[6].bot.slip,
+    'the apex cases need NEON to slip less often than OBSIDIAN');
+  const afterApexHuman = rebuild(SEED, [{ idx: 0, who: 1, col: APEX_HUMAN_COL }], EDGE_MODE)!;
+  const crownedMoveCol = neonSearch(afterApexHuman.st, afterApexHuman.nextDie);
+  check(crownedMoveCol !== 1, 'apex move fixture: the NEON search coincides with the slip pick');
+  const apexMoveReply = async (rank: number) => {
+    const row = standardMatch({ curve_version: 2, scoring_version: 2 });
+    const service = new EdgeOperationsService(
+      moveTables(row, [], { is_bot: true, rating: APEX_POINTS }),
+      {
+        commit_match_command: commitEcho(row),
+        player_standing: standingRoute(APEX_POINTS, rank, APEX_POPULATION),
+      },
+    );
+    const response = await withBetweenSlipsDraws(() => operations.moveMatch(
+      edgeContext('player-1', service),
+      { matchId: 'match-1', col: APEX_HUMAN_COL, auto: false, commandId: 'cmd-1', expectedMoveCount: null },
+    ));
+    const commit = service.rpcCalls.find((call) => call.name === 'commit_match_command')?.input;
+    const moves = commit?.p_moves as Array<Record<string, unknown>> | undefined;
+    const standing = service.rpcCalls.find((call) => call.name === 'player_standing');
+    return { status: response.status, col: moves?.[1]?.col, askedFor: standing?.input.p };
+  };
+  const demotedMove = await apexMoveReply(50);
+  const crownedMove = await apexMoveReply(1);
+  check(demotedMove.status === 200 && crownedMove.status === 200
+    && demotedMove.col === 1 && crownedMove.col === crownedMoveCol
+    && demotedMove.askedFor === 'player-2' && crownedMove.askedFor === 'player-2',
+  'pvp-move let a bot above the apex floor play NEON without holding the apex position',
+  { demotedMove, crownedMove, crownedMoveCol });
+
+  // A standing the board cannot answer is a failed read, never a silent demotion.
+  const unreadRow = standardMatch({ curve_version: 2, scoring_version: 2 });
+  const unread = new EdgeOperationsService(
+    moveTables(unreadRow, [], { is_bot: true, rating: APEX_POINTS }),
+    {
+      commit_match_command: commitEcho(unreadRow),
+      player_standing: () => ({ error: { message: 'board unavailable' } }),
+    },
+  );
+  const unreadReply = await operations.moveMatch(edgeContext('player-1', unread), {
+    matchId: 'match-1', col: APEX_HUMAN_COL, auto: false, commandId: 'cmd-1', expectedMoveCount: null,
+  });
+  check(unreadReply.status === 500 && (await jsonBody(unreadReply)).error === 'ladder-read-failed'
+    && !unread.rpcCalls.some((call) => call.name === 'commit_match_command'),
+  'a failed bot standing read did not stop the move as ladder-read-failed',
+  { status: unreadReply.status });
 
   // A board-filling move carries its settlement snapshot in the same command.
   const { rows, finalCol, finalWho } = buildTerminalLog(SEED, EDGE_MODE);
@@ -275,4 +349,45 @@ export async function runTurnCommandTests(
     status: equippedPlacement.status,
     equippedRows,
   });
+
+  // The same apex rule on the action protocol: a bare bot seat makes exactly
+  // one placement, so the committed column again names the shape that moved.
+  const apexPlaced = appendRankedAction(SEED, [], EDGE_MODE, equippedDeal, {
+    kind: 'place', placed_col: APEX_HUMAN_COL,
+  })!;
+  const crownedActionCol = neonSearch(apexPlaced.state.st, apexPlaced.state.nextDie!);
+  check(crownedActionCol !== 1, 'apex action fixture: the NEON search coincides with the slip pick');
+  const apexActionReply = async (rank: number) => {
+    const row = standardMatch({
+      protocol_version: 2, rune_rules_version: 1, p1_rune: 'ward', p2_rune: null,
+      turn: equippedOpen.turn, next_die: equippedOpen.nextDie,
+      curve_version: 2, scoring_version: 2,
+    });
+    const service = new EdgeOperationsService(
+      { ...actionTables(row), profiles: () => ({ data: { id: row.p2, is_bot: true, rating: APEX_POINTS } }) },
+      {
+        match_action_result: actionLookup,
+        commit_match_action: actionEcho(row),
+        player_standing: standingRoute(APEX_POINTS, rank, APEX_POPULATION),
+      },
+    );
+    const response = await withBetweenSlipsDraws(() => operations.actionMatch(
+      edgeContext('player-1', service),
+      {
+        matchId: 'match-1', commandId: 'cmd-apex', expectedActionVersion: 0,
+        auto: false, action: { kind: 'place', placed_col: APEX_HUMAN_COL },
+      },
+    ));
+    const commit = service.rpcCalls.find((call) => call.name === 'commit_match_action')?.input;
+    const actions = commit?.p_actions as Array<Record<string, unknown>> | undefined;
+    const standing = service.rpcCalls.find((call) => call.name === 'player_standing');
+    return { status: response.status, col: actions?.[1]?.placed_col, askedFor: standing?.input.p };
+  };
+  const demotedAction = await apexActionReply(50);
+  const crownedAction = await apexActionReply(1);
+  check(demotedAction.status === 200 && crownedAction.status === 200
+    && demotedAction.col === 1 && crownedAction.col === crownedActionCol
+    && demotedAction.askedFor === 'player-2' && crownedAction.askedFor === 'player-2',
+  'pvp-action let a bot above the apex floor play NEON without holding the apex position',
+  { demotedAction, crownedAction, crownedActionCol });
 }

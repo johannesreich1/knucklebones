@@ -132,6 +132,9 @@ export class EdgeOperationsService {
       ranked_runtime_contract: () => ({
         data: { curve_version: 1, scoring_version: 1, admission_paused: false },
       }),
+      /* No board row: the bot is not in the apex. A case that puts a bot at the
+         apex routes this RPC itself. */
+      player_standing: () => ({ data: [] }),
       ...rpcs,
     };
   }
@@ -164,12 +167,19 @@ export class EdgeOperationsService {
 export const jsonBody = async (response: Response) =>
   await response.json() as Record<string, unknown>;
 
+/* The authenticated client is the same recording double: a public projection
+   an operation reads through the caller's own role (player_standing) shows up
+   in rpcCalls beside the service-role commits. */
 export function edgeContext(userId: string, service: EdgeOperationsService): AuthenticatedContext {
   return {
-    user: { id: userId }, authed: {},
+    user: { id: userId }, authed: service as unknown as EdgeClient,
     service: () => service as unknown as EdgeClient,
   } as unknown as AuthenticatedContext;
 }
+
+/** A player_standing answer for a bot the board ranks at `rank` of `population`. */
+export const standingRoute = (points: number, rank: number, population: number): RpcRoute =>
+  () => ({ data: [{ points, rank, population, percentile: rank / population }] });
 
 export const ladderRow = (points: number): LadderRow =>
   ({ points, peak: points, wins: 1, losses: 1, draws: 0 });

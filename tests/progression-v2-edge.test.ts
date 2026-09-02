@@ -200,7 +200,7 @@ try {
     queuedOpponent: null,
     underdogAccess: access,
     favouriteAccess: access,
-    bot: { id: 'bot-1', rating: 700 },
+    bot: { id: 'bot-1', points: 700, apex: false },
     curveVersion: 2,
     scoringVersion: 2,
     entryKind: 'weekly',

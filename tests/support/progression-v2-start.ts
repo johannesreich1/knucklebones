@@ -25,7 +25,7 @@ export interface ProgressiveStartInput {
     entitlementIds?: readonly string[];
     capabilities: readonly string[];
   };
-  bot?: { id: string; rating: number };
+  bot?: { id: string; points: number; apex: boolean };
   curveVersion: 1 | 2;
   scoringVersion: 1 | 2;
   entryKind: 'ordinary' | 'weekly';

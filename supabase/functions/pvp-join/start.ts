@@ -1,5 +1,6 @@
 import { diceStream, poolSequence } from "./core/dice.ts";
 import { botMove } from "./core/bot.ts";
+import type { BotStanding } from "./core/ladder.ts";
 import { rebuild } from "./core/match.ts";
 import { LIMITED, ME, type Player } from "./core/rules.ts";
 import {
@@ -38,7 +39,7 @@ interface ProgressiveMatchStart {
   queuedOpponent: string | null;
   underdogAccess: RankedParticipantAccess;
   favouriteAccess: RankedParticipantAccess;
-  bot?: { id: string; rating: number };
+  bot?: BotStanding & { id: string };
   curveVersion: 1 | 2;
   scoringVersion: 1 | 2;
   entryKind: "ordinary" | "weekly";
@@ -145,7 +146,7 @@ export async function startProgressiveRankedMatch(
     const state0 = rebuild(seed, [], spec.mode);
     if (!state0) return null;
     openingCol = botMove(
-      state0.st, ME, state0.nextDie, input.bot.rating, spec.mode,
+      state0.st, ME, state0.nextDie, input.bot, spec.mode,
       input.curveVersion, Math.random,
     );
     const state1 = openingCol >= 0

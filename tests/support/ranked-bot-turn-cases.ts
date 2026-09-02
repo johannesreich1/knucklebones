@@ -98,13 +98,13 @@ function runCastSlipCase(check: Check, testCase: CastSlipCase): void {
   check(state.turn === seat && state.nextDie === 1,
     `${fixture} fixture did not reach the intended bot FATE turn`, state);
   const skippedCast = appendRankedBotTurn({
-    seed, rows, state, mode: CLASSIC, dealt, rating: 800,
+    seed, rows, state, mode: CLASSIC, dealt, bot: { points: 800, apex: false },
     curveVersion: LADDER_CURVE_V2, random: () => 0,
   });
   // A counter per case: a shared one would leak draw state between fixtures.
   let castDraw = 0;
   const keptCast = appendRankedBotTurn({
-    seed, rows, state, mode: CLASSIC, dealt, rating: 800,
+    seed, rows, state, mode: CLASSIC, dealt, bot: { points: 800, apex: false },
     curveVersion: LADDER_CURVE_V2, random: () => castDraw++ === 0 ? 0.99 : 0.5,
   });
   check(skippedCast?.actions.length === 1 && skippedCast.actions[0].kind === 'place'
@@ -130,7 +130,7 @@ function runCastSlipCase(check: Check, testCase: CastSlipCase): void {
         state,
         mode: CLASSIC,
         dealt,
-        rating: 720,
+        bot: { points: 720, apex: false },
         curveVersion,
         random: () => values[draw++] ?? 0.5,
       });
@@ -159,7 +159,7 @@ export function runRankedBotTurnCases(harness: RankedBotTurnCaseHarness): void {
     state: opening,
     mode: CLASSIC,
     dealt,
-    rating: 800,
+    bot: { points: 800, apex: false },
     curveVersion: LADDER_CURVE_V2,
     random: () => 0,
   });
@@ -177,7 +177,7 @@ export function runRankedBotTurnCases(harness: RankedBotTurnCaseHarness): void {
     state: { ...opening, actionCount: 1 },
     mode: CLASSIC,
     dealt,
-    rating: 800,
+    bot: { points: 800, apex: false },
     curveVersion: LADDER_CURVE_V2,
     random: () => 0,
   }) === null, 'ranked bot opener accepted a state/version mismatch');
@@ -209,7 +209,7 @@ export function runRankedBotTurnCases(harness: RankedBotTurnCaseHarness): void {
     state: limitedBotState,
     mode: LIMITED,
     dealt: limitedBotDeal,
-    rating: 800,
+    bot: { points: 800, apex: false },
     curveVersion: LADDER_CURVE_V2,
     random: () => 0,
   });

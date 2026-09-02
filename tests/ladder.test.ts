@@ -323,15 +323,27 @@ eq(GROUPS.map((g) => [g.bot.depth, g.bot.risk, g.bot.oppW, g.bot.slip, g.bot.ope
   [1, 0.6, 1, 0.72, 0.675], [2, 1.2, 1, 0.68, 0.67],
   [3, 1.2, 1, 0.68, 0.66], [4, 1.2, 1, 0.66, 0.65],
 ], 'the per-group bot shapes drifted from LADDER.md §4');
-eq(botShapeAt(148), GROUPS[0].bot, 'a bot with STONE points must play the STONE shape');
-eq(botShapeAt(9999), APEX.bot, 'a bot above the apex floor must play the NEON shape');
+const standing = (points: number, apex = false) => ({ points, apex });
+eq(botShapeAt(standing(148)), GROUPS[0].bot, 'a bot with STONE points must play the STONE shape');
+/* NEON is a POSITION for bots too: a bot whose points outgrow OBSIDIAN keeps
+   OBSIDIAN's shape until the board's rank says otherwise (boardGroup's rule,
+   consumed by botShapeAt). Live 2026-09-02: nine v1 bots at 4,369–4,600
+   badged OBSIDIAN were playing NEON, and the v1→v2 remap carries them to
+   6,121–6,497 against a 6,090 floor. */
+eq(botShapeAt(standing(9999, true)), APEX.bot, 'the apex position grants the NEON shape');
+eq(botShapeAt(standing(6100)), GROUPS[GROUPS.length - 2].bot,
+  'a 6,100-point bot without the apex position must play the OBSIDIAN shape');
+eq(botShapeAt(standing(500, true), LADDER_CURVE_V2), APEX.bot,
+  'the apex is a POSITION — points do not veto the NEON shape');
+eq(botShapeAt(standing(4400), LADDER_CURVE_V1), GROUPS_V1[GROUPS_V1.length - 2].bot,
+  'the live 4,369–4,600 v1 bots without the position play OBSIDIAN');
 /* the floor's floor: slip alone bottoms out at random-parity (a half-greedy
    still wins 60% vs random, measured), so STONE is KILL-AVERSE — negative
    oppW prefers placements that spare the player's dice, the one below-random
    weakness that reads as a beginner rather than a drunk */
-eq(botShapeAt(0).oppW < 0, true, 'the STONE bot must actively spare the player');
-eq(botShapeAt(0).slip >= 0.3, true, 'a brand-new player must meet a bot that blunders');
-eq(botShapeAt(6090).slip, 0.66, 'NEON must approach parity from the human-favoured side');
+eq(botShapeAt(standing(0)).oppW < 0, true, 'the STONE bot must actively spare the player');
+eq(botShapeAt(standing(0)).slip >= 0.3, true, 'a brand-new player must meet a bot that blunders');
+eq(botShapeAt(standing(6090, true)).slip, 0.66, 'NEON must approach parity from the human-favoured side');
 /* Search understanding still tightens on the way up. Slip is the measured
    counterweight that keeps deeper search from making any bot the favourite. */
 {
