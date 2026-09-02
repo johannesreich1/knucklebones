@@ -22,9 +22,13 @@ const RISK = 0.9;                      // the offline Medium anchor, as botbench
 /* Bars. COLSHIELD is parity BY DESIGN: the rule lives in applyMove, both twins
    have it, and the risk-model shield skip that once "understood" it measured
    44.5% here — it may not return, so this floor refuses a handicap, nothing
-   more. ROWSWITCH and ROWMULT change scoring and are measured real (floors
-   sit 5pp under the keyed measurement). Every other mode changes what the
-   game is played for and must win outright. */
+   more. BOUNTY is parity BY MEASUREMENT: the search carries the bank (stage
+   6.1, 2026-09-02) and scores it as totalOf does, and a full-sight bank-aware
+   search still measures 51.1% against a Classic-eval twin — a kill already
+   pays v·k² on the board and the +1 is within noise; the bar refuses the
+   bank ever costing a game. ROWSWITCH and ROWMULT change scoring and are
+   measured real (floors sit 5pp under the keyed measurement). Every other
+   mode changes what the game is played for and must win outright. */
 const NEVER_A_HANDICAP = 0.47;
 const REAL = 0.55;
 const MODE_BARS: Record<string, number> = {
@@ -32,7 +36,7 @@ const MODE_BARS: Record<string, number> = {
   rowmult: 0.55,                       // measured 60.0%
   colshield: NEVER_A_HANDICAP,
   singlestrike: REAL,
-  bounty: REAL,
+  bounty: NEVER_A_HANDICAP,
   limited: REAL,
 };
 
@@ -41,7 +45,6 @@ const MODE_BARS: Record<string, number> = {
    fails ("remove the entry"), so this list can only shrink. */
 const KNOWLEDGE_DEBT = new Map<string, string>([
   // Measured 2026-09-02 (keyed, 1,200 games): 51.4 / 50.3 / 50.5.
-  ['bounty', 'banked points live outside GameState, so evalSt never sees what it is playing for — stage 6.1 threads the bank through search'],
   ['singlestrike', 'the riskOf SINGLESTRIKE term wins nothing — stage 6.2 measures it and fixes or deletes it'],
   ['limited', 'the search assumes uniform dice; the bag is countable — stage 6.3 weights the expectation by what remains'],
 ]);

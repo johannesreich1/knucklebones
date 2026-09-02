@@ -41,9 +41,17 @@ baseline every measurement is taken against.
 - **It must be visible on the board.** A shielded column wears a 🛡; BOUNTY
   shows its ✦ tally; row modes hang a per-row rail; LIMITED counts the bag.
   A rule the player cannot see operating is a rule they will think is a bug.
-- **The AI must understand it.** `searchRoot` takes the mode, and `riskOf`
-  carries per-mode loss heuristics. A mode the search is blind to produces a
-  bot that plays it badly — which players read as the mode being broken.
+- **The AI must understand it, and the understanding must be measured.**
+  `searchRoot` takes the mode; scoring lives in `boardTotalMode`, per-mode
+  loss heuristics in `riskOf`, and anything the game pays for outside the
+  boards is passed in (BOUNTY's bank). A mode the search is blind to produces
+  a bot that plays it badly — which players read as the mode being broken. So
+  every mode carries a cell in `tests/bot-knowledge.test.ts`: a mode-aware
+  search against a twin that evaluates Classic while the world runs the mode.
+  A mode whose scoring or supply differs must WIN that duel; a mode whose rule
+  lives in `applyMove` (COLUMN SHIELD) or whose term measures within noise
+  (BOUNTY) must at least never LOSE it. Understanding that measures inert is
+  a maintenance cost pretending to be a feature.
 - **It must survive replay.** The server validates a ranked match by replaying
   the move log through `core/rules` under the stored `modifier`. A mode whose
   outcome depends on anything but the log and the seed cannot ship.
@@ -67,7 +75,8 @@ confusion it added. The measurement is kept in `core/modes.ts` and
 
 Adding a mechanical mode is: the registry entry, matching catalog copy in every supported
 locale, its branches in `core/rules.ts` (scoring, destruction, or supply), its
-heuristic in `core/ai.ts riskOf` if the loss maths differ, and its gate cases.
+heuristic in `core/ai.ts riskOf` if the loss maths differ, its aware-vs-blind
+cell and bar in `tests/bot-knowledge.test.ts`, and its gate cases.
 Then update the ranked-outcome registry and **redeploy the join function** —
 the server owns the real outcome draw.
 
@@ -273,8 +282,21 @@ slammed columns shut on junk to bank the safety, and won only 44.5% of
 colshield games against a twin that scored risk as classic (6,000 games).
 Classic fear of a full column is wrong as a fact but right as a proxy for the
 upside a closed column forfeits. The true dynamics stay in the search, where
-`applyMove` knows shields block destroys. `tests/botbench.test.ts` §4 refuses
-the skip's return.
+`applyMove` knows shields block destroys. `tests/bot-knowledge.test.ts`
+refuses the skip's return.
+
+**BOUNTY is the second mode whose heuristic was measured.** Its bank — a
+permanent +1 per destroyed die — lives outside `GameState`, so the search
+scored boards only and a bot would build for 15 rather than take a kill worth
+the same 15 plus two banked points. The bank is now carried down the tree and
+scored exactly as `totalOf` pays it (2026-09-02), weighted by how much of the
+opponent's board the evaluation sees: a builder that never looks across the
+table does not hunt bounties either. Measured, a full-sight bank-aware search
+is at parity with a Classic-eval twin (51.1%, 1,200 keyed games) — a kill
+already pays `v·k²` on the board and the +1 is inside the noise. The fix ships
+because it is what the mode pays, not because it wins more; its bar is
+"never a handicap", and the position tests in `tests/modes.test.ts` pin the
+two decisions it does change.
 
 **A mode's own mark may not name a colour.** ROW MULTIPLY brackets a row match
 in the multiplier heat, and that heat is not a constant: a ×2 is gold and a ×3

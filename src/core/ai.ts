@@ -8,9 +8,14 @@ import { DICE_FACES } from '../config.ts';
 import {
   SPEC, type GameState, type Player, type Mode,
   CLASSIC, ROWSWITCH, SINGLESTRIKE, BOUNTY,
-  cloneCharm, cloneSt, applyMove, legalCols, boardTotalMode, countOf, isFull,
+  bountyFor, cloneCharm, cloneSt, applyMove, legalCols, boardTotalMode, countOf, isFull,
   type CharmSt,
 } from './rules.ts';
+
+/** Points banked off the boards, by Player. BOUNTY's are real; every other
+    mode's are this shared zero pair, so the classic path allocates nothing. */
+export type Bank = readonly [number, number];
+const NO_BANK: Bank = [0, 0];
 
 let NODES = 0;
 const BUDGET = 500000;                  // node cap: search degrades, never hangs
@@ -66,11 +71,22 @@ export function riskOf(st: GameState, p: Player, mode: Mode = CLASSIC): number {
   return r;
 }
 
-function evalSt(st: GameState, options: ResolvedSearchOptions, charm?: CharmSt): number {
+function evalSt(st: GameState, options: ResolvedSearchOptions, charm: CharmSt | undefined,
+                bank: Bank): number {
   const { perspective, mode, opponentWeight, riskWeight } = options;
   const opponent = (1 - perspective) as Player;
   let s = boardTotalMode(st[perspective], mode, charm?.wards[perspective])
     - opponentWeight * boardTotalMode(st[opponent], mode, charm?.wards[opponent]);
+  /* A kill's bounty is seen the way the opponent's board is seen: a builder
+     that never looks across the table (oppW 0, or STONE's sparing −0.5) does
+     not hunt bounties either, so the bank enters the eval at the opponent
+     weight's sight. The terminal branch pays the full bank — what totalOf
+     pays. Measured 2026-09-02: against a Classic-eval twin a full-sight
+     bank-aware search is parity (51.1%); a kill already pays v·k² on the
+     board and the +1 is within noise. Unweighted, the bank turned the
+     bench's blind NEWCOMER into a kill hunter (+20pp in BOUNTY). */
+  const sight = Math.max(0, Math.min(1, opponentWeight));
+  s += sight * (bank[perspective] - opponentWeight * bank[opponent]);
   if (riskWeight) {
     s += riskWeight * (riskOf(st, opponent, mode) - riskOf(st, perspective, mode));
   }
@@ -89,6 +105,12 @@ export interface SearchOptions {
       through deeper plies so persistent WARD marks remain scoreable and
       attackable. One-shot SUNDER is naturally consumed by the root move. */
   rootCharm?: CharmSt;
+  /** BOUNTY: the points each player has already banked at the root — the
+      same pair MatchState, RankedActionState and the local S.bounty hold.
+      The search carries every kill's bounty down the tree and scores the
+      bank exactly as totalOf does, so it plays for what the game pays.
+      Ignored in every other mode. */
+  bounty?: Bank;
 }
 
 interface ResolvedSearchOptions {
@@ -102,17 +124,18 @@ interface ResolvedSearchOptions {
 export function searchRoot(st: GameState, who: Player, die: number, depth: number,
                            options: SearchOptions): SearchResult {
   NODES = 0;
+  const mode = options.mode ?? CLASSIC;
   return search(st, who, die, depth, {
     perspective: who,
     random: options.random,
-    mode: options.mode ?? CLASSIC,
+    mode,
     riskWeight: options.riskWeight ?? 1.5,
     opponentWeight: options.opponentWeight ?? 1,
-  }, options.rootCharm);
+  }, options.rootCharm, mode === BOUNTY && options.bounty ? options.bounty : NO_BANK);
 }
 
 function search(st: GameState, who: Player, die: number, depth: number,
-                options: ResolvedSearchOptions, charm?: CharmSt): SearchResult {
+                options: ResolvedSearchOptions, charm?: CharmSt, bank: Bank = NO_BANK): SearchResult {
   NODES++;
   const { perspective, mode, random } = options;
   const legal = legalCols(st[who]);
@@ -121,19 +144,26 @@ function search(st: GameState, who: Player, die: number, depth: number,
   for (const c of legal) {
     const ns = cloneSt(st);
     const nextCharm = charm && cloneCharm(charm);
-    applyMove(ns, who, c, die, mode, nextCharm);
+    const killed = applyMove(ns, who, c, die, mode, nextCharm);
+    /* A kill's bounty rides down the tree; outside BOUNTY it is zero and the
+       shared pair is passed on untouched — no allocation on the hot path. */
+    const worth = bountyFor(killed, mode);
+    const nextBank: Bank = worth
+      ? (who === 0 ? [bank[0] + worth, bank[1]] : [bank[0], bank[1] + worth])
+      : bank;
     let v: number;
     if (isFull(ns[who])) {
       const opponent = (1 - perspective) as Player;
       const d = boardTotalMode(ns[perspective], mode, nextCharm?.wards[perspective])
-        - boardTotalMode(ns[opponent], mode, nextCharm?.wards[opponent]); // game over: material only
+        - boardTotalMode(ns[opponent], mode, nextCharm?.wards[opponent])
+        + nextBank[perspective] - nextBank[opponent];          // game over: what totalOf pays
       v = d + (d > 0 ? 14 : d < 0 ? -14 : 0);
     } else if (depth <= 1 || NODES > BUDGET) {
-      v = evalSt(ns, options, nextCharm);
+      v = evalSt(ns, options, nextCharm, nextBank);
     } else {
       let sum = 0;
       for (let d = 1; d <= DICE_FACES; d++) {
-        sum += search(ns, (1 - who) as Player, d, depth - 1, options, nextCharm).v;
+        sum += search(ns, (1 - who) as Player, d, depth - 1, options, nextCharm, nextBank).v;
       }
       v = sum / DICE_FACES;
     }

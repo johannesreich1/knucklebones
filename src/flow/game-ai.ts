@@ -56,20 +56,20 @@ export function aiChoose(rootCharm?: CharmSt): number {
   if (S.diff === 'easy') {
     if (Math.random() < 0.5) return legal[(Math.random() * legal.length) | 0];
     column = searchRoot(state, AI, S.die, 1, {
-      mode: S.scoring, random: Math.random, riskWeight: 0, rootCharm: searchCharm,
+      mode: S.scoring, random: Math.random, riskWeight: 0, rootCharm: searchCharm, bounty: S.bounty,
     }).c;
   } else if (S.diff === 'medium') {
     column = searchRoot(state, AI, S.die, 2, {
-      mode: S.scoring, random: Math.random, riskWeight: 0.9, rootCharm: searchCharm,
+      mode: S.scoring, random: Math.random, riskWeight: 0.9, rootCharm: searchCharm, bounty: S.bounty,
     }).c;
   } else {
     const started = performance.now();
     column = searchRoot(state, AI, S.die, 4, {
-      mode: S.scoring, random: Math.random, riskWeight: 1.5, rootCharm: searchCharm,
+      mode: S.scoring, random: Math.random, riskWeight: 1.5, rootCharm: searchCharm, bounty: S.bounty,
     }).c;
     if (performance.now() - started < 18 && filled < SPEC.cols * SPEC.rows * 2 - 2) {
       column = searchRoot(state, AI, S.die, 5, {
-        mode: S.scoring, random: Math.random, riskWeight: 1.5, rootCharm: searchCharm,
+        mode: S.scoring, random: Math.random, riskWeight: 1.5, rootCharm: searchCharm, bounty: S.bounty,
       }).c;
     }
   }

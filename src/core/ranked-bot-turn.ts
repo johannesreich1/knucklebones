@@ -70,7 +70,8 @@ export function appendRankedBotTurn(
       castContext,
       shape.castDemand,
       (rootCharm) => botSearch(
-        state.st, who, state.nextDie!, shape, input.mode, input.random, rootCharm,
+        state.st, who, state.nextDie!, shape, input.mode, input.random,
+        { rootCharm, bounty: state.bounty },
       ),
     );
     if (plan.target !== null) {
@@ -105,11 +106,11 @@ export function appendRankedBotTurn(
        still exact — else an ordinary search. The follow-up to a cast sees the
        charm it projected. A plan whose cast was vetoed is never reused. */
     const cast = plan !== null && plan.target !== null;
-    const charm = cast ? plan!.rootCharm ?? undefined : undefined;
-    const placedCol = botSlipPick(state.st, who, state.nextDie, shape, input.mode, input.random, charm)
+    const context = { rootCharm: cast ? plan!.rootCharm ?? undefined : undefined, bounty: state.bounty };
+    const placedCol = botSlipPick(state.st, who, state.nextDie, shape, input.mode, input.random, context)
       ?? (cast && plan!.placement !== null
         ? plan!.placement
-        : botSearch(state.st, who, state.nextDie, shape, input.mode, input.random, charm));
+        : botSearch(state.st, who, state.nextDie, shape, input.mode, input.random, context));
     if (!legal.includes(placedCol)) return null;
     const placed = appendRankedAction(input.seed, rows, input.mode, input.dealt, {
       kind: 'place',

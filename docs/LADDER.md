@@ -487,11 +487,11 @@ same policy; their points still affect pairing and which group policy applies.
 |---|---:|---:|---|---:|---:|---|---:|---:|
 | STONE | 1 | 0 | **spares it** (`oppW -0.5`) | 70 / 70% | 16 | any column | **80.1%** | **64.8%** |
 | BONE | 1 | 0 | builds blind (`oppW 0`) | 70 / 70% | 16 | any column | **62.7%** | **61.8%** |
-| IVORY | 1 | 0.25 | glances (`oppW 0.05`) | 70 / 70% | 16 | never declines 8 | **52.6%** | **53.4%** |
+| IVORY | 1 | 0.25 | glances (`oppW 0.05`) | 70 / 70% | 16 | never declines 8 | **52.5%** | **53.1%** |
 | SILVER | 1 | 0.6 | yes | 84 / 79.5% | 32 | never declines 8 | **52.5%** | **53.7%** |
 | GOLD | 2 | 1.2 | yes | 78 / 74% | 16 | never declines 8 | **51.6%** | **51.8%** |
 | OBSIDIAN | 3 | 1.2 | yes | 74 / 70% | 16 | never declines 8 | **48.8%** | **49.5%** |
-| NEON | 4 | 1.2 | yes | 62 / 63% | 16 | never declines 8 | **46.7%** | **46.6%** |
+| NEON | 4 | 1.2 | yes | 58 / 61% | 24 | never declines 8 | **46.5%** | **46.4%** |
 
 The last two columns are the **human's production-weighted board-policy share**
 against NEWCOMER — a seat-neutral depth-one builder that never looks at your
@@ -530,7 +530,7 @@ knows the rules makes:
 | never attacks | `oppW ≤ 0` | STONE, BONE | the beginner who hasn't learned to look across the table |
 | doesn't defend | `risk ≈ 0` | IVORY, SILVER | learned to kill, not yet to fear an open column of sixes |
 | thinks one roll ahead | `depth 1` | through SILVER | sees the board, not the next die |
-| holds a rune it knows would pay | `cast demand` | SILVER | an error of omission, never ignorance of the rune |
+| holds a rune it knows would pay | `cast demand` | SILVER, NEON | an error of omission, never ignorance of the rune |
 | lapses of attention | `slip` + `attention` | everyone, rate falling with league | a decent-not-best column |
 | a move no rule-knower would make | — | STONE, BONE | see the attention column |
 
@@ -576,13 +576,14 @@ bot-opens column above stays human-favoured too.
 The gate uses the real `botMove`, derives the exact outcome weights from the
 ranked registry, and measures both seat orders. In Rune Trial the bot decides
 its cast on merit at its shape's `castDemand` (offline Normal's 16 points of
-score difference at every league except SILVER, which holds a rune until it is
-worth 32 — an error of omission, never ignorance of the rune), previews the
-follow-up placement with its un-slipped search, and receives its league/seat
+score difference at most leagues; SILVER holds a rune until it is worth 32 and
+NEON until 24 — an error of omission, never ignorance of the rune), previews
+the follow-up placement with its un-slipped search, and receives its league/seat
 slip exactly once, on the placement. The 1,000-game-per-seat production replay
-in `tests/rune-bot-fairness.test.ts` puts a simple active human at 51.2–56.5% in
-every IVORY+ league/seat (NEON: 51.2% / 51.9%), and pins each cell exactly in
-`tests/support/bot-calibration.ts` for the league aggregates. A player who
+in `tests/rune-bot-fairness.test.ts` puts a simple active human at 45.6–60.1% in
+every IVORY+ league/seat (NEON: 45.6% / 50.5%, the apex at its 45% floor), and
+pins each cell exactly in `tests/support/bot-calibration.ts` for the league
+aggregates. A player who
 never uses a dealt rune can still be an underdog in that outcome; at IVORY,
 where Rune Trial is new, the permanent-pool gate substitutes an even harsher
 38% / 40% Rune share and proves the league aggregate remains human-favoured. A random mover also remains favoured

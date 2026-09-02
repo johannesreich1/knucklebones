@@ -9,7 +9,6 @@
 // Edge Function that validates actions.
 import { diceStream, poolSequence } from './dice.ts';
 import {
-  BOUNTY,
   LIMITED,
   ME,
   applyMove,
@@ -20,6 +19,7 @@ import {
   totalOf,
   type Mode,
   type Player,
+  bountyFor,
 } from './rules.ts';
 import { freshCharges, spellById } from './spells.ts';
 import { rankedDieOk, rankedIntentOf, sameRankedAction } from './ranked-action-validation.ts';
@@ -156,7 +156,7 @@ function makeEngine(seed: string, mode: Mode, dealt: RankedRuneDeal): Engine | n
         mode,
         state.charm,
       );
-      if (mode === BOUNTY) state.bounty[who] += destroyed;
+      state.bounty[who] += bountyFor(destroyed, mode);
       const bagLeft = bag ? bag.length - drawCount : null;
       state.over = isOver(state.st[who], bagLeft);
       const moveIndex = state.moveCount++;

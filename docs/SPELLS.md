@@ -155,6 +155,12 @@ That historical roster spans **55.7–63.2**, against the retired swap's
 
 ### Current standard evaluation (2026-08-25)
 
+*The rows below predate two 2026-09-02 changes to the bot policy they were
+measured against: the ranked bot now decides its cast on merit and receives
+its league slip once, on the placement, and the placement search scores
+BOUNTY's banked points. Read the SUNDER and BOUNTY-adjacent rows as historical
+until `tools/spellsim.ts` is rerun.*
+
 After enforcing one cast per turn for people, bots, and the evaluator, the
 standard default-seed run completed 3,000 one-sided and 3,000 symmetric games
 for each configured row (72,000 games total):

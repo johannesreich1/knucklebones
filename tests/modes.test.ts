@@ -10,7 +10,7 @@ import {
 } from '../src/core/rules.ts';
 import { poolSequence, POOL_PER_FACE } from '../src/core/dice.ts';
 import { rebuild, matchTotal, type MatchState } from '../src/core/match.ts';
-import { searchRoot, riskOf } from '../src/core/ai.ts';
+import { searchRoot, riskOf, nodes } from '../src/core/ai.ts';
 import { MODES, pickMode, modeById } from '../src/core/modes.ts';
 import { emitReport } from './support/emit-report.mjs';
 
@@ -187,5 +187,35 @@ const fullCol: GameState = [[[3, 3, 3], [], []], [[], [], []]];
 check(riskOf(fullCol, AI, COLSHIELD) === riskOf(fullCol, AI, CLASSIC),
       'colshield risk must read classic — the shield skip lost games', riskOf(fullCol, AI, COLSHIELD));
 check(riskOf(fullCol, AI, CLASSIC) > 0, 'classic full column still at risk', riskOf(fullCol, AI, CLASSIC));
+
+/* ---- the search knows what it is playing for ----
+   BOUNTY banks +1 per destroyed die OUTSIDE the boards, and the search once
+   scored boards only: build and kill tied at 15 on the boards, so strict `>`
+   kept the first legal column and the bot built while two bounty points sat
+   in the other column. A search that sees its bank takes the kill. CLASSIC
+   must still build on the tie. */
+const bountyKnife: GameState = [[[3, 3], [], []], [[], [], [3, 3]]];
+const knifeOpts = { random: () => 0.5, riskWeight: 0, opponentWeight: 1 };
+check(searchRoot(bountyKnife, AI, 3, 1, { ...knifeOpts, mode: CLASSIC }).c === 0,
+  'classic must still build on the boards-only tie', searchRoot(bountyKnife, AI, 3, 1, { ...knifeOpts, mode: CLASSIC }));
+check(searchRoot(bountyKnife, AI, 3, 1, { ...knifeOpts, mode: BOUNTY, bounty: [0, 0] }).c === 2,
+  'a BOUNTY bot must take the kill that also banks — the search could not see its bank',
+  searchRoot(bountyKnife, AI, 3, 1, { ...knifeOpts, mode: BOUNTY, bounty: [0, 0] }));
+/* A banked lead decides a game-ending placement's sign. AI's last die fills
+   its board without touching ME's, and the boards then tie at 42 exactly;
+   only the bank (AI ahead by two) makes that ending a WIN worth its +14. The
+   search's verdict on it was 0 — a draw — because it scored boards only. */
+const bountyEnding: GameState = [[[1, 1, 1], [2, 2, 2], [3, 3]], [[3, 3, 3], [2, 2, 2], [1, 1, 1]]];
+const ending = (mode: Mode, bounty: [number, number]) =>
+  searchRoot(bountyEnding, AI, 3, 2, { ...knifeOpts, mode, bounty });
+check(ending(CLASSIC, [2, 0]).v === 0, 'classic must still call the tied boards a draw', ending(CLASSIC, [2, 0]));
+check(ending(BOUNTY, [2, 0]).v > 0,
+  'a BOUNTY bot ahead only on its bank must value ending the game as a win',
+  ending(BOUNTY, [2, 0]));
+/* Hot-path shape guard: the CLASSIC tree does no new work. Pinned before the
+   bank was threaded through search (2026-09-02); a different count means
+   the classic search grew or pruned. */
+searchRoot([[[2], [5, 5], []], [[3], [], [1, 6]]], AI, 4, 4, { random: () => 0.5 });
+check(nodes() === 5599, 'the CLASSIC depth-4 search visited a different number of nodes', nodes());
 
 emitReport({ problems, errs: [] }, problems.length);

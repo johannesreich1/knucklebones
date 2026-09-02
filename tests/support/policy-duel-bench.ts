@@ -42,9 +42,12 @@ export interface UnforcedTally { placements: number; errors: number }
 
 const rnd = (n: number, random: () => number) => Math.floor(random() * n);
 
-function pick(p: Policy, st: GameState, who: Player, die: number, random: () => number): number {
+/* `bounty` is the world's bank; a policy searching CLASSIC in a BOUNTY world
+   ignores it, which is exactly what a Classic-eval twin means. */
+function pick(p: Policy, st: GameState, who: Player, die: number, random: () => number,
+              bounty: readonly [number, number]): number {
   const mode = p.mode ?? CLASSIC;
-  if (p.shape) return botMoveWithShape(st, who, die, p.shape, mode, random);
+  if (p.shape) return botMoveWithShape(st, who, die, p.shape, mode, random, { bounty });
   const legal = legalCols(st[who]);
   if (p.random) return legal[rnd(legal.length, random)];
   return searchRoot(st, who, die, p.depth ?? 1, {
@@ -52,6 +55,7 @@ function pick(p: Policy, st: GameState, who: Player, die: number, random: () => 
     random,
     riskWeight: p.risk ?? 0,
     opponentWeight: p.oppW ?? 1,
+    bounty,
   }).c;
 }
 
@@ -79,7 +83,7 @@ export function policyGame(bot: Policy, human: Policy, humanFirst: boolean, worl
     const die = bag ? bag.shift()! : 1 + rnd(6, diceRandom);
     const policy = turn === humanIdx ? humanPolicy : botPolicy;
     const decisionRandom = turn === humanIdx ? humanRandom : botRandom;
-    const col = pick(policy, st, turn, die, decisionRandom);
+    const col = pick(policy, st, turn, die, decisionRandom, bounty);
     if (tally && turn === botIdx) {
       tally.placements++;
       const threshold = bot.shape?.freeUpgrade ?? FREE_UPGRADE_THRESHOLD;

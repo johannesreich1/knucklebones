@@ -19,8 +19,9 @@
 // measured a one-sided holder at 70.5% in classic and 81.8% under
 // SINGLESTRIKE. This roster measured 53–61% under the same harness.
 import {
-  BOUNTY, SPEC, cloneCharm, distinctPipSum, isShielded,
+  SPEC, cloneCharm, distinctPipSum, isShielded,
   type CharmSt, type Player,
+  bountyFor,
 } from './rules.ts';
 import { DICE_FACES } from '../config.ts';
 import type { CastCtx, SpellSpec } from './spell-types.ts';
@@ -160,7 +161,7 @@ const SUNDER: SpellSpec = {
     return armedSunderCharm(ctx, who);
   },
   cpuCast(st, who, ctx, demand) {
-    const bankPerKill = ctx.mode === BOUNTY ? 1 : 0;
+    const bankPerKill = bountyFor(1, ctx.mode);
     const wide = immediatePlacementGain(st, who, ctx.die, ctx.mode, {
       charm: armedSunderCharm(ctx, who), bankPerKill,
     });

@@ -12,10 +12,10 @@
 // production pass Math.random; the gate passes a seeded stream to prove the
 // extraction changed nothing.
 import {
-  ME, applyMove, boardTotalMode, cloneCharm, cloneSt, legalCols,
+  ME, applyMove, boardTotalMode, bountyFor, cloneCharm, cloneSt, legalCols,
   type CharmSt, type GameState, type Mode, type Player,
 } from './rules.ts';
-import { searchRoot } from './ai.ts';
+import { searchRoot, type Bank } from './ai.ts';
 import {
   FREE_UPGRADE_THRESHOLD, botShapeAt, type BotShape, type BotStanding, type LadderCurveVersion,
 } from './ladder.ts';
@@ -23,6 +23,14 @@ import {
 /** The same league shape has a separately calibrated slip rate when it opens. */
 export function botSlip(shape: BotShape, botIdx: Player): number {
   return botIdx === ME ? shape.openerSlip : shape.slip;
+}
+
+/** Everything a decision needs beyond the boards and the die: the exact charm
+    at the root (a coordinated cast preview projects one) and, under BOUNTY,
+    the points each player has already banked. */
+export interface BotMoveContext {
+  rootCharm?: CharmSt;
+  bounty?: Bank;
 }
 
 /** What one legal column is worth at depth 0 under the mode's own totals. */
@@ -46,10 +54,11 @@ export function scoreColumns(st: GameState, botIdx: Player, die: number, mode: M
   return legalCols(st[botIdx]).map((col) => {
     const scratch = cloneSt(st);
     const scratchCharm = rootCharm && cloneCharm(rootCharm);
-    applyMove(scratch, botIdx, col, die, mode, scratchCharm);
+    const killed = applyMove(scratch, botIdx, col, die, mode, scratchCharm);
     return {
       col,
-      own: boardTotalMode(scratch[botIdx], mode, scratchCharm?.wards[botIdx]) - ownBefore,
+      own: boardTotalMode(scratch[botIdx], mode, scratchCharm?.wards[botIdx]) - ownBefore
+        + bountyFor(killed, mode),
       oppLoss: oppBefore - boardTotalMode(scratch[opponent], mode, scratchCharm?.wards[opponent]),
     };
   });
@@ -75,8 +84,8 @@ export function declinesFreeUpgrade(scored: readonly ColumnScore[], col: number,
    slips and tie-break jitter, so a caller can replay the whole decision. */
 export function botMove(st: GameState, botIdx: Player, die: number, bot: BotStanding,
                         mode: Mode, curveVersion: LadderCurveVersion,
-                        rand: () => number, rootCharm?: CharmSt): number {
-  return botMoveWithShape(st, botIdx, die, botShapeAt(bot, curveVersion), mode, rand, rootCharm);
+                        rand: () => number, context: BotMoveContext = {}): number {
+  return botMoveWithShape(st, botIdx, die, botShapeAt(bot, curveVersion), mode, rand, context);
 }
 
 /* Where a slip may land. Two terms, one filter, and it draws nothing.
@@ -121,22 +130,23 @@ export function slipCandidates(st: GameState, botIdx: Player, die: number, shape
    you change which numbers later draws get — a replay difference, not a
    style difference. */
 export function botSlipPick(st: GameState, botIdx: Player, die: number, shape: BotShape,
-                            mode: Mode, rand: () => number, rootCharm?: CharmSt): number | null {
+                            mode: Mode, rand: () => number, context: BotMoveContext = {}): number | null {
   const slip = botSlip(shape, botIdx);
   if (!(slip > 0 && rand() < slip)) return null;
-  const choices = slipCandidates(st, botIdx, die, shape, mode, rootCharm);
+  const choices = slipCandidates(st, botIdx, die, shape, mode, context.rootCharm);
   return choices[Math.floor(rand() * choices.length)];
 }
 
 /** The shape's search, exactly as the un-slipped branch has always run it. */
 export function botSearch(st: GameState, botIdx: Player, die: number, shape: BotShape,
-                          mode: Mode, rand: () => number, rootCharm?: CharmSt): number {
+                          mode: Mode, rand: () => number, context: BotMoveContext = {}): number {
   return searchRoot(st, botIdx, die, shape.depth, {
     mode,
     random: rand,
     riskWeight: shape.risk,
     opponentWeight: shape.oppW,
-    rootCharm,
+    rootCharm: context.rootCharm,
+    bounty: context.bounty,
   }).c;
 }
 
@@ -147,8 +157,8 @@ export function botSearch(st: GameState, botIdx: Player, die: number, shape: Bot
    search, the one slip on the placement — and must decide exactly as this
    composition would (tests/support/bot-move-contract.ts pins it). */
 export function botMoveWithShape(st: GameState, botIdx: Player, die: number, shape: BotShape,
-                                 mode: Mode, rand: () => number, rootCharm?: CharmSt): number {
+                                 mode: Mode, rand: () => number, context: BotMoveContext = {}): number {
   if (!legalCols(st[botIdx]).length) return -1;   // nothing to play: the caller is asking too late
-  return botSlipPick(st, botIdx, die, shape, mode, rand, rootCharm)
-    ?? botSearch(st, botIdx, die, shape, mode, rand, rootCharm);
+  return botSlipPick(st, botIdx, die, shape, mode, rand, context)
+    ?? botSearch(st, botIdx, die, shape, mode, rand, context);
 }

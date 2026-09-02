@@ -178,6 +178,7 @@ export async function moveMatch(context: AuthenticatedContext, input: MoveInput)
       }
       const botCol = botMove(
         state.st, botIdx, botDie, standing, mode, curveVersion, Math.random,
+        { bounty: state.bounty },
       );
       if (botCol < 0) return json({ error: "corrupt-state" }, 500);
       const reply: CommandMove = {

@@ -8,7 +8,7 @@
 //   tiebreak also leaves an equal-rated bot in p1. Each move consumes exactly
 //   one roll from the seed's dice stream. The game ends the instant a mover
 //   fills their board.
-import { type GameState, type Player, type Mode, CLASSIC, BOUNTY, LIMITED, ME, emptyBoard, legalCols, isOver, applyMove, totalOf } from './rules.ts';
+import { type GameState, type Player, type Mode, CLASSIC, LIMITED, ME, emptyBoard, legalCols, isOver, applyMove, totalOf, bountyFor } from './rules.ts';
 import { diceStream, poolSequence } from './dice.ts';
 
 export interface MoveRow { idx: number; who: number; col: number; }
@@ -41,7 +41,7 @@ export function rebuild(seed: string, rows: MoveRow[], mode: Mode = CLASSIC): Ma
     if (!die) return null;                       // a move past the empty bag: corrupt
     if (!legalCols(st[turn]).includes(m.col)) return null;
     const destroyed = applyMove(st, turn, m.col, die, mode);
-    if (mode === BOUNTY) bounty[turn] += destroyed;
+    bounty[turn] += bountyFor(destroyed, mode);
     // LIMITED: placing the LAST die from the bag ends the game, full or not
     over = isOver(st[turn], bag ? bag.length - (i + 1) : null);
     turn = (1 - turn) as Player;

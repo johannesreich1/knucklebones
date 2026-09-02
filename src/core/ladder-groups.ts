@@ -79,7 +79,7 @@ const GROUP_BOTS: readonly BotShape[] = Object.freeze([
   Object.freeze({ depth: 1, risk: 0.6, oppW: 1, slip: 0.84, openerSlip: 0.795, castDemand: 32, freeUpgrade: FREE_UPGRADE_THRESHOLD }),
   Object.freeze({ depth: 2, risk: 1.2, oppW: 1, slip: 0.78, openerSlip: 0.74, castDemand: 16, freeUpgrade: FREE_UPGRADE_THRESHOLD }),
   Object.freeze({ depth: 3, risk: 1.2, oppW: 1, slip: 0.74, openerSlip: 0.70, castDemand: 16, freeUpgrade: FREE_UPGRADE_THRESHOLD }),
-  Object.freeze({ depth: 4, risk: 1.2, oppW: 1, slip: 0.62, openerSlip: 0.63, castDemand: 16, freeUpgrade: FREE_UPGRADE_THRESHOLD }),
+  Object.freeze({ depth: 4, risk: 1.2, oppW: 1, slip: 0.58, openerSlip: 0.61, castDemand: 24, freeUpgrade: FREE_UPGRADE_THRESHOLD }),
 ]);
 
 const makeGroup = (id: string, floor: number, width: number, botIndex: number): Readonly<Group> =>

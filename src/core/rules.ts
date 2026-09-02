@@ -166,6 +166,13 @@ export function victimsOf(oc: Col, die: number, mode: Mode = CLASSIC): number[] 
   return hits;
 }
 
+/* What a kill is worth OFF the boards: BOUNTY banks a permanent +1 per
+   destroyed die, every other mode nothing. The one rule every banker reads —
+   the match replays, the search, and a spell weighing a destroy. */
+export function bountyFor(killed: number, mode: Mode): number {
+  return mode === BOUNTY ? killed : 0;
+}
+
 /* the score a player is holding: their board under the active mode, plus any
    permanently banked bounty. Server finishes, client displays and the local
    end screen all settle here. */

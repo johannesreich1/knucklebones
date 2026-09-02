@@ -326,7 +326,7 @@ eq(GROUPS.map((g) => [
 ]), [
   [1, 0, -0.5, 0.70, 0.70, 16, 'any column'], [1, 0, 0, 0.70, 0.70, 16, 'any column'],
   [1, 0.25, 0.05, 0.70, 0.70, 16, 8], [1, 0.6, 1, 0.84, 0.795, 32, 8], [2, 1.2, 1, 0.78, 0.74, 16, 8],
-  [3, 1.2, 1, 0.74, 0.70, 16, 8], [4, 1.2, 1, 0.62, 0.63, 16, 8],
+  [3, 1.2, 1, 0.74, 0.70, 16, 8], [4, 1.2, 1, 0.58, 0.61, 24, 8],
 ], 'the per-group bot shapes drifted from LADDER.md §4');
 const standing = (points: number, apex = false) => ({ points, apex });
 eq(botShapeAt(standing(148)), GROUPS[0].bot, 'a bot with STONE points must play the STONE shape');

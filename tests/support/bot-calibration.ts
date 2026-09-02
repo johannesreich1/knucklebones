@@ -52,12 +52,13 @@ export const LEARNER: Policy = { depth: 1, oppW: 1, risk: 0.6 };
    suite already near its shard budget. */
 export const NOVICE_RUNE_FLOOR = { humanFirst: 0.38, botFirst: 0.40 } as const;
 export const RUNE_CELL_BASELINE: Readonly<Record<string, { humanFirst: number; botFirst: number }>> = {
-  // Measured 2026-09-02 at the retuned shapes (cast on merit, free-upgrade rule).
+  // Measured 2026-09-02 at the retuned shapes (cast on merit, free-upgrade
+  // rule, bounty-aware search).
   ivory: { humanFirst: 0.526, botFirst: 0.5245 },
   silver: { humanFirst: 0.529, botFirst: 0.601 },
   gold: { humanFirst: 0.5025, botFirst: 0.5315 },
   obsidian: { humanFirst: 0.475, botFirst: 0.509 },
-  neon: { humanFirst: 0.4545, botFirst: 0.466 },
+  neon: { humanFirst: 0.456, botFirst: 0.5045 },
 };
 export function runeCell(index: number, humanFirst: boolean): number {
   if (index <= 2) return humanFirst ? NOVICE_RUNE_FLOOR.humanFirst : NOVICE_RUNE_FLOOR.botFirst;
@@ -122,9 +123,9 @@ export const LEAGUE_CELL_BASELINE: Readonly<Record<string, { humanOpens: number;
   // botbench 2026-09-02 at the retuned shapes; percentages as the report prints them.
   stone: { humanOpens: 80.1, botOpens: 64.8 },
   bone: { humanOpens: 62.7, botOpens: 61.8 },
-  ivory: { humanOpens: 52.6, botOpens: 53.4 },
+  ivory: { humanOpens: 52.5, botOpens: 53.1 },
   silver: { humanOpens: 52.5, botOpens: 53.7 },
   gold: { humanOpens: 51.6, botOpens: 51.8 },
   obsidian: { humanOpens: 48.8, botOpens: 49.5 },
-  neon: { humanOpens: 46.7, botOpens: 46.6 },
+  neon: { humanOpens: 46.5, botOpens: 46.4 },
 };
