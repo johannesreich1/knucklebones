@@ -1,0 +1,70 @@
+<!-- meta name="Icon 09 — Mirror" group="5b · The launcher icon" subtitle="Dark-mode launcher study: my five stands on a black glass floor and the opponent's die is its reflection — the same die upside down in the other hue, fading as it sinks. Faces are fixed by the design — the profile avatar never moves them" height=867 sizes="md" links="iOS launch, Home, Profile" -->
+<style>
+  /* The mark is the board's own symmetry: my side and theirs are one board
+     mirrored. Two of the app's own die tokens — mine standing above the
+     horizon, the opponent's the same die flipped below it, wearing their hue
+     and fading as it sinks into the glass. The flip and the fade are the
+     wrapper's; the die is untouched. Faces are fixed by the design (a five,
+     the shipped face): the shipped icon follows the profile avatar, and this
+     board asks whether the mark should stop doing that. */
+  .ia9 .icoframe{background:
+    radial-gradient(60% 46% at 50% 30%,rgba(var(--p1-rgb),.18),transparent 70%),
+    radial-gradient(60% 40% at 50% 84%,rgba(var(--p2-rgb),.16),transparent 70%),
+    linear-gradient(#2e2e31 0%,#1c1c1f 54%,#08080a 54.2%,#040405 100%)}
+  /* the horizon — one hairline of light where the floor begins; it is the
+     one hard edge on the mark and still a line at 29px */
+  .ia9 .ia9line{position:absolute;left:8px;right:8px;top:64.5px;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.55) 30%,rgba(255,255,255,.75) 50%,rgba(255,255,255,.55) 70%,transparent)}
+  /* the reflection: the wrapper flips the die and fades it away from the
+     horizon (mask runs in the element's own frame, which the flip inverts) */
+  .ia9 .ia9refl{opacity:.95;
+    -webkit-mask-image:linear-gradient(to top,rgba(0,0,0,.9) 5%,rgba(0,0,0,.35) 55%,transparent 92%);
+    mask-image:linear-gradient(to top,rgba(0,0,0,.9) 5%,rgba(0,0,0,.35) 55%,transparent 92%)}
+</style>
+<div class="stage ia9"><div class="bgfx"></div><div class="scr">
+  <div class="icohead">
+    <div class="eyebrow">Open study · launcher · dark appearance</div>
+    <h1>ICON 09 · MIRROR</h1>
+    <p>One die on a black glass floor, and its reflection is the opponent: the same five turned upside down, in the other hue, fading as it sinks. The two boards face each other across a horizon.</p>
+  </div>
+
+  <div class="icohero">
+    <div class="icoframe" style="--S:180"><div class="icomark">
+      <b class="ia9line"></b>
+      <i class="icopos" style="left:34px;top:10px;transform:rotate(-5deg)">{{die:5:p1:52}}</i>
+      <i class="icopos ia9refl" style="left:34px;top:68px;transform:scaleY(-1) rotate(-5deg)">{{die:5:p2:52}}</i>
+    </div></div>
+    <span class="cap2">App Store · 1024</span>
+  </div>
+
+  <div class="icohome"><div class="icorow">
+    <div class="icoapp">{{appicon:60}}<span class="nm">Shipped</span></div>
+    <div class="icoapp"><div class="icoframe" style="--S:60"><div class="icomark">
+      <b class="ia9line"></b>
+      <i class="icopos" style="left:34px;top:10px;transform:rotate(-5deg)">{{die:5:p1:52}}</i>
+      <i class="icopos ia9refl" style="left:34px;top:68px;transform:scaleY(-1) rotate(-5deg)">{{die:5:p2:52}}</i>
+    </div></div><span class="nm">Knucklebones</span></div>
+    <div class="icoapp"><span class="icotile"></span><span class="nm">Settings</span></div>
+    <div class="icoapp"><span class="icotile"></span><span class="nm">Notes</span></div>
+  </div></div>
+
+  <div class="icosizes">
+    <div class="icosize"><div class="icoframe" style="--S:60"><div class="icomark">
+      <b class="ia9line"></b>
+      <i class="icopos" style="left:34px;top:10px;transform:rotate(-5deg)">{{die:5:p1:52}}</i>
+      <i class="icopos ia9refl" style="left:34px;top:68px;transform:scaleY(-1) rotate(-5deg)">{{die:5:p2:52}}</i>
+    </div></div><span class="cap2">Home · 60</span></div>
+    <div class="icosize"><div class="icoframe" style="--S:40"><div class="icomark">
+      <b class="ia9line"></b>
+      <i class="icopos" style="left:34px;top:10px;transform:rotate(-5deg)">{{die:5:p1:52}}</i>
+      <i class="icopos ia9refl" style="left:34px;top:68px;transform:scaleY(-1) rotate(-5deg)">{{die:5:p2:52}}</i>
+    </div></div><span class="cap2">Spotlight · 40</span></div>
+    <div class="icosize"><div class="icoframe" style="--S:29"><div class="icomark">
+      <b class="ia9line"></b>
+      <i class="icopos" style="left:34px;top:10px;transform:rotate(-5deg)">{{die:5:p1:52}}</i>
+      <i class="icopos ia9refl" style="left:34px;top:68px;transform:scaleY(-1) rotate(-5deg)">{{die:5:p2:52}}</i>
+    </div></div><span class="cap2">Settings · 29</span></div>
+  </div>
+
+  <div class="note" style="margin-top:14px"><b>Why a mirror.</b> The board is two halves that mirror each other, so the mark is one die and its reflection: mine standing on a black glass floor, the opponent's the same five upside down beneath the horizon, in their hue, fading as it goes deeper. Both faces are fixed by the design — the profile avatar never moves them; only the two hues from Settings are the player's. Nothing on the mark is hand-drawn but the horizon line: two of the app's own dice, one flipped and masked by its wrapper. The dark appearance keeps the charcoal ground above the line and a deeper black below it; only the hue washes change.</div>
+</div></div>

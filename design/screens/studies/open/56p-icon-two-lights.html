@@ -1,0 +1,64 @@
+<!-- meta name="Icon 16 — Two lights" group="5b · The launcher icon" subtitle="Dark-mode launcher study: one unowned die, lit from the left by my hue and from the right by the opponent's — the two players are the lights, and the die between them casts a shadow of each. Faces are fixed by the design — the profile avatar never moves them" height=867 sizes="md" links="iOS launch, Home, Profile" -->
+<style>
+  /* Here the players are not dice but LIGHTS. One of the app's own dice in
+     its unowned steel (no owner class, so it wears the token's default
+     hue) sits at the shipped tilt, lit cyan from the left and magenta from
+     the right: a rim of each hue on its own edge, and a coloured shadow
+     thrown away from each light across the floor. The rims are the
+     wrapper's drop shadows and the floor shadows are two blurred plates
+     under the die; the die is untouched. The face is fixed by the design
+     (the shipped five): the shipped icon follows the profile avatar, and
+     this board asks whether the mark should stop doing that. */
+  .iap .icoframe{background:
+    radial-gradient(34% 70% at 0% 50%,rgba(var(--p1-rgb),.28),transparent 70%),
+    radial-gradient(34% 70% at 100% 50%,rgba(var(--p2-rgb),.26),transparent 70%),
+    linear-gradient(#26262a,#0c0c0f)}
+  /* the two floor shadows, each thrown away from its light */
+  .iap .iapsh{position:absolute;width:52px;height:52px;border-radius:13px;filter:blur(2.5px);opacity:.42;transform:rotate(7deg)}
+  .iap .iapsh1{left:60px;top:50px;background:var(--p1)}
+  .iap .iapsh2{left:8px;top:50px;background:var(--p2)}
+  /* the rims: each light grazes its own edge of the die */
+  .iap .iapdie{filter:drop-shadow(-2.5px 0 2.5px rgba(var(--p1-rgb),.95)) drop-shadow(2.5px 0 2.5px rgba(var(--p2-rgb),.95))}
+</style>
+<div class="stage iap"><div class="bgfx"></div><div class="scr">
+  <div class="icohead">
+    <div class="eyebrow">Open study · launcher · dark appearance</div>
+    <h1>ICON 16 · TWO LIGHTS</h1>
+    <p>One die that belongs to nobody yet, lit from two sides: my hue from the left, the opponent's from the right. The players are the lights, and the die between them throws a shadow of each colour.</p>
+  </div>
+
+  <div class="icohero">
+    <div class="icoframe" style="--S:180"><div class="icomark">
+      <b class="iapsh iapsh1"></b><b class="iapsh iapsh2"></b>
+      <i class="icopos iapdie" style="left:30px;top:30px;transform:rotate(7deg)">{{die:5:solo:60}}</i>
+    </div></div>
+    <span class="cap2">App Store · 1024</span>
+  </div>
+
+  <div class="icohome"><div class="icorow">
+    <div class="icoapp">{{appicon:60}}<span class="nm">Shipped</span></div>
+    <div class="icoapp"><div class="icoframe" style="--S:60"><div class="icomark">
+      <b class="iapsh iapsh1"></b><b class="iapsh iapsh2"></b>
+      <i class="icopos iapdie" style="left:30px;top:30px;transform:rotate(7deg)">{{die:5:solo:60}}</i>
+    </div></div><span class="nm">Knucklebones</span></div>
+    <div class="icoapp"><span class="icotile"></span><span class="nm">Settings</span></div>
+    <div class="icoapp"><span class="icotile"></span><span class="nm">Notes</span></div>
+  </div></div>
+
+  <div class="icosizes">
+    <div class="icosize"><div class="icoframe" style="--S:60"><div class="icomark">
+      <b class="iapsh iapsh1"></b><b class="iapsh iapsh2"></b>
+      <i class="icopos iapdie" style="left:30px;top:30px;transform:rotate(7deg)">{{die:5:solo:60}}</i>
+    </div></div><span class="cap2">Home · 60</span></div>
+    <div class="icosize"><div class="icoframe" style="--S:40"><div class="icomark">
+      <b class="iapsh iapsh1"></b><b class="iapsh iapsh2"></b>
+      <i class="icopos iapdie" style="left:30px;top:30px;transform:rotate(7deg)">{{die:5:solo:60}}</i>
+    </div></div><span class="cap2">Spotlight · 40</span></div>
+    <div class="icosize"><div class="icoframe" style="--S:29"><div class="icomark">
+      <b class="iapsh iapsh1"></b><b class="iapsh iapsh2"></b>
+      <i class="icopos iapdie" style="left:30px;top:30px;transform:rotate(7deg)">{{die:5:solo:60}}</i>
+    </div></div><span class="cap2">Settings · 29</span></div>
+  </div>
+
+  <div class="note" style="margin-top:14px"><b>Why two lights.</b> Every other study makes the players dice. This one makes them light. One die that nobody owns yet — the token's own steel, no owner class — sits at the shipped tilt between my hue on the left and the opponent's on the right, each grazing its own edge of the glass and throwing a shadow of its colour across the floor. It is the roll before it lands, and both players are already in the picture. The face is fixed by the design — the profile avatar never moves it; only the two hues from Settings are the player's. The dark appearance keeps the charcoal ground; the two washes are the lights themselves.</div>
+</div></div>

@@ -1,0 +1,67 @@
+<!-- meta name="Icon 11 — Two grounds" group="5b · The launcher icon" subtitle="Dark-mode launcher study: the squircle itself is the board — cut on the diagonal into my dark cyan ground and the opponent's dark magenta ground, one die standing on each, a hairline of light for the seam. Faces are fixed by the design — the profile avatar never moves them" height=867 sizes="md" links="iOS launch, Home, Profile" -->
+<style>
+  /* The ground carries the duel here, not the dice: the frame is split on
+     the diagonal into two deep, desaturated fields — my hue lower-left, the
+     opponent's upper-right — and one of the app's own dice stands on each.
+     The seam is the only hard line. Two fields of colour read at any size,
+     which is what a launcher needs most; the dice are the detail that
+     rewards a closer look. Faces are fixed by the design (5 against 3): the
+     shipped icon follows the profile avatar, and this board asks whether the
+     mark should stop doing that. */
+  .iak .icoframe{background:
+    linear-gradient(45deg,rgba(var(--p1-rgb),.30) 0 50%,rgba(var(--p2-rgb),.28) 50% 100%),
+    linear-gradient(#232326,#0b0b0d)}
+  /* the seam: a hairline of white light with each hue glowing off its own
+     side, rotated onto the diagonal; the field's hard stop is the seam at 29 */
+  .iak .iakseam{position:absolute;left:-30px;top:59px;width:180px;height:2px;
+    transform:rotate(-45deg);transform-origin:50% 50%;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.8) 25%,rgba(255,255,255,.95) 50%,rgba(255,255,255,.8) 75%,transparent);
+    box-shadow:0 -2px 6px rgba(var(--p2-rgb),.6),0 2px 6px rgba(var(--p1-rgb),.6)}
+</style>
+<div class="stage iak"><div class="bgfx"></div><div class="scr">
+  <div class="icohead">
+    <div class="eyebrow">Open study · launcher · dark appearance</div>
+    <h1>ICON 11 · TWO GROUNDS</h1>
+    <p>The icon is the board. The squircle is cut on the diagonal into two grounds — mine below, the opponent's above — with one die standing on each and a single seam of light between them.</p>
+  </div>
+
+  <div class="icohero">
+    <div class="icoframe" style="--S:180"><div class="icomark">
+      <b class="iakseam"></b>
+      <i class="icopos" style="left:67px;top:15px;transform:rotate(8deg)">{{die:3:p2:38}}</i>
+      <i class="icopos" style="left:15px;top:67px;transform:rotate(-8deg)">{{die:5:p1:38}}</i>
+    </div></div>
+    <span class="cap2">App Store · 1024</span>
+  </div>
+
+  <div class="icohome"><div class="icorow">
+    <div class="icoapp">{{appicon:60}}<span class="nm">Shipped</span></div>
+    <div class="icoapp"><div class="icoframe" style="--S:60"><div class="icomark">
+      <b class="iakseam"></b>
+      <i class="icopos" style="left:67px;top:15px;transform:rotate(8deg)">{{die:3:p2:38}}</i>
+      <i class="icopos" style="left:15px;top:67px;transform:rotate(-8deg)">{{die:5:p1:38}}</i>
+    </div></div><span class="nm">Knucklebones</span></div>
+    <div class="icoapp"><span class="icotile"></span><span class="nm">Settings</span></div>
+    <div class="icoapp"><span class="icotile"></span><span class="nm">Notes</span></div>
+  </div></div>
+
+  <div class="icosizes">
+    <div class="icosize"><div class="icoframe" style="--S:60"><div class="icomark">
+      <b class="iakseam"></b>
+      <i class="icopos" style="left:67px;top:15px;transform:rotate(8deg)">{{die:3:p2:38}}</i>
+      <i class="icopos" style="left:15px;top:67px;transform:rotate(-8deg)">{{die:5:p1:38}}</i>
+    </div></div><span class="cap2">Home · 60</span></div>
+    <div class="icosize"><div class="icoframe" style="--S:40"><div class="icomark">
+      <b class="iakseam"></b>
+      <i class="icopos" style="left:67px;top:15px;transform:rotate(8deg)">{{die:3:p2:38}}</i>
+      <i class="icopos" style="left:15px;top:67px;transform:rotate(-8deg)">{{die:5:p1:38}}</i>
+    </div></div><span class="cap2">Spotlight · 40</span></div>
+    <div class="icosize"><div class="icoframe" style="--S:29"><div class="icomark">
+      <b class="iakseam"></b>
+      <i class="icopos" style="left:67px;top:15px;transform:rotate(8deg)">{{die:3:p2:38}}</i>
+      <i class="icopos" style="left:15px;top:67px;transform:rotate(-8deg)">{{die:5:p1:38}}</i>
+    </div></div><span class="cap2">Settings · 29</span></div>
+  </div>
+
+  <div class="note" style="margin-top:14px"><b>Why two grounds.</b> The other studies put the duel in the dice and leave the ground charcoal; this one gives each player the ground. The squircle is cut on the diagonal into two deep fields — my hue from Settings lower-left, the opponent's upper-right — and one die stands on each side of a single seam of light. Two fields read at 29px where no pip can, so the mark never loses its meaning at any size. Faces are fixed by the design (5 against 3) — the profile avatar never moves them. The dark appearance keeps the fields deep and desaturated over the charcoal ground; only their hues change.</div>
+</div></div>
