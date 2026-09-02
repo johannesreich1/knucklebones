@@ -58,6 +58,7 @@ check(!font.problem,
 
 const clipped = [], unexpanded = [];
 let pilferStudy = null;
+let navigationCard = null;
 const selectedPlayCards = new Map([
   ['10-home-signed-in', 'Play ranked match'],
   ['11-home-signed-out', 'Play ranked match'],
@@ -145,6 +146,22 @@ for (const f of files) {
     }, f));
   }
 
+  if (f === '00-navigation.html') {
+    navigationCard = await page.evaluate(() => {
+      const button = document.querySelector('.shead [data-page-back]');
+      const svg = button?.querySelector('svg.cico-back');
+      const box = svg?.getBoundingClientRect();
+      return {
+        text: button?.textContent?.trim() ?? '',
+        transparent: button ? getComputedStyle(button).backgroundImage === 'none' : false,
+        size: box ? [box.width, box.height] : null,
+        p1: !!svg?.querySelector('.back-bracket--p1'),
+        p2: !!svg?.querySelector('.back-bracket--p2'),
+        chevron: !!svg?.querySelector('.back-chevron'),
+      };
+    });
+  }
+
   /* PI5's source-die visibility beat and waiting lean share one element. A
      more-specific animation shorthand once silently replaced the lean, so the
      rendered card looked unlike production even though both keyframes existed
@@ -170,8 +187,14 @@ out.unexpanded = unexpanded;
 out.pilferStudy = pilferStudy;
 out.playCtas = playCtas;
 out.plainCtas = plainCtas;
+out.navigationCard = navigationCard;
 check(clipped.length === 0, 'design cards taller than the frame the pane gives them', clipped);
 check(unexpanded.length === 0, 'design cards shipping an unexpanded {{token}} as copy', unexpanded);
+check(navigationCard?.text === '' && navigationCard.transparent
+    && navigationCard.p1 && navigationCard.p2 && navigationCard.chevron
+    && navigationCard.size?.every((size) => size === 30),
+  'the normative Navigation card does not render the shared 30px Duel Brackets control',
+  navigationCard);
 check(pilferStudy?.targetAnimations.split(',').map((name) => name.trim()).join(',') === 'pigone,pi5lean'
     && pilferStudy?.gripAnimation === 'pi5grip'
     && pilferStudy?.gripInsets.every((inset) => inset === '0px')

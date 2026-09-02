@@ -7,6 +7,7 @@ import {
   type LegalPageId,
   type LegalPublicationConfig,
 } from '../legal/types.ts';
+import { pageBackButton } from '../ui/page-chrome.ts';
 
 const initial = legalLocaleContent('en');
 
@@ -70,8 +71,12 @@ export const LEGAL_MARKUP = LEGAL_PAGE_REGISTRY.map(({ id, domSuffix }) => {
   return `<div class="ov paged legal-page" id="ov${domSuffix}" data-legal-page="${id}"
     role="dialog" aria-modal="true" aria-labelledby="${headingId}">
     <div class="shead">
-      <button class="ico" id="btn${domSuffix}Back" data-legal-close
-        aria-label="${initial.backLabel}">‹</button>
+      ${pageBackButton({
+        id: `btn${domSuffix}Back`,
+        label: initial.backLabel,
+        translateLabel: false,
+        attributes: { 'data-legal-close': true },
+      })}
       <span class="ttl" data-legal-title>${title}</span><span class="pad"></span>
     </div>
     <div class="pbody" data-legal-body></div>

@@ -29,9 +29,181 @@ const VIEWPORTS = [
 const problems = [];
 const errs = [];
 const out = {};
+const ONLY_SHEET_STACK = process.argv.includes('--only-sheet-stack');
 const check = (condition, message, detail) => {
   if (!condition) problems.push(`${message} :: ${JSON.stringify(detail)}`);
 };
+
+const WIPE_IDS = ['kb-page-neon-beam', 'kb-page-neon-source', 'kb-page-neon-target'];
+const BACK_IDS = ['kb-duel-bracket-p1', 'kb-duel-bracket-p2', ...WIPE_IDS].sort();
+
+async function waitForMotionIdle(page) {
+  await page.waitForFunction(() => {
+    const managed = document.getAnimations({ subtree: true })
+      .filter((animation) => /^(kb-page-|kb-duel-bracket-)/.test(animation.id));
+    return managed.length === 0
+      && !document.getElementById('kbroot')?.classList.contains('page-motion-active')
+      && !document.querySelector(
+        '.page-wipe-beam,.page-motion-source,.page-motion-target,.page-motion-stage,.page-motion-cleanup',
+      );
+  }, null, { timeout: 1500 });
+}
+
+async function sampleMotion(page, expectedIds) {
+  await page.waitForFunction((expected) => {
+    const ids = document.getAnimations({ subtree: true })
+      .filter((animation) => /^(kb-page-|kb-duel-bracket-)/.test(animation.id))
+      .map((animation) => animation.id).sort();
+    return JSON.stringify(ids) === JSON.stringify(expected);
+  }, [...expectedIds].sort(), { timeout: 700 });
+  const reading = await page.evaluate(async () => {
+    const managed = document.getAnimations({ subtree: true })
+      .filter((animation) => /^(kb-page-|kb-duel-bracket-)/.test(animation.id));
+    managed.forEach((animation) => {
+      animation.pause();
+      animation.currentTime = Number(animation.effect?.getComputedTiming().duration ?? 0) * .2;
+    });
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const source = document.querySelector('.page-motion-source');
+    const target = document.querySelector('.page-motion-target');
+    const beam = document.querySelector('.page-wipe-beam');
+    const sheet = document.querySelector('.faceoff');
+    const style = (element) => element ? getComputedStyle(element) : null;
+    const signature = managed.map((animation) => ({
+      id: animation.id,
+      duration: Number(animation.effect?.getTiming().duration ?? 0),
+      easing: animation.effect?.getTiming().easing ?? '',
+      keyframes: (animation.effect?.getKeyframes() ?? []).map((frame) =>
+        Object.fromEntries(['computedOffset', 'left', 'opacity', 'clipPath', 'transform']
+          .filter((key) => frame[key] !== undefined)
+          .map((key) => [key, frame[key]]))),
+    })).sort((left, right) => left.id.localeCompare(right.id));
+    const beamBox = beam?.getBoundingClientRect();
+    const reading = {
+      ids: signature.map(({ id }) => id),
+      signature,
+      direction: document.getElementById('kbroot')?.dataset.pageMotionDirection ?? '',
+      sourceId: source?.id ?? '',
+      targetId: target?.id ?? '',
+      sourceClip: style(source)?.clipPath ?? '',
+      targetClip: style(target)?.clipPath ?? '',
+      sourceTransform: style(source)?.transform ?? '',
+      targetTransform: style(target)?.transform ?? '',
+      sourceZ: Number.parseInt(style(source)?.zIndex ?? '', 10),
+      targetZ: Number.parseInt(style(target)?.zIndex ?? '', 10),
+      sheetZ: Number.parseInt(style(sheet)?.zIndex ?? '', 10),
+      sheetConnected: !!sheet?.isConnected,
+      beam: beamBox ? {
+        opacity: Number(style(beam)?.opacity ?? 0),
+        width: beamBox.width,
+        height: beamBox.height,
+      } : null,
+    };
+    managed.forEach((animation) => animation.play());
+    return reading;
+  });
+  await waitForMotionIdle(page);
+  return reading;
+}
+
+async function edgeSwipe(page) {
+  await page.evaluate(() => {
+    const touch = (x) => new Touch({
+      identifier: 19, target: document.body, clientX: x, clientY: 304,
+    });
+    const fire = (type, point) => document.body.dispatchEvent(new TouchEvent(type, {
+      touches: type === 'touchend' ? [] : [point],
+      changedTouches: [point],
+      bubbles: true,
+    }));
+    fire('touchstart', touch(12));
+    for (const x of [30, 55, 90]) fire('touchmove', touch(x));
+    fire('touchend', touch(90));
+  });
+}
+
+async function inspectLegalAboveSheet(browser) {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 }, locale: 'en-US', hasTouch: true, isMobile: true,
+  });
+  const page = await context.newPage();
+  page.on('pageerror', (error) => errs.push(`legal-over-sheet: ${error.message}`));
+  try {
+    await page.goto(FILE);
+    await page.waitForTimeout(320);
+    await page.evaluate(() => window.__kb.newGame());
+    await page.waitForSelector('#rec .rchip[data-lib]', { state: 'visible', timeout: 3000 });
+    /* Keep a real page beneath the genuine in-game badge sheet so Legal has
+       both an authored page source and a nested modal to outrank. */
+    await page.evaluate(() => window.__kb.goHome());
+    await page.waitForFunction(() => document.getElementById('ovStart')?.classList.contains('on'));
+    await page.waitForTimeout(30);
+    await page.evaluate(() => document.querySelector('#rec .rchip[data-lib]').click());
+    await page.waitForSelector('.faceoff .focard', { state: 'visible', timeout: 3000 });
+    await page.waitForFunction(() => {
+      const card = document.querySelector('.faceoff .focard');
+      const transform = card && getComputedStyle(card).transform;
+      return !!card && (!transform || transform === 'none'
+        || Math.abs(new DOMMatrixReadOnly(transform).m42) <= 1);
+    }, null, { timeout: 3000 });
+    await page.evaluate(() => {
+      const opener = document.createElement('button');
+      opener.id = 'legalSheetOpener';
+      opener.type = 'button';
+      opener.className = 'linkbtn';
+      opener.dataset.legalOpen = 'privacy';
+      opener.textContent = 'Privacy';
+      document.querySelector('.faceoff .fograb').after(opener);
+      opener.focus();
+    });
+
+    const openLegal = async () => {
+      await page.click('#legalSheetOpener');
+      const motion = await sampleMotion(page, WIPE_IDS);
+      const state = await page.evaluate(() => ({
+        open: document.getElementById('ovPrivacy')?.classList.contains('on') ?? false,
+        legalInert: document.getElementById('ovPrivacy')?.inert ?? null,
+        sheetInert: document.querySelector('.faceoff')?.inert ?? null,
+        headingFocused: document.activeElement === document.querySelector('#ovPrivacy h1'),
+      }));
+      return { motion, state };
+    };
+    const landed = () => page.evaluate(() => {
+      const sheet = document.querySelector('.faceoff');
+      const card = sheet?.querySelector('.focard');
+      const box = card?.getBoundingClientRect();
+      const hit = box && document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+      const zLeaks = [...document.querySelectorAll('*')].filter((element) =>
+        element.style?.getPropertyValue('--page-motion-z')
+          || element.style?.getPropertyValue('--page-motion-base-z')).length;
+      return {
+        sheetConnected: !!sheet?.isConnected,
+        sheetPainted: !!sheet && !!hit && sheet.contains(hit),
+        sheetInert: sheet?.inert ?? null,
+        legalOpen: document.getElementById('ovPrivacy')?.classList.contains('on') ?? false,
+        legalInert: document.getElementById('ovPrivacy')?.inert ?? null,
+        homeInert: document.getElementById('ovStart')?.inert ?? null,
+        openerFocused: document.activeElement?.id === 'legalSheetOpener',
+        transients: document.querySelectorAll(
+          '.page-wipe-beam,.page-motion-source,.page-motion-target,.page-motion-stage,.page-motion-cleanup',
+        ).length,
+        zLeaks,
+      };
+    });
+
+    const forward = await openLegal();
+    await page.click('#btnPrivacyBack');
+    const buttonBack = await sampleMotion(page, BACK_IDS);
+    const buttonLanding = await landed();
+    const reopen = await openLegal();
+    await edgeSwipe(page);
+    const swipeBack = await sampleMotion(page, BACK_IDS);
+    const swipeLanding = await landed();
+    return { forward, buttonBack, buttonLanding, reopen, swipeBack, swipeLanding };
+  } finally {
+    await context.close();
+  }
+}
 
 const LONG_URL = 'https://privacy.example.test/account-deletion/'
   + 'ownership-verification-with-a-deliberately-unbroken-mobile-path-'
@@ -150,6 +322,7 @@ async function inspectOpenLocaleRepaint(page, viewport) {
 const browser = await chromium.launch();
 try {
   for (const [width, height, viewport] of VIEWPORTS) {
+    if (ONLY_SHEET_STACK) break;
     const context = await browser.newContext({ viewport: { width, height }, locale: 'en-US' });
     const page = await context.newPage();
     page.on('pageerror', (error) => errs.push(`${viewport}: ${error.message}`));
@@ -194,13 +367,14 @@ try {
             && document.activeElement === overlay.querySelector('h1');
         }, legalPage);
         const observation = await page.evaluate(async ({ locale, legalPage, sharedBody }) => {
-          // The shared room fade keeps old and new overlays in composited
-          // layers for .28s. Hit-test only after those actual CSS transitions
-          // settle, rather than assuming two painted frames are enough.
-          const overlayTransitions = [...document.querySelectorAll('[data-legal-page]')]
-            .flatMap((element) => element.getAnimations())
+          // The shared room fade and Neon Wipe keep old and new overlays in
+          // composited layers for .28s. Hit-test only after the authored
+          // transitions settle, rather than assuming two frames are enough.
+          const overlayTransitions = document.getAnimations({ subtree: true })
             .filter((animation) => animation.transitionProperty === 'opacity'
-              || animation.transitionProperty === 'visibility');
+              || animation.transitionProperty === 'visibility'
+              || animation.id.startsWith('kb-page-')
+              || animation.id.startsWith('kb-duel-bracket-'));
           await Promise.allSettled(overlayTransitions.map((animation) => animation.finished));
           const overlay = document.querySelector(`[data-legal-page="${legalPage}"]`);
           const body = overlay.querySelector('.pbody');
@@ -310,6 +484,56 @@ try {
     });
     out[viewport] = { inAppCases: observations.length, staticPages, localeRepaint };
     await context.close();
+  }
+  out.legalAboveSheet = await inspectLegalAboveSheet(browser);
+  const stack = out.legalAboveSheet;
+  const partlyClipped = (clip) => {
+    const percent = Number(clip.match(/([\d.]+)%\)$/)?.[1]);
+    return percent > 0 && percent < 100;
+  };
+  const forwardPaints = ({ motion, state }) => motion.direction === 'forward'
+    && JSON.stringify(motion.ids) === JSON.stringify([...WIPE_IDS].sort())
+    && motion.signature.every(({ duration }) => duration === 280)
+    && motion.sourceId === 'ovStart' && motion.targetId === 'ovPrivacy'
+    && partlyClipped(motion.targetClip) && motion.targetTransform !== 'none'
+    && motion.targetZ > motion.sheetZ && motion.sheetConnected
+    && motion.beam?.opacity > 0 && motion.beam.width >= 2 && motion.beam.width <= 4
+    && motion.beam.height >= 800
+    && state.open && state.legalInert === false && state.sheetInert === true
+    && state.headingFocused;
+  check(forwardPaints(stack.forward),
+    'Legal did not wipe visibly above the real sheet on forward navigation', stack.forward);
+  check(forwardPaints(stack.reopen),
+    'Legal did not re-enter above the real sheet before the edge-Back probe', stack.reopen);
+
+  const backPaints = (motion) => motion.direction === 'back'
+    && JSON.stringify(motion.ids) === JSON.stringify(BACK_IDS)
+    && motion.signature.every(({ id, duration }) =>
+      duration === (id.startsWith('kb-duel-bracket-') ? 220 : 280))
+    && motion.sourceId === 'ovPrivacy' && motion.targetId === 'ovStart'
+    && partlyClipped(motion.sourceClip) && motion.sourceTransform !== 'none'
+    && motion.sourceZ > motion.sheetZ && motion.sheetConnected
+    && motion.beam?.opacity > 0 && motion.beam.width >= 2 && motion.beam.width <= 4
+    && motion.beam.height >= 800;
+  check(backPaints(stack.buttonBack),
+    'button Back skipped or painted the shared Legal Neon source/beam below the sheet',
+    stack.buttonBack);
+  check(backPaints(stack.swipeBack),
+    'edge Back skipped or painted the shared Legal Neon source/beam below the sheet',
+    stack.swipeBack);
+  check(JSON.stringify(stack.swipeBack.signature) === JSON.stringify(stack.buttonBack.signature),
+    'edge Back did not run the exact button Back timeline above the sheet', {
+      button: stack.buttonBack.signature,
+      swipe: stack.swipeBack.signature,
+    });
+  for (const [door, landing] of Object.entries({
+    button: stack.buttonLanding,
+    edge: stack.swipeLanding,
+  })) {
+    check(landing.sheetConnected && landing.sheetPainted && landing.sheetInert === false
+      && !landing.legalOpen && landing.legalInert === true && landing.homeInert === true
+      && landing.openerFocused && landing.transients === 0 && landing.zLeaks === 0,
+    `${door} Back did not settle onto the sheet with its nested modal state restored`, landing);
   }
 } finally {
   await browser.close();

@@ -5,6 +5,7 @@
 import { $, hide, show } from '../../ui/dom.ts';
 import { closeEnd } from '../../ui/endscreen.ts';
 import { replayPlates } from '../../ui/endscreen-plates.ts';
+import { makeInert, type InertSnapshot } from '../../ui/modal-background.ts';
 import { ensureIdentity, type IdentityEntry } from '../identity/session.ts';
 import {
   refreshRuneCollection,
@@ -37,9 +38,16 @@ interface ResultEntryPorts<Options> {
 export interface ResultEntry<Options> {
   nextDuel(): void;
   openFromResult(view: OnlineView, onReturn: () => void, options?: Options): void;
+  releaseCover(): void;
 }
 
 export function createResultEntry<Options>(ports: ResultEntryPorts<Options>): ResultEntry<Options> {
+  let resultCover: InertSnapshot | null = null;
+  const releaseCover = (): void => {
+    resultCover?.release();
+    resultCover = null;
+  };
+
   function openFromResult(
     view: OnlineView,
     onReturn: () => void,
@@ -47,14 +55,19 @@ export function createResultEntry<Options>(ports: ResultEntryPorts<Options>): Re
   ): void {
     ports.incrementRevision();
     ports.closeRuneReward();
-    $('#ovEnd').inert = true;
+    releaseCover();
+    resultCover = makeInert($('#ovEnd'));
     ports.setExit(() => {
       ports.setExit(ports.goHome);
       hide('#ovOnline');
-      $('#ovEnd').inert = false;
+      releaseCover();
       replayPlates();
       onReturn();
     });
+    /* The same complete loading view used from Home is also the destination
+       from a result. route() may restate it, which the shared motion seam
+       treats as content paint rather than a second transition. */
+    ports.showEntryWait(view);
     show('#ovOnline');
     void ports.route(view, options);
   }
@@ -65,6 +78,7 @@ export function createResultEntry<Options>(ports: ResultEntryPorts<Options>): Re
       return;
     }
     const revision = ports.incrementRevision();
+    releaseCover();
     ports.setExit(ports.goHome);
     ports.closeRuneReward();
     closeEnd();
@@ -93,5 +107,5 @@ export function createResultEntry<Options>(ports: ResultEntryPorts<Options>): Re
     });
   }
 
-  return { nextDuel, openFromResult };
+  return { nextDuel, openFromResult, releaseCover };
 }

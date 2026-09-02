@@ -1,5 +1,6 @@
 import { formatNumber, t } from '../../i18n/index.ts';
 import { $, hide } from '../../ui/dom.ts';
+import { makeInert, type InertSnapshot } from '../../ui/modal-background.ts';
 import {
   repaintEndLocale,
   showLocalizedEnd,
@@ -43,13 +44,21 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
   let showRevision = 0;
   const groupTransition = createGroupTransitionScreen();
   let activeRewardSheet: RuneRewardSheet | null = null;
+  let progressionInert: InertSnapshot | null = null;
+  const holdForProgression = (): void => {
+    progressionInert ??= makeInert($('#ovEnd'));
+  };
+  const releaseProgressionHold = (): void => {
+    progressionInert?.release();
+    progressionInert = null;
+  };
   async function show(report: FinishReport): Promise<void> {
     const revision = ++showRevision;
     groupTransition.cancel();
     activeRewardSheet?.close();
     activeRewardSheet = null;
     hide('#ovOnline');
-    $('#ovEnd').inert = false;
+    releaseProgressionHold();
     let reward: RuneRewardPresentation | null = null;
     let pendingFirstRune: RuneRewardPresentation | null = null;
     let rewardAcknowledgement: RuneRewardAcknowledgement | null = null;
@@ -58,7 +67,7 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
     const depart = (run: () => void, before?: () => void) => (): void => {
       if (revision !== showRevision) return;
       groupTransition.cancel();
-      $('#ovEnd').inert = false;
+      releaseProgressionHold();
       before?.();
       foreground = false;
       rewardAcknowledgement?.cancel();
@@ -257,7 +266,7 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
     let progressionFlow: Promise<void> = Promise.resolve();
     if (report.matchId) {
       const initial = report.progression ?? { kind: 'retryable' as const };
-      $('#ovEnd').inert = true;
+      holdForProgression();
       progressionFlow = (async () => {
         const handled = new Set<string>();
         let lookup = initial;
@@ -268,14 +277,15 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
           if (handled.has(event.eventId)) return;
           handled.add(event.eventId);
 
-          /* present() makes its own background snapshot synchronously. It must
-             see the result enabled or closing the modal would restore a stale
-             inert=true value and strand the result controls. */
+          /* The transition borrows the background through the same ownership
+             seam. Relinquish progression first; a concurrent page motion or
+             cover may keep the result inert without either owner restoring
+             the other's state later. */
           const collection = await transitionCollectionLookup;
           const ownsTransitionCollection = collection
             ? await runeCollectionMatchesActiveAccount(collection) : false;
           if (revision !== showRevision || !foreground) return;
-          $('#ovEnd').inert = false;
+          releaseProgressionHold();
           const action = await groupTransition.present(event, players.avatar(), {
             /* A rune earned by this same result still belongs to the separate
                NEW RUNE handoff below. Only an earlier collection turns the
@@ -286,11 +296,6 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
           });
           if (action === 'cancelled' || revision !== showRevision) return;
           if (action === 'profile') {
-            /* Profile covers the result synchronously. Keep the result's true
-               background state non-inert before the equipment sheet takes its
-               modal snapshot; otherwise closing that nested sheet restores a
-               stale inert=true and strands the result after Profile returns. */
-            $('#ovEnd').inert = false;
             if (!await openRuneGuide(undefined, collection?.accountId ?? undefined)
                 || revision !== showRevision) return;
             if (!await rankedProgressionRecovery.acknowledge(event.eventId)) return;
@@ -298,7 +303,7 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
                deck behind the tutorial the player is using. */
             return;
           }
-          $('#ovEnd').inert = true;
+          holdForProgression();
           if (!await rankedProgressionRecovery.acknowledge(event.eventId)) return;
           lookup = { kind: 'absent' };
         }
@@ -307,7 +312,7 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
         /* Profile is a modal cover over this still-open result. Its route owns
            the lock until Back/onReturn; finishing progression underneath must
            not make the covered result interactive again. */
-        if (revision === showRevision && foreground) $('#ovEnd').inert = false;
+        if (revision === showRevision && foreground) releaseProgressionHold();
       });
     }
 

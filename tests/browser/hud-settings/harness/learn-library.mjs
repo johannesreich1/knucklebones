@@ -23,7 +23,9 @@ export async function readLearnLibraryEntry(page, button, ov, id) {
              hue: h ? getComputedStyle(h).color : '',
              nav: { buttons: buttons.length,
                     backs: head?.querySelectorAll(`[data-learn-back="${ov}"]`).length ?? 0,
-                    glyph: back?.textContent?.trim() ?? '',
+                    duel: !!back?.querySelector('svg.cico-back .back-bracket--p1')
+                      && !!back?.querySelector('svg.cico-back .back-bracket--p2')
+                      && !!back?.querySelector('svg.cico-back .back-chevron'),
                     label: back?.getAttribute('aria-label') ?? '',
                     left: head?.firstElementChild === back,
                     noX: !buttons.some((button) => button.textContent?.includes('✕')) } };

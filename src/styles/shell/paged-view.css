@@ -1,4 +1,4 @@
-/* ---- shared screen header: ‹ goes back (design: 00-navigation).
+/* ---- shared screen header: Duel Brackets goes back (design: 00-navigation).
    Reuses the HUD's .ico button; the pad mirrors its width so the title stays
    optically centred. Every titled view puts the one navigation control left. ---- */
 :where(#kbroot) .shead{display:flex;align-items:center;width:100%;max-width:var(--w-col);margin:0 auto;flex:0 0 auto}
@@ -8,23 +8,70 @@
   -webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 0 18px rgba(var(--p1-rgb),.3))}
 :where(#kbroot) .shead .pad{width:30px;flex:0 0 auto}
-/* the header's control wears the title's own gradient so it reads as the way
-   back at a glance */
+/* The one transparent Duel Brackets control: a neutral chevron held between
+   the two player-colour corners. Its drawing is shared by page-chrome.ts; this
+   is the sole painted treatment. */
 :where(#kbroot) .shead .ico{position:relative;color:#fff}
 /* The shared icon stays visually 30px (27px on the narrow-phone rule) while
    the transparent target reaches 44px. Making the painted button itself 44px
    was the merge regression the player could see. */
 :where(#kbroot) .shead .ico::after{content:"";position:absolute;z-index:2;left:50%;top:50%;width:44px;height:44px;
   translate:-50% -50%;border-radius:14px}
-:where(#kbroot) .shead .ico{background:linear-gradient(135deg,color-mix(in srgb,var(--p1) 26%,transparent),
-                                    color-mix(in srgb,var(--p2) 26%,transparent));
-  border-color:color-mix(in srgb,var(--p1) 40%,transparent);
-  box-shadow:0 0 16px color-mix(in srgb,var(--p1) 22%,transparent)}
-:where(#kbroot) .shead .ico:active,:where(#kbroot) .shead .ico.pressing{background:linear-gradient(135deg,color-mix(in srgb,var(--p1) 42%,transparent),
-                                                     color-mix(in srgb,var(--p2) 42%,transparent))}
+:where(#kbroot) .shead .page-back{background:none;border-color:transparent;box-shadow:none;overflow:visible}
+:where(#kbroot) .shead .page-back:active,:where(#kbroot) .shead .page-back.pressing{background:none}
+:where(#kbroot) .page-back .cico-back{display:block;overflow:visible}
+:where(#kbroot) .page-back .back-chevron{stroke:#fff;filter:drop-shadow(0 0 4px rgba(255,255,255,.34))}
+:where(#kbroot) .page-back .back-bracket{transform-box:fill-box;transform-origin:center}
+:where(#kbroot) .page-back .back-bracket--p1{stroke:var(--p1);filter:drop-shadow(0 0 5px color-mix(in srgb,var(--p1) 58%,transparent))}
+:where(#kbroot) .page-back .back-bracket--p2{stroke:var(--p2);filter:drop-shadow(0 0 5px color-mix(in srgb,var(--p2) 58%,transparent))}
+@media (max-width:359px){:where(#kbroot) .page-back .cico-back{width:27px;height:27px}}
+
+/* The ONE Neon Wipe stage. Routing code changes only logical visibility; the
+   controller gives the departing and arriving surfaces a temporary paint
+   layer, then removes it without waking the generic overlay fade again. */
+#kbroot .page-motion-source,#kbroot .page-motion-target{
+  visibility:visible!important;pointer-events:none!important;transition:none!important;will-change:clip-path,transform,opacity}
+/* Once the wipe has visually reached the arriving header, Back is already a
+   real escape hatch. All other target-page input stays suppressed, while tap
+   and the edge-swipe both commit through that same Back control. */
+#kbroot .page-motion-target [data-page-back]{pointer-events:auto!important}
+#kbroot .page-motion-source[hidden],#kbroot .page-motion-target[hidden],
+#kbroot .page-motion-loader-hold[hidden],
+#kbroot .page-motion-panel-layer>.panel[hidden]{display:flex!important}
+/* Ready data is laid out and virtual lists are primed under the pinned die,
+   but it cannot paint, focus, or answer input until hydration releases it. */
+#kbroot .page-motion-loader-next{visibility:hidden!important;pointer-events:none!important}
+/* A committed Back can turn the primed destination into the actual target of
+   a replacement run. Reveal it for that compositor only; its inert lock and
+   the target input lock remain until normal hydration cleanup. */
+#kbroot .page-motion-loader-next.page-motion-target{visibility:visible!important}
+#kbroot .page-motion-source,#kbroot .page-motion-target{z-index:var(--page-motion-z)!important}
+#kbroot .page-motion-stage{overflow:hidden!important}
+#kbroot .page-motion-cleanup{transition:none!important}
+/* Removing .on started the generic overlay's delayed visibility transition
+   before the compositor took over. Snap a completed visual-only source to its
+   real closed state once, so removing the cleanup class cannot restart that
+   delay and leave an invisible page intercepting geometry for another .28s. */
+#kbroot .ov.page-motion-cleanup:not(.on){visibility:hidden!important}
+/* A page transition is itself the wait reveal: the target die travels with
+   the page from frame one, so the generic 200ms anti-flash grace would hide
+   almost the whole 280ms wipe. Hydration is held until this timeline ends. */
+#kbroot #onLoading.page-motion-loader-revealed .ldwait{animation-delay:0s}
+/* Reused-shell panels cannot share their normal flex flow during a wipe. The
+   controller moves the one real outgoing node into this viewport-aligned
+   layer, then returns it to a comment anchor; no DOM/ID clone and no second
+   page implementation are introduced. */
+#kbroot .page-motion-panel-layer{position:absolute;left:var(--page-panel-x);top:var(--page-panel-y);
+  width:var(--page-panel-w);height:var(--page-panel-h);display:flex;flex-direction:column;
+  max-width:none;margin:0;overflow:visible;pointer-events:none}
+#kbroot .page-motion-panel-layer>.panel{width:100%;height:100%;min-height:0;max-width:none;margin:0;flex:0 0 auto}
+#kbroot .page-wipe-beam{position:absolute;z-index:140;top:0;bottom:0;left:0;width:3px;
+  pointer-events:none;opacity:0;background:linear-gradient(180deg,var(--p1),#fff 48%,var(--p2));
+  box-shadow:0 0 8px color-mix(in srgb,var(--p1) 78%,transparent),
+             0 0 17px color-mix(in srgb,var(--p2) 62%,transparent)}
 /* ===== THE PAGED VIEW: one header, pinned; one body, scrolling =====
    EVERY view with a title and a back button is this shape, and it is ONE
-   shape: the ‹ never scrolls away from the thumb, and the content runs to the
+   shape: Back never scrolls away from the thumb, and the content runs to the
    real screen edges so a list never reads as cut off short of the bottom.
    This used to be an opt-in (`.scrollview`) that three views never opted into,
    so the OFFLINE sheet, HOW TO PLAY and SETTINGS scrolled their headers off
@@ -52,7 +99,7 @@
    are different ideas (how tall the frost is, how far content sits below it)
    and ui/dom.ts adds them BY NAME — deleting it would hand that sum a NaN and
    fall silently back to a 40px ramp. */
-/* --barpad MATCHES the 16px above the bar's content, so the title and the ‹
+/* --barpad MATCHES the 16px above the bar's content, so the title and Back
    sit dead centre in the visible bar rather than 1px high. The safe-area inset
    is added on top of that 16 and is not part of the reckoning: it is the
    notch's space, not the bar's. */

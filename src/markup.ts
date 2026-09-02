@@ -14,6 +14,7 @@ import {
 import { OVERLAY_CARDS_MARKUP } from './markup/overlay-cards.ts';
 import { RESULT_MARKUP } from './markup/result.ts';
 import { chromeIcon } from './ui/chromeicons.ts';
+import { pageBackButton } from './ui/page-chrome.ts';
 
 export const MARKUP = `${BOARD_MARKUP}
 
@@ -51,11 +52,10 @@ export const MARKUP = `${BOARD_MARKUP}
 </div>
 
 <!-- OFFLINE: the local-play configuration (was the old title screen).
-     A page below Home: ‹ goes back, the bottom holds only actions. -->
+     A page below Home: Duel Brackets goes back, the bottom holds only actions. -->
 <div class="ov paged" id="ovPractice">
   <div class="shead">
-    <button class="ico" id="btnPracticeBack" data-i18n-attr="aria-label=common:actions.back"
-      aria-label="Back">‹</button>
+    ${pageBackButton({ id: 'btnPracticeBack', label: 'Back' })}
     <span class="ttl" data-i18n="game:practice.title">OFFLINE</span><span class="pad"></span>
   </div>
   <div class="pbody">
@@ -122,12 +122,11 @@ ${LEARN_MARKUP}
 
 ${OVERLAY_CARDS_MARKUP}
 
-<!-- SETTINGS: a page below Home like OFFLINE — ‹ goes back, toggles apply instantly -->
+<!-- SETTINGS: a page below Home like OFFLINE — Duel Brackets goes back, toggles apply instantly -->
 
 <div class="ov paged" id="ovSettings">
   <div class="shead">
-    <button class="ico" id="btnSettingsBack" data-i18n-attr="aria-label=common:actions.back"
-      aria-label="Back">‹</button>
+    ${pageBackButton({ id: 'btnSettingsBack', label: 'Back' })}
     <span class="ttl" data-i18n="settings:title">SETTINGS</span><span class="pad"></span>
   </div>
   <div class="pbody">

@@ -26,6 +26,10 @@ import { runAccountLifecycleScenarios } from './scenarios/account-lifecycle.mjs'
 import { runExplicitGuestSessionScenarios } from './scenarios/explicit-guest-session.mjs';
 import { runOnlineMenuPressFeedbackScenarios } from './scenarios/menu-press-feedback.mjs';
 import { runOnlineLoadingPanelScenarios } from './scenarios/loading-panels.mjs';
+import { runPageNavigationMotionScenarios } from './scenarios/page-navigation-motion.mjs';
+import {
+  runRankedGameMotionExclusionScenarios,
+} from './scenarios/ranked-game-motion-exclusion.mjs';
 import { runEntryWithoutDieScenarios } from './scenarios/entry-without-die.mjs';
 import { runOfflineEntryScenarios } from './scenarios/offline-entry.mjs';
 import { runAuthModalScenarios } from './scenarios/auth-modal.mjs';
@@ -76,6 +80,8 @@ const SCENARIOS = Object.freeze([
   { id: 'explicit-guest-session', run: runExplicitGuestSessionScenarios },
   { id: 'menu-press-feedback', run: runOnlineMenuPressFeedbackScenarios },
   { id: 'loading-panels', run: runOnlineLoadingPanelScenarios },
+  { id: 'page-navigation-motion', run: runPageNavigationMotionScenarios },
+  { id: 'ranked-game-motion-exclusion', run: runRankedGameMotionExclusionScenarios },
   { id: 'entry-without-die', run: runEntryWithoutDieScenarios },
   { id: 'offline-entry', run: runOfflineEntryScenarios },
   { id: 'auth-modal', run: runAuthModalScenarios },

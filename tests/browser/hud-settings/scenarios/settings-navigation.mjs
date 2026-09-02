@@ -1,9 +1,15 @@
+async function waitForPageMotion(page) {
+  await page.waitForFunction(() => !document.getElementById('kbroot')
+    ?.classList.contains('page-motion-active'), null, { timeout: 1500 });
+}
+
 export async function runSettingsNavigationScenarios(suite) {
   const { page, ctx, F, out, check } = suite;
   // ===== settings panel — a HOME sheet since the HUD became quit-only =====
   await page.evaluate(() => window.__kb.goHome());
   await page.waitForTimeout(300);
   await page.tap('#btnSettingsHome'); await page.waitForTimeout(400);
+  await waitForPageMotion(page);
   out.settingsOpen = await page.evaluate(() => ({
     on: document.getElementById('ovSettings').classList.contains('on'),
     sndOn: document.querySelector('#sndSeg button.on')?.dataset.s,
@@ -141,6 +147,7 @@ export async function runSettingsNavigationScenarios(suite) {
   await page.tap('#btnSettingsBack'); await page.waitForTimeout(300);
   await page.tap('#btnLearn'); await page.waitForTimeout(320);
   await page.tap('#btnLearnRules'); await page.waitForTimeout(400);
+  await waitForPageMotion(page);
   out.help = await page.evaluate(() => {
     const rules = document.getElementById('ovRules');
     const head = rules?.querySelector('.shead');
@@ -153,7 +160,9 @@ export async function runSettingsNavigationScenarios(suite) {
       nav: {
         buttons: buttons.length,
         backs: head?.querySelectorAll('[data-learn-back="ovRules"]').length ?? 0,
-        glyph: back?.textContent?.trim() ?? '',
+        duel: !!back?.querySelector('svg.cico-back .back-bracket--p1')
+          && !!back?.querySelector('svg.cico-back .back-bracket--p2')
+          && !!back?.querySelector('svg.cico-back .back-chevron'),
         label: back?.getAttribute('aria-label') ?? '',
         left: head?.firstElementChild === back,
         noX: !buttons.some((button) => button.textContent?.includes('✕')),
@@ -162,7 +171,7 @@ export async function runSettingsNavigationScenarios(suite) {
   });
   check(out.help.rules && !out.help.settings, 'help did not open from the hub', out.help);
   check(out.help.learn && out.help.nav.buttons === 1 && out.help.nav.backs === 1
-    && out.help.nav.glyph === '‹' && out.help.nav.label === 'Back'
+    && out.help.nav.duel && out.help.nav.label === 'Back'
     && out.help.nav.left && out.help.nav.noX,
         'Rules does not use the one shared Learn-page Back header', out.help);
   await page.tap('[data-learn-back="ovRules"]'); await page.waitForTimeout(300);
@@ -213,10 +222,11 @@ export async function runSettingsNavigationScenarios(suite) {
   await page.evaluate(() => window.__kb.goHome());
   await page.waitForTimeout(300);
   await page.tap('#btnSettingsHome'); await page.waitForTimeout(300);
+  await waitForPageMotion(page);
   out.sheet = await page.evaluate(() => ({
     reset: !!document.getElementById('btnResetStats'),
     done: [...document.querySelectorAll('#ovSettings .btn')].some(b => /done/i.test(b.textContent)),
-    back: document.querySelector('#ovSettings .shead #btnSettingsBack')?.textContent ?? '',
+    back: !!document.querySelector('#ovSettings .shead #btnSettingsBack[data-page-back] svg.cico-back'),
     title: document.querySelector('#ovSettings .shead .ttl')?.textContent ?? '',
     quitInSheet: !!document.querySelector('#ovSettings #btnMenu'),
     buildTag: !!document.querySelector('#ovSettings #buildTag'),
@@ -231,9 +241,9 @@ export async function runSettingsNavigationScenarios(suite) {
     'draft legal publication removed Home structural spacing', out.sheet);
   check(!out.sheet.reset, 'Reset record still in Settings', out.sheet);
   check(!out.sheet.done, 'Settings still has a bottom Done button', out.sheet);
-  // Settings is a PAGE below Home now (user call, 2026-08-21): ‹ left like
+  // Settings is a PAGE below Home now (user call, 2026-08-21): Back left like
   // OFFLINE and the ladder, not the old sheet ✕ on the right
-  check(out.sheet.back === '‹' && out.sheet.title === 'SETTINGS', 'Settings page header wrong', out.sheet);
+  check(out.sheet.back && out.sheet.title === 'SETTINGS', 'Settings page header wrong', out.sheet);
   /* Public routes stay fail-closed, while the owner-approved in-app placeholder
      doors use the same controller and final Settings placement. */
   out.settingsLegal = await page.evaluate(() => {
@@ -257,6 +267,7 @@ export async function runSettingsNavigationScenarios(suite) {
     && out.settingsLegal.targets.every((target) => target.width >= 44 && target.height >= 44 && target.hit),
   'placeholder legal doors are not a reachable Imprint/Privacy pair at the Settings bottom', out.settingsLegal);
   await page.tap('#btnSettingsPrivacy'); await page.waitForTimeout(100);
+  await waitForPageMotion(page);
   out.settingsPrivacy = await page.evaluate(() => {
     const overlay = document.getElementById('ovPrivacy');
     const heading = overlay.querySelector('h1');
@@ -284,11 +295,12 @@ export async function runSettingsNavigationScenarios(suite) {
   check(out.settingsPrivacy.focusRestored,
     'closing Privacy did not restore the Settings door and page', out.settingsPrivacy);
   await page.tap('#btnSettingsBack'); await page.waitForTimeout(300);
+  await waitForPageMotion(page);
   out.sheetClosed = await page.evaluate(() => !document.getElementById('ovSettings').classList.contains('on'));
-  check(out.sheetClosed, 'Settings ‹ did not close the page', out.sheetClosed);
+  check(out.sheetClosed, 'Settings Back did not close the page', out.sheetClosed);
 
   // ===== the iOS back gesture (ui/swipeback): an edge swipe presses the =====
-  // header's own ‹ — same handler as the button, so the two cannot disagree
+  // header's own Back — same handler as the button, so the two cannot disagree
   const edgeSwipe = () => page.evaluate(() => {
     const mk = (x, y) => new Touch({ identifier: 7, target: document.body, clientX: x, clientY: y });
     const fire = (type, t) => document.body.dispatchEvent(new TouchEvent(type, {
@@ -298,7 +310,9 @@ export async function runSettingsNavigationScenarios(suite) {
     fire('touchend', mk(90, 304));
   });
   await page.tap('#btnSettingsHome'); await page.waitForTimeout(400);
-  await edgeSwipe(); await page.waitForTimeout(500);   // .ov visibility flips .28s after .on drops
+  await waitForPageMotion(page);
+  await edgeSwipe();
+  await waitForPageMotion(page);
   out.swipe = await page.evaluate(() => ({
     on: document.getElementById('ovSettings').classList.contains('on'),
     vis: getComputedStyle(document.getElementById('ovSettings')).visibility,

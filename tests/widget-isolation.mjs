@@ -119,7 +119,9 @@ const rosterPortal = await page.evaluate(() => {
     contained: document.getElementById('kbroot').contains(roster),
     nav: { buttons: buttons.length,
            backs: head.querySelectorAll('[data-learn-back="ovModes"]').length,
-           glyph: back?.textContent?.trim() ?? '',
+           duel: !!back?.querySelector('svg.cico-back .back-bracket--p1')
+             && !!back?.querySelector('svg.cico-back .back-bracket--p2')
+             && !!back?.querySelector('svg.cico-back .back-chevron'),
            label: back?.getAttribute('aria-label') ?? '',
            left: head.firstElementChild === back,
            noX: !buttons.some((button) => button.textContent?.includes('✕')) },
@@ -127,7 +129,7 @@ const rosterPortal = await page.evaluate(() => {
 });
 check(rosterPortal.parent === 'kbroot' && rosterPortal.contained, 'lazy roster escaped #kbroot', rosterPortal);
 check(rosterPortal.nav.buttons === 1 && rosterPortal.nav.backs === 1
-  && rosterPortal.nav.glyph === '‹' && rosterPortal.nav.label === 'Back'
+  && rosterPortal.nav.duel && rosterPortal.nav.label === 'Back'
   && rosterPortal.nav.left && rosterPortal.nav.noX,
   'widget Game Modes does not use the one shared Learn-page Back header', rosterPortal.nav);
 await page.tap('[data-learn-back="ovModes"]');

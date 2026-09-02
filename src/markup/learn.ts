@@ -1,4 +1,5 @@
 import { learnPageMarkup } from '../ui/learn-page.ts';
+import { pageBackButton } from '../ui/page-chrome.ts';
 /* HOW TO PLAY: the hub of four rows, and the one static detail page it opens.
    RULES is composed through the same learnPageMarkup factory Game Modes and
    Runes build at runtime, and ships WITH the hub in DOM order — input-bindings
@@ -30,8 +31,7 @@ export const LEARN_MARKUP = `<!-- LEARN: the one door to everything teachable. F
      links scattered across the home screen and the settings sheet. -->
 <div class="ov paged" id="ovLearn">
   <div class="shead">
-    <button class="ico" id="btnLearnBack" data-i18n-attr="aria-label=common:actions.back"
-      aria-label="Back">‹</button>
+    ${pageBackButton({ id: 'btnLearnBack', label: 'Back' })}
     <span class="ttl" data-i18n="learn:hub.title">HOW TO PLAY</span><span class="pad"></span>
   </div>
   <div class="pbody">

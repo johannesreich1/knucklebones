@@ -98,7 +98,7 @@ try {
 
     /* ---- EVERY titled page is the SAME page ----
        A view with a title and a back button pins its header and scrolls its
-       body, so the ‹ never leaves the thumb — and the body's top edge fades
+       body, so Back never leaves the thumb — and the body's top edge fades
        rather than guillotining what scrolls past it. This was an opt-in class
        that three views (OFFLINE, HOW TO PLAY, SETTINGS) never opted into, so
        their headers scrolled away. Asserted over EVERY .ov.paged found, which
@@ -238,7 +238,8 @@ try {
           extraScrollers: extra,
           /* resting content must clear the glass's REAL reach, not --band's */
           clearAtRest: first ? first.top >= glassBottom - 0.5 : true,
-          /* EVERY PAGED VIEW GOES BACK: one ‹ on the left, labelled Back, and
+          /* EVERY PAGED VIEW GOES BACK: one Duel Brackets control on the left,
+             labelled Back, and
              no header ✕. The edge-swipe handler presses this very control, so
              a view wearing a second glyph teaches the wrong exit twice. Asserted
              over every paged view for the same reason the header rules are:
@@ -248,8 +249,12 @@ try {
           nav: (() => {
             const buttons = head.querySelectorAll('button');
             const icos = head.querySelectorAll('.ico'), ico = icos[0];
+            const svg = ico?.querySelector('svg.cico-back');
             return { n: buttons.length, icons: icos.length,
-                     glyph: ico ? ico.textContent.trim() : '',
+                     shared: ico?.matches('[data-page-back]') ?? false,
+                     duel: !!svg?.querySelector('.back-bracket--p1')
+                       && !!svg?.querySelector('.back-bracket--p2')
+                       && !!svg?.querySelector('.back-chevron'),
                      label: ico?.getAttribute('aria-label') ?? '',
                      side: !ico ? 'none' : head.firstElementChild === ico ? 'left'
                          : head.lastElementChild === ico ? 'right' : 'middle',
@@ -286,8 +291,8 @@ try {
         `a second page-filling scroller in ${p.id} — the glass cannot reach it: ` + label, p.extraScrollers);
       check(p.nav.n === 1 && p.nav.icons === 1,
         `${p.id} must carry exactly ONE header button: ` + label, p.nav);
-      check(p.nav.side === 'left' && p.nav.glyph === '\u2039' && p.nav.label === 'Back',
-        `${p.id} does not wear one labelled ‹ Back on the left: ` + label, p.nav);
+      check(p.nav.side === 'left' && p.nav.shared && p.nav.duel && p.nav.label === 'Back',
+        `${p.id} does not wear the shared labelled Duel Brackets Back control on the left: ` + label, p.nav);
       check(!p.nav.hasX, `${p.id} still carries a header ✕: ` + label, p.nav);
     }
     await ctx.close();

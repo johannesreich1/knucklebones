@@ -10,6 +10,7 @@ import { runBadgeCardScenarios } from './scenarios/badge-cards.mjs';
 import { runAsymmetricRunePlateScenarios } from './scenarios/asymmetric-rune-plates.mjs';
 import { runLanguageSelectorScenarios } from './scenarios/language-selector.mjs';
 import { runOfflineRuneTrialScenarios } from './scenarios/offline-rune-trial.mjs';
+import { runBackNavigationMotionScenarios } from './scenarios/back-navigation-motion.mjs';
 import {
   LOCALE_REGISTRY,
   RESOURCES,
@@ -26,6 +27,7 @@ const SCENARIOS = Object.freeze([
   { id: 'badge-cards', run: runBadgeCardScenarios },
   { id: 'asymmetric-rune-plates', run: runAsymmetricRunePlateScenarios },
   { id: 'language-selector', run: runLanguageSelectorScenarios },
+  { id: 'back-navigation-motion', run: runBackNavigationMotionScenarios },
 ]);
 validateScenarioShards('HUD settings browser', SCENARIOS);
 let scenarios;

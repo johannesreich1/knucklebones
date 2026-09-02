@@ -1,4 +1,4 @@
-<!-- meta name="Navigation" group="0 · Foundations" subtitle="One nav model: titled pages go back with ‹; modal cards use a grabber; match exits stay actions" width=860 height=1330 links="" -->
+<!-- meta name="Navigation" group="0 · Foundations" subtitle="One nav model: titled pages use Duel Brackets + Neon Wipe; modal cards use a grabber; match exits stay actions" width=860 height=1330 links="" -->
 <style>
   body{align-items:stretch}
   .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:820px;margin:0 auto;width:100%}
@@ -28,12 +28,13 @@
 </style>
 <div class="fgrid">
   <div class="fcard">
-    <div class="fcap">Titled pages — ‹ top-left, one level up</div>
-    <div class="demo"><div class="shead"><button class="ico" aria-label="Back">‹</button><span class="ttl">HOW TO PLAY</span><span class="pad"></span></div></div>
+    <div class="fcap">Titled pages — Duel Brackets top-left, one level up</div>
+    <div class="demo"><div class="shead"><button class="ico page-back" data-page-back aria-label="Back">{{ico:back:30}}</button><span class="ttl">HOW TO PLAY</span><span class="pad"></span></div></div>
     <p class="rule">Every titled page has one left <b>Back</b> control. Home destinations return
       to Home; Profile subpages return to Profile. <b>Rules · Game Modes · Runes</b> are child
       pages of <b>HOW TO PLAY</b> and share one reference-page view with content supplied as data.
-      The opener owns the destination, and an edge swipe presses this same control.</p>
+      The opener owns the destination. Tap and committed edge swipe run the same
+      <b>Neon Wipe</b>; forward mirrors it, and loading content travels with its target page.</p>
   </div>
   <div class="fcard">
     <div class="fcap">Modal cards — grabber, context resumes</div>
@@ -65,7 +66,7 @@
     <p class="rule">The HUD's single button wears a <b>doorway with an arrow leaving it</b> — it was a
       sliders glyph from when it opened Settings, and kept promising a screen it no longer opened.
       It opens an <b>ask-card</b>, not a sheet: mid-match, sound and dice faces are not what you
-      reach for. The way back wears the gradient. Offline asks <b>Quit this duel?</b>, with
+      reach for. Page Back wears Duel Brackets; the match exit remains a doorway. Offline asks <b>Quit this duel?</b>, with
       <b>Restart duel</b> between <b>Keep playing</b> and <b>Quit duel</b>; Restart and Quit are
       matching quiet actions. Ranked asks <b>Forfeit this match?</b> and keeps only its quiet
       Forfeit action. The pass-the-phone hand-off has no corner control: the whole screen
@@ -104,7 +105,7 @@
     <p class="rule">Deep links go straight to their view. A first-timer never sees a form: the tap makes
       them a <b>guest</b> and continues straight to it. <b>Sign in</b> hangs off Profile's guest
       box instead — <b>KEEP ACCOUNT</b> to attach an email, <b>SIGN IN</b> to restore one elsewhere;
-      its ‹ returns Home.</p>
+      its Duel Brackets Back returns Home.</p>
   </div>
   <div class="fcard">
     <div class="fcap">Retired patterns</div>

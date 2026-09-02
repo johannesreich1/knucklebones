@@ -1,23 +1,24 @@
-// WHERE ‹ LEADS OUT OF THE PROFILE: the door you came through, not the menu.
+// WHERE BACK LEADS OUT OF THE PROFILE: the door you came through, not the menu.
 //
 // The result screen's own plate is a DOOR — tapping it opens your profile
-// (design 36f). The profile is also a Home destination, and its ‹ was wired to
-// Home outright, so a player who checked their rating after a match came back
-// to the main menu with the result gone (user report, 2026-08-22).
+// (design 36f). The profile is also a Home destination, and its Back control
+// was wired to Home outright, so a player who checked their rating after a
+// match came back to the main menu with the result gone (user report,
+// 2026-08-22).
 //
-// The rule the app already had is the one being kept: a page's ‹ "returns
+// The rule the app already had is the one being kept: a page's Back control "returns
 // exactly where you came from" (design 00-navigation). That answer cannot be a
 // constant — it belongs to whoever opened the overlay — so this suite pins
 // BOTH callers, because a fix that only serves the new one would break the old:
 //
-//   · from the result screen, ‹ hands back the RESULT — the same screen, with
+//   · from the result screen, Back hands back the RESULT — the same screen, with
 //     the numbers that landed late still on it (nothing was re-dealt), and no
 //     second celebration: a screen that was only COVERED replays its plates
 //     (deal, slam, jolt) and nothing else, because the title landed once and
 //     the fireworks fired once,
 //   · one level at a time: the avatar picker still climbs to the profile,
 //     never past it,
-//   · from Home's identity chip, ‹ still lands on Home,
+//   · from Home's identity chip, Back still lands on Home,
 //   · and Home means home — the result screen may not float above it.
 //
 // Asserted in PIXELS, the single-strike-visibility lesson: every .ov shares one
@@ -175,7 +176,7 @@ try {
     await page.goto(URL, { waitUntil: 'domcontentloaded' });
 
     /* 1 · the door that already worked: Home's identity chip opens the profile,
-       and ‹ goes back to Home. This is the caller the fix must not disturb. */
+       and Back goes to Home. This is the caller the fix must not disturb. */
     await page.waitForSelector('#homeChip');
     await page.click('#homeChip');
     await page.waitForFunction(() => document.querySelector('#onAccount')?.hidden === false);
@@ -186,7 +187,7 @@ try {
     out.fromHome.back = await room();
     check(out.fromHome.profile.id === 'ovOnline' && out.fromHome.profile.title === 'PROFILE',
           'the home chip did not open the profile', out.fromHome);
-    check(out.fromHome.back.id === 'ovStart', '‹ from a profile opened at Home must land on Home', out.fromHome);
+    check(out.fromHome.back.id === 'ovStart', 'Back from a profile opened at Home must land on Home', out.fromHome);
 
     /* 2 · a match ends. enterMatch takes every menu down (online/play/play.ts) and the
        result screen opens over the table — stand the stage up the same way. */
@@ -311,9 +312,9 @@ try {
     check(await theatre().then((t) => t.length === 0), 'the replayed plates never settled', out.replay);
 
     /* 4 · one level at a time: the avatar picker climbs to the profile, and only
-       the profile's own ‹ goes on to the result. Entered through the RANK PILL,
-       which is the profile's door on this screen now that the row is the
-       ladder's. */
+       the profile's own Back control goes on to the result. Entered through
+       the RANK PILL, which is the profile's door on this screen now that the
+       row is the ladder's. */
     await page.click(`${ownPlate} .gpill`);
     await page.waitForFunction(() => document.querySelector('#onAccount')?.hidden === false);
     await page.click('#btnAvatar');
@@ -329,8 +330,8 @@ try {
     out.oneLevel.result = await room();
     check(out.oneLevel.avatar.title === 'AVATAR', 'the avatar picker never opened', out.oneLevel);
     check(out.oneLevel.profile.id === 'ovOnline' && out.oneLevel.profile.title === 'PROFILE',
-          '‹ from the avatar picker skipped the profile', out.oneLevel);
-    check(out.oneLevel.result.id === 'ovEnd', '‹ from the profile lost the result screen', out.oneLevel);
+          'Back from the avatar picker skipped the profile', out.oneLevel);
+    check(out.oneLevel.result.id === 'ovEnd', 'Back from the profile lost the result screen', out.oneLevel);
 
     Object.assign(out, await measureResultShare(page, check));
 
@@ -343,7 +344,7 @@ try {
           'Home arrived with the result screen still on top of it', out.home);
 
     /* 6 · THE LADDER IS A DOOR TOO. My own row opens my profile — a face-off
-       against myself answers nothing — so ‹ has to hand back the list I was
+       against myself answers nothing — so Back has to hand back the list I was
        reading rather than the main menu (user report). The ladder lives INSIDE
        this overlay, so the right answer is a panel swap, not a way out of it:
        that is why these checks read the TITLE as well as the room, since
@@ -363,7 +364,7 @@ try {
     check(out.ladder.board.title === 'LADDER', 'the ladder never opened', out.ladder);
     check(out.ladder.profile.id === 'ovOnline' && out.ladder.profile.title === 'PROFILE',
           'my own ladder row did not open my profile', out.ladder);
-    /* JUDGED BEFORE THE NEXT STEP IS TAKEN. If ‹ dropped the player home, the
+    /* JUDGED BEFORE THE NEXT STEP IS TAKEN. If Back dropped the player home, the
        overlay is gone and the click below has nothing to hit — the suite would
        report a 20s click timeout instead of the navigation it exists to
        describe (the hazard its own preamble names). So this reads first, and
@@ -372,14 +373,14 @@ try {
           'BACK FROM THE PROFILE LEFT THE LADDER', out.ladder);
     if (out.ladder.back.id === 'ovOnline') {
       /* ...and the slot it borrowed is HANDED BACK. The ladder door fills the
-         same ‹ slot Home and the result screen fill, so if it kept it, the
-         ladder's own ‹ would lead to the ladder and the player would be shut
-         in a room that returns to itself. */
+         same Back slot Home and the result screen fill, so if it kept it, the
+         ladder's own Back control would lead to the ladder and the player
+         would be shut in a room that returns to itself. */
       await page.click('#btnOnlineBack');
       await page.waitForTimeout(500);
       out.ladder.home = await room();
       check(out.ladder.home.id === 'ovStart',
-            'the ladder kept the profile\u2019s answer: its own \u2039 no longer leads home', out.ladder);
+            'the ladder kept the profile\u2019s answer: its own Back control no longer leads home', out.ladder);
     }
   } catch (e) { problems.push('the walk broke off :: ' + String(e.message).split('\n')[0]); }
 

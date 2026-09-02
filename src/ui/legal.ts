@@ -8,6 +8,7 @@ import { LEGAL_PAGE_IDS, type LegalPageId } from '../legal/types.ts';
 import { Sfx } from './audio.ts';
 import { hide, show } from './dom.ts';
 import { appRoot } from './embed.ts';
+import { whenPageMotionSettled } from './page-motion.ts';
 import {
   makeModalBackgroundInert,
   restoreModalBackground,
@@ -64,7 +65,11 @@ function renderPage(page: LegalPageId, preserveScroll = false): HTMLElement {
 }
 
 function focusHeading(overlay: HTMLElement): void {
-  requestAnimationFrame(() => overlay.querySelector<HTMLElement>('h1')?.focus({ preventScroll: true }));
+  void whenPageMotionSettled(appRoot()).then(() => {
+    if (overlay.classList.contains('on') && !overlay.inert) {
+      overlay.querySelector<HTMLElement>('h1')?.focus({ preventScroll: true });
+    }
+  });
 }
 
 export function openLegalPage(page: LegalPageId, opener?: HTMLElement | null): void {
@@ -99,7 +104,14 @@ export function closeOpenLegalPage(restoreFocus = true): boolean {
   restoreModalBackground(closing.inert);
   overlay.inert = closing.overlayInert;
   if (restoreFocus && closing.opener?.isConnected) {
-    requestAnimationFrame(() => closing.opener?.focus({ preventScroll: true }));
+    void whenPageMotionSettled(appRoot()).then(() => {
+      const opener = closing.opener;
+      const owner = opener?.closest<HTMLElement>('.ov');
+      if (!active && opener?.isConnected && !opener.closest('[inert]')
+          && (!owner || owner.classList.contains('on'))) {
+        opener.focus({ preventScroll: true });
+      }
+    });
   }
   return true;
 }

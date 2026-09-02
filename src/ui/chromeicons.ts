@@ -6,6 +6,13 @@
 // itself (design/build.mjs, the ico token) instead of carrying transcriptions —
 // the HUD's button had already been copied into three cards by hand.
 const PATHS: Record<string, string> = {
+  /* The page-level Back mark is the selected Duel Brackets treatment: the
+     neutral chevron says "back", while the two player-colour corners make it
+     belong to this duel. The named paths are also the ONE hook the shared
+     page-motion controller uses for its commit beat. */
+  back: '<path class="back-bracket back-bracket--p1" d="M9 3.5H3.5V9"/>'
+    + '<path class="back-chevron" d="m14.5 6.5-5.5 5.5 5.5 5.5"/>'
+    + '<path class="back-bracket back-bracket--p2" d="M15 20.5h5.5V15"/>',
   /* The selected play mark (design option 01): one canted die with three
      pips. Unlike a generic triangle, it belongs to this game's language and
      still reads as dice at the 25px size used by primary actions. */
@@ -39,7 +46,7 @@ const PATHS: Record<string, string> = {
 
 export function chromeIcon(id: string, size = 15): string {
   const body = PATHS[id] ?? '';
-  return `<svg class="cico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" `
+  return `<svg class="cico cico-${id}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" `
     + `stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" `
     + `aria-hidden="true">${body}</svg>`;
 }

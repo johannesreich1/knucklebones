@@ -13,17 +13,18 @@ import { refreshLegalUi } from '../../ui/legal.ts';
 import { ladderRingLayersMarkup } from '../../ui/ladder-ring.ts';
 import { LEGAL_AUTH_NAV_MARKUP } from '../../markup/legal.ts';
 import { WARNING_NOTE_MARKUP } from './warning-note.ts';
+import { pageBackButton } from '../../ui/page-chrome.ts';
+import { changePagePanel } from '../../ui/page-motion.ts';
 
 const OVERLAY = `
 <div class="ov paged" id="ovOnline">
   <div class="shead">
-    <button class="ico" id="btnOnlineBack" aria-label="Back"
-      data-i18n-attr="aria-label=common:actions.back">‹</button>
+    ${pageBackButton({ id: 'btnOnlineBack', label: 'Back' })}
     <span class="ttl" id="onTitle" tabindex="-1">ONLINE</span><span class="pad"></span>
   </div>
 
   <!-- the paged view's scrolling body (styles/main.css .ov.paged): the panels
-       are its content, so ONLINE pins its ‹ and fades its top edge exactly
+       are its content, so ONLINE pins its Back control and fades its top edge exactly
        like every other titled page — no rules of its own. -->
   <div class="pbody">
   <!-- One blocking wait for data-backed panels that reveal atomically. Keeping
@@ -56,10 +57,11 @@ const OVERLAY = `
     <div class="qmsg" data-i18n="online:matchmaking.looking">Looking for an opponent</div>
     <div class="qtime" id="qTime">0:00</div>
     <div class="qsub" id="qSub">&nbsp;</div>
-    <button class="btn" id="btnQueueCancel" data-i18n="online:matchmaking.cancel">Cancel</button>
+    <button class="btn" id="btnQueueCancel" data-page-motion-direction="back"
+      data-i18n="online:matchmaking.cancel">Cancel</button>
   </div>
 
-  <div class="panel" id="onLadder" hidden>
+  <div class="panel online-listview" id="onLadder" hidden>
     <!-- no subheading: the season is nobody's business while there is only
          one (user call) — the shead already says LADDER -->
     <div class="lb neonscroll" id="onLadderList"></div>
@@ -203,10 +205,11 @@ const OVERLAY = `
     <div class="avgrid" id="avFaces"></div>
     <div class="avgrid hues" id="avHues"></div>
     <div class="err" id="onAvErr"></div>
-    <button class="btn primary" id="btnAvatarSave" data-i18n="online:avatar.save">Save</button>
+    <button class="btn primary" id="btnAvatarSave" data-page-motion-direction="back"
+      data-i18n="online:avatar.save">Save</button>
   </div>
 
-  <div class="panel" id="onHistory" hidden>
+  <div class="panel online-listview" id="onHistory" hidden>
     <!-- the win/loss tally heads the LIST it summarises, rather than sitting on
          the profile as a fourth tile competing with the rank and the streak -->
     <div class="htotal" id="onHistoryTotal">&nbsp;</div>
@@ -255,31 +258,52 @@ export function installOnlineShell(): void {
   $('#onLoading').appendChild(loaderWait(56));
 }
 
-export function showOnlinePanel(which: OnlinePanel): void {
-  activePanel = which;
-  loadingFor = null;
+function paintOnlineDestination(
+  which: OnlinePanel,
+  target: HTMLElement,
+  loading: boolean,
+): void {
+  const overlay = $('#ovOnline');
+  activePanel = loading ? null : which;
+  loadingFor = loading ? which : null;
   activeTitle = PANELS[which].title;
   hide('#ovLoad');
-  $('#onLoading').hidden = true;
-  for (const id of Object.keys(PANELS)) $('#' + id).hidden = id !== which;
-  $('#ovOnline').classList.toggle('listview', which === 'onLadder' || which === 'onHistory');
+  for (const id of Object.keys(PANELS)) $('#' + id).hidden = loading || id !== which;
+  $('#onLoading').hidden = !loading;
+  /* The permanent panel class owns this variant; the router does not repeat a
+     list of screen names that could drift from markup. */
+  overlay.classList.toggle('listview', target.classList.contains('online-listview'));
   paintPanelTitle();
   ($('#btnOnlineBack') as HTMLElement).style.visibility = PANELS[which].back ? 'visible' : 'hidden';
   settleGlass('#ovOnline');
 }
 
+interface OnlinePanelOptions {
+  /** Run after the destination owns its real layout, but before page motion
+      transforms that layout. Used for geometry such as a saved list anchor. */
+  readonly beforeMotion?: () => void;
+}
+
+export function showOnlinePanel(
+  which: OnlinePanel,
+  options: OnlinePanelOptions = {},
+): Promise<void> {
+  const overlay = $('#ovOnline');
+  const target = $('#' + which);
+  return changePagePanel({ overlay, target, logicalId: which },
+    () => {
+      paintOnlineDestination(which, target, false);
+      options.beforeMotion?.();
+    });
+}
+
 /** Hold one complete online view behind the shared, view-centred loading die. */
-export function showOnlineLoading(which: OnlinePanel): void {
-  activePanel = null;
-  loadingFor = which;
-  activeTitle = PANELS[which].title;
-  hide('#ovLoad');
-  for (const id of Object.keys(PANELS)) $('#' + id).hidden = true;
-  $('#onLoading').hidden = false;
-  $('#ovOnline').classList.remove('listview');
-  paintPanelTitle();
-  ($('#btnOnlineBack') as HTMLElement).style.visibility = PANELS[which].back ? 'visible' : 'hidden';
-  settleGlass('#ovOnline');
+export function showOnlineLoading(which: OnlinePanel): Promise<void> {
+  const overlay = $('#ovOnline');
+  const loading = $('#onLoading');
+  loading.dataset.pageMotionFor = which;
+  return changePagePanel({ overlay, target: loading, logicalId: which },
+    () => paintOnlineDestination(which, loading, true));
 }
 
 /** Async painters may finish after Back or another panel has won the view. */

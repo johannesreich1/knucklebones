@@ -141,7 +141,7 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
     /* Revealed BEFORE the list is built: mountVirtualList measures and aims
        synchronously from here, so the first frame the browser paints is already
        in the right place. */
-    showOnlinePanel('onLadder');
+    const presented = showOnlinePanel('onLadder');
 
     virtual = mountVirtualList<LadderRow>({
       scroller,
@@ -180,9 +180,9 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
               const back = ports.getExit();
               ports.setExit(() => {
                 ports.setExit(back);
-                showOnlinePanel('onLadder');
-                virtual?.refresh();
-                virtual?.restore(place);
+                showOnlinePanel('onLadder', { beforeMotion: () => {
+                  virtual?.restore(place);
+                } });
               });
               void ports.showAccount();
               return;
@@ -255,7 +255,7 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
       },
     });
 
-    await virtual.ready;
+    await Promise.all([virtual.ready, presented]);
   }
 
   return { show };

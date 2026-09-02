@@ -288,7 +288,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     ring.classList.toggle('haspeak', peakPosition.kind !== 'at');
     if (peakPosition.kind === 'ahead') ring.style.setProperty('--pk', String(peakPosition.fill));
     if (peakPosition.kind === 'above') ring.style.setProperty('--pk', '1');
-    showOnlinePanel('onAccount');
+    const presented = showOnlinePanel('onAccount');
     const firstUnseenRune = firstCollectedRuneReward(runeCollection);
     const guidedReward = options.deferredRuneReward ?? firstUnseenRune;
     const requestedGuide = options.runeGuide ?? (firstUnseenRune ? {
@@ -314,6 +314,11 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     };
     const handedOffReward = options.deferredRuneReward
       && firstUnseenRune?.rune.id === options.deferredRuneReward.rune.id;
+    /* A fast response is already fully laid out beneath the pinned loading
+       die, but reward sheets and focus guides begin only once that one entry
+       wipe has actually presented Profile. */
+    await presented;
+    if (!ownsRun()) return null;
     const rewardShown = handedOffReward ? false : ports.presentRuneReward(
       runeCollection,
       ownsRun,

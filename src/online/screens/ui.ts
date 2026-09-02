@@ -189,6 +189,7 @@ function goHome(): void {
   runeReward.close();
   queue.stop();
   closeEnd();
+  resultEntry.releaseCover();
   $('#ovEnd').inert = false;
   hide('#ovOnline');
   show('#ovStart');
@@ -246,12 +247,12 @@ async function routeWithRuneReward(
 }
 
 function showEntryWait(view: OnlineView | null): void {
-  if (view === 'account') return showOnlineLoading('onAccount');
-  if (view === 'ladder') return showOnlineLoading('onLadder');
+  if (view === 'account') { void showOnlineLoading('onAccount'); return; }
+  if (view === 'ladder') { void showOnlineLoading('onLadder'); return; }
   /* Play paints its real destination at once: the queue's searching state
      shows nothing account-derived, so it need not wait for identity. Only
      newcomers keep the die — the tutorial offer may still route them away. */
-  if (isNewcomer()) return showOnlineLoading('onQueue');
+  if (isNewcomer()) { void showOnlineLoading('onQueue'); return; }
   queue.showSearching();
 }
 
@@ -311,9 +312,13 @@ export async function openOnline(view: OnlineView, ports: OnlinePorts): Promise<
   runeReward.close();
   exitOnline = goHome;
   if (view === 'ladder') {
-    show('#ovOnline');
     pendingView = null;
-    return ladder.show();
+    /* Establish the loading-die destination before the overlay enters. The
+       page compositor can then wipe Home into that real frame rather than
+       briefly observing the retained panel from the previous online visit. */
+    const showing = ladder.show();
+    show('#ovOnline');
+    return showing;
   }
   /* The online overlay is reused, so its last panel may still be fading out
      when Home opens it again. Establish the new destination — play's searching

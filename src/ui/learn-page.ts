@@ -4,6 +4,7 @@ import { Sfx } from './audio.ts';
 import { t, type LocaleKey } from '../i18n/index.ts';
 import { $, hide } from './dom.ts';
 import { tap } from './tap.ts';
+import { pageBackButton } from './page-chrome.ts';
 
 export interface LearnPageSpec {
   id: string;
@@ -17,8 +18,10 @@ export function learnPageMarkup(spec: LearnPageSpec): string {
   return `
 <div class="ov paged" id="${spec.id}" data-learn-page>
   <div class="shead">
-    <button class="ico" data-learn-back="${spec.id}"
-      data-i18n-attr="aria-label=common:actions.back" aria-label="${t('common', 'actions.back')}">‹</button>
+    ${pageBackButton({
+      label: t('common', 'actions.back'),
+      attributes: { 'data-learn-back': spec.id },
+    })}
     <span class="ttl"${spec.titleKey ? ` data-i18n="learn:${spec.titleKey}"` : ''}>${spec.title}</span><span class="pad"></span>
   </div>
   <div class="pbody">${spec.body}</div>

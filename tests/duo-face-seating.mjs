@@ -288,7 +288,7 @@ out.legalPage = await sp.evaluate(() => {
     const hit = document.elementFromPoint(x, y);
     return hit === back || back.contains(hit);
   };
-  return { back: document.querySelector('#ovImprint #btnImprintBack')?.textContent ?? '',
+  return { back: !!document.querySelector('#ovImprint #btnImprintBack[data-page-back] svg.cico-back'),
            first: head.firstElementChild.id,
            gotIt: [...document.querySelectorAll('#ovImprint .btn')].map((b) => b.textContent.trim()),
            focused: document.activeElement === document.querySelector('#ovImprint h1'),
@@ -297,8 +297,8 @@ out.legalPage = await sp.evaluate(() => {
            effective44: [[cx - 21, cy], [cx + 21, cy], [cx, cy - 21], [cx, cy + 21]]
              .every(([x, y]) => owns(x, y)) };
 });
-check(out.legalPage.back === '\u2039' && out.legalPage.first === 'btnImprintBack',
-      'Impressum is not a page: its ‹ is missing or not on the left', out.legalPage);
+check(out.legalPage.back && out.legalPage.first === 'btnImprintBack',
+      'Impressum is not a page: its Duel Brackets Back is missing or not on the left', out.legalPage);
 check(out.legalPage.gotIt.length === 0,
       'Impressum still carries a bottom dismissal — the bottom of a screen is actions only', out.legalPage);
 check(out.legalPage.focused && out.legalPage.backgroundInert,

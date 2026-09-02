@@ -14,9 +14,9 @@
 // (2026-08-22, user call): one primary, and ONE quiet secondary in the short
 // cut. Offline used to carry three buttons — "Change difficulty" and "Home"
 // under NEXT DUEL — for a screen whose whole question is "again or not", and
-// the two secondaries landed a tap apart anyway (the setup screen's ‹ IS the
-// way home). The short cut is read in PIXELS: a way out that stands as tall as
-// NEXT DUEL is not a quiet one, whatever its class list says.
+// the two secondaries landed a tap apart anyway (the setup screen's Back
+// control IS the way home). The short cut is read in PIXELS: a way out that
+// stands as tall as NEXT DUEL is not a quiet one, whatever its class list says.
 import pkg from 'playwright';
 import { RESOURCES } from '../src/i18n/catalogs.ts';
 import { LOCALE_REGISTRY } from '../src/i18n/locale.ts';

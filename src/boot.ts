@@ -23,6 +23,7 @@ import { subscribeLocale } from './i18n/index.ts';
 import { cancelPass, repaintPassLocale } from './flow/pass-card.ts';
 import { userPreferencesRevision } from './preferences.ts';
 import { initializeGameCenter } from './native/game-center.ts';
+import { bindPageMotion } from './ui/page-motion.ts';
 
 export function boot(embed: boolean): void {
   configureInput({ place, castArmed });
@@ -54,6 +55,7 @@ export function boot(embed: boolean): void {
   if (!embed) void initializeGameCenter();
 
   bindBoardInput();
+  bindPageMotion(root);
   bindMenus(root);
   bindLegalPages(root);
   bindKeyboard(root);

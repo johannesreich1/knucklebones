@@ -51,7 +51,7 @@ export async function runBadgeCardScenarios(suite) {
   for (const [k, r] of [['modes', out.rosterMode], ['spells', out.rosterSpell]]) {
     check(r.on, `HOW TO PLAY no longer opens the ${k} library`, r);
     check(r.name.length > 0 && r.detail.length > 20, `the ${k} roster entry is empty`, r);
-    check(r.nav.buttons === 1 && r.nav.backs === 1 && r.nav.glyph === '‹'
+    check(r.nav.buttons === 1 && r.nav.backs === 1 && r.nav.duel
       && r.nav.label === t('common', 'actions.back') && r.nav.left && r.nav.noX,
       `the ${k} library does not use the one shared Learn-page Back header`, r.nav);
     check(!r.back.child && r.back.learn,
