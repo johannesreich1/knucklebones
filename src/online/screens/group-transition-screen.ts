@@ -2,12 +2,9 @@
 // underneath; one animated group hero always leads, and registry-backed
 // feature slides contain only icon, title, and explanatory text.
 import { groupRingFill } from '../../core/ladder.ts';
-import { RUNE_TRIAL_FORMAT, rankedOutcomeById } from '../../core/ranked-outcomes.ts';
 import {
   formatNumber,
   ladderGroupName,
-  modeCopy,
-  runeTrialCopy,
   subscribeLocale,
   t,
 } from '../../i18n/index.ts';
@@ -21,8 +18,8 @@ import {
   restoreModalBackground,
   type InertSnapshot,
 } from '../../ui/modal-background.ts';
-import { modeHue, modeIcon } from '../../ui/modeicons.ts';
 import type { GroupTransitionEvent } from '../api/ranked-progression-api.ts';
+import { paintGroupTransitionFeature } from './group-transition-feature.ts';
 import {
   groupTransitionSlides,
   type GroupTransitionSlide,
@@ -160,7 +157,10 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
       '--lr-fill-glow',
       'color-mix(in srgb,var(--gt-tier) 52%,transparent)',
     );
-    ring.style.setProperty('--p', String(groupRingFill(event.afterPoints, slide.to === 'neon')));
+    ring.style.setProperty(
+      '--p',
+      String(groupRingFill(event.afterPoints, slide.to === 'neon', event.curveVersion)),
+    );
     paintAvatar(required<HTMLElement>(body, '.gt-avatar'), presentation.avatar, 72);
     required<HTMLElement>(body, '.gt-overline').textContent = t('online', promoted
       ? 'groupTransition.promotedTo' : 'groupTransition.demotedTo');
@@ -169,53 +169,11 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
       ? 'groupTransition.promotionBody' : 'groupTransition.demotionBody');
   };
 
-  const paintOutcome = (
-    slide: Extract<GroupTransitionSlide, { kind: 'outcome' }>,
-  ): void => {
-    const outcome = rankedOutcomeById(slide.outcomeId);
-    const trial = outcome.id === RUNE_TRIAL_FORMAT;
-    const copy = trial ? runeTrialCopy() : modeCopy(outcome.id);
-    const hue = modeHue(trial ? RUNE_TRIAL_FORMAT : outcome.id);
-    deck.className = 'gt-deck gt-feature-deck';
-    deck.style.setProperty('--gt-tier', hue);
-    deck.style.setProperty('--gt-old', hue);
-    kicker.hidden = false;
-    kicker.textContent = t('online', 'groupTransition.newMode');
-    body.className = 'gt-body gt-feature-body';
-    body.innerHTML = `<span class="gt-feature-icon" aria-hidden="true"></span><h2 id="gtTitle"></h2><p id="gtCopy"></p>`;
-    const icon = required<HTMLElement>(body, '.gt-feature-icon');
-    icon.style.setProperty('--gt-accent', hue);
-    icon.innerHTML = modeIcon(trial ? RUNE_TRIAL_FORMAT : outcome.id, 46);
-    required<HTMLElement>(body, '#gtTitle').textContent = copy.name;
-    required<HTMLElement>(body, '#gtCopy').textContent = copy.blurb;
-  };
-
-  const paintRuneSeat = (): void => {
-    const hue = modeHue(RUNE_TRIAL_FORMAT);
-    deck.className = 'gt-deck gt-feature-deck gt-equipment-deck';
-    deck.style.setProperty('--gt-tier', hue);
-    deck.style.setProperty('--gt-old', hue);
-    kicker.hidden = false;
-    kicker.textContent = t('online', 'groupTransition.whatChanges');
-    body.className = 'gt-body gt-feature-body';
-    body.innerHTML = `<span class="gt-feature-icon" aria-hidden="true"></span><h2 id="gtTitle"></h2><p id="gtCopy"></p>`;
-    const icon = required<HTMLElement>(body, '.gt-feature-icon');
-    icon.style.setProperty('--gt-accent', hue);
-    icon.innerHTML = modeIcon(RUNE_TRIAL_FORMAT, 46);
-    required<HTMLElement>(body, '#gtTitle').textContent = t(
-      'online', 'groupTransition.runesUnlockedTitle',
-    );
-    required<HTMLElement>(body, '#gtCopy').textContent = t(
-      'online', 'groupTransition.runesUnlockedBody',
-    );
-  };
-
   function paint(): void {
     if (!active) return;
     const slide = active.slides[active.index];
     if (slide.kind === 'group') paintGroup(active, slide);
-    else if (slide.kind === 'outcome') paintOutcome(slide);
-    else paintRuneSeat();
+    else paintGroupTransitionFeature(deck, body, kicker, slide);
 
     const current = active.index + 1;
     const total = active.slides.length;

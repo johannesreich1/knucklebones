@@ -8,6 +8,9 @@
 :where(#kbroot) :is(#onAccount,#onHistory) .history-row.draw .hres{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.18);color:var(--dim)}
 :where(#kbroot) :is(#onAccount,#onHistory) .history-row .hsc{color:var(--dim);font-size:clamp(11px,2.8vw,12px);letter-spacing:.04em}
 :where(#kbroot) :is(#onAccount,#onHistory) .history-row .hd{font-weight:900;min-width:44px;text-align:right}
+:where(#kbroot) #onHistory .history-row .hd small{display:block;color:var(--dim);font-size:8px;
+  font-weight:650;letter-spacing:.02em;white-space:nowrap}
+:where(#kbroot) #onAccount .history-row .hd small{display:none}
 :where(#kbroot) :is(#onAccount,#onHistory) .history-row.win .hd{color:var(--p1)}
 :where(#kbroot) :is(#onAccount,#onHistory) .history-row.loss .hd{color:var(--p2-hi)}
 :where(#kbroot) :is(#onAccount,#onHistory) .history-row.draw .hd{color:var(--dim)}

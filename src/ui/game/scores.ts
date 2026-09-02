@@ -31,7 +31,7 @@ export function updateScores(who: Player): void {
   const board = S.boards[who];
   const rowSwitch = S.scoring === ROWSWITCH;
   const rowMultiply = S.scoring === ROWMULT;
-  setScoringPresentation(rowSwitch ? 'row-switch' : rowMultiply ? 'row-multiply' : 'columns');
+  setScoringPresentation(S.scoring);
 
   /* Decide the whole shield run before dressing any column. A full protected
      column is permanent. A scoring WARD is a spendable boundary inside such a

@@ -39,6 +39,8 @@ export const jaGame = {
   home: {
     notSignedIn: 'サインインしていません',
     playRanked: 'ランク戦をプレイ',
+    weeklyChallenge: '週間チャレンジ · {{mode}}',
+    weeklyChallengeComplete: '週間チャレンジ完了 ✓ · {{mode}}',
     ladder: 'ランキング',
     settings: '設定',
     practiceOffline: 'オフライン練習',
@@ -209,6 +211,7 @@ export const jaGame = {
   },
   modeLock: {
     reachBone: 'ボーンに到達すると、AI戦でこのモードを使えます。',
+    reachGold: 'ゴールドに到達すると、AI戦でこのモードを使えます。',
   },
   runeTrial: {
     choosePrompt: 'ルーンを1つ選択 — 相手には見えません',
@@ -222,6 +225,9 @@ export const jaGame = {
     revealPair: '両者の選択が確定',
     revealed: 'ルーン公開',
     pickClock: '選択までの秒数',
+    claim: 'CLAIM',
+    claimOwned: '所持済み',
+    claimNew: '新規',
   },
   runes: {
     ariaCommitted: '{{player}}：{{name}} — {{blurb}} 発動済み。印のある列を選んでください。',

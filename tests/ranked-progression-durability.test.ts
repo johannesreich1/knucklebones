@@ -7,7 +7,10 @@
 //   tests/ranked-progression-durability.test.ts
 import assert from 'node:assert/strict';
 import type { GroupTransitionEvent } from '../src/online/api/ranked-progression-api.ts';
-import { rankedProgressionFromRow } from '../src/online/api/ranked-progression-api.ts';
+import {
+  rankedProgressionFromRow,
+  shouldUseLegacyRankedProgressionFields,
+} from '../src/online/api/ranked-progression-api.ts';
 
 type TransportResult = {
   readonly data: unknown;
@@ -46,6 +49,22 @@ const check = (condition: boolean, message: string, detail?: unknown): void => {
   if (!condition) problems.push(`${message} :: ${JSON.stringify(detail)}`);
 };
 
+const missingExtendedColumn = {
+  code: 'PGRST204',
+  message: "Could not find the 'curve_version' column of 'ranked_progression_events' in the schema cache",
+};
+check(shouldUseLegacyRankedProgressionFields(missingExtendedColumn, 1),
+  'the genuine old-schema column miss did not enable the legacy projection');
+check(!shouldUseLegacyRankedProgressionFields(missingExtendedColumn, 2),
+  'a confirmed v2 curve fell back to a projection that drops v2 grants');
+check(!shouldUseLegacyRankedProgressionFields({
+  code: 'PGRST204',
+  message: "Could not find the 'unrelated' column of 'ranked_progression_events' in the schema cache",
+}, 1), 'an unrelated missing column enabled the progression fallback');
+check(!shouldUseLegacyRankedProgressionFields({
+  code: '42501', message: 'permission denied for curve_version',
+}, 1), 'a permission failure was disguised as an old schema');
+
 if (typeof factory !== 'function') {
   problems.push(
     'ranked progression has no injectable durability seam; preload errors still collapse to null',
@@ -72,6 +91,10 @@ if (typeof factory !== 'function') {
   };
   const event = rankedProgressionFromRow(row);
   assert.ok(event, 'the durability fixture is not a valid progression event');
+  const orphanRow = { ...row, source_match_id: null };
+  const orphan = rankedProgressionFromRow(orphanRow);
+  assert.ok(orphan && orphan.matchId === null,
+    'an orphaned but durable progression event was rejected');
   const unused = async (): Promise<TransportResult> => ({ data: null, error: null });
 
   const timedOut = factory({
@@ -156,6 +179,23 @@ if (typeof factory !== 'function') {
   { afterFailedAck, unseenReads });
   check(await durable.acknowledge(eventId) && acknowledgementAttempts === 2,
     'the same event ACK could not be retried after transport failure', acknowledgementAttempts);
+
+  let orphanAcknowledged = '';
+  const orphanRecovery = factory({
+    readForMatch: unused,
+    readUnseen: async () => ({ data: orphanRow, error: null }),
+    acknowledge: async (submittedEventId) => {
+      orphanAcknowledged = submittedEventId;
+      return { data: true, error: null };
+    },
+  });
+  const recoveredOrphan = await orphanRecovery.recover(matchId, { kind: 'absent' });
+  check(recoveredOrphan.kind === 'event' && recoveredOrphan.event.matchId === null,
+    'the oldest orphan event blocked unseen recovery', recoveredOrphan);
+  check(recoveredOrphan.kind === 'event'
+      && await orphanRecovery.acknowledge(recoveredOrphan.event.eventId)
+      && orphanAcknowledged === eventId,
+  'an orphan event could not be durably acknowledged by its own event id', orphanAcknowledged);
 }
 
 console.log(JSON.stringify({ problems }, null, 2));

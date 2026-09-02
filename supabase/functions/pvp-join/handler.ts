@@ -5,6 +5,8 @@ import type { JoinInput } from "../_shared/types.ts";
    same wire literals are asserted against the core registry by its owner test. */
 const RUNE_TRIAL_CAPABILITY = "rune_trial_v1";
 const EQUIPPED_RUNE_CAPABILITY = "equipped_rune_v1";
+const CURVE_V2_CAPABILITY = "curve_v2";
+const RUNE_TRIAL_CLAIM_CAPABILITY = "rune_trial_claim_v2";
 
 export type JoinOperation = (context: AuthenticatedContext, input: JoinInput) => Promise<Response>;
 
@@ -23,8 +25,16 @@ export function createPvpJoinHandler(dependencies: JoinDependencies) {
     const protocolVersion = suppliedProtocol === undefined ? 1 : suppliedProtocol;
     const suppliedCapabilities = body?.capabilities;
     const capabilities = suppliedCapabilities === undefined ? [] : suppliedCapabilities;
-    const knownCapabilities = new Set([RUNE_TRIAL_CAPABILITY, EQUIPPED_RUNE_CAPABILITY]);
+    const suppliedEntryKind = body?.entry_kind;
+    const entryKind = suppliedEntryKind === undefined ? "ordinary" : suppliedEntryKind;
+    const knownCapabilities = new Set([
+      RUNE_TRIAL_CAPABILITY,
+      EQUIPPED_RUNE_CAPABILITY,
+      CURVE_V2_CAPABILITY,
+      RUNE_TRIAL_CLAIM_CAPABILITY,
+    ]);
     if ((protocolVersion !== 1 && protocolVersion !== 2)
+        || (entryKind !== "ordinary" && entryKind !== "weekly")
         || !Array.isArray(capabilities)
         || !capabilities.every((capability) => knownCapabilities.has(capability))
         || new Set(capabilities).size !== capabilities.length
@@ -33,13 +43,18 @@ export function createPvpJoinHandler(dependencies: JoinDependencies) {
            older capability alongside the new one preserves the invariant that
            protocol v2 still implies the reveal roster may include Trial. */
         || (capabilities.includes(EQUIPPED_RUNE_CAPABILITY)
-          && !capabilities.includes(RUNE_TRIAL_CAPABILITY))) {
+          && !capabilities.includes(RUNE_TRIAL_CAPABILITY))
+        || (capabilities.includes(RUNE_TRIAL_CLAIM_CAPABILITY)
+          && (!capabilities.includes(RUNE_TRIAL_CAPABILITY)
+            || !capabilities.includes(CURVE_V2_CAPABILITY)))
+        || (entryKind === "weekly" && !capabilities.includes(CURVE_V2_CAPABILITY))) {
       return json({ error: "bad-request" }, 400);
     }
     return dependencies.operation(context, {
       allowBot: body?.allow_bot === true,
       protocolVersion,
       capabilities,
+      entryKind,
     });
   };
 }

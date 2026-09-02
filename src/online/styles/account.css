@@ -48,6 +48,19 @@
    count. Their weight and tracking still name the sections without making
    RUNES or PAST DUELS compete with the player's live profile facts. */
 :where(#kbroot) #onAccount .acchead b{color:inherit}
+/* Cosmetic progression records use the existing named-section vocabulary.
+   The weekly star is transient to the active rotation; the NEON diamond
+   counts durable season medals. They read as small seals, not action doors. */
+:where(#kbroot) #onAccount .accach-grid{display:flex;flex-wrap:wrap;gap:7px}
+:where(#kbroot) #onAccount .accach-mark{display:inline-flex;align-items:center;gap:7px;min-height:34px;
+  padding:7px 10px;border:1px solid currentColor;border-radius:999px;background:rgba(255,255,255,.025);
+  font-size:8.5px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
+:where(#kbroot) #onAccount .accach-mark.weekly{color:var(--gold);
+  background:rgba(255,209,102,.055);border-color:rgba(255,209,102,.32)}
+:where(#kbroot) #onAccount .accach-mark.neon{color:var(--p1);
+  background:rgba(var(--p1-rgb),.055);border-color:rgba(var(--p1-rgb),.32)}
+:where(#kbroot) #onAccount .accach-glyph{font-size:15px;line-height:1;
+  filter:drop-shadow(0 0 7px currentColor)}
 /* Six fixed collection slots. Locked runes keep their identity and position;
    the veil communicates ownership, not mystery, and mirrors the per-option
    lock vocabulary in offline setup. */

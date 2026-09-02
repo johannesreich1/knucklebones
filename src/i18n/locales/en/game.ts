@@ -36,6 +36,8 @@ export const enGame = {
   home: {
     notSignedIn: 'NOT SIGNED IN',
     playRanked: 'Play ranked match',
+    weeklyChallenge: 'Weekly challenge · {{mode}}',
+    weeklyChallengeComplete: 'Weekly complete ✓ · {{mode}}',
     ladder: 'Ladder',
     settings: 'Settings',
     practiceOffline: 'Practice offline',
@@ -206,6 +208,7 @@ export const enGame = {
   },
   modeLock: {
     reachBone: 'Reach BONE to unlock this mode versus AI.',
+    reachGold: 'Reach GOLD to unlock this mode versus AI.',
   },
   runeTrial: {
     choosePrompt: 'Choose one rune — your opponent cannot see it',
@@ -219,6 +222,9 @@ export const enGame = {
     revealPair: 'Both choices are locked',
     revealed: 'Runes revealed',
     pickClock: 'SECONDS TO CHOOSE',
+    claim: 'CLAIM',
+    claimOwned: 'OWNED',
+    claimNew: 'NEW',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Committed — choose a marked column.',

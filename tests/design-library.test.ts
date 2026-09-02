@@ -10,12 +10,16 @@ import {
   DESIGN_CLASSIFICATIONS,
   discoverDesignScreens,
 } from '../design/screen-library.mjs';
-import { RANKED_OUTCOMES } from '../src/core/ranked-outcomes.ts';
+import {
+  RANKED_OUTCOMES,
+  RANKED_OUTCOME_DISPLAY_ORDER,
+  orderRankedOutcomes,
+} from '../src/core/ranked-outcomes.ts';
 import { SPELLS } from '../src/core/spells.ts';
 import { dieMarkup } from '../src/ui/die-markup.ts';
 import { loaderDieMarkup, loaderWaitMarkup } from '../src/ui/loader.ts';
-import { MODE_PICKS, SPELL_PICKS, pickInfo } from '../src/ui/library.ts';
-import { dialBeat } from '../src/ui/modedial.ts';
+import { MODE_LIB, MODE_PICKS, SPELL_PICKS, pickInfo } from '../src/ui/library.ts';
+import { dialBeat, dialNodes } from '../src/ui/modedial.ts';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -92,9 +96,22 @@ try {
   if (pickInfo(MODE_PICKS, MODE_PICKS[1].v) !== `${MODE_PICKS[1].name} — ${MODE_PICKS[1].blurb}`) {
     problems.push('shared picker caption does not resolve the runtime/design choice');
   }
-  if (JSON.stringify(MODE_PICKS.filter(({ id }) => id !== 'random').map(({ id }) => id))
-      !== JSON.stringify(RANKED_OUTCOMES.map(({ id }) => id))) {
+  const canonicalOutcomes = orderRankedOutcomes(RANKED_OUTCOMES).map(({ id }) => id);
+  if (JSON.stringify(canonicalOutcomes) !== JSON.stringify(RANKED_OUTCOME_DISPLAY_ORDER)
+      || JSON.stringify(MODE_PICKS.filter(({ id }) => id !== 'random').map(({ id }) => id))
+        !== JSON.stringify(canonicalOutcomes)
+      || JSON.stringify(MODE_LIB.items.map(({ id }) => id)) !== JSON.stringify(canonicalOutcomes)) {
     problems.push('offline mode picker drifted from the canonical ranked spinner order');
+  }
+  if (MODE_PICKS.at(-1)?.id !== 'random') {
+    problems.push('synthetic RANDOM did not remain after every ordered outcome');
+  }
+  const unorderedDial = dialNodes(undefined, [
+    { id: 'limited' }, { id: 'classic' }, { id: 'bounty' }, { id: 'rowmult' },
+  ]);
+  const dialOrder = [...unorderedDial.matchAll(/data-mode="([^"]+)"/g)].map((match) => match[1]);
+  if (JSON.stringify(dialOrder) !== JSON.stringify(['classic', 'bounty', 'rowmult', 'limited'])) {
+    problems.push(`ranked dial did not reuse canonical subset order: ${JSON.stringify(dialOrder)}`);
   }
   const runeIds = new Set(SPELLS.map(({ id }) => id));
   if (JSON.stringify(SPELL_PICKS.filter(({ id }) => runeIds.has(id)).map(({ id }) => id))

@@ -2,14 +2,22 @@
 // result's group-transition deck. The database stores points + positional
 // apex truth; the shared ladder registry remains the one group classifier.
 import { boardGroup } from '../../core/ladder.ts';
-import { rankedPoolTierById, type RankedPoolTier } from '../../core/ranked-outcomes.ts';
+import {
+  rankedOutcomeById,
+  orderRankedOutcomes,
+  rankedPoolTierById,
+  type RankedPoolTier,
+} from '../../core/ranked-outcomes.ts';
 import { spellById } from '../../core/spells.ts';
 import type { LadderGroupId } from '../../i18n/display.ts';
+import { confirmedLadderCurveVersion } from '../../progression-status-cache.ts';
 import { supa } from './client.ts';
+import { isMissingPostgrestColumn } from './postgrest-compat.ts';
 
 export interface GroupTransitionEvent {
   readonly eventId: string;
-  readonly matchId: string;
+  /** Match deletion preserves the earned event via ON DELETE SET NULL. */
+  readonly matchId: string | null;
   readonly beforePoints: number;
   readonly afterPoints: number;
   readonly beforeGroup: LadderGroupId;
@@ -23,6 +31,13 @@ export interface GroupTransitionEvent {
   readonly runeSeatUnlockedBefore: boolean;
   readonly runeSeatUnlockedAfter: boolean;
   readonly seenAt: string | null;
+  /** Numeric contract that owns the event's points and group classification. */
+  readonly curveVersion: 1 | 2;
+  /** Exact new ordinary outcomes granted by this settlement (v2 only). */
+  readonly outcomeGrants: readonly string[];
+  readonly weeklyUnlockedBefore: boolean;
+  readonly weeklyUnlockedAfter: boolean;
+  readonly neonMedalGranted: boolean;
 }
 
 export type ProgressionLookup =
@@ -48,7 +63,7 @@ export interface RankedProgressionRecovery {
   acknowledge(eventId: string): Promise<boolean>;
 }
 
-const FIELDS = [
+const LEGACY_FIELDS = [
   'id',
   'source_match_id',
   'points_before',
@@ -65,6 +80,28 @@ const FIELDS = [
   'rune_seat_active_after',
   'seen_at',
 ].join(', ');
+const FIELDS = [
+  LEGACY_FIELDS,
+  'curve_version',
+  'outcome_grants',
+  'weekly_unlocked_before',
+  'weekly_unlocked_after',
+  'neon_medal_granted',
+].join(', ');
+const EXTENDED_COLUMNS = Object.freeze([
+  'curve_version',
+  'outcome_grants',
+  'weekly_unlocked_before',
+  'weekly_unlocked_after',
+  'neon_medal_granted',
+]);
+
+export function shouldUseLegacyRankedProgressionFields(
+  error: unknown,
+  curveVersion: 1 | 2 = confirmedLadderCurveVersion(),
+): boolean {
+  return curveVersion === 1 && isMissingPostgrestColumn(error, EXTENDED_COLUMNS);
+}
 
 function poolTier(value: unknown): RankedPoolTier | null {
   try {
@@ -105,7 +142,8 @@ export function rankedProgressionFromRow(value: unknown): GroupTransitionEvent |
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const row = value as Record<string, unknown>;
   if (typeof row.id !== 'string' || !row.id.length
-      || typeof row.source_match_id !== 'string' || !row.source_match_id.length
+      || (row.source_match_id !== null
+        && (typeof row.source_match_id !== 'string' || !row.source_match_id.length))
       || !Number.isInteger(row.points_before) || (row.points_before as number) < 0
       || !Number.isInteger(row.points_after) || (row.points_after as number) < 0
       || typeof row.apex_before !== 'boolean' || typeof row.apex_after !== 'boolean'
@@ -114,6 +152,20 @@ export function rankedProgressionFromRow(value: unknown): GroupTransitionEvent |
       || typeof row.rune_seat_active_before !== 'boolean'
       || typeof row.rune_seat_active_after !== 'boolean'
       || (row.seen_at !== null && typeof row.seen_at !== 'string')) return null;
+  const curveVersion = row.curve_version == null ? 1 : row.curve_version;
+  if (curveVersion !== 1 && curveVersion !== 2) return null;
+  const outcomeGrants = row.outcome_grants == null ? [] : row.outcome_grants;
+  if (!Array.isArray(outcomeGrants) || !outcomeGrants.every((id) => {
+    if (typeof id !== 'string') return false;
+    try { rankedOutcomeById(id); return true; } catch { return false; }
+  }) || new Set(outcomeGrants).size !== outcomeGrants.length) return null;
+  const weeklyUnlockedBefore = row.weekly_unlocked_before ?? false;
+  const weeklyUnlockedAfter = row.weekly_unlocked_after ?? false;
+  const neonMedalGranted = row.neon_medal_granted ?? false;
+  if (typeof weeklyUnlockedBefore !== 'boolean'
+      || typeof weeklyUnlockedAfter !== 'boolean'
+      || typeof neonMedalGranted !== 'boolean'
+      || (weeklyUnlockedBefore && !weeklyUnlockedAfter)) return null;
   const beforePoolTier = poolTier(row.pool_tier_before);
   const afterPoolTier = poolTier(row.pool_tier_after);
   if (!beforePoolTier || !afterPoolTier) return null;
@@ -129,11 +181,11 @@ export function rankedProgressionFromRow(value: unknown): GroupTransitionEvent |
   const afterPoints = row.points_after as number;
   return {
     eventId: row.id,
-    matchId: row.source_match_id,
+    matchId: row.source_match_id as string | null,
     beforePoints,
     afterPoints,
-    beforeGroup: boardGroup(beforePoints, row.apex_before).id as LadderGroupId,
-    afterGroup: boardGroup(afterPoints, row.apex_after).id as LadderGroupId,
+    beforeGroup: boardGroup(beforePoints, row.apex_before, curveVersion).id as LadderGroupId,
+    afterGroup: boardGroup(afterPoints, row.apex_after, curveVersion).id as LadderGroupId,
     beforePoolTier,
     afterPoolTier,
     equippedRune: equippedAfter as string | null,
@@ -141,6 +193,11 @@ export function rankedProgressionFromRow(value: unknown): GroupTransitionEvent |
     runeSeatUnlockedBefore: row.rune_seat_active_before,
     runeSeatUnlockedAfter: row.rune_seat_active_after,
     seenAt: row.seen_at as string | null,
+    curveVersion,
+    outcomeGrants: orderRankedOutcomes(outcomeGrants as string[]),
+    weeklyUnlockedBefore,
+    weeklyUnlockedAfter,
+    neonMedalGranted,
   };
 }
 
@@ -191,15 +248,28 @@ export function createRankedProgressionRecovery(
 
 const productionPorts: RankedProgressionRecoveryPorts = {
   async readForMatch(matchId) {
-    return supa().from('ranked_progression_events')
+    const result = await supa().from('ranked_progression_events')
       .select(FIELDS)
+      .eq('source_match_id', matchId)
+      .is('seen_at', null)
+      .maybeSingle();
+    if (!result.error || !shouldUseLegacyRankedProgressionFields(result.error)) return result;
+    return supa().from('ranked_progression_events')
+      .select(LEGACY_FIELDS)
       .eq('source_match_id', matchId)
       .is('seen_at', null)
       .maybeSingle();
   },
   async readUnseen() {
-    return supa().from('ranked_progression_events')
+    const result = await supa().from('ranked_progression_events')
       .select(FIELDS)
+      .is('seen_at', null)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (!result.error || !shouldUseLegacyRankedProgressionFields(result.error)) return result;
+    return supa().from('ranked_progression_events')
+      .select(LEGACY_FIELDS)
       .is('seen_at', null)
       .order('created_at', { ascending: true })
       .limit(1)

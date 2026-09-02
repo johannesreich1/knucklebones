@@ -8,6 +8,8 @@ PODS:
     - Capacitor
   - CapawesomeCapacitorAppleSignIn (0.1.3):
     - Capacitor
+  - KnucklebonesAppIcon (1.0.0):
+    - Capacitor
   - KnucklebonesGameCenter (1.0.0):
     - Capacitor
 
@@ -17,6 +19,7 @@ DEPENDENCIES:
   - "CapacitorShare (from `../../node_modules/@capacitor/share`)"
   - "CapacitorSplashScreen (from `../../node_modules/@capacitor/splash-screen`)"
   - "CapawesomeCapacitorAppleSignIn (from `../../node_modules/@capawesome/capacitor-apple-sign-in`)"
+  - KnucklebonesAppIcon (from `../../plugins/appicon`)
   - KnucklebonesGameCenter (from `../../plugins/gamecenter`)
 
 EXTERNAL SOURCES:
@@ -30,6 +33,8 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/splash-screen"
   CapawesomeCapacitorAppleSignIn:
     :path: "../../node_modules/@capawesome/capacitor-apple-sign-in"
+  KnucklebonesAppIcon:
+    :path: "../../plugins/appicon"
   KnucklebonesGameCenter:
     :path: "../../plugins/gamecenter"
 
@@ -39,8 +44,9 @@ SPEC CHECKSUMS:
   CapacitorShare: 0c58305114538568059bfc07111f22dcb9cb2a82
   CapacitorSplashScreen: 7bf61c2001557ff9e195e601c6b87344480d3c65
   CapawesomeCapacitorAppleSignIn: dda027b9fa4d85f718583a945e0f1002a9eba644
+  KnucklebonesAppIcon: 3fda953e8a767f17ede2bffe79c2e21c1cc3376e
   KnucklebonesGameCenter: e61d4ed230ca09a6fa9416e3d09439ed056067ba
 
-PODFILE CHECKSUM: 5c78aefde7df40909b0c0bc2fc31993ad0a6be22
+PODFILE CHECKSUM: a699e0e6b43e43e1df4b41262e0ec0375ff6d9e3
 
 COCOAPODS: 1.16.2

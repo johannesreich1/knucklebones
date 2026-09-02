@@ -3,11 +3,17 @@
 // clothes — an icon, a name, a one-liner and the full rule — so they are ONE
 // component with a spec, not two views that drift apart.
 //
-// Offline module by design: both registries live in core, so nothing here
-// needs the online chunk.
-import { MODES, RANDOM } from '../core/modes.ts';
+// Offline module by design: the ranked-outcome and rune registries live in
+// core, so nothing here needs the online chunk.
+import { RANDOM } from '../core/modes.ts';
+import {
+  RANKED_OUTCOMES,
+  RUNE_TRIAL_FORMAT,
+  orderRankedOutcomes,
+  type RankedOutcomeSpec,
+} from '../core/ranked-outcomes.ts';
 import { SPELLS, RANDOM_DUAL_SPELL, RANDOM_SPELL } from '../core/spells.ts';
-import { RUNE_TRIAL_FORMAT, RUNE_TRIAL_PICK } from '../local-options.ts';
+import { RUNE_TRIAL_PICK } from '../local-options.ts';
 import { modeCopy, runeTrialCopy, spellCopy, subscribeLocale, t } from '../i18n/index.ts';
 import { modeIcon, modeHue } from './modeicons.ts';
 import { spellIcon, spellHue } from './spellicons.ts';
@@ -44,16 +50,15 @@ export interface OpenEntryOptions {
 /* the two rosters, each a spec of the one library. Exported because the design
    cards render them through this very function (design/build.mjs, {{library}}):
    a card that re-typed a mode's blurb would be a fifth copy of the registry. */
-const modeItems = (): LibraryItem[] => [...MODES.map((mode) => {
-  const copy = modeCopy(mode.id);
-  return { id: mode.id, name: copy.name, blurb: copy.blurb, detail: copy.detail,
-    hue: modeHue(mode.id), icon: modeIcon(mode.id, 22) };
-}), {
-  id: RUNE_TRIAL_FORMAT,
-  ...runeTrialCopy(),
-  hue: modeHue(RUNE_TRIAL_FORMAT),
-  icon: modeIcon(RUNE_TRIAL_FORMAT, 22),
-}];
+const orderedModeOutcomes = (): readonly Readonly<RankedOutcomeSpec>[] =>
+  orderRankedOutcomes(RANKED_OUTCOMES);
+const outcomeCopy = (id: string) => id === RUNE_TRIAL_FORMAT ? runeTrialCopy() : modeCopy(id);
+const modeItems = (): LibraryItem[] => orderedModeOutcomes().map(({ id }) => ({
+  id,
+  ...outcomeCopy(id),
+  hue: modeHue(id),
+  icon: modeIcon(id, 22),
+}));
 const spellItems = (): LibraryItem[] => SPELLS.map((spell) => {
   const copy = spellCopy(spell.id);
   return { id: spell.id, name: copy.name, blurb: copy.blurb, detail: copy.detail,
@@ -95,14 +100,17 @@ export const libraryCards = (spec: LibrarySpec, now?: string): string =>
    roster the game does not. */
 export interface PickItem { v: string; id: string; name: string; blurb: string; hue: string; icon: string }
 const modePicks = (): PickItem[] => [
-  ...MODES.map((mode) => {
-    const copy = modeCopy(mode.id);
-    return { v: String(mode.mode), id: mode.id, name: copy.name, blurb: copy.blurb,
-      hue: modeHue(mode.id), icon: modeIcon(mode.id, 16) };
+  ...orderedModeOutcomes().map((outcome) => {
+    const copy = outcomeCopy(outcome.id);
+    return {
+      v: String(outcome.format === RUNE_TRIAL_FORMAT ? RUNE_TRIAL_PICK : outcome.mode),
+      id: outcome.id,
+      name: copy.name,
+      blurb: copy.blurb,
+      hue: modeHue(outcome.id),
+      icon: modeIcon(outcome.id, 16),
+    };
   }),
-  { v: String(RUNE_TRIAL_PICK), id: RUNE_TRIAL_FORMAT,
-    name: runeTrialCopy().name, blurb: runeTrialCopy().blurb,
-    hue: modeHue(RUNE_TRIAL_FORMAT), icon: modeIcon(RUNE_TRIAL_FORMAT, 16) },
   { v: String(RANDOM), id: 'random', ...modeCopy('random'), hue: modeHue('random'), icon: modeIcon('random', 16) },
 ];
 const spellPicks = (): PickItem[] => [

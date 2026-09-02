@@ -12,6 +12,10 @@ import { paintHuePair } from '../ui/hues.ts';
 import { REDUCED, setReducedMotion } from '../ui/fx.ts';
 import { effectiveLocale, localeSelfName, t } from '../i18n/index.ts';
 import { hueLabel } from '../ui/hue.ts';
+import {
+  profileAppIconAvailable,
+  profileAppIconEnabled,
+} from '../native/app-icon.ts';
 
 export interface MenuPorts {
   cancelPass: () => void;
@@ -47,6 +51,8 @@ export function syncSettingsUI(): void {
   segOn('#timerSeg', 't', String(S.timer));
   segOn('#seatSeg', 'seat', S.seat);
   segOn('#sndSeg', 's', S.sound ? '1' : '0');
+  $('#appIconCard').hidden = !profileAppIconAvailable();
+  segOn('#appIconSeg', 'ai', profileAppIconEnabled() ? '1' : '0');
   segOn('#faceSeg', 'f', S.numerals ? 'nums' : 'pips');
   segOn('#cbSeg', 'b', S.colorblind ? '1' : '0');
   setReducedMotion(S.reducedMotion);

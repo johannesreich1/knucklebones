@@ -1,10 +1,36 @@
 // Read-only seasonal ladder boundaries. Opponent-facing data comes through
 // narrow RPCs because raw profile and season rows remain own-row only.
-import { GROUPS } from '../../core/ladder.ts';
+import { groupsForCurve, type LadderCurveVersion } from '../../core/ladder.ts';
+import {
+  cacheConfirmedLadderCurveVersion,
+  cachedLadderCurveVersion,
+} from '../../progression-status-cache.ts';
+import { isMissingPostgrestRpc } from './postgrest-compat.ts';
 import { supa } from './client.ts';
 import { currentUser } from '../identity/session.ts';
 
-const SILVER_FLOOR = GROUPS.find(({ id }) => id === 'silver')!.floor;
+export function rankedCurveVersionFromRpc(
+  data: unknown,
+  error: unknown,
+  cached: LadderCurveVersion | null,
+): LadderCurveVersion | null {
+  const value = Array.isArray(data) ? data[0] : data;
+  if (!error) return value === 1 || value === 2 ? value : null;
+  /* Once v2 is known, never downgrade it. Before that, only the exact absence
+     of this additive RPC proves an old v1 deployment. A transient error or a
+     malformed scalar cannot safely classify potentially remapped rows. */
+  if (cached === 2) return 2;
+  return isMissingPostgrestRpc(error, 'active_ranked_curve_version') ? 1 : null;
+}
+
+/** Public rollout scalar. Null means the server's curve is currently unknown,
+ * so callers keep points behind their loading/error surface. */
+export async function activeRankedCurveVersion(): Promise<LadderCurveVersion | null> {
+  const { data, error } = await supa().rpc('active_ranked_curve_version');
+  const value = rankedCurveVersionFromRpc(data, error, cachedLadderCurveVersion());
+  if (value !== null) cacheConfirmedLadderCurveVersion(value);
+  return value;
+}
 
 export interface Standing {
   points: number;
@@ -37,23 +63,35 @@ export interface Ladder {
   runeSeatUnlocked: boolean;
 }
 
-export async function myLadder(): Promise<Ladder | null> {
+export async function myLadder(
+  knownCurveVersion?: LadderCurveVersion,
+): Promise<Ladder | null> {
   const user = await currentUser();
   if (!user) return null;
-  const { data: season } = await supa().rpc('current_season');
-  const [currentResult, historicalSilverResult] = await Promise.all([
+  const [{ data: season }, curveVersion] = await Promise.all([
+    supa().rpc('current_season'),
+    knownCurveVersion ?? activeRankedCurveVersion(),
+  ]);
+  if (curveVersion === null) return null;
+  const silverFloor = groupsForCurve(curveVersion)
+    .find(({ id }) => id === 'silver')!.floor;
+  const equipmentUnlock = curveVersion === 2
+    ? supa().from('player_ranked_features')
+      .select('feature_id').eq('player_id', user.id)
+      .eq('feature_id', 'equipped_runes').limit(1)
+    : supa().from('season_ratings')
+      .select('peak').eq('player', user.id).gte('peak', silverFloor).limit(1);
+  const [currentResult, equipmentResult] = await Promise.all([
     supa().from('season_ratings')
       .select('points, peak, wins, losses, draws')
       .eq('season_id', season).eq('player', user.id).maybeSingle(),
-    /* Do not rely on a season rollover copying the previous peak. The match
-       authority uses the same all-season fact, and this indexed owner query
-       keeps Profile consistent with it after any future rollover policy. */
-    supa().from('season_ratings')
-      .select('peak')
-      .eq('player', user.id).gte('peak', SILVER_FLOOR).limit(1),
+    equipmentUnlock,
   ]);
   const data = currentResult.data;
-  const runeSeatUnlocked = (historicalSilverResult.data?.length ?? 0) > 0;
+  /* V1 proves the milestone from any historical peak. V2 owns it as an
+     explicit durable feature, including a low-points positional-NEON catch-up
+     where raw points cannot prove every lower entitlement granted. */
+  const runeSeatUnlocked = (equipmentResult.data?.length ?? 0) > 0;
   // A season row is created at the first pairing; no row is an honest zero.
   return {
     ...(data ?? { points: 0, peak: 0, wins: 0, losses: 0, draws: 0 }),
@@ -74,6 +112,9 @@ export interface HistoryRow {
   mine: number;
   theirs: number;
   delta: number;
+  baseDelta: number | null;
+  finishDelta: number | null;
+  scoringVersion: number;
   result: 'win' | 'loss' | 'draw';
 }
 
@@ -100,6 +141,9 @@ export async function matchHistory(limit = 40, before?: HistoryCursor): Promise<
     mine: Number(row.mine ?? 0),
     theirs: Number(row.theirs ?? 0),
     delta: Number(row.delta ?? 0),
+    baseDelta: row.base_delta == null ? null : Number(row.base_delta),
+    finishDelta: row.finish_delta == null ? null : Number(row.finish_delta),
+    scoringVersion: Number(row.scoring_version ?? 1),
     result: row.result as HistoryRow['result'],
   }));
 }

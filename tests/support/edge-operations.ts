@@ -128,7 +128,12 @@ export class EdgeOperationsService {
   private readonly rpcs: Record<string, RpcRoute>;
   constructor(tables: Record<string, TableRoute>, rpcs: Record<string, RpcRoute> = {}) {
     this.tables = tables;
-    this.rpcs = rpcs;
+    this.rpcs = {
+      ranked_runtime_contract: () => ({
+        data: { curve_version: 1, scoring_version: 1, admission_paused: false },
+      }),
+      ...rpcs,
+    };
   }
 
   from(table: string): QueryBuilder {
@@ -236,6 +241,7 @@ export const standardMatch = (overrides: Partial<MatchRow> = {}): MatchRow => ({
   id: 'match-1', p1: 'player-1', p2: 'player-2', status: 'active', turn: 1,
   winner: null, p1_score: null, p2_score: null,
   p1_rating_delta: null, p2_rating_delta: null,
+  curve_version: 1, scoring_version: 1,
   next_die: 4, last_move_at: new Date().toISOString(), modifier: 'classic',
   season_id: 1, format: 'standard', protocol_version: 1, rune_rules_version: null,
   pool_tier: 'stone', phase: 'playing', trial_offer: null,

@@ -16,7 +16,7 @@ import { claimBadge, releaseBadge, runeTrialChip, spellChip } from '../../ui/gam
 import { setStatus } from '../../ui/game/turn-state.ts';
 import { fit } from '../../ui/layout.ts';
 import { setPlaceHandler } from '../../ui/input.ts';
-import { setOpponentTurnPresentation, setSeatingPresentation, setTurnPresentation, setTutorialPresentation } from '../../ui/game/root-state.ts';
+import { setOpponentTurnPresentation, setScoringPresentation, setSeatingPresentation, setTurnPresentation, setTutorialPresentation } from '../../ui/game/root-state.ts';
 import type { MatchRow, JoinResult } from '../api/match-api.ts';
 import { watchMatch } from '../api/match-realtime.ts';
 import { createInitialSyncBoundary, type InitialSyncBoundary } from './initial-sync.ts';
@@ -134,6 +134,7 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
 
   const spec = modeById(res.match.modifier);
   S.scoring = spec.mode;           // rendering/destroy animations follow the server's mode
+  setScoringPresentation(S.scoring); // score rails belong to the first empty-table frame
   S.bounty = [0, 0];
   // LIMITED: the bag. Its size comes from PUBLIC data only (how many moves
   // the log holds + the visible next die) — the secret seed stays secret,
@@ -286,6 +287,7 @@ export function teardown(): void {
   initialSync = null; stopTimer();
   unseatOnlineBoard();
   S.scoring = CLASSIC;             // local play is always classic
+  setScoringPresentation(S.scoring);
   O.channel?.unsubscribe();
   if (O.tick) clearInterval(O.tick);
   setSpellTransport(null);

@@ -3,10 +3,11 @@
 // live in production-player-points.mjs; no client/admin RPC is exposed.
 
 import {
-  RANKED_POOL_TIERS,
   highestRankedPoolTier,
-  rankedPoolTierForPeak,
+  rankedCompatibilityPoolTierForPeak,
+  rankedPoolTiersForCurve,
 } from '../../src/core/ranked-outcomes.ts';
+import { LADDER_CURVE_V1 } from '../../src/core/ladder.ts';
 
 export const PRODUCTION_PLAYER_NICKNAME = 'BadRandolf';
 export const PRODUCTION_PLAYER_POINTS_OPT_IN = 'KB_ALLOW_PRODUCTION_PLAYER_POINTS';
@@ -35,7 +36,8 @@ const AUDIT_FIELDS = Object.freeze([
   ...NULLABLE_INTEGER_FIELDS,
   'playerId', 'nickname', 'rankedPoolTier',
 ].sort());
-const POOL_IDS = new Set(RANKED_POOL_TIERS.map(tier => tier.id));
+const COMPATIBILITY_POOL_TIERS = rankedPoolTiersForCurve(LADDER_CURVE_V1);
+const POOL_IDS = new Set(COMPATIBILITY_POOL_TIERS.map(tier => tier.id));
 
 export const PRODUCTION_PLAYER_POINTS_AUDIT_SQL = `
 with open_season as (
@@ -192,7 +194,7 @@ export function assertProductionPlayerPointsReady(audit) {
 }
 
 const poolTierCase = () => {
-  const descending = [...RANKED_POOL_TIERS].sort((a, b) => b.floor - a.floor);
+  const descending = [...COMPATIBILITY_POOL_TIERS].sort((a, b) => b.floor - a.floor);
   const lowest = descending.at(-1);
   return `case
 ${descending.slice(0, -1).map(tier =>
@@ -215,7 +217,7 @@ export function buildProductionPlayerPointsSql(
   const playerId = audit.playerId.toLowerCase();
   const peakAssignment = resetHighWater ? String(points) : `greatest(rating.peak, ${points})`;
   const poolAssignment = resetHighWater
-    ? `'${rankedPoolTierForPeak(points)}'`
+    ? `'${rankedCompatibilityPoolTierForPeak(points, LADDER_CURVE_V1)}'`
     : poolTierCase();
   const poolPostcheck = resetHighWater
     ? `
@@ -232,7 +234,15 @@ declare
   v_profile public.profiles%rowtype;
   v_rating public.season_ratings%rowtype;
   v_peak integer;
+  v_active_curve smallint;
 begin
+  if to_regprocedure('public.active_ranked_curve_version()') is not null then
+    execute 'select public.active_ranked_curve_version()' into strict v_active_curve;
+    if v_active_curve <> 1 then
+      raise exception 'legacy production player-points helper is disabled after curve-v2 activation';
+    end if;
+  end if;
+
   select profile.* into strict v_profile
     from public.profiles profile
    where profile.id = '${playerId}'::uuid
@@ -330,10 +340,10 @@ export function assertProductionPlayerPointsApplied(
       : 'Production player-points peak was not preserved monotonically.');
   }
   const expectedPool = resetHighWater
-    ? rankedPoolTierForPeak(expectedPeak)
+    ? rankedCompatibilityPoolTierForPeak(expectedPeak, LADDER_CURVE_V1)
     : highestRankedPoolTier(
       initial.rankedPoolTier,
-      rankedPoolTierForPeak(expectedPeak),
+      rankedCompatibilityPoolTierForPeak(expectedPeak, LADDER_CURVE_V1),
     );
   if (final.rankedPoolTier !== expectedPool) {
     fail(resetHighWater

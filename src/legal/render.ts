@@ -9,7 +9,19 @@ function escapeHtml(value: string): string {
   })[character]!);
 }
 
-const LINK = /(https:\/\/[^\s<>]+|[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+)/gu;
+// Legal facts are interpolated into natural-language prose. Restrict automatic
+// links to ASCII URI/email syntax so Japanese and Korean particles next to a
+// fact remain prose instead of becoming part of the href. The publication
+// validator consumes the same email source so accepted addresses stay
+// clickable instead of being partially linked.
+const EMAIL_SOURCE = "[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)+";
+const HTTPS_SOURCE = "https://[A-Za-z0-9._~:/?#\\[\\]@!$&'()*+,;=%-]+";
+const LINK = new RegExp(`(${HTTPS_SOURCE}|${EMAIL_SOURCE})`, 'gu');
+const PUBLIC_EMAIL = new RegExp(`^${EMAIL_SOURCE}$`, 'u');
+
+export function isLinkablePublicEmail(value: string): boolean {
+  return PUBLIC_EMAIL.test(value);
+}
 
 function linkedText(value: string): string {
   let output = '';

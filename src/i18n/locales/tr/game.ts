@@ -39,6 +39,8 @@ export const trGame = {
   home: {
     notSignedIn: 'OTURUM AÇILMADI',
     playRanked: 'Dereceli maç oyna',
+    weeklyChallenge: 'Haftalık mücadele · {{mode}}',
+    weeklyChallengeComplete: 'Hafta tamamlandı ✓ · {{mode}}',
     ladder: 'Sıralama',
     settings: 'Ayarlar',
     practiceOffline: 'Çevrimdışı alıştırma',
@@ -209,6 +211,7 @@ export const trGame = {
   },
   modeLock: {
     reachBone: 'Bu modu YZ’ye karşı açmak için KEMİK’e ulaş.',
+    reachGold: 'Bu modu YZ’ye karşı açmak için ALTIN’a ulaş.',
   },
   runeTrial: {
     choosePrompt: 'Bir rün seç — rakibin onu göremez',
@@ -222,6 +225,9 @@ export const trGame = {
     revealPair: 'İki seçim de kilitlendi',
     revealed: 'Rünler açıldı',
     pickClock: 'SEÇİM İÇİN SANİYE',
+    claim: 'CLAIM',
+    claimOwned: 'SENDE',
+    claimNew: 'YENİ',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Onaylandı — işaretli bir sütun seç.',

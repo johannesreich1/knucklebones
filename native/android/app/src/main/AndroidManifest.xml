@@ -18,12 +18,682 @@
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
-            android:exported="true">
+            android:exported="true"
+        />
+
+        <!-- BEGIN GENERATED PROFILE APP ICON ALIASES -->
+        <activity-alias
+            android:name=".launcher.Primary"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="primary" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die1Cy"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_1_cy"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-1-cy" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die1Mg"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_1_mg"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-1-mg" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die1Gold"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_1_gold"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-1-gold" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die1Green"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_1_green"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-1-green" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die1Violet"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_1_violet"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-1-violet" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die1Orange"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_1_orange"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-1-orange" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die1Blue"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_1_blue"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-1-blue" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die2Cy"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_2_cy"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-2-cy" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die2Mg"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_2_mg"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-2-mg" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die2Gold"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_2_gold"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-2-gold" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die2Green"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_2_green"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-2-green" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die2Violet"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_2_violet"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-2-violet" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die2Orange"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_2_orange"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-2-orange" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die2Blue"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_2_blue"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-2-blue" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die3Cy"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_3_cy"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-3-cy" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die3Mg"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_3_mg"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-3-mg" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die3Gold"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_3_gold"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-3-gold" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die3Green"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_3_green"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-3-green" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die3Violet"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_3_violet"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-3-violet" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die3Orange"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_3_orange"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-3-orange" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die3Blue"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_3_blue"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-3-blue" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die4Cy"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_4_cy"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-4-cy" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die4Mg"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_4_mg"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-4-mg" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die4Gold"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_4_gold"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-4-gold" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die4Green"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_4_green"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-4-green" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die4Violet"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_4_violet"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-4-violet" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die4Orange"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_4_orange"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-4-orange" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die4Blue"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_4_blue"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-4-blue" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die5Mg"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_5_mg"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-5-mg" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die5Gold"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_5_gold"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-5-gold" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die5Green"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_5_green"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-5-green" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die5Violet"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_5_violet"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-5-violet" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die5Orange"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_5_orange"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-5-orange" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die5Blue"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_5_blue"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-5-blue" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die6Cy"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_6_cy"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-6-cy" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die6Mg"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_6_mg"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-6-mg" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die6Gold"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_6_gold"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-6-gold" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die6Green"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_6_green"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-6-green" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die6Violet"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_6_violet"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-6-violet" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die6Orange"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_6_orange"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-6-orange" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".launcher.Die6Blue"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_profile_die_6_blue"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <meta-data
+                android:name="knucklebones.profileIcon"
+                android:value="die-6-blue" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <!-- END GENERATED PROFILE APP ICON ALIASES -->
 
         <provider
             android:name="androidx.core.content.FileProvider"

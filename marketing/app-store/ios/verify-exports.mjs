@@ -2,11 +2,80 @@ import { createHash } from 'node:crypto';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import sharp from '../../../native/node_modules/sharp/lib/index.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fail = (message) => { throw new Error(message); };
 const requireFact = (ok, message) => { if (!ok) fail(message); };
 const sorted = (values) => [...values].sort();
+
+const germanDiaeresisCrops = new Map([
+  ['iphone-6.9/01-ranked-row-multiply.png', { left: 790, top: 300, width: 100, height: 42 }],
+  ['iphone-6.9/04-sunder-overload.png', { left: 490, top: 300, width: 100, height: 42 }],
+  ['ipad-13/01-ranked-row-multiply.png', { left: 870, top: 260, width: 110, height: 42 }],
+  ['ipad-13/04-sunder-overload.png', { left: 500, top: 260, width: 120, height: 42 }],
+]);
+
+async function assertGermanDiaeresisPainted(imagePath, targetId, name) {
+  const crop = germanDiaeresisCrops.get(`${targetId}/${name}`);
+  if (!crop) return;
+  const { data, info } = await sharp(imagePath)
+    .extract(crop)
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const ink = new Uint8Array(info.width * info.height);
+  for (let index = 0; index < ink.length; index++) {
+    const offset = index * info.channels;
+    ink[index] = data[offset] + data[offset + 1] + data[offset + 2] > 300 ? 1 : 0;
+  }
+
+  const seen = new Uint8Array(ink.length);
+  const components = [];
+  for (let index = 0; index < ink.length; index++) {
+    if (!ink[index] || seen[index]) continue;
+    const stack = [index];
+    seen[index] = 1;
+    let minX = info.width;
+    let minY = info.height;
+    let maxX = -1;
+    let maxY = -1;
+    let pixels = 0;
+    while (stack.length) {
+      const current = stack.pop();
+      const x = current % info.width;
+      const y = Math.floor(current / info.width);
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+      pixels++;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const nextX = x + dx;
+          const nextY = y + dy;
+          if (nextX < 0 || nextX >= info.width || nextY < 0 || nextY >= info.height) continue;
+          const next = nextY * info.width + nextX;
+          if (ink[next] && !seen[next]) {
+            seen[next] = 1;
+            stack.push(next);
+          }
+        }
+      }
+    }
+    if (pixels >= 40) {
+      components.push({
+        width: maxX - minX + 1,
+        height: maxY - minY + 1,
+        pixels,
+      });
+    }
+  }
+
+  const dots = components.filter((component) => component.width >= 16 && component.width <= 32);
+  requireFact(dots.length === 2 && dots.every((dot) => dot.height >= 16),
+    `de-DE/${targetId}/${name} clips the painted umlaut dots: ${JSON.stringify(dots)}`);
+}
 
 const nodeMajor = Number.parseInt(process.versions.node.split('.')[0], 10);
 requireFact(nodeMajor === 24,
@@ -170,7 +239,8 @@ for (const locale of config.locales) {
 
     const md5s = new Set();
     for (const name of expectedNames) {
-      const bytes = await readFile(path.join(exportDir, name));
+      const imagePath = path.join(exportDir, name);
+      const bytes = await readFile(imagePath);
       requireFact(bytes.length >= 33 && bytes.subarray(0, 8).equals(pngSignature), `${name} is not a PNG`);
       requireFact(bytes.readUInt32BE(8) === 13 && bytes.subarray(12, 16).toString('ascii') === 'IHDR',
         `${name} does not begin with a valid IHDR chunk`);
@@ -196,6 +266,9 @@ for (const locale of config.locales) {
       const digest = createHash('sha256').update(bytes).digest('hex');
       requireFact(digest === expectedChecksums.get(name), `${name} differs from its committed SHA-256`);
       md5s.add(createHash('md5').update(bytes).digest('hex'));
+      if (locale.appStoreLocale === 'de-DE') {
+        await assertGermanDiaeresisPainted(imagePath, target.id, name);
+      }
     }
     requireFact(md5s.size === expectedNames.length,
       `${locale.appStoreLocale}/${target.id} contains duplicate screenshot images`);

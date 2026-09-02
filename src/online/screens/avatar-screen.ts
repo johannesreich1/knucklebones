@@ -1,7 +1,17 @@
 import { ME } from '../../core/rules.ts';
 import { formatNumber, subscribeLocale, t, type LocaleKey } from '../../i18n/index.ts';
 import { Sfx } from '../../ui/audio.ts';
-import { AV_HUES, DEFAULT_AVATAR, parseAvatar, paintAvatar } from '../../ui/avatar.ts';
+import {
+  AVATAR_FACES,
+  AVATAR_HUES,
+  AV_HUES,
+  DEFAULT_AVATAR,
+  canonicalProfileAvatar,
+  parseAvatar,
+  paintAvatar,
+  profileAvatar,
+  type ProfileAvatar,
+} from '../../ui/avatar.ts';
 import { makeDie } from '../../ui/die.ts';
 import { $, byId } from '../../ui/dom.ts';
 import { loaderDie } from '../../ui/loader.ts';
@@ -15,7 +25,7 @@ export interface AvatarScreen {
 }
 
 export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScreen {
-  let pick = DEFAULT_AVATAR;
+  let pick: ProfileAvatar = DEFAULT_AVATAR;
   let avatarError: (() => string) | null = null;
   const clearAvatarError = (): void => {
     avatarError = null;
@@ -57,7 +67,7 @@ export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScre
     const preview = $('#avPreview');
     if (!preview.firstChild) preview.appendChild(loaderDie(40));
     const profile = await myProfile();
-    pick = profile?.avatar ?? DEFAULT_AVATAR;
+    pick = canonicalProfileAvatar(profile?.avatar);
     const draw = (): void => {
       const current = parseAvatar(pick);
       paintAvatar($('#avPreview'), pick, 86);
@@ -67,19 +77,19 @@ export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScre
         button.classList.toggle('on', (button as HTMLElement).dataset.hue === current.hue));
     };
     if (!$('#avFaces').firstChild) {
-      for (let face = 1; face <= 6; face++) {
+      for (const face of AVATAR_FACES) {
         const button = document.createElement('button');
         button.type = 'button';
         button.dataset.face = String(face);
         button.appendChild(makeDie(face, ME));
         button.addEventListener('click', () => {
           Sfx.tap();
-          pick = `die:${face}:${parseAvatar(pick).hue}`;
+          pick = profileAvatar(face, parseAvatar(pick).hue);
           draw();
         });
         $('#avFaces').appendChild(button);
       }
-      for (const hue of Object.keys(AV_HUES)) {
+      for (const hue of AVATAR_HUES) {
         const button = document.createElement('button');
         button.type = 'button';
         button.dataset.hue = hue;
@@ -87,7 +97,7 @@ export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScre
         button.style.setProperty('--h', AV_HUES[hue]);
         button.addEventListener('click', () => {
           Sfx.tap();
-          pick = `die:${parseAvatar(pick).face}:${hue}`;
+          pick = profileAvatar(parseAvatar(pick).face, hue);
           draw();
         });
         $('#avHues').appendChild(button);

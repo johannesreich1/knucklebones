@@ -79,9 +79,10 @@ The root scripts make the native mutation explicit:
 Every sync first rebuilds `native/www/`; failures are not swallowed. Verify
 then checks the platform's tracked manifests, plugins, assets, versions,
 security settings, and the exact web bytes copied by Capacitor. The tracked
-`knucklebones-game-center` file dependency is the native Game Center
-implementation; iOS verification requires Capacitor and CocoaPods to register
-it rather than accepting an unwired source directory.
+`knucklebones-game-center` and `knucklebones-app-icon` file dependencies are
+the native Game Center and profile-launcher implementations; verification
+requires Capacitor and the platform build to register them rather than
+accepting unwired source directories.
 
 `mise exec -- npm run native:assets:android` renders Android-only custom icon/splash inputs
 from the shared vector generators, runs Capacitor Assets 3.0.5, and writes the
@@ -107,7 +108,85 @@ iOS deploys to 15 and uses Capacitor 8.5's UIScene lifecycle. The branded
 launch screen stays up through synchronous Home composition; the global
 Splash Screen bridge hides it on the next task with a 200 ms fade, while the
 native five-second auto-hide remains a crash/error watchdog. The web and widget
-entries do not import a native plugin.
+entries do not import a native plugin. `tools/splash.mjs` draws the larger fixed
+cyan-five mark directly on the full 2732px canvas and supplies a full-canvas
+radial cyan falloff over `#05060e`; it must not enlarge a smaller icon raster or
+CSS shadow, because either path truncates the glow into a visible square. The
+same source feeds every tracked Android portrait/landscape and normal/night
+splash rendition.
+
+### Profile-driven launcher icons
+
+`src/profile-avatar.ts` owns the canonical profile/avatar vocabulary: six die
+faces crossed with the seven `HUE_IDS` entries, for 42 values. `die:5:cy` is
+the installed app's primary cyan-five icon. Every other value maps mechanically
+from `die:<face>:<hue>` to the native id `die-<face>-<hue>`; native bridges
+accept no arbitrary catalog, component, or resource name.
+
+The icon set is generated compiler input, not 41 hand-maintained designs.
+`mise exec -- node tools/appicon.mjs` renders the fixed web icons plus iOS from
+the shared die markup and CSS. `mise exec -- npm run native:assets:android`
+renders Android and runs the Android finalizer. Both refresh the tracked
+`native/profile-app-icons.manifest.json`; after the Android finalizer it is the
+complete deterministic record of:
+
+- its schema version and generator/source components;
+- the primary avatar and launcher id;
+- all 42 avatar-to-iOS-catalog and avatar-to-Android-alias/resource mappings;
+- SHA-256 hashes for every generated profile-icon asset.
+
+The manifest contains no timestamp, so the same sources produce the same bytes
+and provenance. Verification derives the registry from source, checks complete
+coverage and mappings, and rejects a stale generated file or hash. Do not edit
+an alternate catalog, alias, or density resource by hand.
+
+On iOS, `AppIcon.appiconset` is the primary and the other 41 values each have
+an alternate app-icon catalog. Debug and Release list the exact alternates in
+`ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES`; Xcode then generates
+`CFBundlePrimaryIcon` and `CFBundleAlternateIcons`, so those keys do not belong
+as a second manual registry in source `Info.plist`. Every catalog gives its
+Any/Light and Dark entries byte-identical opaque artwork: the requested
+charcoal gradient, the same full neon shimmer, and no appearance-specific
+change to die size, tilt, hue, or pips. A separate grayscale Tinted rendition
+keeps its pips as transparent cutouts. iOS derives Clear from that authored
+monochrome source; the final Clear and Tinted pixels remain system-owned and
+therefore require device visual acceptance rather than a checked-in color
+claim.
+The Capacitor bridge compares `UIApplication.alternateIconName` before calling
+`setAlternateIconName`, keeping launch reconciliation silent when the correct
+icon is already selected. A real change uses the system API and therefore shows
+iOS's system confirmation alert. An OS error leaves the old launcher selected.
+
+On Android, 42 exported launcher `activity-alias` entries target the same
+`MainActivity`. Each alias carries its canonical `knucklebones.profileIcon`
+metadata and one generated icon resource; exactly one alias is enabled. Android
+13+ applies the complete component-state change atomically. On API 24–32 the
+bridge enables the requested alias before disabling the old one, preferring a
+temporary duplicate over making the installed app unreachable. The selected
+PackageManager state is synchronous and verifiable, but launcher rendering is
+owned by the installed launcher: pixels can refresh after a cache delay, and
+some OEM launchers may replace or remove an existing manually placed Home item
+instead of repainting it in place. The app must not claim that launcher pixels
+have refreshed. Aliases omit a separate `roundIcon`: adaptive masking supplies
+the round path on API 26+, while the legacy alias bitmap is round-safe. Android
+themed icons preserve the selected face and cut-out pip silhouette, but the OS
+owns their monochrome tint, so the profile hue is deliberately absent there.
+
+The catalogs and aliases make the capability available; they do not activate
+it automatically. The installed iOS/Android Settings control is off by default
+and records its choice only for that installation, never in Supabase. Enabling
+it applies the current confirmed profile die, and later confirmed profile reads
+or saves reconcile only while it remains enabled. Explicit Off, sign-out, or an
+account replacement restores primary. While disabled, startup performs one
+idempotent primary reconciliation so new installs keep the default and installs
+that saw the briefly released automatic behaviour are repaired. Bridge or
+launcher failures remain cosmetic and never block startup or profile state.
+
+Only the native launcher is profile-driven. The primary public/PWA/standalone
+and widget art, plus iOS/Android splash and in-app loading art, remain the fixed
+cyan neon five. Web/PWA/widget Settings do not render the native icon choice.
+Startup never waits for icon reconciliation, and an icon error cannot become an
+account, profile, or navigation failure.
 
 The release shell is portrait-only on iOS and Android. The universal iOS target
 explicitly requests the temporary full-screen compatibility mode so its
@@ -149,20 +228,20 @@ SKU `knucklebones-ios-001`, bundle id `com.appavaria.knucklebones`, and initial
 version `1.0`. Fastlane 2.238.0 is pinned by `Gemfile.lock`. This owner-local
 workflow is deliberately separate from Cloudflare deployment and from binary
 upload. It owns five listing fields and six screenshots for each combination
-of `en-GB`, `de-DE`, `fr-FR`, `pl`, `tr`, `id`, `ja`, and `ko` with iPhone
-6.9-inch and iPad 13-inch: 96 final images across sixteen managed screenshot
+of `en-GB`, `pt-BR`, `es-ES`, `de-DE`, `fr-FR`, `it`, `pl`, `tr`, `id`, `ja`,
+and `ko` with iPhone 6.9-inch and iPad 13-inch: 132 final images across twenty-two managed screenshot
 sets.
 
 | Command | Effect |
 |---|---|
 | `mise exec -- npm run appstore:fastlane:install` | Install the locked Ruby dependencies into ignored `vendor/bundle/` |
-| `mise exec -- npm run appstore:screenshots:generate` | Rebuild the runtime, capture 112 real-runtime source frames, finalize 96 exports, and verify the complete locale/device matrix |
+| `mise exec -- npm run appstore:screenshots:generate` | Rebuild the runtime, capture 154 real-runtime source frames, finalize 132 exports, and verify the complete locale/device matrix |
 | `mise exec -- npm run appstore:screenshots:verify` | Read-only locale coverage, PNG, dimensions, alpha, provenance, metadata-limit, and SHA-256 validation |
 | `mise exec -- npm run appstore:screenshots:contract` | Focused listing identity, export, dependency-pin, and mutation-guard contract |
 | `mise exec -- npm run appstore:screenshots:test` | Pure planner safety cases, including duplicates and the ten-item capacity boundary |
 | `mise exec -- npm run appstore:screenshots:check` | Repeat local validation through pinned Fastlane and prove both Apple display-type mappings |
-| `mise exec -- npm run appstore:screenshots:plan` | Authenticate read-only and print exact localization, owned-metadata, and sixteen-set changes plus an inventory-bound confirmation token |
-| `mise exec -- npm run appstore:screenshots:upload` | After exact draft-sync approval, create missing managed localizations, patch only owned fields, and synchronize all sixteen screenshot sets |
+| `mise exec -- npm run appstore:screenshots:plan` | Authenticate read-only and print exact localization, owned-metadata, and twenty-two-set changes plus an inventory-bound confirmation token |
+| `mise exec -- npm run appstore:screenshots:upload` | After exact draft-sync approval, create missing managed localizations, patch only owned fields, and synchronize all twenty-two screenshot sets |
 
 The lane never uses generic Deliver overwrite/sync. It creates no app or app
 version, uploads no binary, and never submits for review. It owns only
@@ -185,9 +264,9 @@ plan, metadata-ownership, and approval procedure lives in
 
 Generated marketing images are compiler-like outputs for this workflow. If a
 product/design/localization change affects one screenshot state, regenerate
-that state for all eight managed campaign locales and both devices in the same change; shared
-layout, typography, framing, or pipeline changes require the complete 112-raw /
-96-final matrix. Updated raw frames, exports, checksums, provenance, and contact
+that state for all eleven managed campaign locales and both devices in the same change; shared
+layout, typography, framing, or pipeline changes require the complete 154-raw /
+132-final matrix. Updated raw frames, exports, checksums, provenance, and contact
 sheets must ship beside the source change. A stale preview is a failed handoff.
 
 Android uses `com.appavaria.knucklebones` for both namespace and application
@@ -304,5 +383,8 @@ A build change must prove:
   that platform is in scope;
 - branded native resources, names, ids, versions, SDKs, plugins, pods, and
   lifecycle manifests agree with the canonical source;
+- the profile-icon provenance manifest covers all 42 avatars, the primary plus
+  41 alternates agree with both native registries, and every generated hash
+  matches the asset that ships;
 - no live-reload URL, cleartext, backup/transfer path, committed signing
   secret, or debug release signing can enter a shipping artifact.

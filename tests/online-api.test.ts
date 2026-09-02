@@ -74,6 +74,7 @@ check(rankedRevealSides({
   match: { ...standardRevealMatch.match, p2_rune: 'future-rune' },
 } as never) === null,
 'the ranked reveal silently shortened an unknown non-null server rune to NONE');
+
 check(!trialSelectionSettled({ status: 'active' })
   && trialSelectionSettled({ status: 'done' })
   && trialSelectionSettled({ status: 'forfeit' }),

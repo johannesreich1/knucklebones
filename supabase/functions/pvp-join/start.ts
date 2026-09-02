@@ -5,13 +5,19 @@ import { LIMITED, ME, type Player } from "./core/rules.ts";
 import {
   RANKED_POOL_TIERS,
   RUNE_TRIAL_FORMAT,
+  legacyRankedOutcomeEntitlementsForPeak,
   pickRankedOutcome,
+  rankedOutcomeById,
+  rankedOutcomePool,
   type RankedParticipantAccess,
   type RankedPoolTier,
 } from "./core/ranked-outcomes.ts";
 import {
   RUNE_TRIAL_PICK_SECS,
+  RUNE_TRIAL_CLAIM_REWARD_V2,
+  RUNE_TRIAL_SELECTED_REWARD_V1,
   seededRuneTrialAutoPick,
+  seededRuneTrialClaim,
   seededRuneTrialOffer,
 } from "./core/rune-trial-offer.ts";
 import type { EdgeClient } from "../_shared/http.ts";
@@ -33,6 +39,11 @@ interface ProgressiveMatchStart {
   underdogAccess: RankedParticipantAccess;
   favouriteAccess: RankedParticipantAccess;
   bot?: { id: string; rating: number };
+  curveVersion: 1 | 2;
+  scoringVersion: 1 | 2;
+  entryKind: "ordinary" | "weekly";
+  weeklyRotationId: string | null;
+  botDebutOutcome: string | null;
 }
 
 const newSeed = () =>
@@ -65,10 +76,60 @@ export async function startProgressiveRankedMatch(
   svc: EdgeClient,
   input: ProgressiveMatchStart,
 ): Promise<StartedRankedMatch | null> {
+  if (input.scoringVersion !== input.curveVersion) {
+    throw new MatchStartFailure("ranked curve/scoring contract is inconsistent");
+  }
   const seed = newSeed();
-  const accesses = [input.underdogAccess, input.favouriteAccess] as const;
-  const spec = pickRankedOutcome(seed, accesses);
-  const protocolVersion = negotiatedProtocolVersion(accesses);
+  const legacyPeak = (tier: RankedPoolTier) => tier === "stone" ? 0
+    : tier === "bone" ? 300 : 720;
+  const effectiveAccess = (access: RankedParticipantAccess): RankedParticipantAccess => {
+    const entitlements = input.curveVersion === 1
+      ? legacyRankedOutcomeEntitlementsForPeak(legacyPeak(access.tier))
+      : (access.entitlementIds ?? []);
+    return {
+      ...access,
+      entitlementIds: input.curveVersion === 2
+        ? entitlements.filter((id) => id !== RUNE_TRIAL_FORMAT
+          || access.capabilities.includes("rune_trial_claim_v2"))
+        : entitlements,
+    };
+  };
+  const accesses = [
+    effectiveAccess(input.underdogAccess),
+    effectiveAccess(input.favouriteAccess),
+  ] as const;
+  let weeklyModifier: string | null = null;
+  if (input.entryKind === "weekly") {
+    if (!input.weeklyRotationId) throw new MatchStartFailure("weekly rotation is missing");
+    const { data, error } = await svc.from("ranked_weekly_rotations")
+      .select("modifier").eq("id", input.weeklyRotationId).single();
+    if (error || !data || typeof (data as { modifier?: unknown }).modifier !== "string") {
+      throw new MatchStartFailure("weekly rotation read failed");
+    }
+    weeklyModifier = (data as { modifier: string }).modifier;
+  }
+  const ordinaryRoster = rankedOutcomePool(accesses).map(({ outcome }) => outcome.id);
+  /* A pending debut is a promise, not authority to violate this client's
+     negotiated capabilities. Leave an unsupported Rune Trial pending by
+     sending null; a later capable bot game will consume it. */
+  const requestedBotDebut = input.entryKind === "ordinary"
+    ? input.botDebutOutcome : null;
+  const botDebutOutcome = requestedBotDebut
+      && ordinaryRoster.includes(requestedBotDebut)
+    ? requestedBotDebut : null;
+  const spec = weeklyModifier
+    ? rankedOutcomeById(weeklyModifier)
+    : botDebutOutcome
+    ? rankedOutcomeById(botDebutOutcome)
+    : pickRankedOutcome(seed, accesses);
+  if (!weeklyModifier && !ordinaryRoster.includes(spec.id)) {
+    throw new MatchStartFailure("forced ranked outcome is outside negotiated roster");
+  }
+  const outcomeRoster = weeklyModifier ? [spec.id] : ordinaryRoster;
+  /* Curve v2 is itself a protocol-v2 wire contract, even when this particular
+     standard/weekly outcome has no Rune Trial or equipped-rune capability. */
+  const protocolVersion = input.curveVersion === 2
+    ? 2 : negotiatedProtocolVersion(accesses);
   const equippedRuneProtocol = negotiatedEquippedRuneProtocol(spec.format, accesses);
   const { p1, p2 } = rankedSeatOrder(input.underdog, input.favourite);
   const firstDie = spec.mode === LIMITED ? poolSequence(seed)[0] : diceStream(seed)();
@@ -84,7 +145,8 @@ export async function startProgressiveRankedMatch(
     const state0 = rebuild(seed, [], spec.mode);
     if (!state0) return null;
     openingCol = botMove(
-      state0.st, ME, state0.nextDie, input.bot.rating, spec.mode, Math.random,
+      state0.st, ME, state0.nextDie, input.bot.rating, spec.mode,
+      input.curveVersion, Math.random,
     );
     const state1 = openingCol >= 0
       ? rebuild(seed, [{ idx: 0, who: ME, col: openingCol }], spec.mode)
@@ -99,10 +161,13 @@ export async function startProgressiveRankedMatch(
       <= tierIndex(input.favouriteAccess.tier)
     ? input.underdogAccess.tier : input.favouriteAccess.tier;
   const offer = spec.format === RUNE_TRIAL_FORMAT ? seededRuneTrialOffer(seed) : null;
+  const claim = offer && input.curveVersion === 2
+    ? seededRuneTrialClaim(seed, offer) : null;
   const deadline = offer
     ? new Date(Date.now() + RUNE_TRIAL_PICK_SECS * 1000).toISOString()
     : null;
-  const { data: started, error } = await svc.rpc("start_ranked_match_v3", {
+  const startRpc = input.curveVersion === 2 ? "start_ranked_match_v4" : "start_ranked_match_v3";
+  const { data: started, error } = await svc.rpc(startRpc, {
     p_requester: input.requester,
     p_p1: p1,
     p_p2: p2,
@@ -123,11 +188,22 @@ export async function startProgressiveRankedMatch(
     p_p1_auto_rune: offer ? seededRuneTrialAutoPick(seed, p1, offer) : null,
     p_p2_auto_rune: offer ? seededRuneTrialAutoPick(seed, p2, offer) : null,
     p_equipped_rune_protocol: equippedRuneProtocol,
+    ...(input.curveVersion === 2 ? {
+      p_curve_version: input.curveVersion,
+      p_entry_kind: input.entryKind,
+      p_weekly_rotation_id: input.weeklyRotationId,
+      p_outcome_roster: outcomeRoster,
+      p_reward_version: claim
+        ? RUNE_TRIAL_CLAIM_REWARD_V2 : RUNE_TRIAL_SELECTED_REWARD_V1,
+      p_claim_slot: claim?.slot ?? null,
+      p_claim_rune: claim?.rune ?? null,
+      p_bot_debut_outcome: botDebutOutcome,
+    } : {}),
   });
   if (error?.code === "P0001") return null;
   if (error) throw new MatchStartFailure(error.message);
   const startedMatch = matchPayload(started);
-  if (!startedMatch) throw new MatchStartFailure("invalid start_ranked_match_v3 payload");
+  if (!startedMatch) throw new MatchStartFailure(`invalid ${startRpc} payload`);
   return {
     match: startedMatch,
     botMove: openingCol === null ? null : { col: openingCol, die: firstDie },

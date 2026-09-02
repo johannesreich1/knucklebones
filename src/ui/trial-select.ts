@@ -3,6 +3,10 @@
 // the server. The controller never decides an offer, observes another choice,
 // or grants a rune.
 import { spellById, type SpellSpec } from '../core/spells.ts';
+import {
+  RUNE_TRIAL_CLAIM_REWARD_V2,
+  type RuneTrialClaimSnapshot,
+} from '../core/rune-trial-offer.ts';
 import { formatNumber, runeTrialCopy, spellCopy, subscribeLocale, t } from '../i18n/index.ts';
 import { Sfx } from './audio.ts';
 import { appRoot } from './embed.ts';
@@ -28,6 +32,12 @@ export interface TrialRuneChoiceSpec {
      passes nothing, so the lane stays hidden rather than counting down to an
      event that will not happen. */
   readonly deadline?: () => string | null;
+  /* Ranked CLAIM only. Local/offline callers omit the snapshot entirely, so
+     the shared selector cannot accidentally invent collection rewards there.
+     `claimOwned` is deliberately optional: undefined means this viewer's
+     collection has not been verified locally and paints no ownership claim. */
+  readonly claim?: RuneTrialClaimSnapshot;
+  readonly claimOwned?: boolean;
   /* Who is playing whom. This screen opens ON TOP of a reveal that is already
      showing this line and paints its own opaque ground over it, so without this
      the pairing simply vanishes for the length of the choice. Built by
@@ -80,10 +90,26 @@ function assertOffer(offer: readonly SpellSpec[]): void {
   }
 }
 
+function assertClaim(spec: TrialRuneChoiceSpec): void {
+  if (!spec.claim) return;
+  if (spec.claim.rewardVersion !== RUNE_TRIAL_CLAIM_REWARD_V2
+      || !Number.isInteger(spec.claim.slot)
+      || spec.claim.slot < 0 || spec.claim.slot >= spec.offer.length
+      || spec.offer[spec.claim.slot]?.id !== spec.claim.rune) {
+    throw new RangeError('Rune Trial CLAIM must identify exactly one card in the offer.');
+  }
+}
+
+function claimOwnershipCopy(owned: boolean | undefined): string | null {
+  if (owned === undefined) return null;
+  return t('game', owned ? 'runeTrial.claimOwned' : 'runeTrial.claimNew');
+}
+
 /** Resolve one private choice. Hiding and clearing happen before the answer is returned. */
 export function requestTrialRuneChoice(spec: TrialRuneChoiceSpec): Promise<string | null> {
   if (active) throw new Error('A Rune Trial selection is already active.');
   assertOffer(spec.offer);
+  assertClaim(spec);
   build();
   const root = appRoot();
   const overlay = root.querySelector<HTMLElement>('#ovTrialSelect')!;
@@ -95,10 +121,23 @@ export function requestTrialRuneChoice(spec: TrialRuneChoiceSpec): Promise<strin
   ready.hidden = true;
   cards.hidden = false;
   cards.setAttribute('role', 'group');
-  cards.innerHTML = spec.offer.map((rune) => {
+  cards.innerHTML = spec.offer.map((rune, slot) => {
     const copy = spellCopy(rune.id);
-    return `<button type="button" class="rdealt up trial-select__card" data-rune="${rune.id}"`
-      + ` style="color:${spellHue(rune.id)}" aria-label="${esc(`${copy.name} — ${copy.blurb}`)}">`
+    const claimed = spec.claim?.slot === slot && spec.claim.rune === rune.id;
+    const ownership = claimed ? claimOwnershipCopy(spec.claimOwned) : null;
+    const aria = [copy.name, copy.blurb,
+      ...(claimed ? [t('game', 'runeTrial.claim')] : []),
+      ...(ownership ? [ownership] : []),
+    ].join(' — ');
+    return `<button type="button" class="rdealt up trial-select__card${claimed ? ' is-claim' : ''}"`
+      + ` data-rune="${rune.id}"${claimed ? ' data-claim="true"' : ''}`
+      + ` style="color:${spellHue(rune.id)}" aria-label="${esc(aria)}">`
+      + (claimed
+        ? `<span class="trial-select__claim" aria-hidden="true">${esc(t('game', 'runeTrial.claim'))}</span>`
+          + (ownership
+            ? `<span class="trial-select__claim-owned" aria-hidden="true">${esc(ownership)}</span>`
+            : '')
+        : '')
       + `${runeCardFaces(rune)}</button>`;
   }).join('');
 
@@ -110,9 +149,18 @@ export function requestTrialRuneChoice(spec: TrialRuneChoiceSpec): Promise<strin
     cards.querySelectorAll<HTMLButtonElement>('button[data-rune]').forEach((button) => {
       const id = button.dataset.rune!;
       const copy = spellCopy(id);
-      button.setAttribute('aria-label', `${copy.name} — ${copy.blurb}`);
+      const claimed = button.dataset.claim === 'true';
+      const ownership = claimed ? claimOwnershipCopy(spec.claimOwned) : null;
+      button.setAttribute('aria-label', [copy.name, copy.blurb,
+        ...(claimed ? [t('game', 'runeTrial.claim')] : []),
+        ...(ownership ? [ownership] : []),
+      ].join(' — '));
       const label = button.querySelector<HTMLElement>('.rlbl');
       if (label) label.textContent = copy.name;
+      const claim = button.querySelector<HTMLElement>('.trial-select__claim');
+      if (claim) claim.textContent = t('game', 'runeTrial.claim');
+      const owned = button.querySelector<HTMLElement>('.trial-select__claim-owned');
+      if (owned && ownership) owned.textContent = ownership;
     });
     paintClock();
   };

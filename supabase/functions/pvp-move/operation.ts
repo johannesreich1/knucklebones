@@ -79,6 +79,10 @@ export async function moveMatch(context: AuthenticatedContext, input: MoveInput)
       || match.rune_rules_version !== null) {
     return json({ error: "wrong-protocol" }, 409);
   }
+  if (match.curve_version !== 1 && match.curve_version !== 2) {
+    return json({ error: "corrupt-state" }, 500);
+  }
+  const curveVersion = match.curve_version;
   if (match.next_die == null) return json({ error: "corrupt-state" }, 500);
 
   const myIdx: Player = match.p1 === user.id ? ME : AI;
@@ -161,7 +165,9 @@ export async function moveMatch(context: AuthenticatedContext, input: MoveInput)
     if (mover === myIdx && oppProf?.is_bot) {
       const botIdx = (1 - myIdx) as Player;
       const botDie = state.nextDie;
-      const botCol = botMove(state.st, botIdx, botDie, oppProf.rating ?? 0, mode, Math.random);
+      const botCol = botMove(
+        state.st, botIdx, botDie, oppProf.rating ?? 0, mode, curveVersion, Math.random,
+      );
       if (botCol < 0) return json({ error: "corrupt-state" }, 500);
       const reply: CommandMove = {
         idx: state.moveCount,

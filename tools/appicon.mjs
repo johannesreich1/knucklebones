@@ -1,17 +1,17 @@
 // The app icon is the Home screen's actual neon die, not a hand-drawn cousin:
-// dieMarkup supplies the five face and the app's own CSS supplies its glass,
-// cyan border, glow, and pips. Every PWA, Android, iOS, and loading-screen size
-// is rasterized from that one component so the identity cannot drift.
+// dieMarkup supplies the face and the app's CSS supplies its glass, chosen hue,
+// border, glow and pips. profile-app-icons.mjs expands this renderer across the
+// complete profile registry so the 42 native launcher identities cannot drift.
 //
 //   mise exec -- node tools/appicon.mjs           regenerate the shipped icon set
 //   mise exec -- node tools/appicon.mjs --dry     render one preview, write no shipped asset
 //   mise exec -- node tools/appicon.mjs --android render @capacitor/assets Android inputs only
 //   mise exec -- node tools/appicon.mjs --android-finalize restore adaptive XML after that CLI runs
 import { chromium } from 'playwright';
-import { writeFileSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { dieMarkup } from '../src/ui/die-markup.ts';
+import { dieMarkup, diePipCells } from '../src/ui/die-markup.ts';
 import { inlineCssGraph } from './css-graph.mjs';
 
 export const APP_ICON_PAD = .15;
@@ -31,16 +31,15 @@ const PIPS = [[.26, .26], [.74, .26], [.5, .5], [.26, .74], [.74, .74]];
    15% restores the slightly larger launcher mark selected before the compact
    pass; maskable icons get 20% because an unknown launcher shape can crop
    their outer fifth. The shared 7° clockwise tilt keeps the face lively. */
-/* iOS supplies its exact System Dark gradient behind the transparent Dark
-   rendition. The opaque light fallback and platforms without appearance-aware
-   backgrounds use quiet neutral equivalents: light from the top, dark below,
-   matching the system lighting direction without copying another app's art. */
+/* The authored iOS Light and Dark renditions deliberately share this quiet
+   charcoal ground and the complete Home-die shimmer. Tinted stays a separate
+   monochrome source because iOS owns that material and tint. */
 const THEME = {
   dark:  {
     canvasTop: SYSTEM_DARK_GRADIENT.top, canvasBottom: SYSTEM_DARK_GRADIENT.bottom,
   },
   light: {
-    canvasTop: SYSTEM_LIGHT_GRADIENT.top, canvasBottom: SYSTEM_LIGHT_GRADIENT.bottom,
+    canvasTop: SYSTEM_DARK_GRADIENT.top, canvasBottom: SYSTEM_DARK_GRADIENT.bottom,
   },
 };
 const xmlText = (source) => source.replaceAll('&', '&amp;').replaceAll('<', '&lt;');
@@ -50,14 +49,19 @@ export function iconSVG(
   pad = APP_ICON_PAD,
   theme = 'dark',
   transparent = false,
+  face = 5,
+  hue = 'cy',
+  renderOuterGlow = true,
 ) {
   const T = THEME[theme] ?? THEME.dark;
   const dieSide = S * (1 - pad * 2);
   const scale = dieSide / HOME_DIE_SIZE;
-  const die = dieMarkup(5, {
+  const die = dieMarkup(face, {
     classes: 'p1 appicon-die',
     size: HOME_DIE_SIZE,
-    inlineStyle: 'transform:none!important',
+    inlineStyle: `--p1:var(--${hue});--p1-rgb:var(--${hue}-rgb);` +
+      `--p1-hi:var(--${hue}-hi);transform:none!important;` +
+      `${renderOuterGlow ? '' : '--duel-die-outer-glow:0 0 0 transparent;'}`,
   });
   const background = transparent ? '' :
     `<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">` +
@@ -78,8 +82,8 @@ export function iconSVG(
 /* Adaptive foregrounds must carry alpha: Android supplies and independently
    masks the background layer. Keep the mark otherwise identical to the
    shipped icon so the adaptive, round and legacy launchers remain one design. */
-export function adaptiveForegroundSVG(S = 1024) {
-  return iconSVG(S, APP_ICON_PAD, 'dark', true);
+export function adaptiveForegroundSVG(S = 1024, face = 5, hue = 'cy') {
+  return iconSVG(S, APP_ICON_PAD, 'dark', true, face, hue);
 }
 
 export function iconBackgroundSVG(S = 1024) {
@@ -94,11 +98,15 @@ export function iconBackgroundSVG(S = 1024) {
    extra source is an alpha mask for the Android project to resize alongside
    the generated adaptive foreground. Android applies the user's own tint, so
    gradients and glow intentionally disappear while the five-face survives. */
-export function monochromeIconSVG(S = 1024, pad = APP_ICON_PAD) {
+export function monochromeIconSVG(S = 1024, pad = APP_ICON_PAD, face = 5) {
   const m = S * pad, box = S - m * 2, r = box * .235, pr = box * .092;
-  const holes = PIPS.map(([x, y]) =>
-    `<circle cx="${(m + x * box).toFixed(2)}" cy="${(m + y * box).toFixed(2)}" r="${pr.toFixed(2)}" fill="#000"/>`
-  ).join('');
+  const positions = [.26, .5, .74];
+  const holes = diePipCells(face).map((cell) => {
+    const x = positions[cell % 3];
+    const y = positions[Math.floor(cell / 3)];
+    return `<circle cx="${(m + x * box).toFixed(2)}" cy="${(m + y * box).toFixed(2)}" ` +
+      `r="${pr.toFixed(2)}" fill="#000"/>`;
+  }).join('');
   return `<svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" xmlns="http://www.w3.org/2000/svg">` +
     `<defs><mask id="die"><rect width="${S}" height="${S}" fill="#000"/>` +
     `<rect x="${m.toFixed(2)}" y="${m.toFixed(2)}" width="${box.toFixed(2)}" height="${box.toFixed(2)}"` +
@@ -115,12 +123,22 @@ const TARGETS = [
   { file: 'public/icon-192.png', size: 192 },
   { file: 'public/icon-512.png', size: 512 },
   { file: 'public/icon-maskable-512.png', size: 512, pad: MASKABLE_ICON_PAD },
-  /* iOS 18 asks for an appearance pair. LIGHT is the "Any" slot — the fallback
-     the system uses in light mode and anywhere else it needs one icon — and
-     DARK fills the dark-mode slot. Android and the PWA cannot switch at all,
-     so they keep the dark one and that stays the app's usual face. */
+  /* Light and Dark deliberately use the exact same authored pixels, including
+     the dark system-style ground and full shimmer. Copying the completed PNG
+     makes that identity byte-exact instead of trusting two raster passes.
+     Tinted remains an authored grayscale source for iOS-owned appearances. */
   { file: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png', size: 1024, theme: 'light' },
-  { file: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-Dark-512@2x.png', size: 1024, theme: 'dark', transparent: true },
+  {
+    file: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-Dark-512@2x.png',
+    size: 1024,
+    copyFrom: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png',
+  },
+  {
+    file: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-Tinted-512@2x.png',
+    size: 1024,
+    transparent: true,
+    svg: () => monochromeIconSVG(1024, APP_ICON_PAD, 5),
+  },
 ];
 
 /* The Assets CLI turns the four custom-mode inputs into legacy, round, and
@@ -199,38 +217,62 @@ const androidFinalize = args.includes('--android-finalize');
    and only the foreground receives the launcher's safe-zone inset. */
 if (androidFinalize) {
   writeAndroidAdaptiveResources();
+  const { finalizeAndroidProfileIcons } = await import('./profile-app-icons.mjs');
+  finalizeAndroidProfileIcons({
+    appIconPad: APP_ICON_PAD,
+    appIconTiltDeg: APP_ICON_TILT_DEG,
+    adaptiveInset: ANDROID_ADAPTIVE_INSET,
+    darkGradient: SYSTEM_DARK_GRADIENT,
+  });
   return;
 }
 
 const browser = await chromium.launch();
 try {
+  const page = await browser.newPage({ viewport: { width: 1024, height: 1024 } });
   const shot = async (svg, size, transparent = false) => {
-    const page = await browser.newPage({ viewport: { width: size, height: size } });
+    await page.setViewportSize({ width: size, height: size });
     await page.setContent(`<body style="margin:0;background:transparent">${svg}</body>`);
     const buf = await page.screenshot({ omitBackground: transparent });
-    await page.close();
     return buf;
   };
   if (dry) {
-    const page = await browser.newPage({ viewport: { width: 1024, height: 1024 } });
-    await page.setContent(`<body style="margin:0">${iconSVG(1024)}</body>`);
-    await page.screenshot({ path: 'icon-preview.png' });
-    await page.close();
+    const buf = await shot(iconSVG(1024), 1024);
+    writeFileSync('icon-preview.png', buf);
     console.log('wrote icon-preview.png — no shipped asset touched');
   } else {
     const targets = android ? ANDROID_TARGETS : TARGETS;
     for (const t of targets) {
-      const svg = t.svg ? t.svg() : iconSVG(t.size, t.pad, t.theme, t.transparent);
-      const buf = await shot(svg, t.size, t.transparent);
+      const buf = t.copyFrom ? readFileSync(t.copyFrom) : await shot(
+        t.svg ? t.svg()
+          : iconSVG(t.size, t.pad, t.theme, t.transparent, 5, 'cy', t.renderOuterGlow),
+        t.size,
+        t.transparent,
+      );
       mkdirSync(dirname(t.file), { recursive: true });
       writeFileSync(t.file, buf);
       console.log(`${t.file}  ${t.size}x${t.size}` +
         `${t.pad ? '  (maskable safe zone)' : ''}${t.theme === 'light' ? '  (light appearance)' : ''}` +
+        `${t.copyFrom ? '  (matches light appearance)' : ''}` +
         `${t.transparent ? '  (transparent)' : ''}`);
     }
     if (android) {
       writeAndroidAdaptiveResources();
     }
+    const profileIcons = await import('./profile-app-icons.mjs');
+    const shared = {
+      shot,
+      iconSVG,
+      adaptiveForegroundSVG,
+      monochromeIconSVG,
+      appIconPad: APP_ICON_PAD,
+      appIconTiltDeg: APP_ICON_TILT_DEG,
+      adaptiveInset: ANDROID_ADAPTIVE_INSET,
+      darkGradient: SYSTEM_DARK_GRADIENT,
+    };
+    if (android) await profileIcons.generateAndroidProfileIcons(shared);
+    else await profileIcons.generateIosProfileIcons(shared);
+    await page.close();
     console.log(`${android ? 'Android source icon set' : 'icon set'} regenerated from the Home neon die`);
   }
 } finally { await browser.close(); }

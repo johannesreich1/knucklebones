@@ -167,6 +167,8 @@
     }
 
     h1 .wash {
+      margin-block: -.1em;
+      padding-block: .1em;
       background: linear-gradient(105deg, var(--cyan), #ffffff 50%, var(--magenta));
       -webkit-background-clip: text;
       background-clip: text;
@@ -296,6 +298,8 @@
   <div class="error" id="error">The production game rendering did not initialize.</div>
 
   <script type="module">
+    import { localeLanguageTag } from '/src/i18n/locale.ts';
+
     const failSource = (error) => {
       console.error(error);
       document.body.classList.add('failed');
@@ -391,7 +395,8 @@
     document.documentElement.style.setProperty('--canvas-height', `${target.height}px`);
     document.documentElement.style.setProperty('--runtime-width', `${runtimeViewport.width}px`);
     document.documentElement.style.setProperty('--runtime-height', `${runtimeViewport.height}px`);
-    document.documentElement.lang = runtimeLocale;
+    const runtimeLanguageTag = localeLanguageTag(runtimeLocale);
+    document.documentElement.lang = runtimeLanguageTag;
     document.documentElement.style.setProperty('--accent', presentation.accent);
     document.documentElement.style.setProperty('--accent-rgb', presentation.accentRgb);
     document.getElementById('count').textContent = `${String(slideNumber).padStart(2, '0')} / ${String(manifest.slides.length).padStart(2, '0')}`;
@@ -431,6 +436,10 @@
       rank: 4,
       apex: false,
     }));
+    // Curve/progression answers are account-scoped runtime truth. A capture
+    // page must never inherit either answer from the preceding scene.
+    localStorage.removeItem('knucklebones.ranked-curve.v1');
+    localStorage.removeItem('knucklebones.progression.v1');
     // Each capture page starts from an unauthenticated runtime. The ladder
     // scene installs its own deterministic session after the app has loaded;
     // clearing it here prevents that fixture leaking into the next page.
@@ -559,37 +568,37 @@
       const profile = {
         id: USER_ID,
         nickname: 'FrostLynx303',
-        rating: 2510,
+        rating: 3200,
         avatar: 'die:5:cy',
         created_at: '2026-08-01T00:00:00Z',
         named_at: '2026-08-01T00:00:00Z',
       };
       const board = [
-        { rank: 1, nickname: 'PrismWolf771', points: 4708, wins: 88, losses: 34, games: 122, apex: true, avatar: 'die:6:gold', peak: 4708 },
-        { rank: 2, nickname: 'NovaComet992', points: 3620, wins: 61, losses: 29, games: 90, apex: false, avatar: 'die:4:mg', peak: 3710 },
-        { rank: 3, nickname: 'CipherMoth440', points: 2550, wins: 32, losses: 21, games: 53, apex: false, avatar: 'die:2:ice', peak: 2600 },
-        { rank: 4, nickname: 'FrostLynx303', points: 2510, wins: 35, losses: 18, games: 55, apex: false, avatar: 'die:5:cy', peak: 2570 },
-        { rank: 5, nickname: 'EmberCrow896', points: 2431, wins: 31, losses: 19, games: 50, apex: false, avatar: 'die:3:mg', peak: 2493 },
-        { rank: 6, nickname: 'LunarFox118', points: 1940, wins: 28, losses: 22, games: 50, apex: false, avatar: 'die:6:violet', peak: 2010 },
-        { rank: 7, nickname: 'OrbitHare662', points: 1540, wins: 24, losses: 20, games: 44, apex: false, avatar: 'die:1:cy', peak: 1660 },
-        { rank: 8, nickname: 'GlitchRaven37', points: 1180, wins: 19, losses: 17, games: 36, apex: false, avatar: 'die:4:orange', peak: 1260 },
+        { rank: 1, nickname: 'PrismWolf771', points: 6673, wins: 88, losses: 34, games: 122, apex: true, avatar: 'die:6:gold', peak: 6673 },
+        { rank: 2, nickname: 'NovaComet992', points: 4900, wins: 61, losses: 29, games: 90, apex: false, avatar: 'die:4:mg', peak: 4990 },
+        { rank: 3, nickname: 'CipherMoth440', points: 3240, wins: 32, losses: 21, games: 53, apex: false, avatar: 'die:2:ice', peak: 3290 },
+        { rank: 4, nickname: 'FrostLynx303', points: 3200, wins: 35, losses: 18, games: 55, apex: false, avatar: 'die:5:cy', peak: 3260 },
+        { rank: 5, nickname: 'EmberCrow896', points: 3085, wins: 31, losses: 19, games: 50, apex: false, avatar: 'die:3:mg', peak: 3147 },
+        { rank: 6, nickname: 'LunarFox118', points: 2397, wins: 28, losses: 22, games: 50, apex: false, avatar: 'die:6:violet', peak: 2467 },
+        { rank: 7, nickname: 'OrbitHare662', points: 1863, wins: 24, losses: 20, games: 44, apex: false, avatar: 'die:1:cy', peak: 1983 },
+        { rank: 8, nickname: 'GlitchRaven37', points: 1394, wins: 19, losses: 17, games: 36, apex: false, avatar: 'die:4:orange', peak: 1474 },
       ];
       const fixture = {
         profile,
         standing: isResult
-          ? { points: 2510, rank: 4, population: 199, percentile: 0.9848484848 }
-          : { points: 2510, rank: 4, population: 199, percentile: 0.9848484848 },
+          ? { points: 3200, rank: 4, population: 199, percentile: 0.9848484848 }
+          : { points: 3200, rank: 4, population: 199, percentile: 0.9848484848 },
         ladder: isResult
-          ? { points: 2510, peak: 2510, wins: 13, losses: 7, draws: 1 }
-          : { points: 2510, peak: 2570, wins: 35, losses: 18, draws: 2 },
+          ? { points: 3200, peak: 3200, wins: 13, losses: 7, draws: 1 }
+          : { points: 3200, peak: 3260, wins: 35, losses: 18, draws: 2 },
         board,
       };
 
       win.localStorage.setItem('sb-euzjcejbkxvqfrttgaxu-auth-token', JSON.stringify(session));
       win.localStorage.setItem(PROFILE_KEY, JSON.stringify(isResult ? {
-        nickname: 'FrostLynx303', avatar: 'die:5:cy', rating: 2427, rank: 4, apex: false,
+        nickname: 'FrostLynx303', avatar: 'die:5:cy', rating: 3200, rank: 4, apex: false,
       } : {
-        nickname: 'FrostLynx303', avatar: 'die:5:cy', rating: 2510, rank: 4, apex: false,
+        nickname: 'FrostLynx303', avatar: 'die:5:cy', rating: 3200, rank: 4, apex: false,
       }));
 
       const originalFetch = win.fetch.bind(win);
@@ -603,22 +612,26 @@
           headers: { 'Content-Type': 'application/json' },
         });
         if (url.includes('/auth/v1/')) return json(session);
+        if (url.includes('/rest/v1/rpc/active_ranked_curve_version')) return json(2);
         if (url.includes('/rest/v1/rpc/current_season')) return json('11111111-1111-4111-8111-111111111111');
         if (url.includes('/rest/v1/rpc/player_standing')) return json([fixture.standing]);
         if (url.includes('/rest/v1/rpc/player_card')) return json([{
           streak: 2,
           since: '2026-06-01T00:00:00Z',
-          points: 2431,
+          points: 3085,
           wins: 31,
           losses: 19,
           games: 50,
           rank: 5,
           apex: false,
-          peak: 2493,
+          peak: 3147,
         }]);
         if (url.includes('/rest/v1/rpc/leaderboard_before')) return json([]);
         if (url.includes('/rest/v1/rpc/leaderboard')) return json(fixture.board);
         if (url.includes('/rest/v1/season_ratings')) return json([fixture.ladder]);
+        if (url.includes('/rest/v1/player_ranked_features')) {
+          return json([{ feature_id: 'equipped_runes' }]);
+        }
         if (url.includes('/rest/v1/profiles')) return json([fixture.profile]);
         if (url.includes('/rest/v1/rpc/best_streak')) return json(7);
         if (url.includes('/rest/v1/rpc/match_history')) return json([]);
@@ -659,8 +672,8 @@
       if (win.innerWidth !== runtimeViewport.width || win.innerHeight !== runtimeViewport.height) {
         throw new Error(`Runtime viewport is ${win.innerWidth}x${win.innerHeight}; expected ${runtimeViewport.width}x${runtimeViewport.height}`);
       }
-      if (win.document.documentElement.lang !== runtimeLocale) {
-        throw new Error(`Runtime language is ${win.document.documentElement.lang}; expected ${runtimeLocale}`);
+      if (win.document.documentElement.lang !== runtimeLanguageTag) {
+        throw new Error(`Runtime language is ${win.document.documentElement.lang}; expected ${runtimeLanguageTag}`);
       }
       if (shell.left < 0 || shell.top < 0 || shell.right > target.width + 1 || shell.bottom > target.height + 1
           || lines.some((line) => line.scrollWidth > document.getElementById('headline').clientWidth + 1)) {
@@ -674,7 +687,7 @@
       const i18n = await win.eval("import('/src/i18n/index.ts')");
       i18n.setLanguageOverride(runtimeLocale);
       runtimeT = i18n.t;
-      await waitFor(() => doc.documentElement.lang === runtimeLocale);
+      await waitFor(() => doc.documentElement.lang === runtimeLanguageTag);
       await doc.fonts.ready;
       const captureOverrides = doc.createElement('style');
       captureOverrides.id = 'app-store-capture-overrides';

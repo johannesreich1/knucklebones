@@ -5,6 +5,7 @@
 //   - `castself` always implies `casting`;
 //   - `p2turn` may only exist during face-to-face seating.
 
+import { ROWMULT, ROWSWITCH, type Mode } from '../../core/rules.ts';
 import { appRoot } from '../embed.ts';
 
 type GameRootClass =
@@ -18,11 +19,11 @@ function setClass(name: GameRootClass, on: boolean): void {
   appRoot().classList.toggle(name, on);
 }
 
-export type ScoringPresentation = 'columns' | 'row-multiply' | 'row-switch';
-
-export function setScoringPresentation(mode: ScoringPresentation): void {
-  setClass('rowmode', mode !== 'columns');
-  setClass('rowswitch', mode === 'row-switch');
+/** Paint the score furniture for the selected rules before any board replay. */
+export function setScoringPresentation(mode: Mode): void {
+  const rowMode = mode === ROWSWITCH || mode === ROWMULT;
+  setClass('rowmode', rowMode);
+  setClass('rowswitch', mode === ROWSWITCH);
 }
 
 export type SeatingPresentation = 'shared' | 'face-to-face';

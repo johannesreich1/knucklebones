@@ -39,6 +39,8 @@ export const itGame = {
   home: {
     notSignedIn: 'NON AUTENTICATO',
     playRanked: 'Gioca una partita classificata',
+    weeklyChallenge: 'Sfida settimanale · {{mode}}',
+    weeklyChallengeComplete: 'Settimana completata ✓ · {{mode}}',
     ladder: 'Classifica',
     settings: 'Impostazioni',
     practiceOffline: 'Allenamento offline',
@@ -209,6 +211,7 @@ export const itGame = {
   },
   modeLock: {
     reachBone: 'Raggiungi OSSO per sbloccare questa modalità contro l’IA.',
+    reachGold: 'Raggiungi ORO per sbloccare questa modalità contro l’IA.',
   },
   runeTrial: {
     choosePrompt: 'Scegli una runa — il tuo avversario non può vederla',
@@ -222,6 +225,9 @@ export const itGame = {
     revealPair: 'Entrambe le scelte sono confermate',
     revealed: 'Rune rivelate',
     pickClock: 'SECONDI PER SCEGLIERE',
+    claim: 'CLAIM',
+    claimOwned: 'GIÀ TUA',
+    claimNew: 'NUOVA',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Attivata; scegli una colonna evidenziata.',

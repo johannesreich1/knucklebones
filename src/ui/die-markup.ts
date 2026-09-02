@@ -11,6 +11,11 @@ const PIPS: Record<number, readonly number[]> = {
 };
 const FACE_CELLS = 9;
 
+/** Fresh canonical pip cells for renderers that do not consume HTML markup. */
+export function diePipCells(value: number): readonly number[] {
+  return [...(PIPS[value] ?? [])];
+}
+
 export interface DiePipDiff {
   shared: readonly number[];
   removed: readonly number[];
@@ -22,8 +27,8 @@ export interface DiePipDiff {
    die face (the wrap from six to one is where that drift is easiest to miss).
    Returned arrays are fresh so callers may decorate them safely. */
 export function diePipDiff(from: number, to: number): DiePipDiff {
-  const before = new Set(PIPS[from] ?? []);
-  const after = new Set(PIPS[to] ?? []);
+  const before = new Set(diePipCells(from));
+  const after = new Set(diePipCells(to));
   return {
     shared: [...before].filter((cell) => after.has(cell)),
     removed: [...before].filter((cell) => !after.has(cell)),

@@ -6,7 +6,7 @@ you name the plan, and the plan names its functions.
 
 | Plan | Functions | Opt-in | Database prerequisite |
 |---|---|---|---|
-| `ranked-runes` | `pvp-rune-select`, `pvp-action`, `account-delete`, `pvp-claim`, `pvp-move`, `pvp-join` | `KB_ALLOW_PRODUCTION_RANKED_RUNE_FUNCTIONS` | all three ordered migrations through `20260831133000_historical_silver_ranked_runes`, the exact stage-3 catalog/data audit, and the complete Rune Trial foundation |
+| `ranked-runes` | `pvp-rune-select`, `pvp-action`, `account-delete`, `pvp-claim`, `pvp-move`, `pvp-join` | `KB_ALLOW_PRODUCTION_RANKED_RUNE_FUNCTIONS` | all five pinned forward migrations through `20260901162456_progression_v2`, the exact stage-3 catalog/data audit, and the complete Rune Trial foundation |
 | `identity-hardening` | `identity-status`, `apple-token-register`, `apple-revocation-retry` | `KB_ALLOW_PRODUCTION_IDENTITY_FUNCTIONS` | the Apple/Game Center audit at stage 3 or 4 |
 | `game-center` | `gc-auth`, and nothing else | `KB_ALLOW_PRODUCTION_GAME_CENTER_FUNCTIONS` | the Apple/Game Center audit at stage 2, 3 or 4 |
 
@@ -44,10 +44,10 @@ written to production:
 - **Its own database prerequisite** (apply only, never in preview). The
   functions' RPCs and tables must already exist in the reviewed shape; the
   database rollout's audits are the single implementation of that contract.
-  `ranked-runes` requires all three exact migration-history identities and
-  stage 3, including the persisted RANDOM column/trigger/helpers, the exact
-  historical-Silver v3 body, and the invariant that bots retain canonical
-  fixed seats with RANDOM off.
+  `ranked-runes` requires all five exact migration-history identities through
+  `20260901162456_progression_v2` and stage 3, including the persisted RANDOM
+  column/trigger/helpers, the exact historical-Silver v3 body, and the
+  invariant that bots retain canonical fixed seats with RANDOM off.
 - **Readback of every deployed function.** Each function is deployed alone into
   a materialized temporary project, its row is re-read (`ACTIVE`, the reviewed
   `verify_jwt`, plausible metadata), then the deployed closure is downloaded and

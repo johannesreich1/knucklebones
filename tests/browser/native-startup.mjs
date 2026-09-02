@@ -1,5 +1,6 @@
 import pkg from 'playwright';
 import { emitReport } from '../support/emit-report.mjs';
+import { runNativeAppIconScenarios } from './native-startup-app-icon.mjs';
 
 const { chromium, devices } = pkg;
 const browser = await chromium.launch();
@@ -143,6 +144,8 @@ for (const scenario of scenarios) {
     `${scenario.name}: scenario did not exercise the intended native platform`, atHide);
   await context.close();
 }
+
+const appIconObservations = await runNativeAppIconScenarios({ browser, devices, check, errs });
 
 const orientationScenarios = [
   {
@@ -321,4 +324,5 @@ for (const scenario of orientationScenarios) {
 }
 
 await browser.close();
-emitReport({ observations, orientationObservations, problems, errs }, problems.length || errs.length);
+emitReport({ observations, appIconObservations, orientationObservations, problems, errs },
+  problems.length || errs.length);

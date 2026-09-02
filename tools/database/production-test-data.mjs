@@ -27,6 +27,8 @@ import {
   LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL,
   PRODUCTION_BOT_COUNT,
   PRODUCTION_HUMAN_WIPE_OPT_IN,
+  PRODUCTION_RANKED_CURVE_STAGE_SQL,
+  PRODUCTION_RANKED_CURVE_VERSION_SQL,
   PRODUCTION_TEST_DATA_CLI_VERSION,
   PRODUCTION_TEST_DATA_OPT_INS,
   PRODUCTION_TEST_DATA_PROJECT_REF,
@@ -52,6 +54,8 @@ import {
   validateEmptyRuneTrialDataAudit,
   validateLadderStreakBaselineProductionStage,
   validateProductionTestDataPhase,
+  validateProductionRankedCurveStage,
+  validateProductionRankedCurveVersion,
   validateRuneTrialProductionStage,
   validateRefreshProductionBotProfilesAudit,
   validateSeededProductionTestDataAudit,
@@ -154,15 +158,30 @@ export function executeFixedProductionTestDataSql(sql, {
 }
 
 /** Reuse the migration rollout's exact catalog/security/body/ACL/cron audit. */
-export async function auditExactRuneTrialProduction(read = productionRead) {
+export async function auditExactRuneTrialSchemaProduction(read = productionRead) {
   const ledgerStage = validateRuneTrialProductionStage(await read(RUNE_TRIAL_PRODUCTION_STAGE_SQL));
   if (ledgerStage !== 1) throw new Error('Rune Trial production migration ledger is not complete.');
   const exact = await auditRuneTrial(read);
   if (exact.schemaStage !== 1) {
     throw new Error('Rune Trial exact catalog/security/function contract is incomplete.');
   }
-  await auditRuneTrialPostApplyData(read);
   return Object.freeze({ ledgerStage, evidence: exact.evidence });
+}
+
+export async function auditExactRuneTrialProduction(read = productionRead) {
+  const exact = await auditExactRuneTrialSchemaProduction(read);
+  await auditRuneTrialPostApplyData(read);
+  return exact;
+}
+
+export async function auditProductionRankedCurve(read = productionRead) {
+  const installed = validateProductionRankedCurveStage(
+    await read(PRODUCTION_RANKED_CURVE_STAGE_SQL),
+  );
+  if (!installed) return 1;
+  return validateProductionRankedCurveVersion(
+    await read(PRODUCTION_RANKED_CURVE_VERSION_SQL),
+  );
 }
 
 export async function auditExactLadderStreakBaselineProduction(read = productionRead) {
@@ -180,7 +199,11 @@ export async function auditExactLadderStreakBaselineProduction(read = production
 }
 
 export async function auditExactBotSeedProduction(read = productionRead) {
-  const rune = await auditExactRuneTrialProduction(read);
+  /* Empty Rune tables are a migration-time/pre-write invariant, not a schema
+     invariant: a successful seed intentionally owns runes. The caller runs
+     the dedicated empty-data check immediately before its write and the full
+     seeded-state audit immediately after this exact schema recheck. */
+  const rune = await auditExactRuneTrialSchemaProduction(read);
   const streakBaseline = await auditExactLadderStreakBaselineProduction(read);
   return Object.freeze({ ledgerStage: 1, rune, streakBaseline });
 }
@@ -192,6 +215,7 @@ export async function rolloutProductionTestData({
   humanWipeOptIn,
   read = productionRead,
   exactBotSeedPrerequisite = auditExactBotSeedProduction,
+  rankedCurve = auditProductionRankedCurve,
   verifyEnvironment = verifyProductionTestDataEnvironment,
   execute = executeFixedProductionTestDataSql,
   log = message => console.log(message),
@@ -200,6 +224,11 @@ export async function rolloutProductionTestData({
   const optInContract = PRODUCTION_TEST_DATA_OPT_INS[selected];
   assertProductionTestDataOptIn(selected, apply, optIn ?? process.env[optInContract.name]);
   verifyEnvironment();
+
+  const curveVersion = await rankedCurve(read);
+  if (curveVersion !== 1) {
+    throw new Error(`Production ${selected} is disabled after curve-v2 activation; the legacy fixture cannot rebuild durable v2 progression.`);
+  }
 
   const runeStage = validateRuneTrialProductionStage(
     await read(RUNE_TRIAL_PRODUCTION_STAGE_SQL),

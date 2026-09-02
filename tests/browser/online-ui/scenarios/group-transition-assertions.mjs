@@ -128,3 +128,78 @@ export function assertPromotionTransition({ check, seen, errs, eventId, matchId 
     'the browser lost its owner-only match read or unseen-event recovery query', seen?.reads);
   check(errs.length === 0, 'page errors during the promotion deck', errs);
 }
+
+export function assertV2MilestoneTransition({ check, seen, errs, eventId }) {
+  const expected = [
+    {
+      title: COPY.online.ladder.groups.neon.name,
+      paragraph: COPY.online.groupTransition.promotionBody,
+      kicker: '',
+    },
+    {
+      title: COPY.game.modes.rowmult.name,
+      paragraph: COPY.game.modes.rowmult.blurb,
+      kicker: COPY.online.groupTransition.newMode,
+    },
+    {
+      title: COPY.game.modes.runeTrial.name,
+      paragraph: COPY.game.modes.runeTrial.blurb,
+      kicker: COPY.online.groupTransition.newMode,
+    },
+    {
+      title: COPY.online.groupTransition.runesUnlockedTitle,
+      paragraph: COPY.online.groupTransition.runesUnlockedBody,
+      kicker: COPY.online.groupTransition.whatChanges,
+    },
+    {
+      title: COPY.game.modes.rowswitch.name,
+      paragraph: COPY.game.modes.rowswitch.blurb,
+      kicker: COPY.online.groupTransition.newMode,
+    },
+    {
+      title: COPY.game.modes.limited.name,
+      paragraph: COPY.game.modes.limited.blurb,
+      kicker: COPY.online.groupTransition.newMode,
+    },
+    {
+      title: COPY.online.groupTransition.weeklyUnlockedTitle,
+      paragraph: COPY.online.groupTransition.weeklyUnlockedBody,
+      kicker: COPY.online.groupTransition.newAccess,
+    },
+    {
+      title: COPY.online.groupTransition.neonMedalTitle,
+      paragraph: COPY.online.groupTransition.neonMedalBody,
+      kicker: COPY.online.groupTransition.rewardEarned,
+    },
+  ];
+  check(seen?.slides?.length === expected.length
+      && seen.slides.every(({ deck }, index) => deck.open
+        && deck.dots.count === expected.length
+        && deck.dots.current === index
+        && deck.dots.currentCount === 1
+        && deck.title === expected[index].title
+        && deck.paragraph === expected[index].paragraph
+        && deck.kicker.label === expected[index].kicker
+        && deck.swipe.visible
+        && deck.swipe.label === COPY.online.groupTransition.swipeExplore),
+    'the v2 catch-up deck did not teach exact grants in ascending milestone order',
+    { actual: seen?.slides?.map(({ deck }) => ({
+      title: deck.title, paragraph: deck.paragraph, kicker: deck.kicker.label,
+      current: deck.dots.current, total: deck.dots.count,
+    })), expected });
+  const featureShapes = seen?.slides?.slice(1).map(({ shape }) => shape) ?? [];
+  check(featureShapes.length === expected.length - 1
+      && featureShapes.every((shape) => shape.titles === 1
+        && shape.paragraphs === 1 && shape.svgs === 1
+        && shape.modeIcons === 1 && shape.extraMedia === 0),
+    'a v2 outcome/access/reward slide drifted from the icon + title + text shape',
+    featureShapes);
+  const final = seen?.slides?.at(-1)?.deck;
+  check(final?.primary.label === COPY.common.actions.continue
+      && seen.acknowledgementsBeforeContinue === 0
+      && seen.acknowledgements?.length === 1
+      && seen.acknowledgements[0].body.p_event_id === eventId,
+    'the v2 deck acknowledged before its final NEON medal Continue',
+    { final, acknowledgements: seen?.acknowledgements });
+  check(errs.length === 0, 'page errors during the v2 milestone deck', errs);
+}

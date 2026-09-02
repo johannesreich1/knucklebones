@@ -7,7 +7,11 @@ import { modeById } from '../../core/modes.ts';
 import {
   RUNE_TRIAL_CAPABILITY,
   RUNE_TRIAL_FORMAT,
+  STANDARD_FORMAT,
+  legacyRankedOutcomeEntitlementsForTier,
+  rankedOutcomeByMatch,
   rankedOutcomeRoster,
+  rankedOutcomesByIds,
 } from '../../core/ranked-outcomes.ts';
 import { spellById, type SpellSpec } from '../../core/spells.ts';
 import { modeCopy, t } from '../../i18n/index.ts';
@@ -38,11 +42,43 @@ type Seat = 'p1' | 'p2';
 const mySeat = (match: MatchedJoin): Seat => (match.you === 1 ? 'p1' : 'p2');
 const facing = (seat: Seat): Seat => (seat === 'p1' ? 'p2' : 'p1');
 
-const revealCandidates = (result: MatchedJoin) => {
+export const rankedRevealCandidates = (
+  result: MatchedJoin,
+): readonly { readonly id: string }[] | null => {
+  let selectedId: string;
+  try {
+    selectedId = rankedOutcomeByMatch(
+      result.match.format ?? STANDARD_FORMAT,
+      result.match.modifier,
+    ).id;
+  } catch {
+    return null;
+  }
+  const exact = result.match.outcome_roster;
+  /* The new column reads as NULL on every legacy database row. That is absence
+     for v1, not a malformed v2 roster; a non-null rollout value is strict even
+     when an older row omitted curve_version. */
+  if (result.match.curve_version === 2 || exact != null) {
+    if (!Array.isArray(exact)) return null;
+    try {
+      const ordered = rankedOutcomesByIds(exact);
+      const honestEntryRoster = result.match.entry_kind === 'weekly'
+        ? ordered.length === 1
+        : ordered.some(({ id }) => id === 'classic');
+      return honestEntryRoster && ordered.some(({ id }) => id === selectedId)
+        ? ordered.map(({ id }) => ({ id }))
+        : null;
+    } catch {
+      return null;
+    }
+  }
   const tier = result.match.pool_tier;
-  if (!tier) return undefined;
+  /* A row older than progressive pools has no honest wider ring to infer.
+     Showing the one snapshotted answer is truthful and keeps that duel usable. */
+  if (!tier) return [{ id: selectedId }];
   return rankedOutcomeRoster([{
     tier,
+    entitlementIds: legacyRankedOutcomeEntitlementsForTier(tier),
     capabilities: result.match.protocol_version === 2 ? [RUNE_TRIAL_CAPABILITY] : [],
   }]).map(({ id }) => ({ id }));
 };
@@ -110,9 +146,11 @@ export async function revealRankedMatch(
   hide('#ovOnline');
   const isTrial = match.match.format === RUNE_TRIAL_FORMAT;
   if (!isTrial && !rankedRevealSides(match)) return false;
+  const candidates = rankedRevealCandidates(match);
+  if (!candidates) return false;
   await reveal({
     mode: { id: isTrial ? RUNE_TRIAL_FORMAT : modeById(match.match.modifier).id },
-    modeCandidates: revealCandidates(match),
+    modeCandidates: candidates,
     modeCopy: revealCopy,
     trial: isTrial ? { resolve: trial } : undefined,
     ...revealPairing(match),

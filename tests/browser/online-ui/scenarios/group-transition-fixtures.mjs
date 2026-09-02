@@ -30,7 +30,30 @@ export const PROGRESSION = {
   random_rune_mode_after: false,
   rune_seat_active_before: false,
   rune_seat_active_after: false,
+  curve_version: 1,
+  outcome_grants: [],
+  weekly_unlocked_before: false,
+  weekly_unlocked_after: false,
+  neon_medal_granted: false,
   seen_at: null,
+};
+
+export const V2_CATCH_UP_PROGRESSION = {
+  ...PROGRESSION,
+  id: '91000000-0000-4000-8000-000000000007',
+  source_match_id: '90000000-0000-4000-8000-000000000007',
+  points_before: 350,
+  points_after: 6100,
+  apex_after: true,
+  pool_tier_before: 'stone',
+  pool_tier_after: 'ivory',
+  rune_seat_active_before: false,
+  rune_seat_active_after: true,
+  curve_version: 2,
+  outcome_grants: ['limited', 'rowswitch', 'rune_trial', 'rowmult'],
+  weekly_unlocked_before: false,
+  weekly_unlocked_after: true,
+  neon_medal_granted: true,
 };
 
 export const silverProgression = (id, matchId) => ({

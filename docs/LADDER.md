@@ -1,17 +1,16 @@
 # The Ladder — points, groups, seasons
 
-*Spec. As of 2026-08-20, §1–§6 are live except for the explicitly marked
-finish-margin target added to §1 on 2026-09-01 — core/ladder.ts, migrations
-0016–0024, pvp-move v13 / pvp-claim v10 / pvp-join v16, and the profile,
-avatar picker and match history in the client. §4 was reworked the same
-evening: bot strength moved from the human's percentile to the bot's own
-group.*
+*Spec. Production still runs the curve-v1 rules in §1–§6. The curve-v2 score
+floors, finish-margin transfer, unlock schedule, CLAIM reward, weekly feature,
+and transition contract described below are implemented in the repository and
+version-gated behind the owner-controlled production activation. The migration
+may be applied while v1 remains active; deployed authoritative functions and
+the explicit cutover switch decide when players begin using v2.*
 
-*This is the thing to argue with before more of it becomes code. The shipped
-ladder numbers were measured rather than chosen — the simulations are in this
-document's appendix and were run against 800–900 simulated players with skill
-~N(0, 180). Later unshipped product targets identify their evidence and any
-measurement still required.*
+*The original ladder numbers were measured rather than chosen — the simulations
+are in this document's appendix and were run against 800–900 simulated players
+with skill ~N(0, 180). The v2 sections identify their evidence, retained
+uncertainty, and the production measurements still required after activation.*
 
 The ladder replaces a plain Elo rating with a **ladder score**: one number,
 starting at zero, that a player climbs. It is not Elo any more — Elo is
@@ -52,8 +51,9 @@ with it.
 
 Never previewed anywhere in the UI — it depends on the opponent, so any number
 shown *before* a match is wrong about half the time. It appears after: on the
-result screen, and in match history. The table is the **currently shipped base
-delta**. The decided finish-margin transfer below is not live yet.
+result screen, and in match history. The table is the **production-v1 base
+delta**. The implemented finish-margin transfer below activates only with
+curve v2.
 
 | opponent | win | loss | draw |
 |---|---|---|---|
@@ -65,9 +65,9 @@ delta**. The decided finish-margin transfer below is not live yet.
 | 1,000 below you | +38 | −91 | 0 |
 | 2,000 below you | +30 | −109 | 0 |
 
-### Decided finish-margin transfer — not shipped
+### Implemented finish-margin transfer — staged with curve v2
 
-*Decided and refined 2026-09-01.* Keep opponent strength as the primary signal,
+*Decided, refined, and implemented 2026-09-01.* Keep opponent strength as the primary signal,
 then move a small, equal number of additional points from the loser to the
 winner based on how decisive the final board was. The refinement deliberately
 makes medium/large score gaps one point more expressive without widening the
@@ -699,10 +699,28 @@ baseline, and deleting the season rating cascades it away.
 There is **no "N to the next group"** line. The ring already says how far
 along you are, and the exact remainder was a number nobody was going to act on.
 
-**Avatar.** `profiles.avatar`, e.g. `"die:5:cy"` — a die face 1–6 and a hue, 36
-identities, tap the avatar to change it. No storage bucket, no moderation, and
-no user-generated-image obligations at App Store review. The string format is
-the seam: a later value can be `"img:<storage-path>"` with no schema change.
+**Avatar.** `profiles.avatar`, e.g. `"die:5:cy"` — one of six faces in one of
+seven hues (`cy`, `mg`, `gold`, `green`, `violet`, `orange`, `blue`): **42
+identities**, all derived from the duel-hue registry. Tap the avatar to change
+it. No storage bucket, no moderation, and no user-generated-image obligations
+at App Store review. The string format is the seam: a later value can be
+`"img:<storage-path>"` with no schema change.
+
+Installed iOS and Android apps offer an off-by-default Settings choice to use
+the server-confirmed avatar as the launcher icon. `die:5:cy` is the primary;
+the other 41 are pre-bundled alternates. The choice is local to that app
+installation and never becomes profile or Supabase state. Enabling it applies
+the current confirmed avatar. A picker preview changes nothing, and later
+successful saves or account-scoped profile reads reconcile the launcher only
+while enabled. The latest confirmed request wins if profile reads, saves,
+sign-out, or an account switch overlap. Explicit Off, sign-out, and account
+replacement restore primary before another account may select its own; while
+disabled, boot also reconciles primary once to repair an install that received
+the briefly released automatic behaviour. Launcher failure is cosmetic and
+never rolls back the profile write. iOS presents its system confirmation alert
+for a real alternate-icon change; Android launcher refresh timing belongs to
+the installed launcher. Web/PWA/widget Settings omit the choice, and those
+icons plus every loading screen remain the fixed cyan five.
 
 **"Member since" is hidden for guests** — their account lives on this device
 only, so the line would be a promise nobody made.
@@ -837,17 +855,17 @@ worse lie than a populated one.
 STONE · BONE · IVORY · SILVER · GOLD · OBSIDIAN · NEON — dice and bone
 materials climbing toward the game's own neon. **Agreed 2026-08-20.**
 
-## 7. Decided progression target — not shipped
+## 7. Implemented progression v2 — staged for production activation
 
-*Decided 2026-09-01. Owner: Johannes. After selecting the broad league
+*Decided and implemented 2026-09-01. Owner: Johannes. After selecting the broad league
 placement and delegating the remaining choice with “You decide”, the owner
 accepted this section as the complete product contract, including the target
 score curve, collection tail, bot debuts, weekly cadence/rewards, and cutover
-behavior. It is not a description of current runtime. The possible paid
-one-rune tail escape is recorded only as an unapproved later example. The
-shipped pool, score floors, Trial reward, and transition deck remain the ones
-in §2 and `docs/SPELLS.md §8` until the entitlement, draw, presentation,
-settlement, migration, and persistence work below is implemented and verified.*
+behavior. The client, shared rules, authoritative functions, persistence,
+migration, presentation, and tests now implement that contract, but production
+continues to run v1 until the explicit rollout in
+`docs/architecture/backend.md` completes. The possible paid one-rune tail
+escape remains only an unapproved later example.*
 
 ### Why the populated estimate is not today's content cadence
 
@@ -910,8 +928,8 @@ middle and late point bands.
 
 #### League-score decision: a late-weighted 3,890-point curve
 
-The current runtime floors in §2 remain shipped until implementation. The
-successor target is:
+Production retains the curve-v1 floors in §2 until activation. The implemented
+curve-v2 schedule is:
 
 | league | target floor | target width to next point-based league |
 |---|---:|---:|
@@ -955,7 +973,7 @@ the separate `matchBand` ceiling is `900 × SCALE = 4,500` displayed ladder
 points, so every target group width remains the tighter bot cap. Denser
 populations can narrow `matchBand` instead. New floor boundaries also change
 bot shapes, eligible opponent pools, payouts, and potentially win rates, so
-linear scaling cannot model those feedbacks. Before implementation, a retained
+linear scaling cannot model those feedbacks. Before production tuning, a retained
 production-shaped simulation must use the target outcome pools, finish
 transfer, both seats, runes, Trial, and target pairing bands. The release range
 is **160–185 median**
@@ -974,7 +992,7 @@ curve still adds about 30% to the full climb without creating that wall.
 
 The STONE nudge deliberately follows the observed path rather than claiming
 false precision from the coarse model. Linear scaling maps the observed five
-games to `5 × 360 / 300 = 6`. The unshipped finish transfer may shave a
+games to `5 × 360 / 300 = 6`. The staged finish transfer may shave a
 fraction from a strong win-heavy path, and discrete opponent payouts plus
 promotion overhang can move it either way. The target therefore means **about
 one more observed STONE game**, subject to retained simulation—not a guarantee
@@ -1263,15 +1281,15 @@ The CLAIM identity and reward-rule version must be part of the immutable match
 snapshot and settle idempotently. Its slot stream is domain-separated: it may
 read the already-snapshotted offer but must neither consume nor perturb the
 offer, choice/auto-pick, outcome-draw, or dice streams. Existing collected runes
-are never removed at cutover. A dedicated successor capability, distinct from
-current `rune_trial_v1`, is required before a client can enter a CLAIM Trial.
-Both humans must advertise it; bots support it with the target release. A human
+are never removed at cutover. The dedicated `rune_trial_claim_v2` capability,
+distinct from `rune_trial_v1`, is required before a client can enter a CLAIM
+Trial. Both humans must advertise it; bots support it in the v2 release. A human
 pairing with an older client simply excludes Trial from their shared eligible
 pool. Every already-active match retains its snapshotted reward version, so a
 v1 Trial always settles the selected rune and a CLAIM Trial can never be played
-without rendering its mark. The shipped selected-rune rule remains runtime
-truth until this target ships; `docs/SPELLS.md §8` owns the interaction and
-reveal contract.
+without rendering its mark. Production-v1 Trials retain the selected-rune rule
+until curve-v2 activation; `docs/SPELLS.md §8` owns the interaction and reveal
+contract.
 
 #### Presentation order follows unlock order
 

@@ -9,6 +9,8 @@ import {
   EMPTY_RUNE_TRIAL_DATA_AUDIT_SQL,
   LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL,
   PRODUCTION_HUMAN_WIPE_OPT_IN,
+  PRODUCTION_RANKED_CURVE_STAGE_SQL,
+  PRODUCTION_RANKED_CURVE_VERSION_SQL,
   PRODUCTION_TEST_DATA_OPT_INS,
   RUNE_TRIAL_PRODUCTION_STAGE_SQL,
   SEEDED_PRODUCTION_TEST_DATA_AUDIT_SQL,
@@ -17,6 +19,7 @@ import {
   WIPE_PRODUCTION_HUMAN_ACCOUNTS_SQL,
 } from '../../tools/database/production-test-data-core.mjs';
 import {
+  auditProductionRankedCurve,
   auditExactRuneTrialProduction,
   rolloutProductionTestData,
 } from '../../tools/database/production-test-data.mjs';
@@ -44,7 +47,10 @@ type RolloutCallOptions = RolloutOptions & {
   optIn?: string;
   humanWipeOptIn?: string;
 };
-const rollout = (options: RolloutCallOptions) => rolloutProductionTestData(options);
+const rollout = (options: RolloutCallOptions) => rolloutProductionTestData({
+  rankedCurve: async () => 1,
+  ...options,
+});
 
 /* The rollout ignores verifyEnvironment's return value, so the stub can
    satisfy the real signature with an inert frozen environment. */
@@ -69,6 +75,60 @@ export const exactPrerequisiteStub = (onCheck?: () => void): ExactPrerequisite =
     onCheck?.();
     return { ledgerStage: 1 };
   }) as unknown as ExactPrerequisite;
+
+export async function assertProductionRankedCurveAudit() {
+  const legacyQueries: string[] = [];
+  assert.equal(await auditProductionRankedCurve(async (query) => {
+    legacyQueries.push(query);
+    if (query === PRODUCTION_RANKED_CURVE_STAGE_SQL) return [{ versionFunction: false }];
+    throw new Error('legacy audit queried an absent function');
+  }), 1);
+  assert.deepEqual(legacyQueries, [PRODUCTION_RANKED_CURVE_STAGE_SQL]);
+
+  const installedQueries: string[] = [];
+  assert.equal(await auditProductionRankedCurve(async (query) => {
+    installedQueries.push(query);
+    if (query === PRODUCTION_RANKED_CURVE_STAGE_SQL) return [{ versionFunction: true }];
+    if (query === PRODUCTION_RANKED_CURVE_VERSION_SQL) return [{ curveVersion: 1 }];
+    throw new Error('unexpected installed-curve query');
+  }), 1);
+  assert.deepEqual(installedQueries, [
+    PRODUCTION_RANKED_CURVE_STAGE_SQL,
+    PRODUCTION_RANKED_CURVE_VERSION_SQL,
+  ]);
+
+  assert.equal(await auditProductionRankedCurve(async (query) => {
+    if (query === PRODUCTION_RANKED_CURVE_STAGE_SQL) return [{ versionFunction: true }];
+    return [{ curveVersion: 2 }];
+  }), 2);
+  await assert.rejects(
+    () => auditProductionRankedCurve(async (query) => query === PRODUCTION_RANKED_CURVE_STAGE_SQL
+      ? [{ versionFunction: true }]
+      : [{ curveVersion: 3 }]),
+    /curve version/i,
+  );
+}
+
+export async function assertCurveV2ProductionTestDataRefusal() {
+  for (const phase of ['wipe', 'seed-bots', 'refresh-bot-profiles'] as const) {
+    for (const apply of [false, true]) {
+      let reads = 0;
+      let writes = 0;
+      await assert.rejects(() => rollout({
+        phase,
+        apply,
+        optIn: apply ? PRODUCTION_TEST_DATA_OPT_INS[phase].value : undefined,
+        rankedCurve: async () => 2,
+        read: async () => { reads++; throw new Error('v2 refusal reached data audit'); },
+        verifyEnvironment: environmentStub(),
+        execute: () => { writes++; },
+        log: () => {},
+      }), new RegExp(`Production ${phase} is disabled after curve-v2 activation`));
+      assert.equal(reads, 0, `${phase} ${apply ? 'apply' : 'preview'} read mutable data on v2`);
+      assert.equal(writes, 0, `${phase} ${apply ? 'apply' : 'preview'} wrote on v2`);
+    }
+  }
+}
 
 export async function assertExactRuneTrialPrerequisite() {
   const fullSchema = {
@@ -225,6 +285,7 @@ export async function assertSeedOrchestration() {
   }), /migrations must be complete/);
   assert.equal(writes, 0);
 
+  const lifecycle: string[] = [];
   const read = async (query: string) => {
     if (query === RUNE_TRIAL_PRODUCTION_STAGE_SQL) return [runeStage(true)];
     if (query === LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL) {
@@ -232,7 +293,10 @@ export async function assertSeedOrchestration() {
     }
     if (query === BASE_PRODUCTION_TEST_DATA_AUDIT_SQL) return [baseAudit()];
     if (query === EMPTY_RUNE_TRIAL_DATA_AUDIT_SQL) return [emptyRune()];
-    if (query === SEEDED_PRODUCTION_TEST_DATA_AUDIT_SQL) return [seededAudit()];
+    if (query === SEEDED_PRODUCTION_TEST_DATA_AUDIT_SQL) {
+      lifecycle.push('seeded-state');
+      return [seededAudit()];
+    }
     throw new Error('unexpected query');
   };
   let exactChecks = 0;
@@ -243,11 +307,24 @@ export async function assertSeedOrchestration() {
     optIn: PRODUCTION_TEST_DATA_OPT_INS['seed-bots'].value,
     read,
     verifyEnvironment: environmentStub(),
-    exactBotSeedPrerequisite: exactPrerequisiteStub(() => { exactChecks++; }),
-    execute: sql => { executed.push(sql); },
+    exactBotSeedPrerequisite: exactPrerequisiteStub(() => {
+      exactChecks++;
+      lifecycle.push('exact-schema');
+    }),
+    execute: sql => {
+      lifecycle.push('execute');
+      executed.push(sql);
+    },
     log: () => {},
   });
   assert.equal(result.applied, true);
   assert.equal(exactChecks, 3);
   assert.deepEqual(executed, [SEED_PRODUCTION_BOTS_SQL]);
+  assert.deepEqual(lifecycle, [
+    'exact-schema',
+    'exact-schema',
+    'execute',
+    'exact-schema',
+    'seeded-state',
+  ]);
 }

@@ -1,4 +1,5 @@
 require "json"
+require "openssl"
 
 # Contract validation is pure. These placeholders keep the test independent of
 # the network-installed Fastlane bundle while production still loads the real gems.
@@ -270,6 +271,23 @@ assert(sync.send(:not_found_response?, Spaceship::UnexpectedResponse.new("status
        "eventual-consistency polling must recognize an App Store Connect 404")
 assert(!sync.send(:not_found_response?, Spaceship::UnexpectedResponse.new("status 403 FORBIDDEN")),
        "eventual-consistency polling must not hide authorization errors")
+assert(
+  sync.send(
+    :transient_transport_error?,
+    OpenSSL::SSL::SSLError.new("SSL_read: unexpected eof while reading")
+  ),
+  "a transient SSL EOF during a read poll must remain retryable inside the bounded wait"
+)
+assert(
+  !sync.send(:transient_transport_error?, StandardError.new("authorization failed")),
+  "non-transport failures must still fail closed"
+)
+assert(
+  screenshot_sync_source.scan(
+    "not_found_response?(error) || transient_transport_error?(error)"
+  ).length == 2,
+  "both screenshot and screenshot-set read polls must retry recognized transport failures"
+)
 
 protected = sync.send(
   :protected_snapshot,

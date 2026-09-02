@@ -4,10 +4,13 @@
 // eighth scoring mode.
 import { RANDOM } from './core/modes.ts';
 import {
+  RANKED_OUTCOMES,
   RUNE_TRIAL_CAPABILITY,
   RUNE_TRIAL_FORMAT,
   STANDARD_FORMAT,
+  legacyRankedOutcomeEntitlementsForTier,
   pickRankedOutcome,
+  rankedOutcomeEntitlementsForPeak,
   rankedOutcomeRoster,
   type RankedOutcomeSpec,
   type RankedParticipantAccess,
@@ -47,20 +50,39 @@ export function runeTrialAvailable(playMode: PlayMode, collected: readonly strin
 }
 
 /* WHAT OFFLINE PLAY MAY DRAW, as the ranked pool's own access record — so the
-   dial's ring, the RANDOM draw and the picker's locks all read one roster
-   instead of three hand-built ideas of it. The tier is an argument because this
-   module stays pure; callers pass confirmedRankedPoolTier(). */
+   dial's ring, RANDOM draw and picker locks all read one roster. A matching v2
+   server status supplies exact entitlements; without one, the legacy cached
+   tier retains the promises that version actually shipped. */
 export function localPoolAccess(
   playMode: PlayMode,
   collected: readonly string[],
   tier: RankedPoolTier | null,
+  confirmedV2Entitlements: readonly string[] | null = null,
+  curveVersion: 1 | 2 = 1,
 ): RankedParticipantAccess {
   const capabilities = runeTrialAvailable(playMode, collected) ? [RUNE_TRIAL_CAPABILITY] : [];
   /* Pass-and-play is the one local mode that exposes the whole game, the same
      exception availableRuneSpecs makes for runes. An unknown tier fails closed
      to STONE: a device that has never confirmed an account has earned nothing,
      which is already how a signed-out player's rune collection reads. */
-  return { tier: playMode === 'duo' ? 'ivory' : tier ?? 'stone', capabilities };
+  const fallbackTier = tier ?? 'stone';
+  return playMode === 'duo'
+    ? {
+      tier: 'ivory',
+      entitlementIds: RANKED_OUTCOMES.map(({ id }) => id),
+      capabilities,
+    }
+    : {
+      tier: fallbackTier,
+      entitlementIds: confirmedV2Entitlements
+        ?? (curveVersion === 2
+          /* Exact v2 grants are durable and can be grandfathered into a shape
+             no tier represents. Without that account-owned fact, expose only
+             clean STONE — never v1 STONE's historical Limited promise. */
+          ? rankedOutcomeEntitlementsForPeak(0)
+          : legacyRankedOutcomeEntitlementsForTier(fallbackTier)),
+      capabilities,
+    };
 }
 
 export function modePickAvailable(selected: number, access: RankedParticipantAccess): boolean {

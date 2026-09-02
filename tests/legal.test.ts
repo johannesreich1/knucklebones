@@ -13,7 +13,10 @@ import {
   generateLegalPageFiles,
   generatedLegalPaths,
 } from '../src/legal/static-pages.ts';
-import { LEGAL_PAGE_IDS } from '../src/legal/types.ts';
+import {
+  LEGAL_PAGE_IDS,
+  type LocalizedLegalFact,
+} from '../src/legal/types.ts';
 import {
   LEGAL_AUTH_NAV_MARKUP,
   LEGAL_HOME_NAV_MARKUP,
@@ -61,6 +64,33 @@ check(draftRejected, 'ready assertion accepted the draft configuration');
 
 const fixture = completeLegalFixture();
 assertLegalPublicationReady(fixture);
+const unicodeEmailFixture = {
+  ...fixture,
+  facts: { ...fixture.facts, publicEmail: 'müller@example.test' },
+};
+check(legalPublicationProblems(unicodeEmailFixture).includes('publicEmail is missing or invalid'),
+  'ready gate accepted an email address the renderer cannot link exactly');
+const fixtureEmail = fixture.facts.publicEmail;
+check(typeof fixtureEmail === 'string', 'complete legal fixture has no public email');
+for (const { id } of LOCALE_REGISTRY) {
+  const mailtoTargets = LEGAL_PAGE_IDS.flatMap((page) =>
+    [...renderLegalDocumentBody(legalDocument(id, page, fixture.facts))
+      .matchAll(/href="mailto:([^"]+)"/gu)].map((match) => match[1]));
+  check(mailtoTargets.length > 0,
+    `${id} legal documents did not render the fixture email`);
+  check(mailtoTargets.every((target) => target === fixtureEmail),
+    `${id} legal documents absorbed localized prose into a mailto target`);
+}
+const fixtureUrl = 'https://privacy.example.test/account-deletion/ownership-verification';
+const localizedUrl = Object.fromEntries(LOCALE_REGISTRY.map(({ id }) => [id, fixtureUrl])) as LocalizedLegalFact;
+for (const { id } of LOCALE_REGISTRY) {
+  const privacy = renderLegalDocumentBody(legalDocument(id, 'privacy', {
+    ...fixture.facts,
+    cloudflareProcessingScope: localizedUrl,
+  }));
+  check(privacy.includes(`<a href="${fixtureUrl}">${fixtureUrl}</a>`),
+    `${id} privacy document absorbed localized prose into an HTTPS target`);
+}
 const homeNavigation = legalNavigationMarkup(fixture, {
   pages: LEGAL_PAGE_IDS,
   className: 'viewfoot legal-home-nav',

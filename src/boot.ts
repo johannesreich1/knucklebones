@@ -22,6 +22,14 @@ import { bindLegalPages } from './ui/legal.ts';
 import { subscribeLocale } from './i18n/index.ts';
 import { cancelPass, repaintPassLocale } from './flow/pass-card.ts';
 import { userPreferencesRevision } from './preferences.ts';
+import { isProfileAvatar } from './profile-avatar.ts';
+import { readProfileCache } from './profile-cache.ts';
+import {
+  profileAppIconAvailable,
+  profileAppIconEnabled,
+  resetProfileAppIcon,
+  syncProfileAppIcon,
+} from './native/app-icon.ts';
 import { initializeGameCenter } from './native/game-center.ts';
 import { bindPageMotion } from './ui/page-motion.ts';
 
@@ -49,10 +57,22 @@ export function boot(embed: boolean): void {
   duel.appendChild(makeDie(3, AI));
   refreshHomeChip();
 
-  // GameKit owns device-level authentication and may already be signed in.
-  // Start it after the first Home paint, without waiting and without importing
-  // Supabase; widgets and non-iOS platforms resolve to a no-op.
-  if (!embed) void initializeGameCenter();
+  if (!embed) {
+    /* Alternate launchers are an explicit device choice. While enabled, only
+       a valid account-scoped cache may reconcile before the fresh row lands.
+       While disabled, native boot restores primary; this also cleans up the
+       briefly released automatic behavior without exposing anything on web. */
+    const cached = readProfileCache();
+    if (!profileAppIconEnabled() && profileAppIconAvailable()) {
+      void resetProfileAppIcon();
+    } else if (cached?.accountId && isProfileAvatar(cached.avatar)) {
+      void syncProfileAppIcon(cached.avatar);
+    }
+    // GameKit owns device-level authentication and may already be signed in.
+    // Start it after the first Home paint, without waiting and without
+    // importing Supabase; widgets and non-iOS platforms resolve to a no-op.
+    void initializeGameCenter();
+  }
 
   bindBoardInput();
   bindPageMotion(root);
@@ -71,11 +91,37 @@ export function boot(embed: boolean): void {
     updateRecord();
     refreshHomeChip();
   });
-  // Standalone/PWA/native accounts get their private Settings row after the
-  // offline-first paint. Widgets neither own nor synchronize host preferences.
+  // Standalone/PWA/native accounts get their private Settings row and fresh
+  // profile avatar after the offline-first paint. Widgets own neither.
   // Capture before the lazy import can yield to a Settings tap: that tap must
   // count as newer than this hydration even if the online chunk has not loaded.
   const startupPreferenceRevision = userPreferencesRevision();
-  if (!embed) void import('./online/preferences.ts').then(({ syncAccountPreferences }) =>
-    syncAccountPreferences(startupPreferenceRevision));
+  if (!embed) void Promise.all([
+    import('./online/preferences.ts'),
+    import('./online/identity/profile.ts'),
+    import('./online/identity/session.ts'),
+    import('./online/api/ranked-curve-verification.ts'),
+  ]).then(async ([
+    { syncAccountPreferences },
+    { myProfile },
+    { currentUser },
+    { refreshVerifiedRankedCurveVersion },
+  ]) => {
+    const preferences = syncAccountPreferences(startupPreferenceRevision);
+    /* Never let a freshly read/remapped profile rating outrun the contract
+       which classifies it. Signed-out boot stays fully offline; an authenticated
+       boot first tries the exact account status, then the public scalar needed
+       for old-server v1 compatibility. Unknown keeps the cached chip's points
+       hidden and is retried by the next online entry. */
+    const user = await currentUser();
+    if (!user) {
+      await preferences;
+      return;
+    }
+    const curveVersion = await refreshVerifiedRankedCurveVersion();
+    await preferences;
+    if (curveVersion === null) return;
+    await myProfile();
+    refreshHomeChip();
+  }).catch(() => undefined);
 }

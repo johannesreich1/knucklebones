@@ -193,3 +193,19 @@ export function colorBounds(png: DecodedPng, minimumSpread = 40): Readonly<{
   }
   return right < left ? null : { left, top, right, bottom };
 }
+
+export function colorRowBounds(
+  png: DecodedPng,
+  normalizedY: number,
+  minimumSpread = 40,
+): Readonly<{ left: number; right: number }> | null {
+  const y = Math.min(png.height - 1, Math.max(0, Math.round(normalizedY * (png.height - 1))));
+  let left = png.width;
+  let right = -1;
+  for (let x = 0; x < png.width; x++) {
+    if (colorSpread(png.pixel(x, y)) < minimumSpread) continue;
+    left = Math.min(left, x);
+    right = Math.max(right, x);
+  }
+  return right < left ? null : { left, right };
+}

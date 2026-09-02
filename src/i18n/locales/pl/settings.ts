@@ -9,6 +9,7 @@ export const plSettings = {
   yourColour: 'Twój kolor',
   opponentColour: 'Kolor rywala',
   sound: 'Dźwięk',
+  profileAppIcon: 'Użyj kości z profilu jako ikony aplikacji',
   accessibility: 'Dostępność',
   diceFaces: 'Wygląd kości',
   pips: 'OCZKA',

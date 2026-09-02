@@ -81,6 +81,9 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
        even when this season's peak is still below SILVER. Null derives the
        fact from standingPeak so existing scenarios retain their meaning. */
     historicalSilverReached = null,
+    /* Server-owned progression contract. Null keeps legacy/v1 authority; a
+       focused v2 probe can provide exact outcomes, weekly state and medals. */
+    progressionStatus = null,
     unseenRunes = [],
     markRunesSeenAfterFirstRead = false,
     expectReward = false,
@@ -130,6 +133,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
       passwordAuth, appleAuth, deferAppleAuth,
       runes, unseenRunes, equippedRune, randomRuneMode,
       standingPoints, standingPeak, historicalSilverReached, SESSION, GUEST_ID,
+      progressionStatus,
     });
     /* Registered AFTER the base stub on purpose: Playwright gives the most
        recent handler precedence, so the in-match fixture takes over pvp-join

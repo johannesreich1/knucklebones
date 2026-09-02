@@ -57,8 +57,11 @@ check(sameStrings(sorted(Object.keys(appStoreManifest.localizations ?? {})), exp
 
 const expectedRuntimeLocales = new Map([
   ['en-GB', 'en'],
+  ['pt-BR', 'pt'],
+  ['es-ES', 'es'],
   ['de-DE', 'de'],
   ['fr-FR', 'fr'],
+  ['it', 'it'],
   ['pl', 'pl'],
   ['tr', 'tr'],
   ['id', 'id'],
@@ -191,6 +194,8 @@ check(captureModulePaths.length > 0 && missingCaptureModules.length === 0,
 check(/openOnline\(['"]ladder['"]/.test(captureFixtureSource)
     && !/openOnline\(['"]board['"]/.test(captureFixtureSource),
   `${APP_STORE_SOURCE} must open the production ladder through its current view id`);
+check(/localeLanguageTag\(runtimeLocale\)/.test(captureFixtureSource),
+  `${APP_STORE_SOURCE} must distinguish stable locale ids from presentation language tags`);
 check(/onLadderList/.test(captureFixtureSource) && !/onBoardList/.test(captureFixtureSource),
   `${APP_STORE_SOURCE} must wait for the current production ladder panel`);
 check((captureFixtureSource.match(/runtimeT\(['"]game['"], ['"]difficulty\.normal['"]\)/g) ?? []).length === 2,

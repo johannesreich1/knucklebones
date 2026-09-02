@@ -9,6 +9,7 @@ export const itSettings = {
   yourColour: 'Il tuo colore',
   opponentColour: "Colore dell'avversario",
   sound: 'Audio',
+  profileAppIcon: 'Usa il dado del profilo come icona',
   accessibility: 'Accessibilità',
   diceFaces: 'Facce dei dadi',
   pips: 'PUNTINI',

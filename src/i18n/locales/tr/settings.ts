@@ -9,6 +9,7 @@ export const trSettings = {
   yourColour: 'Senin rengin',
   opponentColour: 'Rakip rengi',
   sound: 'Ses',
+  profileAppIcon: 'Profil zarını uygulama simgesi olarak kullan',
   accessibility: 'Erişilebilirlik',
   diceFaces: 'Zar yüzleri',
   pips: 'NOKTALAR',

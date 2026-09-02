@@ -1,5 +1,12 @@
 import { AI, ME, type Player } from "./core/rules.ts";
-import { botPairBand, matchBand, SCALE } from "./core/ladder.ts";
+import {
+  LADDER_CURVE_V1,
+  LADDER_CURVE_V2,
+  botPairBand,
+  matchBand,
+  SCALE,
+  type LadderCurveVersion,
+} from "./core/ladder.ts";
 import {
   ALL_RANKED_CAPABILITIES,
   RUNE_TRIAL_FORMAT,
@@ -29,6 +36,35 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
   const { user } = context;
   const svc = context.service();
   const uid = user.id;
+  const entryKind = input.entryKind ?? "ordinary";
+  const { data: runtimeRaw, error: runtimeError } = await svc.rpc("ranked_runtime_contract");
+  if (runtimeError || !runtimeRaw || typeof runtimeRaw !== "object" || Array.isArray(runtimeRaw)) {
+    return json({ error: "ranked-config-failed" }, 500);
+  }
+  const runtime = runtimeRaw as {
+    curve_version?: number;
+    scoring_version?: number;
+    admission_paused?: boolean;
+  };
+  if ((runtime.curve_version !== LADDER_CURVE_V1
+      && runtime.curve_version !== LADDER_CURVE_V2)
+      || runtime.scoring_version !== runtime.curve_version) {
+    return json({ error: "ranked-config-failed" }, 500);
+  }
+  const curveVersion = runtime.curve_version as LadderCurveVersion;
+  const accessFor = async (player: string) => {
+    const { data, error } = await svc.rpc("ranked_player_matchmaking_access", {
+      p_player: player,
+    });
+    if (error || !data || typeof data !== "object" || Array.isArray(data)) {
+      throw new Error("ranked matchmaking access read failed");
+    }
+    return data as {
+      outcomes?: string[];
+      pending_bot_debut?: string | null;
+      weekly_unlocked?: boolean;
+    };
+  };
 
   /* Opponent presentation data must be returned by this trusted boundary,
      because a client may only read its own profile row through RLS. */
@@ -117,6 +153,14 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
   if (compatibilityError) return json({ error: compatibilityError }, 409);
   if (active && !(await settleAbandonedBotMatch(svc, active, uid))) return matched(active);
 
+  /* Pausing admission must not strand a player in an already-active match:
+     the lookup and honest rejoin above remain available while the queue and
+     every new start are closed. */
+  if (runtime.admission_paused) return json({ error: "ranked-paused" }, 503);
+  if (curveVersion === LADDER_CURVE_V2 && !input.capabilities.includes("curve_v2")) {
+    return json({ error: "incompatible-client" }, 409);
+  }
+
   const { error: staleError } = await svc.from("matchmaking_queue").delete()
     .lt("created_at", new Date(Date.now() - QUEUE_STALE_MS).toISOString());
   if (staleError) return json({ error: "queue-failed" }, 500);
@@ -138,15 +182,20 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
   if (nearError) return json({ error: "ladder-read-failed" }, 500);
   const band = matchBand(Number(nearRaw ?? 0));
 
-  const { data: queuedRaw, error: queueError } = await svc.rpc("enqueue_ranked_player_v2", {
+  const { data: queuedRaw, error: queueError } = await svc.rpc("enqueue_ranked_player_v3", {
     p_player: uid,
     p_protocol_version: input.protocolVersion,
     p_capabilities: input.capabilities,
+    p_entry_kind: entryKind,
   });
   if (queueError || !queuedRaw || typeof queuedRaw !== "object") {
     return json({ error: "queue-failed" }, 500);
   }
-  const queueState = queuedRaw as { status?: string; match_id?: string };
+  const queueState = queuedRaw as {
+    status?: string;
+    match_id?: string;
+    weekly_rotation_id?: string | null;
+  };
   if (queueState.status === "deleting") return json({ error: "account-deleting" }, 409);
   if (queueState.status === "active" && queueState.match_id) {
     const { data: racedData, error: racedError } = await svc.from("matches")
@@ -164,14 +213,23 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
     underdogAccess: RankedParticipantAccess,
     favouriteAccess: RankedParticipantAccess,
     bot?: { id: string; rating: number },
+    botDebutOutcome?: string | null,
   ): Promise<StartedRankedMatch | null> => startProgressiveRankedMatch(svc, {
     requester: uid, season, underdog, favourite, queuedOpponent,
     underdogAccess, favouriteAccess, bot,
+    curveVersion,
+    scoringVersion: runtime.scoring_version as 1 | 2,
+    entryKind,
+    weeklyRotationId: queueState.weekly_rotation_id ?? null,
+    botDebutOutcome: botDebutOutcome ?? null,
   });
 
   let partner: QueueCandidate | null;
   try {
-    partner = await findOldestEligiblePartner(svc, uid, myRating, band);
+    partner = await findOldestEligiblePartner(
+      svc, uid, myRating, band, curveVersion, entryKind,
+      queueState.weekly_rotation_id ?? null,
+    );
   } catch (error) {
     console.error("pvp-join partner search failed:", error);
     return json({ error: "queue-failed" }, 500);
@@ -184,12 +242,18 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
       const theirRating = (theirData as { rating?: number | null } | null)?.rating ?? 0;
       const underdog = myRating < theirRating ? uid : partner.player_id;
       const favourite = underdog === uid ? partner.player_id : uid;
+      const [myProgression, partnerProgression] = curveVersion === LADDER_CURVE_V2
+        ? await Promise.all([accessFor(uid), accessFor(partner.player_id)])
+        : [{ outcomes: undefined }, { outcomes: undefined }];
       const myAccess: RankedParticipantAccess = {
         tier: myTier,
+        ...(myProgression.outcomes ? { entitlementIds: myProgression.outcomes } : {}),
         capabilities: input.capabilities,
       };
       const partnerAccess: RankedParticipantAccess = {
         tier: partner.pool_tier ?? "stone",
+        ...(partnerProgression.outcomes
+          ? { entitlementIds: partnerProgression.outcomes } : {}),
         capabilities: partner.capabilities ?? [],
       };
       const match = await startMatch(
@@ -211,19 +275,23 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
 
   if (input.allowBot) {
     const search = await findRankedBotOpponent(
-      svc, myRating, Math.min(band, botPairBand(myRating)),
+      svc, myRating, Math.min(band, botPairBand(myRating, curveVersion)),
     );
     if (!search.ok) return json({ error: search.error }, 500);
     const bot = search.bot;
     if (bot) {
       const { underdog, favourite } = rankedBotSides(uid, myRating, bot.id, bot.rating);
       try {
+        const progression = curveVersion === LADDER_CURVE_V2
+          ? await accessFor(uid) : { outcomes: undefined, pending_bot_debut: null };
         const humanAccess: RankedParticipantAccess = {
           tier: myTier,
+          ...(progression.outcomes ? { entitlementIds: progression.outcomes } : {}),
           capabilities: input.capabilities,
         };
         const botAccess: RankedParticipantAccess = {
           tier: myTier,
+          ...(progression.outcomes ? { entitlementIds: progression.outcomes } : {}),
           capabilities: ALL_RANKED_CAPABILITIES,
         };
         const match = await startMatch(
@@ -233,6 +301,7 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
           underdog === uid ? humanAccess : botAccess,
           favourite === uid ? humanAccess : botAccess,
           bot,
+          progression.pending_bot_debut,
         );
         if (match) return matched(match.match, null, match.botMove);
       } catch (error) {

@@ -144,7 +144,7 @@ export async function runCheckedSettlementTests(
   });
   const keptWaiting = await operations.joinMatch(edgeContext('player-1', freshBotService), standardJoinInput);
   check(keptWaiting.status === 200 && (await jsonBody(keptWaiting)).status === 'matched'
-    && freshBotService.rpcCalls.length === 0,
+    && !freshBotService.rpcCalls.some((call) => call.name === 'settle_match_checked'),
   'a bot match younger than the shared stall threshold was forfeited early',
   { status: keptWaiting.status, rpcCalls: freshBotService.rpcCalls });
 
@@ -169,7 +169,7 @@ export async function runCheckedSettlementTests(
     }),
     current_season: () => ({ data: 1 }),
     players_near: () => ({ data: 4 }),
-    enqueue_ranked_player_v2: () => ({ data: { status: 'queued' } }),
+    enqueue_ranked_player_v3: () => ({ data: { status: 'queued' } }),
   });
   const requeued = await operations.joinMatch(edgeContext('player-1', lazyForfeit), standardJoinInput);
   const forfeitSettle = lazyForfeit.rpcCalls.find((call) => call.name === 'settle_match_checked')?.input;

@@ -36,6 +36,7 @@ export async function installOnlineRoutes(
     standingPoints = null,
     standingPeak = null,
     historicalSilverReached = null,
+    progressionStatus = null,
     unseenRunes = [],
     markRunesSeenAfterFirstRead = false,
     SESSION,
@@ -295,9 +296,15 @@ export async function installOnlineRoutes(
   }));
   await page.route('**/rest/v1/matches*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
   let joinCalls = 0;
-  let joinUnavailable = false;
+  const joinBodies = [];
+  let joinUnavailable = false, joinIncompatible = false;
   await page.route('**/functions/v1/pvp-join', (r) => {
     joinCalls++;
+    joinBodies.push(r.request().postDataJSON() ?? null);
+    if (joinIncompatible) {
+      return r.fulfill({ status: 409, contentType: 'application/json',
+        body: '{"error":"incompatible-client"}' });
+    }
     if (joinUnavailable) {
       return r.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
     }
@@ -319,6 +326,30 @@ export async function installOnlineRoutes(
     return r.fulfill({ status: 200, contentType: 'application/json',
       body: '"11111111-1111-4111-8111-111111111111"' });
   });
+  let rankedStatus = progressionStatus ?? {
+    curve_version: 1,
+    scoring_version: 1,
+    admission_paused: false,
+    outcomes: [
+      'classic', 'singlestrike', 'colshield', 'limited',
+      'rowswitch', 'rowmult', 'bounty', 'rune_trial',
+    ],
+    weekly_unlocked: false,
+    pending_bot_debuts: [],
+    neon_medal_seasons: [],
+    weekly: null,
+  };
+  let progressionStatusUnavailable = false;
+  await page.route('**/rest/v1/rpc/active_ranked_curve_version*', (r) => r.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify(rankedStatus.curve_version),
+  }));
+  await page.route('**/rest/v1/rpc/ranked_progression_status*', (r) => r.fulfill(
+    progressionStatusUnavailable
+      ? { status: 503, contentType: 'application/json', body: '{"message":"unavailable"}' }
+      : { status: 200, contentType: 'application/json', body: JSON.stringify(rankedStatus) },
+  ));
   return {
     ...identityRoutes,
     ...appleRoutes,
@@ -340,7 +371,11 @@ export async function installOnlineRoutes(
     releaseEquipmentWrite: () => releaseEquipmentWrite(),
     equipmentWriteFinished,
     joinCalls: () => joinCalls,
+    joinBodies: () => [...joinBodies],
     setJoinUnavailable: (value) => { joinUnavailable = value; },
+    setJoinIncompatible: (value) => { joinIncompatible = value; },
+    setProgressionStatus: (value) => { rankedStatus = value; },
+    setProgressionStatusUnavailable: (value) => { progressionStatusUnavailable = value; },
     runeCalls: () => runeCalls,
     acknowledgeCalls: () => acknowledgeCalls,
     deferNextRuneResponse: () => { deferNextRune = true; },

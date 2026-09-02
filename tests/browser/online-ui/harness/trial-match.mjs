@@ -35,11 +35,16 @@ export async function installTrialMatchRoutes(page, {
      match reuses the same authoritative projection fixture so a reveal probe
      can cross the real queue boundary rather than invoking a UI hook. */
   format = 'rune_trial',
+  modifier = 'classic',
   rejoined = true,
   opponentName = 'NovaComet992',
   /* Hold the committed action back, so a probe can tell a board that filled
      at tap time apart from one that waited for the server. */
   actionDelay = 0,
+  /* Hold the first authoritative projection open. Entry-presentation probes
+     use this to inspect the table after the join response chose its mode but
+     before replay has had a chance to repaint score furniture. */
+  projectionDelay = 0,
   /* Refuse the next committed action with this status. Any non-200 that is not
      "uncertain" (status 0, 5xx, or a 200 with no match) takes submit()'s
      refusal branch — 409 is what production actually returns. */
@@ -86,7 +91,7 @@ export async function installTrialMatchRoutes(page, {
     p2_rating_delta: null,
     next_die: openingDie,
     last_move_at: new Date().toISOString(),
-    modifier: 'classic',
+    modifier,
     format,
     protocol_version: 2,
     rune_rules_version: 1,
@@ -216,17 +221,23 @@ export async function installTrialMatchRoutes(page, {
     });
   });
 
-  await page.route('**/rest/v1/match_actions*', (route) => route.fulfill({
-    status: 200, contentType: 'application/json', body: JSON.stringify(rows),
-  }));
+  await page.route('**/rest/v1/match_actions*', async (route) => {
+    if (projectionDelay) await new Promise((resolve) => setTimeout(resolve, projectionDelay));
+    return route.fulfill({
+      status: 200, contentType: 'application/json', body: JSON.stringify(rows),
+    });
+  });
   let refused = 0;
-  await page.route('**/rest/v1/matches*', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify([desyncAfterRefusal && refused
-      ? { ...match, action_version: match.action_version + 1 }
-      : match]),
-  }));
+  await page.route('**/rest/v1/matches*', async (route) => {
+    if (projectionDelay) await new Promise((resolve) => setTimeout(resolve, projectionDelay));
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([desyncAfterRefusal && refused
+        ? { ...match, action_version: match.action_version + 1 }
+        : match]),
+    });
+  });
 
   await page.route('**/functions/v1/pvp-action', async (route) => {
     actionCalls++;

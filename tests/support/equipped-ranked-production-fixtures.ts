@@ -13,7 +13,7 @@ import {
   EQUIPPED_RANKED_COMPLETE_SCHEMA_ROW,
 } from './random-rune-production-migration-cases.ts';
 import {
-  RANKED_PROGRESSION_COMPLETE_SCHEMA_ROW,
+  RANKED_PROGRESSION_V2_SCHEMA_ROW,
 } from './ranked-progression-production-migration-cases.ts';
 
 const FOUNDATION_SCHEMA = Object.freeze({
@@ -63,7 +63,7 @@ export function productionRead(overrides: {
     }
     if (query === RANKED_PROGRESSION_SCHEMA) {
       return [{
-        ...RANKED_PROGRESSION_COMPLETE_SCHEMA_ROW,
+        ...RANKED_PROGRESSION_V2_SCHEMA_ROW,
         ...overrides.progression,
       }];
     }

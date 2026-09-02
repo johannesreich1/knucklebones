@@ -1006,8 +1006,10 @@ select
             and pg_get_constraintdef(oid, true) like '%rune_trial_v1%'
             and (
               pg_get_constraintdef(oid, true) like '%cardinality(capabilities) <= 1%'
-              or md5(pg_get_constraintdef(oid, true)) =
-                '81f60e7c70ee6080403a93229cd4205a'
+              or md5(pg_get_constraintdef(oid, true)) in (
+                '81f60e7c70ee6080403a93229cd4205a',
+                'cf45f4818bf10df8a3352b8547e88dd9'
+              )
             )
         ) = 1
         and count(*) filter (
@@ -1324,7 +1326,8 @@ with expected(
       array['9a692011627169211f21317324015650']),
     ('private.rune_trial_payload(uuid,uuid)', 'private',
       'rune_trial_payload', 'plpgsql', true, 's', 'jsonb', 0,
-      array['589c07689e57ac2ca17d847a2f91a709']),
+      array['589c07689e57ac2ca17d847a2f91a709',
+            '7ead896c6cf9b63e4dcdc7fb79551e48']),
     ('public.rune_trial_state(uuid,uuid)', 'public',
       'rune_trial_state', 'plpgsql', true, 'v', 'jsonb', 0,
       array['f8d6ae222bb50b868d4d688f244da62e']),
@@ -1336,7 +1339,8 @@ with expected(
       array['2b34ae6429ae876839c20909e43cbf5a',
             '969ec904c8bce2bf1cfab78a90d8669b',
             'ec865febe67e1370a877459e4b89ec65',
-            '2aabcbcd3ba8231de00843f4350924c9']),
+            '2aabcbcd3ba8231de00843f4350924c9',
+            'cf1b7d0b30fd61e0b3e467e4abc7378c']),
     ('public.match_action_result(uuid,uuid,uuid,boolean,integer,jsonb)', 'public',
       'match_action_result', 'plpgsql', true, 's', 'jsonb', 0,
       array['d12d6153ad37b7f50b89b1d550e8ab39']),
@@ -1506,28 +1510,29 @@ export const EQUIPPED_RANKED_SCHEMA = String.raw`
 with expected(
   signature, schema_name, function_name, language_name, security_definer,
   volatility, return_type, argument_defaults, body_md5, alternate_body_md5,
-  historical_body_md5
+  historical_body_md5, successor_body_md5
 ) as (
   values
     ('public.enqueue_ranked_player_v2(uuid,smallint,text[])', 'public',
       'enqueue_ranked_player_v2', 'plpgsql', true, 'v', 'jsonb', 0,
-      '8d6c669dd740a64a1df872b3a6359944', null, null),
+      '8d6c669dd740a64a1df872b3a6359944', null, null, null),
     ('public.start_ranked_match_v3(uuid,uuid,uuid,text,smallint,text,smallint,uuid,smallint,smallint,smallint,smallint,smallint,text,text,text[],timestamptz,text,text,boolean)',
       'public', 'start_ranked_match_v3', 'plpgsql', true, 'v', 'jsonb', 0,
       'b7b1b9e7899045936f4d6a246f1c9eee',
       'e6986a11de9d9efbf89467626ae9fb8f',
-      '3fc7bb43af43ded3f11ec0f6d7b3dd96'),
+      '3fc7bb43af43ded3f11ec0f6d7b3dd96', null),
     ('private.bot_owned_rune_choice(uuid)', 'private',
       'bot_owned_rune_choice', 'sql', false, 's', 'text', 0,
-      'b6cbfd6a8630c49653664bf554aa346a', null, null),
+      'b6cbfd6a8630c49653664bf554aa346a', null, null, null),
     ('public.settle_match(uuid,text,uuid,integer,integer,integer,integer,jsonb,jsonb,jsonb,jsonb)',
       'public', 'settle_match', 'plpgsql', true, 'v', 'jsonb', 0,
       '969ec904c8bce2bf1cfab78a90d8669b',
       'ec865febe67e1370a877459e4b89ec65',
-      '2aabcbcd3ba8231de00843f4350924c9'),
+      '2aabcbcd3ba8231de00843f4350924c9',
+      'cf1b7d0b30fd61e0b3e467e4abc7378c'),
     ('public.commit_match_action(uuid,uuid,uuid,boolean,integer,smallint,smallint,timestamptz,jsonb,jsonb,smallint,smallint,jsonb,jsonb)',
       'public', 'commit_match_action', 'plpgsql', true, 'v', 'jsonb', 1,
-      'cb197365655531053efedc039ed84380', null, null)
+      'cb197365655531053efedc039ed84380', null, null, null)
 ), catalog as (
   select expected.*, procedure.oid, procedure.proowner, procedure.prosrc,
          procedure.proacl, procedure.prosecdef, procedure.provolatile,
@@ -1601,7 +1606,10 @@ select
     select count(*) = 1 and bool_and(
       contype = 'c' and convalidated
       and md5(pg_get_constraintdef(oid, true)) =
-        '81f60e7c70ee6080403a93229cd4205a'
+        any (array[
+          '81f60e7c70ee6080403a93229cd4205a',
+          'cf45f4818bf10df8a3352b8547e88dd9'
+        ])
     )
       from pg_constraint
      where conrelid = to_regclass('public.matchmaking_queue')
@@ -1655,6 +1663,7 @@ select
       md5(prosrc) = body_md5
       or coalesce(md5(prosrc) = alternate_body_md5, false)
       or coalesce(md5(prosrc) = historical_body_md5, false)
+      or coalesce(md5(prosrc) = successor_body_md5, false)
     )
       from catalog
   ) as function_bodies,
@@ -2374,6 +2383,18 @@ with event_table as (
     from information_schema.columns
    where table_schema = 'public'
      and table_name = 'ranked_progression_events'
+), expected_progression_v2_event_columns(
+  ordinal_position, column_name, data_type, udt_schema, udt_name,
+  is_nullable, column_default, is_identity, is_generated
+) as (
+  select * from expected_event_columns
+  union all
+  values
+    (19, 'curve_version', 'smallint', 'pg_catalog', 'int2', 'NO', '1', 'NO', 'NEVER'),
+    (20, 'outcome_grants', 'ARRAY', 'pg_catalog', '_text', 'NO', '''{}''::text[]', 'NO', 'NEVER'),
+    (21, 'weekly_unlocked_before', 'boolean', 'pg_catalog', 'bool', 'NO', 'false', 'NO', 'NEVER'),
+    (22, 'weekly_unlocked_after', 'boolean', 'pg_catalog', 'bool', 'NO', 'false', 'NO', 'NEVER'),
+    (23, 'neon_medal_granted', 'boolean', 'pg_catalog', 'bool', 'NO', 'false', 'NO', 'NEVER')
 ), expected_historical_event_constraints(
   constraint_name, constraint_type, definition
 ) as (
@@ -2405,6 +2426,18 @@ with event_table as (
       'CHECK (seen_at IS NULL OR seen_at >= created_at)'),
     ('ranked_progression_events_source_match_id_fkey', 'f',
       'FOREIGN KEY (source_match_id) REFERENCES matches(id) ON DELETE SET NULL')
+), expected_progression_v2_event_constraints(
+  constraint_name, constraint_type, definition
+) as (
+  select * from expected_historical_event_constraints
+  union all
+  values
+    ('ranked_progression_events_curve_version_check', 'c',
+      'CHECK (curve_version = ANY (ARRAY[1, 2]))'),
+    ('ranked_progression_events_outcome_grants_check', 'c',
+      $check$CHECK (outcome_grants <@ ARRAY['classic'::text, 'singlestrike'::text, 'colshield'::text, 'bounty'::text, 'rowmult'::text, 'rune_trial'::text, 'rowswitch'::text, 'limited'::text] AND array_position(outcome_grants, NULL::text) IS NULL AND cardinality(array_positions(outcome_grants, 'classic'::text)) <= 1 AND cardinality(array_positions(outcome_grants, 'singlestrike'::text)) <= 1 AND cardinality(array_positions(outcome_grants, 'colshield'::text)) <= 1 AND cardinality(array_positions(outcome_grants, 'bounty'::text)) <= 1 AND cardinality(array_positions(outcome_grants, 'rowmult'::text)) <= 1 AND cardinality(array_positions(outcome_grants, 'rune_trial'::text)) <= 1 AND cardinality(array_positions(outcome_grants, 'rowswitch'::text)) <= 1 AND cardinality(array_positions(outcome_grants, 'limited'::text)) <= 1)$check$),
+    ('ranked_progression_events_weekly_monotonic_check', 'c',
+      'CHECK (NOT weekly_unlocked_before OR weekly_unlocked_after)')
 ), expected_legacy_event_constraints(
   constraint_name, constraint_type, definition
 ) as (
@@ -2521,11 +2554,28 @@ select
       from event_table
   ), false) as table_contract,
   exists (select 1 from event_table)
-    and not exists (
-      (select * from expected_event_columns except select * from event_columns)
-      union all
-      (select * from event_columns except select * from expected_event_columns)
+    and (
+      not exists (
+        (select * from expected_event_columns except select * from event_columns)
+        union all
+        (select * from event_columns except select * from expected_event_columns)
+      )
+      or not exists (
+        (select * from expected_progression_v2_event_columns
+          except select * from event_columns)
+        union all
+        (select * from event_columns
+          except select * from expected_progression_v2_event_columns)
+      )
     ) as table_columns,
+  exists (select 1 from event_table)
+    and not exists (
+      (select * from expected_progression_v2_event_columns
+        except select * from event_columns)
+      union all
+      (select * from event_columns
+        except select * from expected_progression_v2_event_columns)
+    ) as progression_v2_table_columns,
   exists (select 1 from event_table)
     and not exists (
       (select * from expected_legacy_event_constraints except select * from event_constraints)
@@ -2550,6 +2600,20 @@ select
         from pg_constraint
        where conrelid = to_regclass('public.ranked_progression_events')
     ) as historical_table_constraints,
+  exists (select 1 from event_table)
+    and not exists (
+      (select * from expected_progression_v2_event_constraints
+        except select * from event_constraints)
+      union all
+      (select * from event_constraints
+        except select * from expected_progression_v2_event_constraints)
+    )
+    and (
+      select count(*) = 17
+             and bool_and(convalidated and not condeferrable and not condeferred)
+        from pg_constraint
+       where conrelid = to_regclass('public.ranked_progression_events')
+    ) as progression_v2_table_constraints,
   exists (select 1 from event_table)
     and not exists (
       (select * from expected_event_indexes except select * from event_indexes)
@@ -2699,9 +2763,16 @@ select
       from settle_function
   ), false) as legacy_settle_match_event_body,
   coalesce((
-    select md5(prosrc) = '2aabcbcd3ba8231de00843f4350924c9'
+    select md5(prosrc) in (
+      '2aabcbcd3ba8231de00843f4350924c9',
+      'cf1b7d0b30fd61e0b3e467e4abc7378c'
+    )
       from settle_function
   ), false) as historical_settle_match_event_body,
+  coalesce((
+    select md5(prosrc) = 'cf1b7d0b30fd61e0b3e467e4abc7378c'
+      from settle_function
+  ), false) as progression_v2_settle_match_event_body,
   coalesce((
     select owner_name = 'postgres' and nspname = 'public'
            and proname = 'settle_match' and lanname = 'plpgsql'
@@ -3055,6 +3126,7 @@ export async function auditEquippedRanked(readProduction = productionRead) {
     || (schemaStage === 2 && progression.schemaStage === 0)
     || (schemaStage === 2 && progression.schemaStage === 1)
     || (schemaStage === 3 && progression.schemaStage === 2)
+    || (schemaStage === 3 && progression.schemaStage === 3)
   );
   if (!pairedStage) {
     throw new Error(
@@ -3191,6 +3263,12 @@ export async function auditRankedProgression(readProduction = productionRead) {
       row.historical_rune_match_start_policy === true,
     historicalSettleMatchEventBody:
       row.historical_settle_match_event_body === true,
+    progressionV2TableColumns:
+      row.progression_v2_table_columns === true,
+    progressionV2TableConstraints:
+      row.progression_v2_table_constraints === true,
+    progressionV2SettleMatchEventBody:
+      row.progression_v2_settle_match_event_body === true,
   };
   return {
     evidence,

@@ -32,6 +32,7 @@ export const MARKUP = `${BOARD_MARKUP}
          button that moves them (design 13d). boot's refreshHomeChip fills it. -->
     <button class="pplate anon" id="homeChip">NOT SIGNED IN</button>
     <button class="btn primary play-cta" id="btnOnline"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">${chromeIcon('play', 25)}</span><span class="btn-label" data-i18n="game:home.playRanked">Play ranked match</span></button>
+    <button class="btn weekly-cta" id="btnWeekly" hidden><span aria-hidden="true">✦</span><span class="btn-label" id="weeklyHomeLabel"></span></button>
     <div class="hrow">
       <button class="btn" id="btnBoardHome" data-i18n="game:home.ladder">Ladder</button>
       <button class="btn" id="btnSettingsHome" data-i18n="game:home.settings">Settings</button>
@@ -156,6 +157,13 @@ ${OVERLAY_CARDS_MARKUP}
       <div class="seg" id="sndSeg">
         <button data-s="1" data-i18n="common:states.on">ON</button>
         <button data-s="0" data-i18n="common:states.off">OFF</button>
+      </div>
+    </div>
+    <div class="card" id="appIconCard" hidden>
+      <div class="lbl" data-i18n="settings:profileAppIcon">Use profile die as app icon</div>
+      <div class="seg" id="appIconSeg">
+        <button data-ai="1" data-i18n="common:states.on">ON</button>
+        <button data-ai="0" data-i18n="common:states.off">OFF</button>
       </div>
     </div>
     <h2 class="setsection" id="accessibilityHeading" data-i18n="settings:accessibility">Accessibility</h2>

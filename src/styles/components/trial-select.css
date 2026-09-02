@@ -25,6 +25,20 @@
 :where(#kbroot) .trial-select__card:disabled{cursor:default;filter:saturate(.45);opacity:.7}
 :where(#kbroot) .trial-select__card .rface{opacity:1}
 :where(#kbroot) .trial-select__card .rback{opacity:0}
+/* CLAIM is match truth, visible before the player touches a card. The gold tab
+   and halo mark exactly the snapshotted offer slot; the optional lower tab is
+   the current viewer's own cached collection status, never opponent data. */
+:where(#kbroot) .trial-select__card.is-claim .rface{border-color:#ffd166;
+  box-shadow:0 14px 34px rgba(0,0,0,.66),0 0 28px rgba(255,209,102,.42),
+    inset 0 0 20px rgba(255,209,102,.1)}
+:where(#kbroot) .trial-select__claim,:where(#kbroot) .trial-select__claim-owned{
+  position:absolute;z-index:3;left:50%;translate:-50% 0;border-radius:999px;
+  white-space:nowrap;font-weight:950;line-height:1;text-transform:uppercase}
+:where(#kbroot) .trial-select__claim{top:-9px;padding:5px 9px;background:#ffd166;color:#17120a;
+  font-size:9px;letter-spacing:.16em;box-shadow:0 3px 14px rgba(255,209,102,.46)}
+:where(#kbroot) .trial-select__claim-owned{bottom:-9px;padding:4px 7px;
+  border:1px solid rgba(255,255,255,.22);background:#111629;color:var(--txt);
+  font-size:7.5px;letter-spacing:.12em}
 :where(#kbroot) .trial-select__ready{margin-top:12px}
 :where(#kbroot) .trial-select.handoff .trial-select__title{color:var(--txt);text-shadow:none}
 

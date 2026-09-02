@@ -1,8 +1,8 @@
 // Pure guards and fixed SQL for the one-off production account reset and bot
 // population. Transport and credentials stay in production-test-data.mjs.
 
-import { GROUPS } from '../../src/core/ladder.ts';
-import { RANKED_POOL_TIERS } from '../../src/core/ranked-outcomes.ts';
+import { GROUPS_V1 as GROUPS, LADDER_CURVE_V1 } from '../../src/core/ladder.ts';
+import { rankedPoolTiersForCurve } from '../../src/core/ranked-outcomes.ts';
 
 export const PRODUCTION_TEST_DATA_PROJECT_REF = 'euzjcejbkxvqfrttgaxu';
 export const PRODUCTION_TEST_DATA_CLI_VERSION = '2.115.0';
@@ -13,6 +13,18 @@ export const PRODUCTION_BOT_MAX_WIN_RATE = 0.55;
 export const PRODUCTION_BOT_MAX_PEAK_GAP = 180;
 export const PRODUCTION_BOT_MIN_BEST_STREAK = 2;
 export const PRODUCTION_BOT_MAX_BEST_STREAK = 7;
+
+/* The helper predates the durable v2 progression model. Before the v2
+   migration is installed there is no version function, which is equivalent to
+   the only legacy curve. Once installed, the public scalar is the narrow
+   authoritative read that keeps preview and apply on the same runtime. */
+export const PRODUCTION_RANKED_CURVE_STAGE_SQL = String.raw`
+select to_regprocedure('public.active_ranked_curve_version()') is not null
+  as "versionFunction";
+`;
+export const PRODUCTION_RANKED_CURVE_VERSION_SQL = String.raw`
+select public.active_ranked_curve_version()::integer as "curveVersion";
+`;
 
 export const PRODUCTION_TEST_DATA_PHASES = Object.freeze([
   'wipe', 'seed-bots', 'refresh-bot-profiles',
@@ -54,12 +66,13 @@ const fail = message => { throw new ProductionTestDataGuardError(message); };
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const CURRENT_SEASON_SQL = '(select id from public.seasons where ends_at is null order by id desc limit 1)';
 
-/* The registry owns the tier floors: every generated `ranked_pool_tier`
-   predicate is built from RANKED_POOL_TIERS descending by floor, so a retuned
-   floor in src/core/ladder.ts propagates here instead of silently drifting.
+/* This pre-v2 production-data program is pinned to the active legacy curve;
+   rollout orchestration refuses bot population work after curve-v2 activation.
+   Every generated `ranked_pool_tier` predicate still comes from the shared
+   curve registry instead of duplicating the 300/720 boundaries here.
    The lowest tier is the catch-all else branch, so its floor must stay 0. */
 const POOL_TIERS_BY_FLOOR_DESCENDING = Object.freeze(
-  [...RANKED_POOL_TIERS].sort((a, b) => b.floor - a.floor),
+  [...rankedPoolTiersForCurve(LADDER_CURVE_V1)].sort((a, b) => b.floor - a.floor),
 );
 if (POOL_TIERS_BY_FLOOR_DESCENDING.length < 2
     || POOL_TIERS_BY_FLOOR_DESCENDING.at(-1).floor !== 0) {
@@ -415,6 +428,8 @@ const LADDER_STREAK_BASELINE_STAGE_FIELDS = Object.freeze([
   'migrationHistory', 'baselineTable', 'baselineColumns',
   'baselineConstraints', 'playerCardBaseline',
 ]);
+const RANKED_CURVE_STAGE_FIELDS = Object.freeze(['versionFunction']);
+const RANKED_CURVE_VERSION_FIELDS = Object.freeze(['curveVersion']);
 
 const RUNE_AUDIT_FIELDS = Object.freeze([
   'playerRunes', 'matchActions', 'runeTrialChoices', 'runeSelectionCommands',
@@ -445,6 +460,24 @@ function assertExactFields(row, fields, label) {
 function oneRow(rows, label) {
   if (!Array.isArray(rows) || rows.length !== 1) fail(`${label} must return exactly one row.`);
   return rows[0];
+}
+
+export function validateProductionRankedCurveStage(rows) {
+  const row = oneRow(rows, 'Production ranked-curve stage audit');
+  assertExactFields(row, RANKED_CURVE_STAGE_FIELDS, 'Production ranked-curve stage audit');
+  if (typeof row.versionFunction !== 'boolean') {
+    fail('Production ranked-curve stage field versionFunction must be boolean.');
+  }
+  return row.versionFunction;
+}
+
+export function validateProductionRankedCurveVersion(rows) {
+  const row = oneRow(rows, 'Production ranked-curve version audit');
+  assertExactFields(row, RANKED_CURVE_VERSION_FIELDS, 'Production ranked-curve version audit');
+  if (row.curveVersion !== 1 && row.curveVersion !== 2) {
+    fail('Production ranked-curve version must be exactly 1 or 2.');
+  }
+  return row.curveVersion;
 }
 
 export function validateBaseProductionTestDataAudit(rows) {
@@ -953,7 +986,20 @@ lock table public.profiles in access exclusive mode;
 lock table public.matches in access exclusive mode;
 
 do $guard$
+declare
+  active_curve smallint;
 begin
+  if to_regprocedure('public.active_ranked_curve_version()') is not null then
+    if to_regclass('private.ranked_runtime_contract') is null then
+      raise exception 'production ranked runtime contract is incomplete';
+    end if;
+    execute 'lock table private.ranked_runtime_contract in share mode';
+    execute 'select public.active_ranked_curve_version()' into strict active_curve;
+    if active_curve <> 1 then
+      raise exception 'legacy production account wipe is disabled after curve-v2 activation';
+    end if;
+  end if;
+
   if (select count(*) from auth.users) <> (select count(*) from public.profiles)
      or exists (select 1 from public.profiles where is_bot is null)
      or exists (
@@ -1095,6 +1141,7 @@ declare
   seed_row record;
   bot_id uuid;
   current_season_id smallint;
+  active_curve smallint;
 begin
   if not exists (
        select 1 from supabase_migrations.schema_migrations
@@ -1113,6 +1160,13 @@ begin
      or to_regprocedure('private.ranked_pool_tier_for_peak(integer)') is null
      or to_regprocedure('private.bot_owned_rune_choice(uuid)') is null then
     raise exception 'Rune Trial, equipped-rune, and streak-baseline migrations must be complete before bot seeding';
+  end if;
+
+  if to_regprocedure('public.active_ranked_curve_version()') is not null then
+    execute 'select public.active_ranked_curve_version()' into strict active_curve;
+    if active_curve <> 1 then
+      raise exception 'legacy production bot seed is disabled after curve-v2 activation';
+    end if;
   end if;
 
   if exists (select 1 from auth.users)
@@ -1300,6 +1354,7 @@ insert into kb_bot_profile_refresh_plan values
 do $refresh$
 declare
   current_season_id smallint;
+  active_curve smallint;
   canonical_rows integer;
   legacy_rows integer;
   refreshed_rows integer;
@@ -1316,6 +1371,14 @@ begin
      or to_regclass('private.season_streak_baselines') is null
      or to_regprocedure('private.bot_owned_rune_choice(uuid)') is null then
     raise exception 'required production migrations are incomplete before bot-profile refresh';
+  end if;
+
+
+  if to_regprocedure('public.active_ranked_curve_version()') is not null then
+    execute 'select public.active_ranked_curve_version()' into strict active_curve;
+    if active_curve <> 1 then
+      raise exception 'legacy production bot-profile refresh is disabled after curve-v2 activation';
+    end if;
   end if;
 
   if (select count(*) from public.seasons where ends_at is null) <> 1 then

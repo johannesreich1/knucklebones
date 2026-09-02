@@ -2,14 +2,26 @@
 // request in, its wire row out. Match lifecycle/rendering belongs to play.ts,
 // not this API seam; the push side lives in match-realtime.ts.
 import {
-  EQUIPPED_RUNE_CAPABILITY,
-  RUNE_TRIAL_CAPABILITY,
+  ALL_RANKED_CAPABILITIES,
+  CURVE_V2_CAPABILITY,
+  RUNE_TRIAL_CLAIM_CAPABILITY,
   type RankedMatchFormat,
+  type RankedCapability,
   type RankedPoolTier,
 } from '../../core/ranked-outcomes.ts';
 import type { RankedActionIntent, RankedActionRow } from '../../core/ranked-actions.ts';
+import type {
+  RuneTrialClaimSlot,
+  RuneTrialRewardVersion,
+} from '../../core/rune-trial-offer.ts';
 import { callFunction } from './client.ts';
 import { randomUuid } from './random-id.ts';
+import type {
+  LadderCurveVersion,
+  LadderScoringVersion,
+  RankedEntryKind,
+} from '../../progression-status-cache.ts';
+import { confirmedLadderCurveVersion } from '../../progression-status-cache.ts';
 
 export interface MatchRow {
   id: string;
@@ -32,6 +44,12 @@ export interface MatchRow {
   pool_tier?: RankedPoolTier;
   phase?: 'selection' | 'playing';
   trial_offer?: string[] | null;
+  /* Immutable Rune Ritual reward snapshot. Optional here only for the v1/v2
+     rollout boundary; a reward-version-2 Trial must carry the complete tuple
+     and the private selection controller validates it before showing cards. */
+  reward_version?: RuneTrialRewardVersion | null;
+  claim_slot?: RuneTrialClaimSlot | null;
+  claim_rune?: string | null;
   p1_rune?: string | null;
   p2_rune?: string | null;
   selection_deadline?: string | null;
@@ -40,6 +58,20 @@ export interface MatchRow {
   pending_aim?: string | null;
   p1_rating_delta?: number | null;
   p2_rating_delta?: number | null;
+  /* Versioned settlement evidence. Optional only for legacy rows written
+     before progression v2; new rows persist every component explicitly. */
+  curve_version?: LadderCurveVersion;
+  scoring_version?: LadderScoringVersion;
+  /* Exact immutable negotiated wheel roster. Required for v2 because
+     grandfathered per-outcome entitlements cannot be reconstructed from one
+     cumulative tier; absent legacy rows retain the v1 pool-tier fallback. */
+  outcome_roster?: string[] | null;
+  p1_base_rating_delta?: number | null;
+  p2_base_rating_delta?: number | null;
+  p1_finish_rating_delta?: number | null;
+  p2_finish_rating_delta?: number | null;
+  entry_kind?: RankedEntryKind;
+  weekly_rotation_id?: string | null;
   /* Automatic placements spent per seat. Optional at the web boundary for the
      same rollout reason as the Trial fields above: a row written before the
      column existed simply reads as an untouched allowance. */
@@ -49,6 +81,9 @@ export interface MatchRow {
 
 export interface RuneTrialState {
   offer: string[];
+  reward_version?: RuneTrialRewardVersion | null;
+  claim_slot?: RuneTrialClaimSlot | null;
+  claim_rune?: string | null;
   phase: 'selection' | 'playing';
   deadline: string | null;
   your_choice: string | null;
@@ -76,6 +111,26 @@ export type JoinAttempt = JoinResult | { status: 'unavailable' };
 
 interface JoinErrorResult { error?: string }
 
+export interface RankedJoinAdvertisement {
+  readonly curveVersion: LadderCurveVersion;
+  readonly capabilities: readonly RankedCapability[];
+}
+
+/** Stage the wire contract from the last server-confirmed active curve. The
+ * v2 web can deploy safely against both the preceding join function and a
+ * dormant v2 migration; CLAIM and curve_v2 appear only after activation. */
+export function rankedJoinAdvertisement(
+  curveVersion: LadderCurveVersion = confirmedLadderCurveVersion(),
+): RankedJoinAdvertisement {
+  return curveVersion === 2
+    ? { curveVersion, capabilities: ALL_RANKED_CAPABILITIES }
+    : {
+      curveVersion,
+      capabilities: ALL_RANKED_CAPABILITIES.filter((capability) =>
+        capability !== CURVE_V2_CAPABILITY && capability !== RUNE_TRIAL_CLAIM_CAPABILITY),
+    };
+}
+
 export function joinResultFromResponse(
   status: number,
   data: JoinResult | JoinErrorResult | null,
@@ -91,14 +146,20 @@ export function joinResultFromResponse(
   return null;
 }
 
-export async function join(allowBot: boolean): Promise<JoinAttempt> {
+export async function join(
+  allowBot: boolean,
+  entryKind: RankedEntryKind = 'ordinary',
+): Promise<JoinAttempt> {
   /* Unknown request fields are ignored by the legacy join endpoint, so the
      v2 client can advertise support before every participant/function has
      upgraded without ever letting a v1 peer into a Trial. */
+  const advertisement = rankedJoinAdvertisement();
   const response = await callFunction<JoinResult | JoinErrorResult>('pvp-join', {
     allow_bot: allowBot,
+    entry_kind: entryKind,
+    curve_version: advertisement.curveVersion,
     protocol_version: 2,
-    capabilities: [RUNE_TRIAL_CAPABILITY, EQUIPPED_RUNE_CAPABILITY],
+    capabilities: [...advertisement.capabilities],
   });
   return joinResultFromResponse(response.status, response.data)
     ?? { status: 'unavailable' };

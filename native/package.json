@@ -29,6 +29,7 @@
     "@capacitor/share": "8.0.1",
     "@capacitor/splash-screen": "8.0.2",
     "@capawesome/capacitor-apple-sign-in": "0.1.3",
+    "knucklebones-app-icon": "file:plugins/appicon",
     "knucklebones-game-center": "file:plugins/gamecenter"
   },
   "devDependencies": {

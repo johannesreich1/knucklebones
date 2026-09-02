@@ -1,0 +1,28 @@
+{
+  "name": "knucklebones-app-icon",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Profile-avatar launcher icon bridge for the Knucklebones Capacitor shells",
+  "main": "dist/plugin.js",
+  "types": "dist/index.d.ts",
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    },
+    "android": {
+      "src": "android"
+    }
+  },
+  "files": [
+    "android",
+    "ios",
+    "KnucklebonesAppIcon.podspec",
+    "README.md"
+  ],
+  "keywords": [
+    "capacitor",
+    "plugin",
+    "app-icon"
+  ],
+  "capacitorPlugin": true
+}

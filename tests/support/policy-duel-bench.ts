@@ -19,7 +19,7 @@ import {
 import { searchRoot } from '../../src/core/ai.ts';
 import { makeBag } from '../../src/core/dice.ts';
 import { botMove } from '../../src/core/bot.ts';
-import type { BotShape } from '../../src/core/ladder.ts';
+import { LADDER_CURVE_VERSION, type BotShape } from '../../src/core/ladder.ts';
 
 /* mulberry32, NOT a bare LCG: MINSTD's lattice swung near-deterministic
    policy duels by ±7pp run to run (the colshield decomposition, 2026-08-21
@@ -40,7 +40,10 @@ const rnd = (n: number, random: () => number = Math.random) => Math.floor(random
 function pick(p: Policy, st: ReturnType<typeof emptyBoard>[], who: 0 | 1, die: number,
               random: () => number = Math.random): number {
   if (p.botRating !== undefined) {
-    return botMove(st as GameState, who, die, p.botRating, p.mode ?? CLASSIC, random);
+    return botMove(
+      st as GameState, who, die, p.botRating, p.mode ?? CLASSIC,
+      LADDER_CURVE_VERSION, random,
+    );
   }
   const legal = legalCols(st[who]);
   if (p.random || (p.slip && random() < p.slip)) return legal[rnd(legal.length, random)];

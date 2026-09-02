@@ -8,6 +8,10 @@ const PROFILE_CACHE = 'knucklebones.online.profile';
 
 /** Everything a screen may paint from the cache before any RPC answers. */
 export interface CachedProfile {
+  /** The Supabase account this presentation belongs to. Older unscoped cache
+      entries remain readable for Home once, but are never merged into a fresh
+      account and are not trusted for launcher-icon reconciliation. */
+  accountId?: string;
   nickname?: string;
   rating?: number;
   avatar?: string | null;
@@ -29,12 +33,32 @@ function write(profile: CachedProfile): void {
   catch { /* forgetful host */ }
 }
 
+const accountKey = (accountId: string): string => accountId.toLowerCase();
+
+export function readProfileCacheForAccount(accountId: string): CachedProfile | null {
+  const cached = readProfileCache();
+  return cached?.accountId?.toLowerCase() === accountKey(accountId) ? cached : null;
+}
+
 /* Merged over the old entry, not replaced: rank/apex (cacheStanding) come from
    a different RPC and must survive a profile refetch. */
 export function cacheProfileIdentity(
-  identity: { nickname: string; rating: number; avatar?: string | null },
+  identity: {
+    accountId: string;
+    nickname: string;
+    rating: number;
+    avatar?: string | null;
+  },
 ): void {
-  write({ ...readProfileCache(), ...identity });
+  const normalized = accountKey(identity.accountId);
+  write({ ...readProfileCacheForAccount(normalized), ...identity, accountId: normalized });
+}
+
+/** Publish a successful avatar write immediately without retaining another
+    account's name/rating when authentication changed under the picker. */
+export function cacheProfileAvatar(accountId: string, avatar: string | null): void {
+  const normalized = accountKey(accountId);
+  write({ ...readProfileCacheForAccount(normalized), accountId: normalized, avatar });
 }
 
 /* When a standing lands anywhere (result, profile), its rank/apex are stashed

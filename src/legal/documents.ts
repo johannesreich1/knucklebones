@@ -3,6 +3,7 @@ import {
   type SupportedLocale,
 } from '../i18n/locale.ts';
 import { LEGAL_CONTENT, legalLocaleContent } from './content.ts';
+import { isLinkablePublicEmail } from './render.ts';
 import {
   LEGAL_FACT_KEYS,
   LEGAL_PAGE_IDS,
@@ -198,7 +199,7 @@ export function legalPublicationProblems(
     if (!nonEmpty(config.facts[key])) problems.push(`${key} is missing`);
   }
   if (!nonEmpty(config.facts.publicEmail)
-      || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(config.facts.publicEmail ?? '')) {
+      || !isLinkablePublicEmail(config.facts.publicEmail ?? '')) {
     problems.push('publicEmail is missing or invalid');
   }
   for (const key of [

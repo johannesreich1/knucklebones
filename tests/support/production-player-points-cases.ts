@@ -1,6 +1,5 @@
-// Focused contracts for the guarded BadRandolf transition-testing helper.
-// Kept beside the existing production test-data cases so the owner runner
-// stays within the repository's architecture size budget.
+// Focused contracts for the guarded BadRandolf transition-testing helper, kept
+// beside the production test-data cases to preserve the architecture budget.
 import assert from 'node:assert/strict';
 import os from 'node:os';
 import {
@@ -135,6 +134,8 @@ export function assertProductionPlayerPointsSql() {
   assert.match(sql, /^begin;/);
   assert.match(sql, /set local lock_timeout = '5s'/);
   assert.match(sql, /set local statement_timeout = '30s'/);
+  assert.match(sql,
+    /active_ranked_curve_version\(\)[\s\S]*legacy production player-points helper is disabled after curve-v2 activation/);
   assert.match(sql, /where profile\.id = '00000000-0000-4000-8000-00000000beef'::uuid/);
   assert.match(sql, /lower\(profile\.nickname\) = lower\('BadRandolf'\)/);
   assert.ok(sql.indexOf('for update;') < sql.indexOf('from private.active_match_players'));
@@ -281,6 +282,7 @@ export async function assertProductionPlayerPointsOrchestration() {
       return [before];
     },
     verifyEnvironment: () => undefined,
+    rankedCurve: async () => 1,
     execute: (sql) => { previewWrites.push(sql); },
     log: (message) => { previewLogs.push(message); },
   });
@@ -299,6 +301,7 @@ export async function assertProductionPlayerPointsOrchestration() {
     optIn: '1259',
     read: async () => [applyReads.shift()],
     verifyEnvironment: () => undefined,
+    rankedCurve: async () => 1,
     execute: (sql) => { writes.push(sql); },
     log: () => undefined,
   });
@@ -327,6 +330,7 @@ export async function assertProductionPlayerPointsOrchestration() {
     resetHighWater: true,
     read: async () => [resetBefore],
     verifyEnvironment: () => undefined,
+    rankedCurve: async () => 1,
     execute: () => { throw new Error('reset preview wrote'); },
     log: (message) => { resetPreviewLogs.push(message); },
   });
@@ -349,6 +353,7 @@ export async function assertProductionPlayerPointsOrchestration() {
     optIn: productionPlayerHighWaterResetOptInValue(299),
     read: async () => [resetApplyReads.shift()],
     verifyEnvironment: () => undefined,
+    rankedCurve: async () => 1,
     execute: (sql, _before, _points, options) => {
       resetWrites.push({ sql, resetHighWater: options.resetHighWater });
     },
@@ -377,4 +382,19 @@ export async function assertProductionPlayerPointsOrchestration() {
     log: () => undefined,
   }), new RegExp(`${PRODUCTION_PLAYER_HIGH_WATER_RESET_OPT_IN}=`));
   assert.equal(rejectedResetWork, 0, 'a mismatched reset opt-in reached live work');
+
+  for (const apply of [false, true]) {
+    let work = 0;
+    await assert.rejects(() => rolloutProductionPlayerPoints({
+      points: 1259,
+      apply,
+      optIn: apply ? '1259' : undefined,
+      rankedCurve: async () => 2,
+      read: async () => { work++; return [before]; },
+      verifyEnvironment: () => undefined,
+      execute: () => { work++; },
+      log: () => undefined,
+    }), /Production player-points is disabled after curve-v2 activation/);
+    assert.equal(work, 0, `player-points ${apply ? 'apply' : 'preview'} touched v2 data`);
+  }
 }

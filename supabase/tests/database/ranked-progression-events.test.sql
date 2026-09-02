@@ -13,7 +13,7 @@ select has_table(
   'ranked settlement has a durable per-player progression event'
 );
 select ok(
-  (select count(*) = 18
+  (select count(*) = 23
           and count(*) filter (where column_name = 'id' and data_type = 'uuid'
                                 and is_nullable = 'NO') = 1
           and count(*) filter (where column_name = 'player_id' and data_type = 'uuid'
@@ -40,9 +40,19 @@ select ok(
           and count(*) filter (where column_name = 'seen_at'
                                 and data_type = 'timestamp with time zone'
                                 and is_nullable = 'YES') = 1
+          and count(*) filter (where column_name = 'curve_version'
+                                and data_type = 'smallint'
+                                and is_nullable = 'NO') = 1
+          and count(*) filter (where column_name = 'outcome_grants'
+                                and data_type = 'ARRAY'
+                                and is_nullable = 'NO') = 1
+          and count(*) filter (where column_name in
+                                ('weekly_unlocked_before', 'weekly_unlocked_after',
+                                 'neon_medal_granted')
+                                and data_type = 'boolean' and is_nullable = 'NO') = 3
      from information_schema.columns
     where table_schema = 'public' and table_name = 'ranked_progression_events'),
-  'progression rows retain exact ladder, permanent-pool, and equipment snapshots'
+  'progression rows retain exact ladder, unlock, reward, and equipment snapshots'
 );
 select ok(
   (select count(*) = 1 and bool_and(

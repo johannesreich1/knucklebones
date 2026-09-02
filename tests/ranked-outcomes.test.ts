@@ -1,29 +1,20 @@
-// Gate for ranked variety progression and Rune Trial's deterministic deal.
+// Gate for ranked draw odds and Rune Trial's deterministic deal.
 // Pure only: no browser, database, clock, or ambient randomness.
 // Run: mise exec -- node --experimental-strip-types tests/ranked-outcomes.test.ts
-import { CLASSIC } from '../src/core/rules.ts';
-import { MODES } from '../src/core/modes.ts';
 import { SPELLS } from '../src/core/spells.ts';
 import {
   ALL_RANKED_CAPABILITIES,
-  EQUIPPED_RUNE_CAPABILITY,
-  RANKED_OUTCOMES,
-  RANKED_POOL_TIERS,
+  RANKED_OUTCOME_DISPLAY_ORDER,
   RUNE_TRIAL_CAPABILITY,
   RUNE_TRIAL_FORMAT,
-  RUNE_TRIAL_OUTCOME,
-  STANDARD_FORMAT,
-  highestRankedPoolTier,
+  grandfatheredRankedOutcomeEntitlements,
   pickRankedOutcome,
   pickRankedOutcomeWithRandom,
-  rankedOutcomeById,
-  rankedOutcomeByMatch,
+  rankedOutcomeUnlockTierById,
   rankedOutcomePool,
   rankedOutcomeRoster,
-  rankedPoolTierById,
-  rankedPoolTierForPeak,
-  usesRankedActionProtocol,
   type RankedParticipantAccess,
+  type RankedOutcomeUnlockTier,
   type RankedPoolTier,
 } from '../src/core/ranked-outcomes.ts';
 import {
@@ -55,105 +46,57 @@ const throws = (run: () => unknown, what: string) => {
 };
 
 const access = (
-  tier: RankedPoolTier,
+  tier: RankedOutcomeUnlockTier,
   capabilities: readonly string[] = ALL_RANKED_CAPABILITIES,
-): RankedParticipantAccess => ({ tier, capabilities });
+  entitlementIds: readonly string[] = rankedOutcomeUnlockTierById(tier).outcomeIds,
+): RankedParticipantAccess => ({
+  tier: tier === 'gold' ? 'ivory' : tier,
+  capabilities,
+  entitlementIds,
+});
 
 const summarizedPool = (participants: readonly RankedParticipantAccess[]) =>
   rankedOutcomePool(participants).map(({ outcome, weight }) => [outcome.id, weight]);
 const summarizedRoster = (participants: readonly RankedParticipantAccess[]) =>
   rankedOutcomeRoster(participants).map(({ id }) => id);
 
-/* ---- outcome registry: Trial is a format, not a mechanical mode -------- */
-eq(ALL_RANKED_CAPABILITIES, [RUNE_TRIAL_CAPABILITY, EQUIPPED_RUNE_CAPABILITY],
-  'ranked capability registry lost the distinct equipped-rune rollout gate');
-check(usesRankedActionProtocol({ protocol_version: 2, rune_rules_version: 1 })
-  && !usesRankedActionProtocol({ protocol_version: 2, rune_rules_version: null })
-  && !usesRankedActionProtocol({ protocol_version: 1, rune_rules_version: 1 }),
-  'action replay was inferred from only half of its persisted protocol tuple');
-eq(RANKED_OUTCOMES.filter(({ format }) => format === STANDARD_FORMAT).map(({ id }) => id),
-  MODES.map(({ id }) => id), 'ordinary outcomes drifted from the mode registry');
-eq(RUNE_TRIAL_OUTCOME, {
-  id: 'rune_trial',
-  format: 'rune_trial',
-  modifier: 'classic',
-  mode: CLASSIC,
-  requiredCapability: 'rune_trial_v1',
-}, 'Rune Trial is not Classic-backed protocol-v2 play');
-check(!MODES.some(({ id }) => id === RUNE_TRIAL_FORMAT),
-  'Rune Trial leaked into the mechanical mode registry');
-eq(rankedOutcomeById('rune_trial'), RUNE_TRIAL_OUTCOME,
-  'strict outcome lookup did not resolve Trial');
-eq(rankedOutcomeByMatch('rune_trial', 'classic'), RUNE_TRIAL_OUTCOME,
-  'strict wire lookup did not resolve Trial');
-eq(rankedOutcomeByMatch('standard', 'limited').id, 'limited',
-  'strict wire lookup did not resolve an ordinary mode');
-throws(() => rankedOutcomeById('not-a-mode'), 'unknown outcome id fell back');
-throws(() => rankedOutcomeById(null), 'null outcome id fell back');
-throws(() => rankedOutcomeByMatch('rune_trial', 'limited'),
-  'Rune Trial accepted a non-Classic modifier');
-throws(() => rankedOutcomeByMatch('standard', 'rune_trial'),
-  'standard format accepted the Trial outcome id as a modifier');
-throws(() => rankedOutcomeByMatch('future', 'classic'), 'unknown format fell back');
-
-/* ---- permanent tier boundaries and exact outcome sets ----------------- */
-eq(RANKED_POOL_TIERS.map(({ id, floor, outcomeIds }) => [id, floor, outcomeIds]), [
-  ['stone', 0, ['classic', 'singlestrike', 'colshield', 'limited']],
-  ['bone', 300, [
-    'classic', 'singlestrike', 'colshield', 'limited',
-    'rowswitch', 'rowmult', 'bounty',
-  ]],
-  ['ivory', 720, [
-    'classic', 'singlestrike', 'colshield', 'limited',
-    'rowswitch', 'rowmult', 'bounty', 'rune_trial',
-  ]],
-], 'ranked pool progression drifted');
-eq([0, 299, 300, 719, 720, 1259, 9999].map(rankedPoolTierForPeak),
-  ['stone', 'stone', 'bone', 'bone', 'ivory', 'ivory', 'ivory'],
-  'peak-point tier boundaries are wrong');
-eq(highestRankedPoolTier('stone', 'ivory', 'bone'), 'ivory',
-  'permanent tier merge relocked a higher pool');
-eq(highestRankedPoolTier('bone', 'stone'), 'bone',
-  'permanent tier merge depended on argument order');
-throws(() => rankedPoolTierForPeak(-1), 'negative peak points were accepted');
-throws(() => rankedPoolTierForPeak(300.5), 'fractional peak points were accepted');
-throws(() => rankedPoolTierForPeak(Number.NaN), 'NaN peak points were accepted');
-throws(() => rankedPoolTierById('silver'), 'higher display group became a fourth pool tier');
-throws(() => rankedPoolTierById('unknown'), 'unknown pool tier fell back');
-throws(() => highestRankedPoolTier(), 'empty permanent tier merge fell back');
-
 /* ---- exact 40/60 odds and participant intersection -------------------- */
 eq(summarizedPool([access('stone')]), [
-  ['classic', 2], ['singlestrike', 1], ['colshield', 1], ['limited', 1],
+  ['classic', 2], ['singlestrike', 1], ['colshield', 1], ['bounty', 1],
 ], 'STONE weights are not exactly 40/20/20/20');
 eq(summarizedPool([access('bone')]), [
-  ['classic', 4], ['singlestrike', 1], ['colshield', 1], ['limited', 1],
-  ['rowswitch', 1], ['rowmult', 1], ['bounty', 1],
-], 'BONE weights are not exactly 40/10/...');
+  ['classic', 8], ['singlestrike', 3], ['colshield', 3],
+  ['rowmult', 3], ['bounty', 3],
+], 'BONE weights are not exactly 40/15/...');
 eq(summarizedPool([access('ivory')]), [
+  ['classic', 10], ['singlestrike', 3], ['colshield', 3],
+  ['rowmult', 3], ['bounty', 3], ['rune_trial', 3],
+], 'IVORY weights are not exactly 40% plus five equal additions');
+eq(summarizedPool([access('gold')]), [
   ['classic', 14], ['singlestrike', 3], ['colshield', 3], ['limited', 3],
   ['rowswitch', 3], ['rowmult', 3], ['bounty', 3], ['rune_trial', 3],
-], 'IVORY weights are not exactly 40% plus seven equal additions');
+], 'GOLD did not retain the seed-versioned full-pool order and weights');
 
 /* A ranked draw retains the permanent seed-sensitive pool sequence above;
    the displayed spinner uses canonical registry order, matching offline. */
 eq(summarizedRoster([access('stone')]), [
-  'classic', 'colshield', 'singlestrike', 'limited',
+  'classic', 'singlestrike', 'colshield', 'bounty',
 ], 'STONE spinner roster drifted from canonical mode order');
 eq(summarizedRoster([access('bone')]), [
-  'classic', 'rowswitch', 'rowmult', 'colshield', 'singlestrike', 'bounty', 'limited',
+  'classic', 'singlestrike', 'colshield', 'bounty', 'rowmult',
 ], 'BONE spinner roster drifted from canonical mode order');
 eq(summarizedRoster([access('ivory')]), [
-  'classic', 'rowswitch', 'rowmult', 'colshield', 'singlestrike', 'bounty', 'limited',
-  'rune_trial',
+  'classic', 'singlestrike', 'colshield', 'bounty', 'rowmult', 'rune_trial',
 ], 'IVORY spinner roster drifted from canonical outcome order');
+eq(summarizedRoster([access('gold')]), RANKED_OUTCOME_DISPLAY_ORDER,
+  'GOLD spinner did not use the complete canonical outcome order');
 eq(summarizedRoster([
   access('ivory', [RUNE_TRIAL_CAPABILITY]),
   access('ivory', []),
 ]), summarizedRoster([access('bone')]),
   'capability filtering did not carry through to the displayed spinner roster');
 
-for (const tier of ['stone', 'bone', 'ivory'] as const) {
+for (const tier of ['stone', 'bone', 'ivory', 'gold'] as const) {
   const pool = rankedOutcomePool([access(tier)]);
   const total = pool.reduce((sum, { weight }) => sum + weight, 0);
   const classic = pool.find(({ outcome }) => outcome.id === 'classic')!;
@@ -163,6 +106,24 @@ for (const tier of ['stone', 'bone', 'ivory'] as const) {
     `${tier} additions do not share the remaining 60%`, pool);
 }
 
+const grandfatheredStone = grandfatheredRankedOutcomeEntitlements(0);
+eq(summarizedPool([access('stone', ALL_RANKED_CAPABILITIES, grandfatheredStone)]), [
+  ['classic', 8], ['singlestrike', 3], ['colshield', 3], ['limited', 3], ['bounty', 3],
+], 'durable grandfathered STONE access collapsed back to a tier shortcut');
+eq(summarizedRoster([access('stone', ALL_RANKED_CAPABILITIES, grandfatheredStone)]),
+  ['classic', 'singlestrike', 'colshield', 'bounty', 'limited'],
+  'grandfathered STONE presentation ignored canonical relative order');
+const shuffledGrandfatheredStone = [...grandfatheredStone].reverse();
+eq(summarizedPool([access('stone', ALL_RANKED_CAPABILITIES, shuffledGrandfatheredStone)]),
+  summarizedPool([access('stone', ALL_RANKED_CAPABILITIES, grandfatheredStone)]),
+  'persisted entitlement array order changed deterministic draw order');
+throws(() => summarizedPool([access('stone', ALL_RANKED_CAPABILITIES,
+  ['classic', 'bounty', 'bounty'])]), 'duplicate explicit entitlements were accepted');
+throws(() => summarizedPool([access('stone', ALL_RANKED_CAPABILITIES,
+  ['bounty'])]), 'an explicit entitlement set without Classic was accepted');
+throws(() => summarizedPool([access('stone', ALL_RANKED_CAPABILITIES,
+  ['classic', 'future-mode'])]), 'an unknown explicit entitlement was accepted');
+
 /* ---- the permanent 40/60 draw ------------------------------------------ */
 
 /* The player-visible draw must read the permanent pool above without an
@@ -171,20 +132,34 @@ for (const tier of ['stone', 'bone', 'ivory'] as const) {
 const ivory = [access('ivory')];
 eq([
   pickRankedOutcomeWithRandom(ivory, () => 0.399999999).id,
-  pickRankedOutcomeWithRandom(ivory, () => 14 / 35).id,
-  pickRankedOutcomeWithRandom(ivory, () => 17 / 35).id,
-  pickRankedOutcomeWithRandom(ivory, () => 20 / 35).id,
-  pickRankedOutcomeWithRandom(ivory, () => 23 / 35).id,
-  pickRankedOutcomeWithRandom(ivory, () => 26 / 35).id,
-  pickRankedOutcomeWithRandom(ivory, () => 29 / 35).id,
-  pickRankedOutcomeWithRandom(ivory, () => 32 / 35).id,
+  pickRankedOutcomeWithRandom(ivory, () => 10 / 25).id,
+  pickRankedOutcomeWithRandom(ivory, () => 13 / 25).id,
+  pickRankedOutcomeWithRandom(ivory, () => 16 / 25).id,
+  pickRankedOutcomeWithRandom(ivory, () => 19 / 25).id,
+  pickRankedOutcomeWithRandom(ivory, () => 22 / 25).id,
   pickRankedOutcomeWithRandom(ivory, () => 0.999999999).id,
+], [
+  'classic', 'singlestrike', 'colshield', 'rowmult', 'bounty',
+  'rune_trial', 'rune_trial',
+], 'the IVORY draw is not Classic 40% plus five equal 3/25 additions');
+eq(summarizedPool([access('bone')]).map(([id]) => id).includes(RUNE_TRIAL_FORMAT), false,
+  'BONE gained a Trial to bias');
+
+const gold = [access('gold')];
+eq([
+  pickRankedOutcomeWithRandom(gold, () => 0.399999999).id,
+  pickRankedOutcomeWithRandom(gold, () => 14 / 35).id,
+  pickRankedOutcomeWithRandom(gold, () => 17 / 35).id,
+  pickRankedOutcomeWithRandom(gold, () => 20 / 35).id,
+  pickRankedOutcomeWithRandom(gold, () => 23 / 35).id,
+  pickRankedOutcomeWithRandom(gold, () => 26 / 35).id,
+  pickRankedOutcomeWithRandom(gold, () => 29 / 35).id,
+  pickRankedOutcomeWithRandom(gold, () => 32 / 35).id,
+  pickRankedOutcomeWithRandom(gold, () => 0.999999999).id,
 ], [
   'classic', 'singlestrike', 'colshield', 'limited', 'rowswitch',
   'rowmult', 'bounty', 'rune_trial', 'rune_trial',
-], 'the IVORY draw is not Classic 40% plus seven equal 3/35 additions');
-eq(summarizedPool([access('bone')]).map(([id]) => id).includes(RUNE_TRIAL_FORMAT), false,
-  'BONE gained a Trial to bias');
+], 'the full-pool seed-versioned draw order changed at GOLD');
 
 const stoneIvory = summarizedPool([access('stone'), access('ivory')]);
 eq(stoneIvory, summarizedPool([access('ivory'), access('stone')]),
@@ -218,7 +193,7 @@ eq([
   pickRankedOutcomeWithRandom(stone, () => 0.6).id,
   pickRankedOutcomeWithRandom(stone, () => 0.8).id,
   pickRankedOutcomeWithRandom(stone, () => 0.999999999).id,
-], ['classic', 'classic', 'singlestrike', 'colshield', 'limited', 'limited'],
+], ['classic', 'classic', 'singlestrike', 'colshield', 'bounty', 'bounty'],
   'STONE weighted boundaries drifted');
 /* Seeded picks pin the deterministic stream as well as the permanent weights. */
 eq(pickRankedOutcome('ranked-pick-gate', [access('bone')]).id, 'classic',

@@ -103,6 +103,8 @@ const openingMatch: MatchRow = {
   p2_score: null,
   p1_rating_delta: null,
   p2_rating_delta: null,
+  curve_version: 1,
+  scoring_version: 1,
   next_die: diceStream(seed)(),
   last_move_at: '2026-08-26T12:00:00.000Z',
   modifier: 'classic',

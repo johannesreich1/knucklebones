@@ -1,4 +1,4 @@
-import { groupFill, boardGroup } from '../../core/ladder.ts';
+import { boardGroup, groupFill, inApex } from '../../core/ladder.ts';
 import {
   formatNumber,
   ladderGroupName,
@@ -18,6 +18,7 @@ import {
 import {
   ladderPage,
   ladderPageBefore,
+  activeRankedCurveVersion,
   myLadder,
   myStanding,
   type LadderRow,
@@ -66,11 +67,16 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
     virtual = null;
     listElement.innerHTML = '';
 
-    const [me, ladder, standing] = await Promise.all([myProfile(), myLadder(), myStanding()]);
+    const [me, ladder, standing, curveVersion] = await Promise.all([
+      myProfile(), myLadder(), myStanding(), activeRankedCurveVersion(),
+    ]);
     if (run !== showRevision || !isOnlinePanelCurrent('onLadder')) return;
+    if (curveVersion === null) return;
 
     const alive = () => run === showRevision && isOnlinePanelCurrent('onLadder');
-    const myGroup = ladder ? boardGroup(ladder.points, false) : null;
+    const myApex = !!ladder && !!standing
+      && inApex(ladder.points, standing.rank, standing.population, curveVersion);
+    const myGroup = ladder ? boardGroup(ladder.points, myApex, curveVersion) : null;
     /* Which row a mounted button is showing right now. A slot outlives any one
        item — a tombstone becomes a row, and a shifting board can re-seat it —
        so the tap has to read the CURRENT row rather than close over the first. */
@@ -188,8 +194,8 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
               return;
             }
             showFaceoff(row, me && ladder
-              ? { name: me.nickname, avatar: me.avatar ?? null, lad: ladder }
-              : null);
+              ? { name: me.nickname, avatar: me.avatar ?? null, lad: ladder, apex: myApex }
+              : null, undefined, curveVersion);
           });
           return button;
         },
@@ -205,7 +211,7 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
           element.className = 'lrow' + (isMe ? ' me' : '');
           element.removeAttribute('aria-hidden');
           element.tabIndex = 0;
-          const group = boardGroup(row.points, row.apex);
+          const group = boardGroup(row.points, row.apex, curveVersion);
           element.style.setProperty('--gc', `var(--g-${group.id})`);
           const groupName = ladderGroupName(group.id);
           element.setAttribute('aria-label', isMe
@@ -219,7 +225,7 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
           if (isMe) {
             const state = row.apex ? t('online', 'ladder.topOnePercent')
               : t('online', 'ladder.progress', {
-                percent: formatNumber(Math.round(groupFill(row.points) * 100)),
+                percent: formatNumber(Math.round(groupFill(row.points, curveVersion) * 100)),
               });
             element.innerHTML = `<span class="av"></span><span class="nmwrap"><span class="nm">${esc(row.nickname)}</span>`
               + `<span class="mesub"><b>${esc(groupName)}</b> · ${esc(state)} · ${recordHtml(row.wins, row.losses)}</span></span>`
@@ -233,13 +239,13 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
           paintAvatar(element.querySelector('.av') as HTMLElement, row.avatar, isMe ? 34 : 24);
         },
         lead: (row, previous, index) => {
-          const group = boardGroup(row.points, row.apex);
+          const group = boardGroup(row.points, row.apex, curveVersion);
           /* An unknown neighbour yields NO horizon. A cold landing has no
              previous row and is almost never a boundary; drawing one and taking
              it away is a visible 28px shift, while a label that arrives a
              moment late is not. */
           if (index > 0 && !previous) return null;
-          if (previous && boardGroup(previous.points, previous.apex) === group) return null;
+          if (previous && boardGroup(previous.points, previous.apex, curveVersion) === group) return null;
           const horizon = document.createElement('div');
           horizon.className = 'ghor' + (group.id === 'neon' ? ' apex' : '');
           horizon.style.setProperty('--gc', `var(--g-${group.id})`);

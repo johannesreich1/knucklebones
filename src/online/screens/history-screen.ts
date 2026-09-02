@@ -27,12 +27,20 @@ export function paintHistoryRow(element: HTMLElement, row: HistoryRow): void {
     ? formatDate(new Date(row.when), { day: 'numeric', month: 'short' })
     : '';
   const sign = row.delta > 0 ? '+' : '';
+  const signed = (value: number): string => `${value >= 0 ? '+' : ''}${formatNumber(value)}`;
+  const breakdown = row.scoringVersion === 2
+      && row.baseDelta != null && row.finishDelta != null
+    ? t('online', 'result.deltaBreakdown', {
+      base: signed(row.baseDelta), finish: signed(row.finishDelta),
+    })
+    : '';
   element.innerHTML =
     `<span class="hres">${row.result === 'win' ? t('common', 'record.win')
       : row.result === 'loss' ? t('common', 'record.loss') : t('common', 'record.draw')}</span>`
     + `<span class="nm">${esc(row.opponent)}</span>`
     + `<span class="hsc">${formatNumber(row.mine)}–${formatNumber(row.theirs)}</span>`
-    + `<span class="hd">${sign}${formatNumber(row.delta)}</span>`
+    + `<span class="hd"${breakdown ? ` title="${esc(breakdown)}" aria-label="${esc(breakdown)}"` : ''}>`
+    + `${sign}${formatNumber(row.delta)}${breakdown ? `<small>${esc(breakdown)}</small>` : ''}</span>`
     + `<span class="hwhen">${when}</span>`;
 }
 

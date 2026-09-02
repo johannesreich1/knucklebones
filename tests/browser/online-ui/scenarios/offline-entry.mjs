@@ -78,10 +78,28 @@ async function retryOnline(page) {
   await page.waitForTimeout(150);
 }
 
+async function cancelQueue(page, routes, stage) {
+  const blocker = await page.evaluate(() => {
+    const ask = document.getElementById('ovAsk');
+    return ask?.classList.contains('on') ? {
+      title: document.getElementById('askHead')?.textContent?.trim() ?? '',
+      body: document.getElementById('askBody')?.textContent?.trim() ?? '',
+    } : null;
+  });
+  if (blocker) throw new Error(`unexpected connection sheet before ${stage}: ${JSON.stringify({
+    blocker,
+    joinCalls: routes.joinCalls(),
+    signupCalls: routes.signupCalls(),
+    gameCenterModes: routes.gameCenterModes(),
+    identity: routes.identityState(),
+  })}`);
+  await page.click('#btnQueueCancel');
+}
+
 async function offlineDoorsProbe(page, routes) {
   const initialSignupCalls = routes.signupCalls();
 
-  await page.click('#btnQueueCancel');
+  await cancelQueue(page, routes, 'Home offline entry');
   await page.waitForSelector('#ovStart.on', { timeout: 15000 });
   await page.evaluate(() => { globalThis.__kbConnectionOnline = false; });
   await page.click('#btnOnline');
@@ -93,7 +111,7 @@ async function offlineDoorsProbe(page, routes) {
     signupCalls: routes.signupCalls(),
   };
 
-  await page.click('#btnQueueCancel');
+  await cancelQueue(page, routes, 'Next duel offline entry');
   await page.waitForSelector('#ovStart.on', { timeout: 15000 });
   await page.evaluate((report) => {
     document.getElementById('ovStart').classList.remove('on');
@@ -112,7 +130,7 @@ async function offlineDoorsProbe(page, routes) {
     signupCalls: routes.signupCalls(),
   };
 
-  await page.click('#btnQueueCancel');
+  await cancelQueue(page, routes, 'identity transport failure');
   await page.waitForSelector('#ovStart.on', { timeout: 15000 });
   routes.setIdentityStatusUnavailable(true);
   await page.click('#btnOnline');
@@ -158,6 +176,21 @@ async function offlineDoorsProbe(page, routes) {
     signupCalls: routes.signupCalls(),
   };
 
+  const joinsBeforeIncompatible = routes.joinCalls();
+  routes.setJoinIncompatible(true);
+  const incompatibleDeadline = Date.now() + 7000;
+  while (routes.joinCalls() === joinsBeforeIncompatible && Date.now() < incompatibleDeadline) {
+    await page.waitForTimeout(50);
+  }
+  await waitForOfflineOutcome(page);
+  const incompatibleClient = {
+    ...await readOutcome(page, routes),
+    joinsBeforeIncompatible,
+    joinsAfterIncompatible: routes.joinCalls(),
+  };
+  routes.setJoinIncompatible(false);
+  if (incompatibleClient.askVisible) await page.click('#btnAskNo');
+
   return {
     initialSignupCalls,
     homeEntry,
@@ -168,6 +201,7 @@ async function offlineDoorsProbe(page, routes) {
     transientRetry,
     queueFailure,
     queueRetry,
+    incompatibleClient,
   };
 }
 
@@ -190,6 +224,21 @@ function isConnectionSheet(state, expectedSignupCalls) {
   return state?.askVisible === true
     && state.title === 'CAN\u2019T CONNECT'
     && state.body === 'Online play is unavailable right now. Check your connection, then try again.'
+    && state.retry === 'Try again'
+    && state.close === 'Close'
+    && state.painted === true
+    && state.centreHit === true
+    && state.modal === 'true'
+    && state.authVisible === false
+    && state.queueVisible === false
+    && state.homeOn === true
+    && state.signupCalls === expectedSignupCalls;
+}
+
+function isUpdateRequiredSheet(state, expectedSignupCalls) {
+  return state?.askVisible === true
+    && state.title === 'UPDATE REQUIRED'
+    && state.body === 'This build cannot play the active ranked rules. Update Knucklebones, then try again.'
     && state.retry === 'Try again'
     && state.close === 'Close'
     && state.painted === true
@@ -242,5 +291,10 @@ export async function runOfflineEntryScenarios(suite) {
     && result.queueRetry.signupCalls === result.initialSignupCalls,
   'Retry after a matchmaking connection failure did not reuse the stored session',
   result?.queueRetry);
+  check(isUpdateRequiredSheet(result?.incompatibleClient, result?.initialSignupCalls)
+    && result.incompatibleClient.joinsAfterIncompatible
+      > result.incompatibleClient.joinsBeforeIncompatible,
+  'an incompatible ranked client silently bounced Home instead of explaining the required update',
+  result?.incompatibleClient);
   check(offline.errs.length === 0, 'page errors during offline ranked entry', offline.errs);
 }

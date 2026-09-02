@@ -1,4 +1,4 @@
-// The avatar: a die face and a hue, "die:5:cy". 36 identities, no storage
+// The avatar: a die face and a hue, "die:5:cy". 42 identities, no storage
 // bucket, no moderation, and no user-generated-image obligations at review.
 // The string shape is the seam: a later value can be "img:<path>".
 //
@@ -7,8 +7,21 @@
 // in the online chunk. The account panel and the avatar picker import from
 // here; there is exactly one reading of the avatar string.
 import { ME } from '../core/rules.ts';
-import { HUE_IDS } from '../state.ts';
+import { AVATAR_HUES, parseAvatar, type AvatarHue } from '../profile-avatar.ts';
 import { makeDie } from './die.ts';
+
+export {
+  DEFAULT_AVATAR,
+  AVATAR_FACES,
+  AVATAR_HUES,
+  canonicalProfileAvatar,
+  isProfileAvatar,
+  parseAvatar,
+  profileAvatar,
+  type AvatarFace,
+  type AvatarHue,
+  type ProfileAvatar,
+} from '../profile-avatar.ts';
 
 /* raw hue tokens, never --p1/--p2: a picked avatar keeps its colour whatever
    the Settings pickers do to the duel pair */
@@ -19,14 +32,9 @@ import { makeDie } from './die.ts';
    now, so a hue added to DUELHUES is offered here by construction. Every id has
    a matching --<id> token in foundations/tokens.css; that pairing is what the
    registry means. */
-export const AV_HUES: Record<string, string> =
-  Object.fromEntries(HUE_IDS.map((id) => [id, `var(--${id})`]));
-export const DEFAULT_AVATAR = 'die:5:cy';
-
-export function parseAvatar(v: string | null | undefined): { face: number; hue: string } {
-  const m = /^die:([1-6]):([a-z]+)$/.exec(v ?? '');
-  return m && AV_HUES[m[2]] ? { face: +m[1], hue: m[2] } : { face: 5, hue: 'cy' };
-}
+export const AV_HUES = Object.fromEntries(
+  AVATAR_HUES.map((id) => [id, `var(--${id})`]),
+) as Record<AvatarHue, string>;
 
 /* one die, tinted — --dc is what the die's pips and border read for colour */
 export function paintAvatar(slot: HTMLElement, v: string | null | undefined, size = 74): void {

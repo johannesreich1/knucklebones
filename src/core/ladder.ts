@@ -10,6 +10,17 @@
 // for anyone who keeps playing. What it keeps from Elo is the one genuinely
 // good idea: what a match is worth depends on who you played.
 
+import {
+  APEX_SHARE,
+  LADDER_CURVE_VERSION,
+  apexForCurve,
+  groupsForCurve,
+  type BotShape,
+  type Group,
+  type LadderCurveVersion,
+} from './ladder-groups.ts';
+export * from './ladder-groups.ts';
+
 /* ---- points ------------------------------------------------------------ */
 
 /* Scale relative to classic Elo. K and the logistic denominator BOTH scale
@@ -62,11 +73,93 @@ export interface LadderRow { points: number; peak: number; wins: number; losses:
    lazily — and each used to carry its own copy of this arithmetic. The reads
    and writes stay local to each (they are five lines of client code); the
    bookkeeping that can silently disagree lives here, once, with a test. */
-export interface Settled { da: number; db: number; a: LadderRow; b: LadderRow }
+export const LADDER_FORMULA_V1 = 1 as const;
+export const LADDER_FORMULA_V2 = 2 as const;
+export type LadderFormulaVersion = typeof LADDER_FORMULA_V1 | typeof LADDER_FORMULA_V2;
+export const LADDER_FORMULA_VERSION: LadderFormulaVersion = LADDER_FORMULA_V2;
+export const MIN_FINISH_TRANSFER = 2;
+export const MAX_FINISH_TRANSFER = 7;
 
-export function settle(a: LadderRow, b: LadderRow, aScore: Score): Settled {
-  const da = delta(a.points, b.points, aScore);
-  const db = delta(b.points, a.points, (1 - aScore) as Score);
+export interface DeltaComponents {
+  /** Opponent-strength delta before the finish transfer. */
+  base: number;
+  /** Signed, actually funded finish transfer. */
+  finish: number;
+  /** The signed settlement authority persisted as the match delta. */
+  total: number;
+}
+
+export type MatchFinish =
+  | { kind: 'normal'; aScore: number; bScore: number }
+  | { kind: 'forced' };
+
+export interface SettleOptions {
+  /* Omit only for a legacy/formula-v1 settle. Formula v2 terminal paths pass
+     either authoritative final scores or the forced-outcome discriminator. */
+  finish?: MatchFinish;
+}
+
+export interface Settled {
+  formulaVersion: LadderFormulaVersion;
+  /** Backwards-compatible aliases for each seat's total signed delta. */
+  da: number;
+  db: number;
+  aDelta: DeltaComponents;
+  bDelta: DeltaComponents;
+  a: LadderRow;
+  b: LadderRow;
+}
+
+/** Requested transfer for a normally completed decisive board. Final scores
+ * are authoritative non-negative integers; a draw is not a decisive finish. */
+export function requestedFinishTransfer(winnerScore: number, loserScore: number): number {
+  if (!Number.isInteger(winnerScore) || !Number.isInteger(loserScore)
+    || winnerScore < 0 || loserScore < 0 || winnerScore <= loserScore) {
+    throw new RangeError('A decisive finish requires non-negative integer scores and winner > loser.');
+  }
+  const scoreGap = winnerScore - loserScore;
+  const marginShare = scoreGap / Math.max(1, winnerScore);
+  return Math.min(
+    MAX_FINISH_TRANSFER,
+    Math.max(MIN_FINISH_TRANSFER, MIN_FINISH_TRANSFER + Math.round(5 * marginShare)),
+  );
+}
+
+function requestedTransfer(aScore: Score, finish: MatchFinish | undefined): number {
+  if (aScore === 0.5 || !finish) return 0;
+  if (finish.kind === 'forced') return MAX_FINISH_TRANSFER;
+  const winner = aScore === 1 ? finish.aScore : finish.bScore;
+  const loser = aScore === 1 ? finish.bScore : finish.aScore;
+  return requestedFinishTransfer(winner, loser);
+}
+
+export function settle(
+  a: LadderRow,
+  b: LadderRow,
+  aScore: Score,
+  options: SettleOptions = {},
+): Settled {
+  const aBase = delta(a.points, b.points, aScore);
+  const bScore = (1 - aScore) as Score;
+  const bBase = delta(b.points, a.points, bScore);
+  const request = requestedTransfer(aScore, options.finish);
+
+  let aFinish = 0;
+  let bFinish = 0;
+  if (request > 0) {
+    const loser = aScore === 1 ? b : a;
+    const loserBase = aScore === 1 ? bBase : aBase;
+    const lossCapRoom = Math.max(0, MAX_LOSS - Math.abs(loserBase));
+    const floorRoom = Math.max(0, loser.points + loserBase);
+    const applied = Math.min(request, lossCapRoom, floorRoom);
+    aFinish = aScore === 1 ? applied : -applied;
+    bFinish = -aFinish;
+  }
+
+  const aDelta = Object.freeze({ base: aBase, finish: aFinish, total: aBase + aFinish });
+  const bDelta = Object.freeze({ base: bBase, finish: bFinish, total: bBase + bFinish });
+  const da = aDelta.total;
+  const db = bDelta.total;
   const step = (row: LadderRow, d: number, score: Score): LadderRow => {
     const points = applyDelta(row.points, d);
     return {
@@ -77,88 +170,28 @@ export function settle(a: LadderRow, b: LadderRow, aScore: Score): Settled {
       draws: row.draws + (score === 0.5 ? 1 : 0),
     };
   };
-  return { da, db, a: step(a, da, aScore), b: step(b, db, (1 - aScore) as Score) };
+  return {
+    formulaVersion: options.finish ? LADDER_FORMULA_V2 : LADDER_FORMULA_V1,
+    da,
+    db,
+    aDelta,
+    bDelta,
+    a: step(a, da, aScore),
+    b: step(b, db, bScore),
+  };
 }
-
-/* ---- groups --------------------------------------------------------- */
-
-/* How a bot of this group plays. The shape belongs to the GROUP, not to the
-   player it faces: a STONE bot is genuinely simpler than a GOLD bot, whoever
-   sits across the board — the label IS the strength. Every bot remains a
-   calibrated underdog; "stronger" approaches an even match, never crosses it.
-   The first ladder derived difficulty from the human's percentile instead,
-   which made a 98-point bot and a 784-point bot play identically in the same
-   session — the rank badge was theater, and it read as "STONE bots are too strong".
-     depth — expectimax plies (core/ai.ts searchRoot)
-     risk  — RISK_W: how much it fears what you can destroy (0 = blind)
-     oppW  — OPP_W: how much of YOUR board its eval sees. 0 is a builder that
-             never aims a destroy; NEGATIVE is the floor's floor — a bot that
-             prefers placements which SPARE your dice. Passivity is the one
-             below-random weakness that reads as a beginner rather than a
-             drunk, and it is what lets a brand-new player actually win
-             (decided 2026-08-21: "if I lose 50% in the beginning, I quit").
-     slip  — share of moves played as a random build when the bot is p2.
-     openerSlip — the corresponding share when the bot opens as p1. For the
-             negative-oppW STONE floor, botMove restricts that random choice
-             to columns with the least opponent score loss, so "blunder"
-             cannot reverse the group's explicit promise to spare the player.
-             The same safe-slip adjustment applies whenever a bot opens,
-             cancelling that seat advantage without changing who opens. */
-export interface BotShape {
-  depth: number;
-  risk: number;
-  oppW: number;
-  slip: number;
-  openerSlip: number;
-}
-
-export interface Group {
-  id: string;
-  floor: number;
-  width: number;   // 0 for the apex, which has no ceiling
-  bot: BotShape;
-}
-
-/* Widths grow ~×1.35. Equal widths were the first proposal and the measurement
-   killed them: every group took 64–77 games, so leaving STONE cost the same as
-   reaching OBSIDIAN. Two independent things make climbing harder now — a match
-   pays less when you outrank your opponent, and a group costs more than the
-   last. Widths stay round numbers out of habit rather than need — the ring is
-   one continuous fill now, so nothing has to divide evenly into it.
-   Bot shapes: tuned by simulation (tests/botbench.test.ts keeps the curve
-   honest). A live 0–0 first-match loss on 2026-08-26 exposed two false
-   assumptions in the old bench: it always seated the bot as AI/p2, and its
-   supposed stacking newcomer was actually minimizing the bot's score. The
-   replacement uses the real weighted outcome pools, a genuinely seat-neutral
-   builder, and both legal seat orders. From the human-opening seat, measured
-   human outcome share (draws split) is about
-   79 / 62 / 57 / 54 / 53 / 52 / 52% from STONE through NEON. When a
-   bot opens, safe slips keep every group on the human-favoured
-   side too. */
-export const GROUPS: readonly Group[] = [
-  { id: 'stone',    floor: 0,    width: 300,  bot: { depth: 1, risk: 0,    oppW: -0.5, slip: 0.70, openerSlip: 0.70 } },
-  { id: 'bone',     floor: 300,  width: 420,  bot: { depth: 1, risk: 0,    oppW: 0, slip: 0.70, openerSlip: 0.70 } },
-  { id: 'ivory',    floor: 720,  width: 540,  bot: { depth: 1, risk: 0.25, oppW: 0.05, slip: 0.60, openerSlip: 0.60 } },
-  { id: 'silver',   floor: 1260, width: 750,  bot: { depth: 1, risk: 0.6,  oppW: 1, slip: 0.72, openerSlip: 0.675 } },
-  { id: 'gold',     floor: 2010, width: 990,  bot: { depth: 2, risk: 1.2,  oppW: 1, slip: 0.68, openerSlip: 0.67 } },
-  { id: 'obsidian', floor: 3000, width: 1350, bot: { depth: 3, risk: 1.2,  oppW: 1, slip: 0.68, openerSlip: 0.66 } },
-  { id: 'neon',     floor: 4350, width: 0,    bot: { depth: 4, risk: 1.2,  oppW: 1, slip: 0.66, openerSlip: 0.65 } },
-];
-
-/* NEON is a POSITION, not a threshold. An always-climbing ladder is a ratchet:
-   given enough games everyone arrives at the top — 735 of 900 simulated players
-   cleared a fixed apex in 600 games, at which point it is a participation
-   certificate. Its `floor` above is only a display fallback for a population
-   too small to have a 1%. The real test is inApex(). */
-export const APEX = GROUPS[GROUPS.length - 1];
-export const APEX_SHARE = 0.01;
 
 /* Is this player inside the apex? `rank` is 1-based, `population` the number of
    rated players in the season. A tiny population has no meaningful 1%, so the
    point floor stands in until there are enough players for a position to mean
    something. */
-export function inApex(points: number, rank: number, population: number): boolean {
-  if (population < 100) return points >= APEX.floor;
+export function inApex(
+  points: number,
+  rank: number,
+  population: number,
+  version: LadderCurveVersion = LADDER_CURVE_VERSION,
+): boolean {
+  if (population < 100) return points >= apexForCurve(version).floor;
   return rank <= Math.max(1, Math.floor(population * APEX_SHARE));
 }
 
@@ -166,10 +199,16 @@ export function inApex(points: number, rank: number, population: number): boolea
    flag the board RPC resolves can grant it — a player whose points cross the
    apex's fallback floor without holding a top-1% rank is shown in the group
    below: points can outgrow OBSIDIAN, but only rank can leave it. */
-export function boardGroup(points: number, apex: boolean): Group {
-  if (apex) return APEX;
-  const g = groupOf(points);
-  return g === APEX ? GROUPS[GROUPS.length - 2] : g;
+export function boardGroup(
+  points: number,
+  apex: boolean,
+  version: LadderCurveVersion = LADDER_CURVE_VERSION,
+): Readonly<Group> {
+  const groups = groupsForCurve(version);
+  const curveApex = groups[groups.length - 1];
+  if (apex) return curveApex;
+  const g = groupOf(points, version);
+  return g === curveApex ? groups[groups.length - 2] : g;
 }
 
 /* A group is the WHOLE rank: there are no divisions inside it.
@@ -181,16 +220,23 @@ export function boardGroup(points: number, apex: boolean): Group {
    read them: matchmaking pairs on points, bot difficulty on the bot's own
    group, the ladder and the apex on points and rank. */
 
-export function groupOf(points: number): Group {
-  let found = GROUPS[0];
-  for (const g of GROUPS) if (points >= g.floor) found = g;
+export function groupOf(
+  points: number,
+  version: LadderCurveVersion = LADDER_CURVE_VERSION,
+): Readonly<Group> {
+  const groups = groupsForCurve(version);
+  let found = groups[0];
+  for (const g of groups) if (points >= g.floor) found = g;
   return found;
 }
 
 /* How far through the group, 0..1. This is the ring: one continuous fill that
    moves on every single match, which is the feedback a rare promotion is not. */
-export function groupFill(points: number): number {
-  const g = groupOf(points);
+export function groupFill(
+  points: number,
+  version: LadderCurveVersion = LADDER_CURVE_VERSION,
+): number {
+  const g = groupOf(points, version);
   if (!g.width) return 1;
   return Math.min(1, Math.max(0, (points - g.floor) / g.width));
 }
@@ -198,14 +244,21 @@ export function groupFill(points: number): number {
 /* The ring paints the DISPLAY league, not merely the points fallback. NEON is
    awarded by position once the season is large enough, so an apex player may
    sit below 4,350 points and still has no bounded group left to traverse. */
-export function groupRingFill(points: number, apex: boolean): number {
-  return apex ? 1 : groupFill(points);
+export function groupRingFill(
+  points: number,
+  apex: boolean,
+  version: LadderCurveVersion = LADDER_CURVE_VERSION,
+): number {
+  return apex ? 1 : groupFill(points, version);
 }
 
 /* Points still owed to the next group. 0 in the apex, which has nothing above
    it — and which is a POSITION anyway, so no number could name the distance. */
-export function toNext(points: number): number {
-  const g = groupOf(points);
+export function toNext(
+  points: number,
+  version: LadderCurveVersion = LADDER_CURVE_VERSION,
+): number {
+  const g = groupOf(points, version);
   if (!g.width) return 0;
   return Math.ceil(g.floor + g.width - points);
 }
@@ -226,11 +279,15 @@ export type PeakState =
   | { kind: 'ahead'; fill: number }
   | { kind: 'above'; group: Group };
 
-export function peakState(points: number, peak: number): PeakState {
+export function peakState(
+  points: number,
+  peak: number,
+  version: LadderCurveVersion = LADDER_CURVE_VERSION,
+): PeakState {
   if (peak <= points) return { kind: 'at' };
-  const here = groupOf(points), there = groupOf(peak);
+  const here = groupOf(points, version), there = groupOf(peak, version);
   if (there !== here) return { kind: 'above', group: there };
-  return { kind: 'ahead', fill: groupFill(peak) };
+  return { kind: 'ahead', fill: groupFill(peak, version) };
 }
 
 /* An unbounded positional league has no honest scale on which to place the
@@ -240,8 +297,9 @@ export function groupRingPeakState(
   points: number,
   peak: number,
   apex: boolean,
+  version: LadderCurveVersion = LADDER_CURVE_VERSION,
 ): PeakState {
-  return apex ? { kind: 'at' } : peakState(points, peak);
+  return apex ? { kind: 'at' } : peakState(points, peak, version);
 }
 
 /* ---- the bot's group is its strength ------------------------------------ */
@@ -251,7 +309,10 @@ export function groupRingPeakState(
    rank, and those bots play their rank. Bots' points move through real
    settles, so a bot whose shape loses points sinks toward the group that
    plays like it — the label stays honest by construction. */
-export const botShapeAt = (points: number): BotShape => groupOf(points).bot;
+export const botShapeAt = (
+  points: number,
+  version: LadderCurveVersion = LADDER_CURVE_VERSION,
+): BotShape => groupOf(points, version).bot;
 
 /* How far from the human a BACKFILL bot may be: the human's own group width.
    The general matchBand below must open wide when the ladder is sparse or no
@@ -259,9 +320,13 @@ export const botShapeAt = (points: number): BotShape => groupOf(points).bot;
    for, so it has no reason to arrive from two groups up. This cap is what
    keeps "STONE bots are easy" true in STONE: without it a 148-point player
    sat across 784-point IVORY bots (live, 2026-08-20). */
-export function botPairBand(points: number): number {
-  const g = groupOf(points);
-  return g.width || GROUPS[GROUPS.length - 2].width;   // the apex borrows OBSIDIAN's
+export function botPairBand(
+  points: number,
+  version: LadderCurveVersion = LADDER_CURVE_VERSION,
+): number {
+  const groups = groupsForCurve(version);
+  const g = groupOf(points, version);
+  return g.width || groups[groups.length - 2].width;   // the apex borrows OBSIDIAN's
 }
 
 /* Matchmaking (humans): a crowded band can stay tight, a sparse one has to

@@ -5,6 +5,7 @@ import type { RankedRuneDeal } from '../../core/ranked-action-types.ts';
 import type { JoinResult, MatchRow } from '../api/match-api.ts';
 import type { ProgressionLookup } from '../api/ranked-progression-api.ts';
 import type { S } from '../../state.ts';
+import type { RankedEntryKind } from '../../progression-status-cache.ts';
 
 export type MatchNames = Extract<JoinResult, { status: 'matched' }>['names'];
 
@@ -77,6 +78,11 @@ export interface FinishReport {
   my: number;
   their: number;
   delta: number | null;
+  /** Server-snapshotted v2 settlement breakdown. V1 rows omit both parts. */
+  baseDelta?: number | null;
+  finishDelta?: number | null;
+  scoringVersion?: number;
+  entryKind?: RankedEntryKind;
   opp: string;
   /** Present only when a server-name fallback must remain locale-live. */
   opponentName?: () => string;

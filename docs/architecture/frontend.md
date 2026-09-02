@@ -216,6 +216,32 @@ not need a framework store, event bus, or dependency-injection container.
   Offline setup treats a missing snapshot as an empty collection, and sign-out
   or account change clears/swaps the active snapshot before another account can
   read it. Durable unseen/reward state remains server-owned.
+- `src/profile-avatar.ts` is the pure avatar vocabulary shared by eager Home,
+  the lazy profile picker, icon generation, and native reconciliation. It
+  derives 42 face/hue values from `HUE_IDS`; `die:5:cy` maps to the primary
+  launcher and the other 41 map to canonical `die-<face>-<hue>` ids. Do not
+  grow another avatar or launcher registry in a screen.
+- `src/profile-cache.ts` scopes cached profile presentation to the Supabase
+  account id. An unscoped legacy entry may paint Home once, but it cannot drive
+  a launcher change or merge into a newly authenticated account. A profile
+  response re-checks the active session before publishing; sign-out and a
+  detected account replacement clear the cache and request the primary icon
+  before the next account's row may repaint either surface.
+- `src/native/app-icon.ts` is the web-safe coordinator over the injected
+  `Capacitor.Plugins.AppIcon` capability. Its Settings choice is rendered only
+  when that bridge exists in an installed iOS or Android app. It is off by
+  default and persisted per installation, outside the account preferences and
+  Supabase; web/PWA/widget builds neither show the control nor vary their fixed
+  primary icon. Native mutations are serialized by revision: a request already
+  inside the OS may finish, but every superseded request is ignored and the
+  newest confirmed avatar or reset establishes the final icon. Picker previews
+  and failed profile writes never enter that queue. Successful profile saves
+  and owner-scoped reads request the confirmed avatar only while the choice is
+  enabled. Explicit Off, sign-out, and account replacement restore primary;
+  while disabled, boot requests primary once per startup, including to repair
+  installs exposed to the short-lived automatic behaviour. Unsupported
+  bridges, rejected changes, and state mismatches remain cosmetic results and
+  never roll back server or cache state.
 - The result's reward card is a door, not a leaflet: it names the new rune in
   two lines and opens the SHARED library entry (`ui/library.ts openEntry`) that
   the in-game badge and the profile collection open. It covers the result

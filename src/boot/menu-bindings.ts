@@ -20,6 +20,7 @@ import {
 } from '../state.ts';
 import { saveStats } from '../persist.ts';
 import {
+  RUNE_TRIAL_FORMAT,
   RUNE_TRIAL_PICK,
   localPoolAccess,
   modePickAvailable,
@@ -27,9 +28,14 @@ import {
 } from '../local-options.ts';
 import {
   collectedRuneIds,
-  confirmedRankedPoolTier,
+  readRuneCollectionSnapshot,
   subscribeRuneCollection,
 } from '../rune-collection-cache.ts';
+import {
+  confirmedLadderCurveVersion,
+  confirmedRankedOutcomeEntitlements,
+  subscribeProgressionStatus,
+} from '../progression-status-cache.ts';
 import { newGame, startLocal } from '../flow/game.ts';
 import { requestLeave, leavingForfeits } from '../flow/leave.ts';
 import { syncSettingsUI, toMenu } from '../flow/menu.ts';
@@ -54,6 +60,9 @@ import { bindLearnPageBack } from '../ui/learn-page.ts';
 import { tap } from '../ui/tap.ts';
 import { isEmbed } from '../ui/embed.ts';
 import { hueLabel } from '../ui/hue.ts';
+import { isProfileAvatar } from '../profile-avatar.ts';
+import { readProfileCache } from '../profile-cache.ts';
+import { setProfileAppIconEnabled } from '../native/app-icon.ts';
 import { bindOnlineDoors } from './online-door.ts';
 import { bindPickerRow, eventButton } from './picker-row.ts';
 
@@ -134,11 +143,19 @@ export function bindMenus(root: HTMLElement): void {
 
   let syncModePicker = (): void => undefined;
   let syncSpellPicker = (): void => undefined;
-  /* The one roster a local setup may draw from, rebuilt on demand: the cache
-     carries both the collection and the confirmed tier, and subscribeRuneCollection
-     below re-syncs the rows the moment either changes. */
-  const localAccess = (mode: Mode = S.mode) =>
-    localPoolAccess(mode, collectedRuneIds(), confirmedRankedPoolTier());
+  /* The one roster a local setup may draw from, rebuilt on demand: the rune
+     cache owns the v1 compatibility tier/account while progression status owns
+     v2 per-outcome entitlements. Either publisher re-syncs the same rows. */
+  const localAccess = (mode: Mode = S.mode) => {
+    const collection = readRuneCollectionSnapshot();
+    return localPoolAccess(
+      mode,
+      collection?.collected ?? [],
+      collection?.poolTier ?? null,
+      confirmedRankedOutcomeEntitlements(collection?.accountId),
+      confirmedLadderCurveVersion(),
+    );
+  };
   const normalizeLocalChoice = (mode: Mode): void => {
     const collected = collectedRuneIds();
     const choice = S.localChoices[mode];
@@ -235,13 +252,19 @@ export function bindMenus(root: HTMLElement): void {
     }
   }, (item) => {
     const selected = Number(item.v);
-    const enabled = modePickAvailable(selected, localAccess());
+    const access = localAccess();
+    const enabled = modePickAvailable(selected, access);
     if (enabled) return { enabled };
     /* An ordinary mode is held by the ladder alone; only Rune Ritual can also
        be waiting on a collection, so only it needs the two-reason split. */
-    if (selected !== RUNE_TRIAL_PICK) return { enabled, reason: t('game', 'modeLock.reachBone') };
-    const collected = collectedRuneIds();
-    const reachedTrial = confirmedRankedPoolTier() === 'ivory' || collected.length > 0;
+    if (selected !== RUNE_TRIAL_PICK) {
+      const target = confirmedLadderCurveVersion() === 2
+        && (item.id === 'rowswitch' || item.id === 'limited')
+        ? 'modeLock.reachGold'
+        : 'modeLock.reachBone';
+      return { enabled, reason: t('game', target) };
+    }
+    const reachedTrial = access.entitlementIds?.includes(RUNE_TRIAL_FORMAT) ?? false;
     return { enabled, reason: t('game', reachedTrial
       ? 'runeTrial.lockCollectThree'
       : 'runeTrial.lockTrialReachIvory') };
@@ -257,7 +280,7 @@ export function bindMenus(root: HTMLElement): void {
     }
     const collected = collectedRuneIds();
     const enabled = runePickAvailable(S.mode, item.v, collected);
-    const reachedTrial = confirmedRankedPoolTier() === 'ivory' || collected.length > 0;
+    const reachedTrial = localAccess().entitlementIds?.includes(RUNE_TRIAL_FORMAT) ?? false;
     const random = item.v === 'random' || item.v === 'random2';
     const reason = enabled ? undefined : random
       ? t('game', 'runeTrial.lockCollectTwo')
@@ -275,6 +298,12 @@ export function bindMenus(root: HTMLElement): void {
   bindSegment('#timerSeg', 't', (value) => { S.timer = oneOf(TIMERS, Number(value), S.timer); });
   bindSegment('#seatSeg', 'seat', (value) => { S.seat = oneOf(SEATS, value, S.seat); });
   bindSegment('#sndSeg', 's', (value) => { S.sound = value === '1'; }, true);
+  bindSegment('#appIconSeg', 'ai', (value) => {
+    const cached = readProfileCache();
+    const avatar = cached?.accountId && isProfileAvatar(cached.avatar)
+      ? cached.avatar : undefined;
+    void setProfileAppIconEnabled(value === '1', avatar);
+  });
   bindSegment('#faceSeg', 'f', (value) => { S.numerals = value === 'nums'; }, true);
 
   huePicker('#p1Pick', (hue) => { S.p1Hue = hue; });
@@ -283,6 +312,7 @@ export function bindMenus(root: HTMLElement): void {
   syncSettingsUI();
   syncPracticePicks();
   subscribeRuneCollection(() => { normalizeLocalChoice(S.mode); syncPracticePicks(); saveStats(); });
+  subscribeProgressionStatus(() => { normalizeLocalChoice(S.mode); syncPracticePicks(); saveStats(); });
   bindSegment('#cbSeg', 'b', (value) => { S.colorblind = value === '1'; }, true);
   bindSegment('#motionSeg', 'rm', (value) => { S.reducedMotion = value === '1'; }, true);
 

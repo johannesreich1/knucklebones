@@ -888,9 +888,9 @@ replacement and produces no new-reward reveal. Collections start empty for
 new and existing players; Trial loans all six precisely so collection size
 cannot change ranked options.
 
-#### Decided successor CLAIM reward — not shipped
+#### Implemented CLAIM reward — staged with progression v2
 
-The future ranked progression target deliberately changes only the collection
+Progression v2 deliberately changes only the collection
 reward, not the loan or cast rules. One of the common three offered cards is
 marked **CLAIM** before both private choices. The server first snapshots the
 offer, then chooses one of its three slots uniformly with a domain-separated
@@ -912,15 +912,15 @@ player after a win. It never reveals the opponent's ownership.
 The reward write remains server-authoritative, versioned, idempotent, and in the
 same atomic settlement as the match. The client never submits the mark or claims
 that it selected it. Existing collections survive cutover unchanged. A
-dedicated successor capability distinct from current `rune_trial_v1` gates the
-format for both human participants; an incompatible human pairing excludes
+dedicated `rune_trial_claim_v2` capability distinct from `rune_trial_v1` gates
+the format for both human participants; an incompatible human pairing excludes
 Trial, while a target-version bot is capable. The immutable match reward
 version wins over deployment time: an already-active v1 Trial grants the
 selected rune, and a CLAIM Trial cannot start for a client unable to render its
 mark. The exact coupon-collector pacing, expected games, OBSIDIAN distribution,
 and reason for retaining a one-to-three-rune long tail are in
-`docs/LADDER.md §7`. Until that versioned target ships, the selected-rune reward
-in the preceding paragraph is the runtime contract.
+`docs/LADDER.md §7`. Until production activates curve v2, the selected-rune
+reward in the preceding paragraph remains the production runtime contract.
 
 Offline CPU and local two-player Trial still grant no collection reward and
 therefore receive no CLAIM mark. The shared selector accepts the ranked mark as

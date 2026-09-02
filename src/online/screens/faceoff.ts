@@ -1,4 +1,8 @@
-import { boardGroup } from '../../core/ladder.ts';
+import {
+  boardGroup,
+  type LadderCurveVersion,
+} from '../../core/ladder.ts';
+import { confirmedLadderCurveVersion } from '../../progression-status-cache.ts';
 import { formatNumber, ladderGroupName, subscribeLocale, t } from '../../i18n/index.ts';
 import { paintAvatar } from '../../ui/avatar.ts';
 import { loaderDie } from '../../ui/loader.ts';
@@ -17,6 +21,7 @@ export interface MySide {
   name: string;
   avatar: string | null;
   lad: Ladder;
+  apex: boolean;
 }
 
 let paintOpenFaceoff: (() => void) | null = null;
@@ -26,9 +31,10 @@ export function showFaceoff(
   row: LadderRow,
   mine: MySide | null,
   onClose?: () => void,
+  curveVersion: LadderCurveVersion = confirmedLadderCurveVersion(),
 ): void {
-  const group = boardGroup(row.points, row.apex);
-  const myGroup = mine ? boardGroup(mine.lad.points, false) : null;
+  const group = boardGroup(row.points, row.apex, curveVersion);
+  const myGroup = mine ? boardGroup(mine.lad.points, mine.apex, curveVersion) : null;
   const myGames = mine ? mine.lad.wins + mine.lad.losses + mine.lad.draws : 0;
   const rate = (wins: number, games: number): string => games ? percent(wins / games) : '–';
   const stat = (cls: string, theirs: string, ours?: string | false | null): string =>

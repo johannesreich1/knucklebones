@@ -39,6 +39,8 @@ export const frGame = {
   home: {
     notSignedIn: 'NON CONNECTÉ',
     playRanked: 'Partie classée',
+    weeklyChallenge: 'Défi de la semaine · {{mode}}',
+    weeklyChallengeComplete: 'Semaine terminée ✓ · {{mode}}',
     ladder: 'Classement',
     settings: 'Paramètres',
     practiceOffline: 'Jouer hors ligne',
@@ -209,6 +211,7 @@ export const frGame = {
   },
   modeLock: {
     reachBone: 'Atteignez OS pour débloquer ce mode contre l’IA.',
+    reachGold: 'Atteignez OR pour débloquer ce mode contre l’IA.',
   },
   runeTrial: {
     choosePrompt: 'Choisissez une rune — votre adversaire ne peut pas la voir',
@@ -222,6 +225,9 @@ export const frGame = {
     revealPair: 'Les deux choix sont confirmés',
     revealed: 'Runes révélées',
     pickClock: 'SECONDES POUR CHOISIR',
+    claim: 'CLAIM',
+    claimOwned: 'ACQUISE',
+    claimNew: 'NOUVELLE',
   },
   runes: {
     ariaCommitted: '{{player}} : {{name}} — {{blurb}} Engagée — choisissez une colonne marquée.',

@@ -2,8 +2,13 @@
 // choices and deterministic timeout fill; this controller owns only the one
 // local choice surface and reconnect-safe waiting loop.
 import { RUNE_TRIAL_FORMAT } from '../../core/ranked-outcomes.ts';
+import {
+  readRuneTrialClaimSnapshot,
+  type RuneTrialClaimSnapshot,
+} from '../../core/rune-trial-offer.ts';
 import { spellById, type SpellSpec } from '../../core/spells.ts';
 import { t } from '../../i18n/index.ts';
+import { readRuneCollectionSnapshot } from '../../rune-collection-cache.ts';
 import { cancelTrialSelection, requestTrialRuneChoice } from '../../ui/trial-select.ts';
 import {
   autoSelectRune,
@@ -37,6 +42,8 @@ type ChoiceRace =
 
 async function chooseBeforeDeadline(
   offer: readonly SpellSpec[],
+  claim: RuneTrialClaimSnapshot | null,
+  claimOwned: boolean | undefined,
   pairing: { me: DialSide; foe: DialSide } | undefined,
   deadlineValue: string | null,
   wake: () => Promise<void>,
@@ -51,6 +58,7 @@ async function chooseBeforeDeadline(
        one that will actually be acted on. */
     deadline: () => deadlineValue,
     versus: pairing,
+    ...(claim ? { claim, claimOwned } : {}),
   }).then((value): ChoiceRace => ({ kind: 'choice', value }));
   const deadline = Date.parse(deadlineValue ?? '');
   while (true) {
@@ -77,6 +85,44 @@ function offerSpecs(trial: RuneTrialState | null | undefined): readonly SpellSpe
   if (!trial || trial.offer.length !== 3 || new Set(trial.offer).size !== 3) return null;
   const spells = trial.offer.map((id) => spellById(id));
   return spells.every((spell): spell is SpellSpec => !!spell) ? spells : null;
+}
+
+type ClaimField = 'reward_version' | 'claim_slot' | 'claim_rune';
+
+/* The private RPC may repeat the immutable snapshot beside the match row. That
+   is useful during a staged rollout, but two copies may never disagree: using
+   whichever one happened to arrive last would move the visible CLAIM while a
+   player was choosing. */
+function claimSnapshot(
+  result: Matched,
+  offer: readonly string[],
+): RuneTrialClaimSnapshot | null {
+  const value = (field: ClaimField): unknown => {
+    const matchValue = result.match[field];
+    const privateValue = result.trial?.[field];
+    if (matchValue !== undefined && matchValue !== null
+        && privateValue !== undefined && privateValue !== null
+        && matchValue !== privateValue) {
+      throw new Error(`Rune Trial ${field} changed across its immutable snapshot.`);
+    }
+    return privateValue ?? matchValue;
+  };
+  return readRuneTrialClaimSnapshot(
+    offer,
+    value('reward_version'),
+    value('claim_slot'),
+    value('claim_rune'),
+  );
+}
+
+function sameClaim(
+  left: RuneTrialClaimSnapshot | null,
+  right: RuneTrialClaimSnapshot | null,
+): boolean {
+  return left === null ? right === null : right !== null
+    && left.rewardVersion === right.rewardVersion
+    && left.slot === right.slot
+    && left.rune === right.rune;
 }
 
 function mergeTrial(
@@ -125,6 +171,21 @@ export async function resolveRankedTrial(
 
   const offer = offerSpecs(current.trial);
   if (!offer) throw new Error('Rune Trial match did not include a valid private offer.');
+  const offerIds = offer.map(({ id }) => id);
+  const claim = claimSnapshot(current, offerIds);
+  const collection = claim ? readRuneCollectionSnapshot() : null;
+  const claimOwned = claim && collection
+    ? collection.collected.includes(claim.rune) : undefined;
+  const merge = (
+    response: { match: MatchRow; trial: RuneTrialState; bot_actions?: MatchActionRow[] },
+  ): Matched => {
+    const next = mergeTrial(current, response);
+    const observed = claimSnapshot(next, offerIds);
+    if (!sameClaim(claim, observed)) {
+      throw new Error('Rune Trial CLAIM changed after the offer was shown.');
+    }
+    return next;
+  };
   const wake = { current: null as (() => void) | null };
   const channel = watchMatch(current.match.id, () => undefined, () => wake.current?.());
   const waitForWake = (): Promise<void> => Promise.race([
@@ -135,7 +196,7 @@ export async function resolveRankedTrial(
     const response = await readRuneTrialState(current.match.id);
     if (!ports.owns() || response.status !== 200 || !response.data
         || response.data.match.id !== current.match.id) return false;
-    current = mergeTrial(current, response.data);
+    current = merge(response.data);
     return true;
   };
   try {
@@ -144,6 +205,8 @@ export async function resolveRankedTrial(
         && !playing(current) && !trialSelectionSettled(current.match)) {
       const raced = await chooseBeforeDeadline(
         offer,
+        claim,
+        claimOwned,
         ports.pairing,
         current.trial?.deadline ?? current.match.selection_deadline ?? null,
         waitForWake,
@@ -159,7 +222,7 @@ export async function resolveRankedTrial(
         choiceExpired = true;
         const filled = await autoSelectRune(current.match.id);
         if (!ports.owns()) return null;
-        if (filled.status === 200 && filled.data) current = mergeTrial(current, filled.data);
+        if (filled.status === 200 && filled.data) current = merge(filled.data);
         else await refresh();
       } else if (!raced.value) {
         return null;
@@ -184,7 +247,7 @@ export async function resolveRankedTrial(
           if (recovered.kind === 'observed') continue;
           committed = recovered.response;
         }
-        if (committed.status === 200 && committed.data) current = mergeTrial(current, committed.data);
+        if (committed.status === 200 && committed.data) current = merge(committed.data);
         else await refresh(); // lost idempotent response or a terminal opponent update
       }
       if (choiceExpired) break;
@@ -199,7 +262,7 @@ export async function resolveRankedTrial(
       if (Number.isFinite(deadline) && Date.now() >= deadline) {
         const filled = await autoSelectRune(current.match.id);
         if (!ports.owns()) return null;
-        if (filled.status === 200 && filled.data) current = mergeTrial(current, filled.data);
+        if (filled.status === 200 && filled.data) current = merge(filled.data);
       }
       if (playing(current) || trialSelectionSettled(current.match)) return current;
 

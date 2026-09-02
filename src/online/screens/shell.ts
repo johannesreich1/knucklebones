@@ -115,6 +115,22 @@ const OVERLAY = `
          seat chooses what ordinary ranked snapshots. Trial loans its full offer
          and keeps its own choice/reveal independently. -->
     <div id="accRunes"></div>
+    <!-- Progression recognition is intentionally compact and factual. Weekly
+         completion is one mark for the current global rotation; NEON medals
+         are permanent season records. Neither implies points or power, and
+         the whole section disappears when there is nothing to show. -->
+    <section class="accsec accach" id="accAchievements"
+      aria-labelledby="accAchievementsTitle" hidden>
+      <div class="acchead"><b id="accAchievementsTitle"
+        data-i18n="online:profile.achievements">ACHIEVEMENTS</b></div>
+      <div class="accach-grid">
+        <div class="accach-mark weekly" id="accWeeklyMark" hidden>
+          <span class="accach-glyph" aria-hidden="true">✦</span>
+          <span data-i18n="online:profile.weeklyComplete">WEEKLY COMPLETE</span>
+        </div>
+        <div class="accach-mark neon" id="accNeonMedals" hidden></div>
+      </div>
+    </section>
     <!-- Identity offers lead the match history (user call): after the stable
          collection summary, so the account's next step is still seen before
          its past matches. The ONE-TIME name claim wears the guestbox shape because

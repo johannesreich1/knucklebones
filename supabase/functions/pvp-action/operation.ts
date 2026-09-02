@@ -82,6 +82,10 @@ export async function actionMatch(context: AuthenticatedContext, input: ActionIn
   if (!usesRankedActionProtocol(match)) {
     return json({ error: "wrong-protocol" }, 409);
   }
+  if (match.curve_version !== 1 && match.curve_version !== 2) {
+    return json({ error: "corrupt-state" }, 500);
+  }
+  const curveVersion = match.curve_version;
   if (match.phase !== "playing") return json({ error: "selection-in-progress" }, 409);
   if (match.next_die == null) {
     return json({ error: "corrupt-state" }, 500);
@@ -199,6 +203,7 @@ export async function actionMatch(context: AuthenticatedContext, input: ActionIn
         mode: outcome.mode,
         dealt,
         rating: profile.rating ?? 0,
+        curveVersion,
         random: Math.random,
       });
       if (!turn) return json({ error: "corrupt-state" }, 500);
