@@ -8,6 +8,7 @@
 //
 // Lives in ui/ because home paints it at boot, before any online code loads.
 import { currentBoardGroup, currentGroupRingFill } from '../ladder-presentation.ts';
+import type { LadderCurveVersion } from '../progression-status-cache.ts';
 import { formatNumber, ladderGroupCompactName } from '../i18n/index.ts';
 import { paintAvatar } from './avatar.ts';
 import { ladderRingLayersMarkup } from './ladder-ring.ts';
@@ -26,6 +27,7 @@ export interface PlateSpec {
   chev?: boolean;          // reads as a door
   rankTap?: () => void;    // the group pill is its own door (result screen)
   large?: boolean;         // the result screen's roomier cut; the chip stays slim
+  curveVersion?: LadderCurveVersion; // the curve a cached row was classified under
 }
 
 /** Repaint locale-owned text and formatting without replacing a live plate. */
@@ -55,7 +57,7 @@ export function repaintPlateLocale(el: HTMLElement, p: PlateSpec): void {
     }
     group.hidden = p.points == null;
     if (p.points != null) {
-      const resolved = currentBoardGroup(pts, !!p.apex);
+      const resolved = currentBoardGroup(pts, !!p.apex, p.curveVersion);
       group.style.setProperty('--gc', `var(--g-${resolved.id})`);
       group.textContent = ladderGroupCompactName(resolved.id)
         + (p.rank != null ? ` · #${formatNumber(p.rank)}` : '');
@@ -86,7 +88,7 @@ export function fillPlate(el: HTMLElement, p: PlateSpec): void {
     + '<span class="gpill"></span></span>'
     + (p.chev ? '<span class="chev">›</span>' : '');
   (el.querySelector('.ringwrap') as HTMLElement).style.setProperty(
-    '--p', String(currentGroupRingFill(pts, !!p.apex)),
+    '--p', String(currentGroupRingFill(pts, !!p.apex, p.curveVersion)),
   );
   paintAvatar(el.querySelector('.pav') as HTMLElement, p.avatar, 18);
   /* The group pill, points, delta, name, and stamp all share the locale-only

@@ -24,7 +24,9 @@ export async function runFreshAccountScenarios(suite) {
   // both ladder facts are doors: tapping either lands on the board
   check(fresh.rankDoor?.board === true && fresh.rankDoor?.title === 'LADDER'
     && fresh.rankDoor.control?.tag === 'BUTTON'
-    && fresh.rankDoor.control?.label === 'Open the ladder'
+    /* The tile announces the value AND the action, because rank loads on its
+       own and may read as pending, last-known, or unavailable. */
+    && /^RANK: (#[\d,]+|–|Loading)\. Open the ladder$/.test(fresh.rankDoor.control?.label ?? '')
     && fresh.rankDoor.control?.width >= 44 && fresh.rankDoor.control?.height >= 44,
   'tapping the accessible Rank tile does not open the ladder', fresh.rankDoor);
   check(fresh.ptsDoor?.board === true && fresh.ptsDoor?.title === 'LADDER',

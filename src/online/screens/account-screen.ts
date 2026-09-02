@@ -2,6 +2,8 @@ import { inApex } from '../../core/ladder.ts';
 import { subscribeLocale, t } from '../../i18n/index.ts';
 import { $, byId } from '../../ui/dom.ts';
 import { refreshHomeChip } from '../../ui/homechip.ts';
+import { appRoot } from '../../ui/embed.ts';
+import { whenPageMotionSettled } from '../../ui/page-motion.ts';
 import {
   bestStreakLookup,
   matchHistoryLookup,
@@ -12,7 +14,6 @@ import {
 import { currentUser, identityStatusLookup } from '../identity/session.ts';
 import { myProfileLookup } from '../identity/profile.ts';
 import { cacheStanding } from '../../profile-cache.ts';
-import { cachedLadderCurveVersion } from '../../progression-status-cache.ts';
 import { refreshVerifiedRankedCurveVersion } from '../api/ranked-curve-verification.ts';
 import {
   acknowledgeRuneReward,
@@ -99,14 +100,8 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     if (isOnlinePanelCurrent('onAccount')) showOnlineLoading('onAccount');
   };
 
-  /* A cached points row may only be classified through a curve the server has
-     confirmed. Without one, the shared die holds the view rather than naming a
-     league a staged cutover could have moved. */
-  const readClassifiableCachedView = (accountId?: string): CachedAccountView | null =>
-    (cachedLadderCurveVersion() === null ? null : readCachedAccountView(accountId));
-
   function showCached(accountId: string): boolean {
-    const cachedView = readClassifiableCachedView(accountId);
+    const cachedView = readCachedAccountView(accountId);
     if (!cachedView) return false;
     /* Invalidate an older Profile refresh before this new door becomes the
        active presentation. Its verified identity will start a fresh run. */
@@ -135,7 +130,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       return null;
     };
     cancelAccountRuneGuide();
-    const cachedView = readClassifiableCachedView(options.expectedAccountId);
+    const cachedView = readCachedAccountView(options.expectedAccountId);
     beginPresentation(cachedView);
     accountActions.lock();
     if (cachedView) {
@@ -278,6 +273,9 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
         : cachedView?.account.standing ?? null,
       standingKnown: standingState.result?.ok
         ? true : cachedView?.account.standingKnown ?? false,
+      /* Stamp the curve this refresh resolved, so the snapshot stays readable
+         on its own terms after a later cutover. */
+      curveVersion,
       streak,
       identity: resolvedIdentity,
       runes: runeCollection.verified ? runeCollection.collected : cachedRunes!.runes,
@@ -289,17 +287,19 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     if (standingState.result) {
       applyStanding();
       if (!ownsRun()) return null;
-      if (!standingState.result.ok) cacheAccountView(lastAccount, lastRecent);
+      if (!standingState.result.ok && lastAccount) cacheAccountView(lastAccount, lastRecent);
     } else {
       repaintFrame();
-      cacheAccountView(lastAccount, lastRecent);
+      if (lastAccount) cacheAccountView(lastAccount, lastRecent);
     }
     refreshHomeChip();
     accountActions.setRuneSeatAvailable(runeCollection.verified);
     accountActions.unlock();
-    /* A cached Profile is already the presented destination; only a cold run
-       still owes the entry wipe before sheets and guides may begin. */
-    const presented = cachedView ? Promise.resolve() : showOnlinePanel('onAccount');
+    /* A cached Profile supplies the destination CONTENT, not the navigation.
+       An entry from the result still wipes into this shell, and sheets and
+       focus guides owe that wipe either way. */
+    const presented = cachedView
+      ? whenPageMotionSettled(appRoot()) : showOnlinePanel('onAccount');
     const firstUnseenRune = firstCollectedRuneReward(runeCollection);
     const guidedReward = options.deferredRuneReward ?? firstUnseenRune;
     const requestedGuide = options.runeGuide ?? (firstUnseenRune ? {

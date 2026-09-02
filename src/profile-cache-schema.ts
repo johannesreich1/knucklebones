@@ -21,6 +21,9 @@ export interface CachedProfile {
   /** Null is confirmed unranked; absent means no standing has landed yet. */
   rank?: number | null;
   apex?: boolean;
+  /** The curve `rating` was classified under. Absent only in entries written
+      before the cutover existed; those still defer to the confirmed curve. */
+  curveVersion?: 1 | 2;
 }
 
 /** One complete, account-bound rendering snapshot for Profile. */
@@ -53,6 +56,8 @@ export interface CachedAccountProfile {
   readonly standing: CachedStanding | null;
   /** False distinguishes an unavailable first rank read from confirmed unranked. */
   readonly standingKnown: boolean;
+  /** The curve this whole snapshot was classified under. */
+  readonly curveVersion: 1 | 2;
   readonly streak: number;
   readonly recent: readonly {
     readonly id: string;
@@ -103,7 +108,8 @@ function requiredFields<Shape extends object>(
 
 const REQUIRED_ACCOUNT_PROFILE_FIELDS = {
   version: true, accountId: true, verifiedAt: true, profile: true, user: true,
-  ladder: true, standing: true, standingKnown: true, streak: true, recent: true,
+  ladder: true, standing: true, standingKnown: true, curveVersion: true,
+  streak: true, recent: true,
   identity: true, runes: true, runeRows: true, equipment: true,
 } satisfies RequiredFields<CachedAccountProfile>;
 export const ACCOUNT_PROFILE_REQUIRED_FIELDS = requiredFields<CachedAccountProfile>(
@@ -257,7 +263,9 @@ export function parseAccountProfile(value: unknown): CachedAccountProfile | null
   const accountId = value.accountId.toLowerCase();
   if (!validProfile(value.profile, accountId) || !validUser(value.user, accountId)
       || !validLadder(value.ladder) || !validStanding(value.standing)
-      || typeof value.standingKnown !== 'boolean' || !integer(value.streak)
+      || typeof value.standingKnown !== 'boolean'
+      || (value.curveVersion !== 1 && value.curveVersion !== 2)
+      || !integer(value.streak)
       || !validRecent(value.recent) || !validIdentity(value.identity)
       || !stringList(value.runes) || !validRuneRows(value.runeRows)
       || !validEquipment(value.equipment, value.runes)) return null;
@@ -265,7 +273,8 @@ export function parseAccountProfile(value: unknown): CachedAccountProfile | null
     version: ACCOUNT_PROFILE_CACHE_VERSION, accountId, verifiedAt: value.verifiedAt,
     profile: { ...value.profile }, user: { ...value.user }, ladder: { ...value.ladder },
     standing: value.standing ? { ...value.standing } : null,
-    standingKnown: value.standingKnown, streak: value.streak,
+    standingKnown: value.standingKnown, curveVersion: value.curveVersion,
+    streak: value.streak,
     recent: value.recent.map((row) => ({ ...row })), identity: { ...value.identity },
     runes: [...value.runes], runeRows: value.runeRows.map((row) => ({ ...row })),
     equipment: { ...value.equipment },
@@ -279,7 +288,9 @@ export function parseProfile(value: unknown): CachedProfile | null {
       || (own(value, 'rating') && !finite(value.rating))
       || (own(value, 'avatar') && !nullableString(value.avatar))
       || (own(value, 'rank') && value.rank !== null && !integer(value.rank, 1))
-      || (own(value, 'apex') && typeof value.apex !== 'boolean')) return null;
+      || (own(value, 'apex') && typeof value.apex !== 'boolean')
+      || (own(value, 'curveVersion')
+        && value.curveVersion !== 1 && value.curveVersion !== 2)) return null;
   return {
     ...(typeof value.accountId === 'string' ? { accountId: value.accountId } : {}),
     ...(typeof value.nickname === 'string' ? { nickname: value.nickname } : {}),
@@ -287,5 +298,7 @@ export function parseProfile(value: unknown): CachedProfile | null {
     ...(nullableString(value.avatar) ? { avatar: value.avatar } : {}),
     ...(value.rank === null || integer(value.rank, 1) ? { rank: value.rank } : {}),
     ...(typeof value.apex === 'boolean' ? { apex: value.apex } : {}),
+    ...(value.curveVersion === 1 || value.curveVersion === 2
+      ? { curveVersion: value.curveVersion } : {}),
   };
 }

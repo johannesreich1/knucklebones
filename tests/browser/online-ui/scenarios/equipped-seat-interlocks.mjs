@@ -233,6 +233,7 @@ export async function runEquippedSeatInterlockScenarios({ visit, out, check }) {
           avatar: 'die:2:mg',
           rank: 31,
           apex: false,
+          curveVersion: 2,
         }));
         const cached = JSON.parse(localStorage.getItem(
           'knucklebones.online.account-profile') ?? 'null');

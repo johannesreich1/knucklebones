@@ -11,25 +11,39 @@ import {
   inApex,
   type PeakState,
 } from './core/ladder.ts';
-import { confirmedLadderCurveVersion } from './progression-status-cache.ts';
+import {
+  confirmedLadderCurveVersion,
+  type LadderCurveVersion,
+} from './progression-status-cache.ts';
 
-export const currentBoardGroup = (points: number, apex: boolean) =>
-  boardGroup(points, apex, confirmedLadderCurveVersion());
+/* A cached row records the curve it was classified under. Passing that version
+   keeps stale-but-coherent presentation truthful; passing nothing follows the
+   last curve the server confirmed, which is what every live read wants. */
+const curve = (version?: LadderCurveVersion): LadderCurveVersion =>
+  version ?? confirmedLadderCurveVersion();
 
-export const currentGroupFill = (points: number): number =>
-  groupFill(points, confirmedLadderCurveVersion());
+export const currentBoardGroup = (points: number, apex: boolean, version?: LadderCurveVersion) =>
+  boardGroup(points, apex, curve(version));
 
-export const currentGroupRingFill = (points: number, apex: boolean): number =>
-  groupRingFill(points, apex, confirmedLadderCurveVersion());
+export const currentGroupFill = (points: number, version?: LadderCurveVersion): number =>
+  groupFill(points, curve(version));
+
+export const currentGroupRingFill = (
+  points: number,
+  apex: boolean,
+  version?: LadderCurveVersion,
+): number => groupRingFill(points, apex, curve(version));
 
 export const currentGroupRingPeakState = (
   points: number,
   peak: number,
   apex: boolean,
-): PeakState => groupRingPeakState(points, peak, apex, confirmedLadderCurveVersion());
+  version?: LadderCurveVersion,
+): PeakState => groupRingPeakState(points, peak, apex, curve(version));
 
 export const currentInApex = (
   points: number,
   rank: number,
   population: number,
-): boolean => inApex(points, rank, population, confirmedLadderCurveVersion());
+  version?: LadderCurveVersion,
+): boolean => inApex(points, rank, population, curve(version));

@@ -6,6 +6,7 @@ import {
   parseAccountProfile,
   parseProfile,
 } from './profile-cache-schema.ts';
+import { confirmedLadderCurveVersion } from './progression-status-cache.ts';
 import type {
   AccountProfileSnapshot,
   CachedAccountProfile,
@@ -125,7 +126,8 @@ export function cacheProfileIdentity(
      facts but only another standing may split/replace the tuple. */
   const rating = typeof cached?.rank === 'number' && typeof cached.rating === 'number'
     ? cached.rating : identity.rating;
-  write({ ...cached, ...identity, rating, accountId: normalized });
+  write({ ...cached, ...identity, rating, accountId: normalized,
+    curveVersion: confirmedLadderCurveVersion() });
 }
 
 /** Publish a successful avatar write immediately without retaining another
@@ -158,6 +160,9 @@ export function cacheStanding(
     rating: standing?.points ?? cached.rating,
     rank: standing?.rank ?? null,
     apex,
+    /* Record the curve this settlement was classified under, so Home can
+       paint it at once instead of waiting on a second cache. */
+    curveVersion: confirmedLadderCurveVersion(),
   });
   const complete = readAccountProfileCache(accountId);
   if (complete) storeAccountProfile({

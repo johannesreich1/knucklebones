@@ -44,6 +44,7 @@ const snapshot = {
   },
   standing: { points: 465, rank: 7, population: 199, percentile: 4 },
   standingKnown: true,
+  curveVersion: 2 as const,
   streak: 4,
   recent: [{
     id: 'match-1', when: '2026-08-31T12:00:00Z', opponent: 'Nova', mode: 'classic',
@@ -115,6 +116,7 @@ cacheAccountView({
   ladder: { ...snapshot.ladder },
   standing: { ...snapshot.standing },
   standingKnown: true,
+  curveVersion: 2 as const,
   streak: snapshot.streak,
   identity: { ...snapshot.identity },
   runes: [...snapshot.runes],

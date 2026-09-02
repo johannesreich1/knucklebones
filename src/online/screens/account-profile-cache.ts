@@ -10,6 +10,7 @@ import type { IdentityStatus, Me } from '../identity/session.ts';
 import type { Profile } from '../identity/profile.ts';
 import type { RuneCollectionRefresh } from '../runes/rune-collection.ts';
 import type { EquippedRuneSelection } from '../../rune-collection-cache.ts';
+import type { LadderCurveVersion } from '../../progression-status-cache.ts';
 
 export interface AccountViewData {
   profile: Profile;
@@ -17,6 +18,8 @@ export interface AccountViewData {
   ladder: Ladder;
   standing: Standing | null;
   standingKnown: boolean;
+  /** The curve every points row in this view was classified under. */
+  curveVersion: LadderCurveVersion;
   streak: number;
   identity: IdentityStatus | null;
   runes: readonly string[];
@@ -53,6 +56,7 @@ export function readCachedAccountView(accountId?: string): CachedAccountView | n
       ladder: { ...cached.ladder },
       standing: cached.standing ? { ...cached.standing } : null,
       standingKnown: cached.standingKnown,
+      curveVersion: cached.curveVersion,
       streak: cached.streak,
       identity: { ...cached.identity },
       runes: [...cached.runes],
@@ -89,6 +93,7 @@ export function cacheAccountView(
     ladder: { ...account.ladder, points },
     standing: standing ? { ...standing } : null,
     standingKnown,
+    curveVersion: account.curveVersion,
     streak: account.streak,
     recent: recent.slice(0, 3).map((row) => ({ ...row })),
     identity: { ...account.identity },

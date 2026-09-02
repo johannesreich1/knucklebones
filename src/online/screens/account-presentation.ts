@@ -7,6 +7,7 @@ import {
   currentGroupRingPeakState,
   currentInApex,
 } from '../../ladder-presentation.ts';
+import type { LadderCurveVersion } from '../../progression-status-cache.ts';
 import {
   formatDate,
   formatNumber,
@@ -27,10 +28,10 @@ import { paintAccountRunes, paintEquippedSeat } from './account-runes.ts';
 import type { AccountViewData, CachedAccountView } from './account-profile-cache.ts';
 import { historyRow } from './history-screen.ts';
 
-function paintGroup(points: number, apex = false): void {
+function paintGroup(points: number, apex = false, version?: LadderCurveVersion): void {
   /* The profile and ladder speak the same league language. In particular,
      NEON is positional and a high-points non-apex player stays OBSIDIAN. */
-  const group = currentBoardGroup(points, apex);
+  const group = currentBoardGroup(points, apex, version);
   const label = $('#accGroup') as HTMLElement;
   const material = `var(--g-${group.id})`;
   label.textContent = ladderGroupName(group.id);
@@ -79,13 +80,14 @@ export function paintAccountDetails(
   const points = ladder.points;
   const peak = ladder.peak;
   const games = ladder.wins + ladder.losses + ladder.draws;
-  const apex = standing ? currentInApex(points, standing.rank, standing.population) : false;
+  const apex = standing
+    ? currentInApex(points, standing.rank, standing.population, account.curveVersion) : false;
   $('#accPoints').textContent = formatNumber(points);
   /* NEON is positional: it needs the rank and population that arrive with the
      standing, which is the one fact Profile loads separately. While no standing
      has ever been confirmed, keep the label rather than assert the non-apex
      league a bare points row implies; applyStanding() repaints it on arrival. */
-  if (standing || !rankPending) paintGroup(points, apex);
+  if (standing || !rankPending) paintGroup(points, apex, account.curveVersion);
   $('#accPeak').textContent = formatNumber(peak);
   $('#accGames').textContent = games
     ? t('online', 'profile.gamesLink', { count: games, formatted: formatNumber(games) })
@@ -121,14 +123,14 @@ export function paintAccountFrame(
   }
   paintAvatar($('#accDie'), profile.avatar ?? DEFAULT_AVATAR);
   const apex = standing
-    ? currentInApex(ladder.points, standing.rank, standing.population)
+    ? currentInApex(ladder.points, standing.rank, standing.population, account.curveVersion)
     : false;
   const ring = $('#accRing') as HTMLElement;
   /* The ring reads the same positional league as the label, so it waits on the
      same fact rather than briefly drawing an apex player's non-apex arc. */
   if (standing || !rankPending) {
-    const peakPosition = currentGroupRingPeakState(ladder.points, ladder.peak, apex);
-    fillAccountRing(ring, currentGroupRingFill(ladder.points, apex));
+    const peakPosition = currentGroupRingPeakState(ladder.points, ladder.peak, apex, account.curveVersion);
+    fillAccountRing(ring, currentGroupRingFill(ladder.points, apex, account.curveVersion));
     ring.classList.toggle('haspeak', peakPosition.kind !== 'at');
     if (peakPosition.kind === 'ahead') ring.style.setProperty('--pk', String(peakPosition.fill));
     if (peakPosition.kind === 'above') ring.style.setProperty('--pk', '1');

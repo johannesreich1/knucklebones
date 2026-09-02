@@ -10,9 +10,10 @@ export const seedCompleteProfile = () => {
     avatar: 'die:5:cy',
     rank: 17,
     apex: false,
+    curveVersion: 2,
   }));
   localStorage.setItem('knucklebones.online.account-profile', JSON.stringify({
-    version: 1,
+    version: 2,
     accountId,
     verifiedAt: 1,
     profile: {
@@ -34,6 +35,7 @@ export const seedCompleteProfile = () => {
     },
     standing: { points: 321, rank: 17, population: 199, percentile: 9 },
     standingKnown: true,
+    curveVersion: 2,
     streak: 9,
     recent: [{
       id: 'cached-match',
@@ -43,6 +45,9 @@ export const seedCompleteProfile = () => {
       mine: 21,
       theirs: 18,
       delta: 12,
+      baseDelta: 12,
+      finishDelta: 0,
+      scoringVersion: 2,
       result: 'win',
     }],
     identity: {
@@ -67,9 +72,10 @@ const seedRichProfile = () => {
     avatar: 'die:5:cy',
     rank: 17,
     apex: false,
+    curveVersion: 2,
   }));
   localStorage.setItem('knucklebones.online.account-profile', JSON.stringify({
-    version: 1,
+    version: 2,
     accountId,
     verifiedAt: 1,
     profile: {
@@ -91,6 +97,7 @@ const seedRichProfile = () => {
     },
     standing: { points: 321, rank: 17, population: 199, percentile: 9 },
     standingKnown: true,
+    curveVersion: 2,
     streak: 9,
     recent: [{
       id: 'cached-match',
@@ -100,6 +107,9 @@ const seedRichProfile = () => {
       mine: 21,
       theirs: 18,
       delta: 12,
+      baseDelta: 12,
+      finishDelta: 0,
+      scoringVersion: 2,
       result: 'win',
     }],
     identity: {
@@ -261,7 +271,10 @@ export async function runCachedProfileResilienceScenarios(suite) {
       && failedRank.probeResult.inlineLoaderGone
       && failedRank.probeResult.rankAfterFailedResult === 17
       && failedRank.probeResult.name === 'TestGuest001'
-      && failedRank.probeResult.resultRank?.includes('#17')
+      /* The result must NOT pair this cached rank with points the match just
+         moved: #17 belonged to the old number. Profile, whose points and rank
+         come from one cached tuple, still shows it (asserted above). */
+      && !failedRank.probeResult.resultRank?.includes('#')
       && failedRank.probeResult.points === '1,000',
   'a failed rank refresh covered Profile or discarded the cached rank', failedRank.probeResult);
   check(failedRank.errs.length === 0,
