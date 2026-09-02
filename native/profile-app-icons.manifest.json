@@ -63,8 +63,8 @@
     },
     {
       "path": "src/styles/components/overlays.css",
-      "bytes": 11883,
-      "sha256": "6af91b6e9fc3a3f069e16ce0246e5f4e947d0b157c5afa0138943602e6f4bcb0"
+      "bytes": 12239,
+      "sha256": "c664dc1d20c4da6b3e65af300a7c51f2e18bca957b14fa43a095da029f4a68b1"
     },
     {
       "path": "src/styles/components/picker.css",
