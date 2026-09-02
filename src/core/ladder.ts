@@ -20,7 +20,9 @@ import {
   type Group,
   type LadderCurveVersion,
 } from './ladder-groups.ts';
+import { personalShape } from './bot-personality.ts';
 export * from './ladder-groups.ts';
+export * from './bot-personality.ts';
 
 /* ---- points ------------------------------------------------------------ */
 
@@ -305,18 +307,21 @@ export function groupRingPeakState(
 
 /* ---- the bot's group is its strength ------------------------------------ */
 
-/* A bot plays the shape of the group its OWN points sit in. Difficulty still
-   tracks the player, but through pairing: matchmaking hands you bots near your
-   rank, and those bots play their rank. Bots' points move through real
-   settles, so a bot whose shape loses points sinks toward the group that
-   plays like it — the label stays honest by construction. NEON is a POSITION:
-   the apex flag comes from the same board projection the ladder shows, so
-   points above the fallback floor without the rank play OBSIDIAN — boardGroup's
-   rule, consumed here, never copied. */
+/* A bot plays the shape of the group its OWN points sit in. Difficulty tracks
+   the player through pairing, and bots' points move through real settles, so a
+   bot whose shape loses points sinks toward the group that plays like it — the
+   label stays honest by construction. NEON is a POSITION: the apex flag comes
+   from the board projection the ladder shows, so points above the fallback
+   floor without the rank play OBSIDIAN (boardGroup's rule, consumed here). From
+   GOLD up a bot with an id also plays its own personality
+   (core/bot-personality.ts): the league is the identity, the personality is how
+   far this one bot's attention wanders. */
 export const botShapeAt = (
   bot: BotStanding,
   version: LadderCurveVersion = LADDER_CURVE_VERSION,
-): BotShape => boardGroup(bot.points, bot.apex, version).bot;
+): BotShape => personalShape(
+  boardGroup(bot.points, bot.apex, version), groupsForCurve(version), bot.id,
+);
 
 /* How far from the human a BACKFILL bot may be: the human's own group width.
    The general matchBand below must open wide when the ladder is sparse or no

@@ -534,6 +534,32 @@ knows the rules makes:
 | lapses of attention | `slip` + `attention` | everyone, rate falling with league | a decent-not-best column |
 | a move no rule-knower would make | — | STONE, BONE | see the attention column |
 
+**From GOLD up, a league is a distribution.** Every bot in a league used to be
+the identical shape wearing a different name, so no two GOLD bots had ever
+differed by anything but dice. Each bot with a profile id now also draws a
+*personality*: a permanent shift of its slip rate, keyed by that id, so the
+same bot is always this strong — on either curve, in every match — and a bot
+that is consistently a little sharper can become a rival you recognise. Most
+bots sit within a point of their league, about one in twelve is a noticeably
+harder game, and one in fifty is the one people remember
+(`core/bot-personality.ts`; `tests/ladder.test.ts` pins the distribution).
+
+Three rules keep the badge honest. The draw moves **slip only** — never depth,
+never board sight, never what the bot knows — so weakness still comes from
+errors rather than ignorance. It is **bounded by the league above**: the
+strongest GOLD bot slips exactly as often as an average OBSIDIAN one and never
+less, which is pinned exactly rather than measured. And **STONE through SILVER
+have no variance at all**, because the onboarding promise is unconditional.
+The apex has no league above to bound it, so its own tail stops at −0.04.
+
+Measured at the retuned shapes (2026-09-02), the strongest personality a league
+can mint gives the newcomer 49.8% / 49.8% at GOLD, 45.8% / 46.4% at OBSIDIAN
+and 44.6% / 43.7% at NEON — each above the floor of the league above it, and
+the apex still net-positive at the payout's 43.3% break-even. A learner holds
+60.4% or better against every one of them. The mechanism is also
+self-limiting: bots settle real points, so a bot whose personality wins drifts
+up toward the group that plays like it, and pairing hands out bots by points.
+
 **`oppW` is the floor's knob, and NEGATIVE is the floor's floor** (retuned
 2026-08-21: "if I lose 50% in the beginning, I quit"). Slip alone cannot
 make a gentle bot: the un-slipped half of a depth-1 greedy still takes every
