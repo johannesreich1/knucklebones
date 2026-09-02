@@ -3,7 +3,7 @@
 // answered — the profiles row itself — lives beside it in profile.ts.
 // This module (and supabase-js with it) is loaded ONLY via dynamic import —
 // the offline game's boot path must never depend on it.
-import { callFunction, supa } from '../api/client.ts';
+import { supa } from '../api/client.ts';
 import { onlineMessage } from '../message-copy.ts';
 import {
   GAME_CENTER, assertCurrentGameCenter, linkGuestGameCenter,
@@ -18,6 +18,10 @@ import { invalidateRuneCollectionRefreshes } from '../runes/rune-collection.ts';
 import { resetProfileAppIcon } from '../../native/app-icon.ts';
 import { clearProfileCache, readProfileCache } from '../../profile-cache.ts';
 import { readAuthSession, type AuthSessionRead } from './session-read.ts';
+import { identityStatusLookupFor, type IdentityStatus,
+  type IdentityStatusLookup } from './identity-status.ts';
+
+export type { IdentityStatus, IdentityStatusLookup } from './identity-status.ts';
 
 /* ---- auth ----
 
@@ -34,11 +38,6 @@ import { readAuthSession, type AuthSessionRead } from './session-read.ts';
    guest exactly as for anybody else, and every RLS policy is written against
    auth.uid(). That is why guest play costs no schema. */
 export interface Me { id: string; guest: boolean; email: string | null }
-export interface IdentityStatus {
-  gameCenterLinked: boolean;
-  appleLinked: boolean;
-  appleRevocationReady: boolean;
-}
 /* An account carrying an address is NOT a guest, whatever is_anonymous says.
    Identities attached server-side (Game Center goes through the admin API) do
    not necessarily clear the flag, and a player who has attached must never be
@@ -109,7 +108,7 @@ export const hadRealAccount = (): boolean => {
   try { return !!localStorage.getItem(KNOWN); } catch { return false; }
 };
 
-function forgetDeviceAccount(): void {
+export function forgetDeviceAccount(): void {
   try {
     localStorage.removeItem(KNOWN);
     localStorage.removeItem(MANUAL_AUTH);
@@ -169,13 +168,16 @@ function userFromSessionRead(read: AuthSessionRead): Me | null {
   return user;
 }
 
-export async function currentUser(): Promise<Me | null> {
-  return userFromSessionRead(await readAuthSession());
+export const currentUser = async (): Promise<Me | null> =>
+  userFromSessionRead(await readAuthSession());
+
+export async function identityStatusLookup(): Promise<IdentityStatusLookup> {
+  return identityStatusLookupFor(currentUser);
 }
 
 export async function identityStatus(): Promise<IdentityStatus | null> {
-  const result = await callFunction<IdentityStatus>('identity-status', {});
-  return result.status === 200 && result.data ? result.data : null;
+  const result = await identityStatusLookup();
+  return result.ok ? result.identity : null;
 }
 
 let acceptedGameCenterRevision: number | null = null;
@@ -302,14 +304,23 @@ export async function ensureIdentity(): Promise<IdentityEntry> {
    to the CURRENT user — it never mints a second one — and a password can only
    be set once that address counts as verified, which is instant while email
    confirmation is optional and needs the inbox when it is not. */
-export async function attachEmail(email: string, password: string): Promise<string | null> {
+export async function attachEmail(
+  email: string,
+  password: string,
+  expectedAccountId?: string,
+): Promise<string | null> {
+  const expected = expectedAccountId?.toLowerCase();
+  const current = await currentUser();
+  if (expected && current?.id.toLowerCase() !== expected) {
+    return onlineMessage('errors.notSignedIn');
+  }
   /* No session to hang the address on — a device that signed out of a real
      account never gets a silent guest (see ensureIdentity). "Keep account" is
      then simply "create account", which is what the player asked for either
      way: mint it here rather than answering their sign-up with a session
      error. The sign-in panel's Create account action lands here through the
      registry in screens/auth-specs.ts. */
-  if (!(await currentUser())) {
+  if (!current) {
     const { error, live } = await signUp(email, password);
     if (error) return error;
     return live ? null : onlineMessage('errors.accountCreatedConfirm');
@@ -317,32 +328,9 @@ export async function attachEmail(email: string, password: string): Promise<stri
   const { data, error } = await supa().auth.updateUser({ email });
   if (error) return localizedAuthError(error);
   if (!data.user?.email) return onlineMessage('errors.confirmEmailThenPassword');
+  if (expected && (await currentUser())?.id.toLowerCase() !== expected) {
+    return onlineMessage('errors.notSignedIn');
+  }
   const { error: pw } = await supa().auth.updateUser({ password });
   return localizedAuthError(pw);
-}
-
-/* ---- account ---- */
-export type AppleRevocationState = 'complete' | 'pending' | 'manual-required';
-export async function deleteAccount(): Promise<{
-  error: string | null;
-  appleRevocation: AppleRevocationState | null;
-}> {
-  const r = await callFunction<{
-    deleted?: boolean;
-    error?: string;
-    appleRevocation?: AppleRevocationState;
-  }>('account-delete', {});
-  if (r.status === 200 && r.data?.deleted) {
-    await signOut();
-    // the account is gone, so the device is a newcomer again — next tap plays
-    try { localStorage.removeItem(KNOWN); } catch { /* forgetful host */ }
-    try { localStorage.removeItem(MANUAL_AUTH); } catch { /* forgetful host */ }
-    return { error: null, appleRevocation: r.data.appleRevocation ?? null };
-  }
-  return {
-    error: r.status === 401
-      ? onlineMessage('errors.notSignedIn')
-      : onlineMessage('errors.deleteFailed'),
-    appleRevocation: null,
-  };
 }

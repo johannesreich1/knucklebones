@@ -181,6 +181,10 @@ async function accountSwitchAfterRuneProbe(page, routes) {
   routes.makeRuneUnseen('fate');
   await showWinningResult(page);
   await page.waitForSelector('#ovEnd.on #endFeature:not([hidden])', { timeout: 15000 });
+  /* The in-flight A row fails after the session becomes B. An unavailable
+     response must still recheck who owns the browser before cached A is
+     accepted as a transient fallback. */
+  routes.failNextAccountProfileResponse();
   routes.deferNextAccountProfileResponse();
   const readsBeforeProfile = routes.runeCalls();
   /* THE RANK PILL IS THE PROFILE'S DOOR on the result screen; the row itself

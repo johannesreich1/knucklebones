@@ -1,4 +1,4 @@
-export async function probeAccountActions(page, { door, named }) {
+export async function probeAccountActions(page, { door, named }, routes) {
   const assertNoOfflineRestart = async (label) => {
     const visible = await page.evaluate(() => {
       const button = document.getElementById('btnAskAlt');
@@ -32,6 +32,7 @@ export async function probeAccountActions(page, { door, named }) {
     await page.waitForSelector('#ovAsk.on', { timeout: 5000 });
     await assertNoOfflineRestart('nickname claim');
     const confirmHead = await page.evaluate(() => document.querySelector('#askHead')?.textContent);
+    routes.failNextAccountProfileResponse();
     await page.click('#btnAskYes');
     await page.waitForFunction(() => document.querySelector('#askHead')?.textContent?.startsWith('Keep '),
       null, { timeout: 15000 });

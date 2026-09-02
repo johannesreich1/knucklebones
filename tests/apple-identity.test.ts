@@ -19,7 +19,7 @@ const check = (condition: boolean, message: string, detail?: unknown) => {
 
 interface Proof { provider: string; token: string; nonce: string }
 interface FakeAuthOptions {
-  session?: { access_token: string } | null;
+  session?: { access_token: string; user?: { id: string } } | null;
   sessionError?: { code?: string } | null;
   signError?: { code?: string } | null;
   linkError?: { code?: string } | null;
@@ -73,9 +73,11 @@ function applePorts(
   confirmGuest: boolean | null = true,
 ) {
   const registered: string[] = [];
+  const registrationAccounts: Array<string | undefined> = [];
   const asked: number[] = [];
   return {
     registered,
+    registrationAccounts,
     asked,
     ports: {
       getPlatform: () => platform,
@@ -89,8 +91,9 @@ function applePorts(
         return id;
       },
       digest: async (value: string) => `sha256:${value}`,
-      registerAuthorizationCode: async (code: string) => {
+      registerAuthorizationCode: async (code: string, expectedAccountId?: string) => {
         registered.push(code);
+        registrationAccounts.push(expectedAccountId);
         if (registration === 'throws') throw new Error('registration transport failed');
         return registration;
       },
@@ -154,12 +157,14 @@ check(await createAppleIdentity(conflictPorts.ports).attach() === APPLE_IDENTITY
 'an Apple identity owned elsewhere did not fail closed');
 
 /* An account re-authorizing the Apple identity it already owns. */
-const relinking = () => fakeAppleAuth({ session: { access_token: 'account' },
+const relinking = () => fakeAppleAuth({
+  session: { access_token: 'account', user: { id: 'account-a' } },
   linkError: { code: 'identity_already_exists' }, appleAlreadyLinked: true });
 const ours = relinking();
 const oursPorts = applePorts('ios', iosPlugin, ours.auth, ['ours-raw']);
-check(await createAppleIdentity(oursPorts.ports).attach() === null
-  && oursPorts.registered[0] === 'single-use-code',
+check(await createAppleIdentity(oursPorts.ports).attach('account-a') === null
+  && oursPorts.registered[0] === 'single-use-code'
+  && oursPorts.registrationAccounts[0] === 'account-a',
 'an already-linked Apple identity could not repair its revocation credential');
 
 /* The credential is the WHOLE point of the repair, and Apple hands out the
@@ -177,6 +182,15 @@ check(await createAppleIdentity(threwPorts.ports).repair()
   === APPLE_IDENTITY_MESSAGES.revocationSetup,
 'a rejected registration was reported when the player asked for a repair');
 
+const missingCodePorts = applePorts('ios', {
+  initialize: async () => undefined,
+  signIn: async () => ({ idToken: 'ios-token-without-code' }),
+}, relinking().auth, ['missing-code']);
+check(await createAppleIdentity(missingCodePorts.ports).repair()
+  === APPLE_IDENTITY_MESSAGES.revocationSetup
+  && missingCodePorts.registered.length === 0,
+'a repair without Apple\'s deletion authorization code was reported as complete');
+
 /* Signing in and upgrading promise an IDENTITY, and Supabase has already
    granted it by this point. A credential that will not store must not hold the
    sheet open over an account that now exists — the profile's standing "deletion
@@ -192,6 +206,18 @@ const upgradePorts = applePorts('ios', iosPlugin, fakeAppleAuth({
 }).auth, ['upgrade-raw'], 'throws');
 check(await createAppleIdentity(upgradePorts.ports).attach() === null,
 'a rejected registration blocked an account upgrade that had already succeeded');
+
+const switchedBeforeLink = fakeAppleAuth({
+  session: { access_token: 'account-b', user: { id: 'account-b' } },
+});
+const switchedBeforeLinkPorts = applePorts(
+  'ios', iosPlugin, switchedBeforeLink.auth, ['switched-before-link'],
+);
+check(await createAppleIdentity(switchedBeforeLinkPorts.ports).repair('account-a')
+  === APPLE_IDENTITY_MESSAGES.failed
+  && switchedBeforeLink.calls.link.length === 0
+  && switchedBeforeLinkPorts.registered.length === 0,
+'an Apple proof opened by account A mutated account B after the native wait');
 
 check(APPLE_IDENTITY_MESSAGES.revocationSetup !== APPLE_IDENTITY_MESSAGES.failed
   && !!APPLE_IDENTITY_MESSAGES.revocationSetup.trim(),

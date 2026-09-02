@@ -55,6 +55,7 @@ export function finishOnlineMatch(options: {
   const opponentJoinPoints = online.names.ratings?.[options.opponentSeat] ?? null;
   const report: FinishReport = {
     matchId: match.id,
+    ownerAccountId: meIsP1 ? match.p1 : match.p2,
     won,
     draw: match.winner === null,
     forfeit: match.status === 'forfeit',

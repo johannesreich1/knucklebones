@@ -27,10 +27,11 @@ const GC_PROOF: GameCenterProof = {
 };
 
 function gameCenterHarness(options: {
-  session?: { access_token: string } | null;
+  session?: { access_token: string; user?: { id: string } } | null;
   sessionError?: { code: string } | null;
   status?: number;
   body?: unknown;
+  deferProof?: boolean;
   throwAt?: 'proof' | 'request' | 'json' | 'verifyOtp' | 'refreshSession';
 } = {}) {
   const calls = {
@@ -39,11 +40,20 @@ function gameCenterHarness(options: {
     verifyOtp: [] as Array<{ token_hash: string; type: string }>,
     refresh: 0,
   };
+  let currentSession = options.session ?? null;
+  let markProofStarted: (() => void) | undefined;
+  let releaseProof: (() => void) | undefined;
+  const proofStarted = new Promise<void>((resolve) => { markProofStarted = resolve; });
+  const proofRelease = new Promise<void>((resolve) => { releaseProof = resolve; });
   let requestedMode = '';
   const identity = createGameCenterIdentity({
     available: () => true,
     getProof: async () => {
       if (options.throwAt === 'proof') throw new Error('proof failed');
+      if (options.deferProof) {
+        markProofStarted?.();
+        await proofRelease;
+      }
       return GC_PROOF;
     },
     // Same boundary widening the Apple fakes use in apple-identity.test.ts: the
@@ -52,7 +62,7 @@ function gameCenterHarness(options: {
     getAuth: () => ({
       getSession: async () => {
         calls.getSession++;
-        return { data: { session: options.session ?? null }, error: options.sessionError ?? null };
+        return { data: { session: currentSession }, error: options.sessionError ?? null };
       },
       verifyOtp: async (params: { token_hash: string; type: string }) => {
         calls.verifyOtp.push(params);
@@ -81,7 +91,14 @@ function gameCenterHarness(options: {
       };
     },
   });
-  return { identity, calls, requestedMode: () => requestedMode };
+  return {
+    identity,
+    calls,
+    requestedMode: () => requestedMode,
+    proofStarted,
+    releaseProof: () => releaseProof?.(),
+    setSession: (session: typeof currentSession) => { currentSession = session; },
+  };
 }
 
 export async function runGameCenterClientContractTests(check: Check): Promise<void> {
@@ -122,6 +139,23 @@ export async function runGameCenterClientContractTests(check: Check): Promise<vo
   const appeared = gameCenterHarness({ session: { access_token: 'appeared-during-proof' } });
   check(await appeared.identity.restore() === null && appeared.calls.verifyOtp.length === 0,
   'Game Center OTP replaced a session that appeared during verification');
+
+  const switchedBeforeAttach = gameCenterHarness({
+    session: { access_token: 'account-a', user: { id: 'account-a' } },
+    deferProof: true,
+  });
+  const attaching = switchedBeforeAttach.identity.attach('account-a');
+  await switchedBeforeAttach.proofStarted;
+  switchedBeforeAttach.setSession({
+    access_token: 'account-b', user: { id: 'account-b' },
+  });
+  switchedBeforeAttach.releaseProof();
+  check(await attaching
+    === GAME_CENTER_IDENTITY_MESSAGES.failed
+    && switchedBeforeAttach.calls.requests.length === 0
+    && switchedBeforeAttach.calls.refresh === 0,
+  'a Game Center proof opened by account A mutated account B after the native wait',
+  switchedBeforeAttach.calls);
 
   const gcConflict = gameCenterHarness({
     session: { access_token: 'guest' }, status: 409,

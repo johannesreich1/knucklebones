@@ -31,6 +31,61 @@ const REPAIRABLE = { gameCenterLinked: false, appleLinked: true, appleRevocation
 const LINKED = 'Game Center linked to this account';
 const UNLINKED = 'Game Center not linked to this account';
 const CONFLICT = 'That Game Center account is already linked to another player.';
+const ACCOUNT_B = '11111111-2222-4333-8444-555555555555';
+
+async function probePublicationAccountSwitch(page, routes) {
+  await page.waitForSelector('#btnLinkGameCenter:not([hidden])');
+  const assertionsBefore = routes.gameCenterModes()
+    .filter((mode) => mode === 'assert-current').length;
+  routes.deferNextGameCenterAttach();
+  await page.click('#btnLinkGameCenter');
+  await routes.gameCenterAttachStarted;
+  /* The gateway has committed A's link but its answer has not reached the
+     shared control. Become B at precisely that publication boundary; the
+     provider's required session refresh must also describe the now-current B. */
+  const switched = await page.evaluate((nextAccountId) => {
+    const key = Object.keys(localStorage)
+      .find((candidate) => candidate.startsWith('sb-') && candidate.endsWith('-auth-token'));
+    if (!key) return false;
+    const stored = JSON.parse(localStorage.getItem(key));
+    const session = stored?.currentSession ?? stored;
+    if (!session?.user) return false;
+    session.user.id = nextAccountId;
+    localStorage.setItem(key, JSON.stringify(stored));
+    return true;
+  }, ACCOUNT_B);
+  routes.setGameCenterRefreshAccount(ACCOUNT_B);
+  routes.releaseGameCenterAttach();
+  await page.waitForFunction(() => document.getElementById('onLoading')?.hidden === false,
+    null, { timeout: 5000 });
+  const afterLink = await page.evaluate(() => ({
+    cache: localStorage.getItem('knucklebones.online.account-profile'),
+    buttonDisabled: document.getElementById('btnLinkGameCenter')?.disabled,
+    proofs: globalThis.__gameCenter?.proofs ?? 0,
+  }));
+
+  /* If A's callback acknowledged the native revision globally, ranked entry
+     under linked B would continue without asserting ownership. The fixed path
+     keeps that revision unaccepted, so B must ask Game Center again. */
+  await page.click('#btnOnlineBack');
+  await page.waitForSelector('#ovStart.on', { timeout: 5000 });
+  await page.click('#btnOnline');
+  const deadline = Date.now() + 5000;
+  while (routes.gameCenterModes().filter((mode) => mode === 'assert-current').length
+      <= assertionsBefore && Date.now() < deadline) {
+    await page.waitForTimeout(25);
+  }
+  const modes = routes.gameCenterModes();
+  return {
+    switched,
+    afterLink,
+    modes,
+    identity: routes.identityState(),
+    assertedForB: modes.filter((mode) => mode === 'assert-current').length
+      === assertionsBefore + 1,
+    proofsAfterEntry: await page.evaluate(() => globalThis.__gameCenter?.proofs ?? 0),
+  };
+}
 
 async function probeConnect(page, routes) {
   const before = await readAccountAccess(page);
@@ -127,6 +182,20 @@ export async function runAccountGameCenterScenarios(suite) {
   'linking Game Center swallowed the Apple repair still owed to this account', after);
   check(!after?.error?.shown && after.problemSheets === 0 && after.authSheets === 0,
   'a completed Game Center link reported an error or opened a sheet', after);
+
+  const switchedOwner = await visit({ member: true, named: true, identity: REPAIRABLE,
+    appleBridge: true, gameCenterBridge: 'linked', skipStandardProbes: true,
+    returnAfterProbe: true, probe: probePublicationAccountSwitch });
+  out.gameCenterPublicationAccountSwitch = switchedOwner.probeResult;
+  const switched = switchedOwner.probeResult;
+  check(switched?.switched && switched.identity?.gameCenterLinked
+    && switched.afterLink?.cache === null && switched.afterLink.buttonDisabled
+    && switched.assertedForB
+    && switched.proofsAfterEntry === switched.afterLink.proofs + 1,
+  'account B inherited account A\'s completed Game Center publication or acknowledgement',
+  switched);
+  check(switchedOwner.errs.length === 0,
+  'page errors during the Game Center publication account switch', switchedOwner.errs);
 
   /* (c) The identity belongs to somebody else. Fail closed: copy the player
      can read, and an account that did not move. */

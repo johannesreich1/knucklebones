@@ -5,12 +5,13 @@ import type { EndPlate } from '../../ui/endscreen-plates.ts';
 import { setPlates } from '../../ui/endscreen-plates.ts';
 import { refreshHomeChip } from '../../ui/homechip.ts';
 import {
-  myLadder,
-  myStanding,
+  myLadderLookup,
+  myStandingLookup,
   playerCard,
   type PlayerCard,
 } from '../api/ladder-api.ts';
 import { myProfile } from '../identity/profile.ts';
+import { currentUser } from '../identity/session.ts';
 import type { FinishReport } from '../play/play.ts';
 import { showFaceoff, type MySide } from './faceoff.ts';
 
@@ -35,12 +36,19 @@ export function createResultPlayers(
   report: FinishReport,
   ports: ResultPlayerPorts,
 ): ResultPlayers {
-  let cache = readProfileCache();
-  const cachedRating = typeof cache?.rating === 'number' && report.delta != null
-    ? cache.rating + report.delta : null;
-  let visiblePoints: number | null = cachedRating;
-  let visibleRank: number | null = cache?.rank ?? null;
-  let visibleApex = !!cache?.apex;
+  const cached = readProfileCache();
+  const ownerAccountId = (report.ownerAccountId ?? cached?.accountId)?.toLowerCase() ?? null;
+  let cache = !ownerAccountId || cached?.accountId?.toLowerCase() === ownerAccountId
+    ? cached : null;
+  const cachedPoints = typeof cache?.rating === 'number' ? cache.rating : null;
+  const projectedPoints = cachedPoints !== null && report.delta != null
+    ? cachedPoints + report.delta : cachedPoints;
+  let visiblePoints: number | null = projectedPoints;
+  /* A match delta changes points before a fresh standing can name its rank.
+     Never pair that projected/new generation with the cached rank/apex. */
+  const cachedTupleStillExact = report.delta == null || report.delta === 0;
+  let visibleRank: number | null = cachedTupleStillExact ? cache?.rank ?? null : null;
+  let visibleApex = cachedTupleStillExact && !!cache?.apex;
   let visibleFoe: PlayerCard | null = null;
   let visibleMine: MySide | null = null;
 
@@ -91,24 +99,38 @@ export function createResultPlayers(
   ];
 
   const hydrate = (): void => {
-    void Promise.all([myProfile(), myStanding(), myLadder(), playerCard(opponentName())])
-      .then(([profile, standing, ladder, foe]) => {
+    void Promise.all([myProfile(), myStandingLookup(), myLadderLookup(), playerCard(opponentName())])
+      .then(async ([profile, standingResult, ladderResult, foe]) => {
+        const boundaryUser = await currentUser();
         if (!ports.current()) return;
-        if (profile) {
-          cache = { ...cache, nickname: profile.nickname, avatar: profile.avatar ?? null,
-            rating: profile.rating };
+        const accountId = profile?.id.toLowerCase() ?? null;
+        if (!profile || accountId !== ownerAccountId
+            || !ladderResult.ok || ladderResult.accountId !== accountId
+            || boundaryUser?.id.toLowerCase() !== accountId) return;
+        const ladder = ladderResult.ladder;
+        const standingMatches = standingResult.ok && standingResult.accountId === accountId;
+        const standing = standingMatches
+          ? standingResult.standing : null;
+        cache = { ...cache, nickname: profile.nickname, avatar: profile.avatar ?? null,
+          rating: profile.rating };
+        const points = standing?.points ?? profile?.rating ?? projectedPoints;
+        const apex = standingMatches
+          ? standing ? inApex(points ?? 0, standing.rank, standing.population) : false
+          : visibleApex;
+        if (standingMatches) {
+          cacheStanding(profile.id, standing, apex);
         }
-        const points = standing?.points ?? profile?.rating ?? cachedRating;
-        const apex = standing ? inApex(points ?? 0, standing.rank, standing.population) : false;
-        cacheStanding(standing?.rank ?? null, apex);
         refreshHomeChip();
         visiblePoints = points;
-        visibleRank = standing?.rank ?? null;
-        visibleApex = apex;
+        visibleRank = standingMatches ? standing?.rank ?? null : null;
+        visibleApex = standingMatches && apex;
         visibleFoe = foe;
-        visibleMine = profile && ladder
-          ? { name: profile.nickname, avatar: profile.avatar ?? null, lad: ladder }
-          : null;
+        visibleMine = {
+          name: profile.nickname,
+          avatar: profile.avatar ?? null,
+          lad: points == null ? ladder : { ...ladder, points },
+          apex: visibleApex,
+        };
         setPlates(plates());
       }).catch(() => undefined);
   };

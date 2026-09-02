@@ -69,6 +69,8 @@ export interface OnlineState {
 export interface FinishReport {
   /** Terminal match identity; older presentation fixtures may omit it. */
   matchId?: string;
+  /** Account seated in that terminal match; binds late Result hydration. */
+  ownerAccountId?: string;
   /** Tri-state preload: transport uncertainty must remain recoverable. */
   progression?: ProgressionLookup;
   won: boolean;

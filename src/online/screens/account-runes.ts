@@ -7,10 +7,7 @@ import { spellHue, spellIcon } from '../../ui/spellicons.ts';
 import { tap } from '../../ui/tap.ts';
 import { esc } from './format.ts';
 import type { EquippedRuneSelection } from '../runes/rune-equip.ts';
-import {
-  collectedRuneIds,
-  equippedRuneSelection,
-} from '../../rune-collection-cache.ts';
+import { collectedRuneIds } from '../../rune-collection-cache.ts';
 import { showSheet } from '../../ui/sheet.ts';
 import { completeAccountRuneSeatGuide } from './account-rune-guide.ts';
 import { runeSeatPickerMarkup } from './account-rune-seat-markup.ts';
@@ -23,6 +20,13 @@ import type { PlayerRuneRow } from '../runes/rune-collection.ts';
    rune no longer seats it (removed 2026-08-28, owner call: the behaviour is
    to be solved differently), so 'none' is where every new collection starts. */
 export type SeatState = 'none' | 'live' | 'waiting';
+export interface PersistedRuneEquipment {
+  readonly accountId: string;
+  readonly selection: EquippedRuneSelection;
+}
+export type RuneEquipmentPersistence = PersistedRuneEquipment & { readonly kind: 'confirmed' }
+  | { readonly kind: 'refused' }
+  | { readonly kind: 'account-mismatch'; readonly accountId: string };
 
 /**
  * The profile owns the interaction, while the rune data owner decides how a
@@ -31,9 +35,15 @@ export type SeatState = 'none' | 'live' | 'waiting';
  * also carries a concrete fallback rune.
  */
 export interface RuneEquipmentPort {
+  accountId(): string | null;
   current(): EquippedRuneSelection;
-  persist(selection: EquippedRuneSelection): Promise<EquippedRuneSelection>;
-  changed(): void;
+  persist(
+    accountId: string,
+    selection: EquippedRuneSelection,
+  ): Promise<RuneEquipmentPersistence>;
+  changed(result: PersistedRuneEquipment): boolean;
+  mismatched(accountId: string): void;
+  settled(): void;
 }
 
 /* Reaching SILVER once makes the rune seat live permanently. The caller passes
@@ -104,11 +114,13 @@ const EMPTY_SEAT_ICON = '<svg class="sico seatnone" viewBox="0 0 20 20" width="1
   + ' aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4">'
   + '<path d="M10 6.9v6.2M6.9 10h6.2" stroke-linecap="round"/></svg>';
 
-export function paintEquippedSeat(group: string | null): void {
+export function paintEquippedSeat(
+  group: string | null,
+  equipment: EquippedRuneSelection,
+  owned: readonly string[],
+): void {
   const seat = $('#accSeat');
-  const equipment = equippedRuneSelection();
   const equipped = equipment.kind === 'fixed' ? equipment.runeId : null;
-  const owned = collectedRuneIds();
   seat.hidden = owned.length === 0;
   if (seat.hidden) return;
   const state = equipment.kind === 'none'
@@ -146,7 +158,7 @@ function unlockedAt(value: string | undefined): string | null {
   });
 }
 
-let activeRuneSelection: RuneEquipmentPort | null = null;
+let activeRuneSelection: { port: RuneEquipmentPort; accountId: string } | null = null;
 let selectionInert: Array<{ element: HTMLElement; inert: boolean }> = [];
 let equipmentWritePending = false;
 
@@ -155,8 +167,10 @@ let equipmentWritePending = false;
 function setEquipmentWritePending(pending: boolean): void {
   equipmentWritePending = pending;
   const seat = $('#accSeat') as HTMLButtonElement;
-  seat.disabled = pending;
-  if (pending) seat.setAttribute('aria-busy', 'true');
+  if (pending) {
+    seat.disabled = true;
+    seat.setAttribute('aria-busy', 'true');
+  }
   else seat.removeAttribute('aria-busy');
 }
 
@@ -204,9 +218,9 @@ function paintRuneSelectionState(): void {
   });
 }
 
-function enterRuneSelection(port: RuneEquipmentPort): void {
+function enterRuneSelection(port: RuneEquipmentPort, accountId: string): void {
   leaveRuneSelection(false);
-  activeRuneSelection = port;
+  activeRuneSelection = { port, accountId };
   const panel = $('#onAccount');
   const host = $('#accRunes');
   const onlineHead = $('#ovOnline').querySelector<HTMLElement>('.shead');
@@ -225,16 +239,20 @@ function enterRuneSelection(port: RuneEquipmentPort): void {
 
 async function persistEquipment(
   port: RuneEquipmentPort,
+  accountId: string,
   selection: EquippedRuneSelection,
 ): Promise<void> {
   if (equipmentWritePending) return;
   setEquipmentWritePending(true);
+  let accepted = false;
   try {
-    await port.persist(selection);
-    port.changed();
+    const result = await port.persist(accountId, selection);
+    if (result.kind === 'confirmed') accepted = port.changed(result);
+    if (result.kind === 'account-mismatch') port.mismatched(result.accountId);
   } finally {
     setEquipmentWritePending(false);
-    requestAnimationFrame(() => $('#accSeat').focus({ preventScroll: true }));
+    port.settled();
+    if (accepted) requestAnimationFrame(() => $('#accSeat').focus({ preventScroll: true }));
   }
 }
 
@@ -258,9 +276,9 @@ export function bindAccountRuneSheets(): void {
     if (activeRuneSelection) {
       if (!button.classList.contains('collected')) return;
       Sfx.tap();
-      const port = activeRuneSelection;
+      const { port, accountId } = activeRuneSelection;
       leaveRuneSelection(false);
-      void persistEquipment(port, { kind: 'fixed', runeId });
+      void persistEquipment(port, accountId, { kind: 'fixed', runeId });
       return;
     }
     const collectedAt = button.dataset.collectedAt;
@@ -293,6 +311,8 @@ export function bindEquippedSeat(equipment: RuneEquipmentPort): void {
     /* Nothing collected is the one state with no choice to offer. The seat is
        hidden then anyway (paintEquippedSeat), so this is belt and braces. */
     if (!collected.length) return;
+    const accountId = equipment.accountId()?.toLowerCase() ?? null;
+    if (!accountId) return;
     /* A guided SILVER arrival completes only by using this real door. The
        guide restores the profile before the canonical equipment sheet opens. */
     completeAccountRuneSeatGuide();
@@ -312,13 +332,13 @@ export function bindEquippedSeat(equipment: RuneEquipmentPort): void {
         button.disabled = true;
       });
       sheet.close(false);
-      await persistEquipment(equipment, selection);
+      await persistEquipment(equipment, accountId, selection);
     };
     sheet.card.querySelector<HTMLButtonElement>('#accSeatEquip')
       ?.addEventListener('click', () => {
         Sfx.tap();
         sheet.close(false);
-        enterRuneSelection(equipment);
+        enterRuneSelection(equipment, accountId);
       });
     sheet.card.querySelector<HTMLButtonElement>('#accSeatRandom')
       ?.addEventListener('click', () => { void commit({ kind: 'random' }); });

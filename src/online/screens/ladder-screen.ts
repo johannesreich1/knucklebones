@@ -1,4 +1,4 @@
-import { groupFill, boardGroup } from '../../core/ladder.ts';
+import { groupFill, boardGroup, inApex } from '../../core/ladder.ts';
 import {
   formatNumber,
   ladderGroupName,
@@ -8,7 +8,9 @@ import {
 import { Sfx } from '../../ui/audio.ts';
 import { $, byId } from '../../ui/dom.ts';
 import { paintAvatar } from '../../ui/avatar.ts';
+import { refreshHomeChip } from '../../ui/homechip.ts';
 import { recordHtml } from '../../ui/record.ts';
+import { cacheStanding } from '../../profile-cache.ts';
 import {
   mountVirtualList,
   type VirtualList,
@@ -18,11 +20,12 @@ import {
 import {
   ladderPage,
   ladderPageBefore,
-  myLadder,
-  myStanding,
+  myLadderLookup,
+  myStandingLookup,
   type LadderRow,
 } from '../api/ladder-api.ts';
 import { myProfile } from '../identity/profile.ts';
+import { currentUser } from '../identity/session.ts';
 import { esc, pts, rank } from './format.ts';
 import { showFaceoff } from './faceoff.ts';
 import { isOnlinePanelCurrent, showOnlineLoading, showOnlinePanel } from './shell.ts';
@@ -66,11 +69,33 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
     virtual = null;
     listElement.innerHTML = '';
 
-    const [me, ladder, standing] = await Promise.all([myProfile(), myLadder(), myStanding()]);
+    const [profile, ladderResult, standingResult] = await Promise.all([
+      myProfile(), myLadderLookup(), myStandingLookup(),
+    ]);
+    const boundaryUser = await currentUser();
     if (run !== showRevision || !isOnlinePanelCurrent('onLadder')) return;
+    const accountId = profile?.id.toLowerCase() ?? null;
+    const coherent = !!accountId && ladderResult.ok
+      && ladderResult.accountId === accountId
+      && boundaryUser?.id.toLowerCase() === accountId;
+    const me = coherent ? profile : null;
+    const ladderBase = coherent && ladderResult.ok ? ladderResult.ladder : null;
+    const standing = coherent && standingResult.ok
+        && standingResult.accountId === accountId
+      ? standingResult.standing : null;
+    const ladder = ladderBase && standing
+      ? { ...ladderBase, points: standing.points } : ladderBase;
+    const mineApex = !!standing && inApex(
+      standing.points, standing.rank, standing.population,
+    );
+
+    if (me && standingResult.ok && standingResult.accountId === accountId) {
+      cacheStanding(me.id, standing, mineApex);
+      refreshHomeChip();
+    }
 
     const alive = () => run === showRevision && isOnlinePanelCurrent('onLadder');
-    const myGroup = ladder ? boardGroup(ladder.points, false) : null;
+    const myGroup = ladder ? boardGroup(ladder.points, mineApex) : null;
     /* Which row a mounted button is showing right now. A slot outlives any one
        item — a tombstone becomes a row, and a shifting board can re-seat it —
        so the tap has to read the CURRENT row rather than close over the first. */
@@ -188,7 +213,7 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
               return;
             }
             showFaceoff(row, me && ladder
-              ? { name: me.nickname, avatar: me.avatar ?? null, lad: ladder }
+              ? { name: me.nickname, avatar: me.avatar ?? null, lad: ladder, apex: mineApex }
               : null);
           });
           return button;

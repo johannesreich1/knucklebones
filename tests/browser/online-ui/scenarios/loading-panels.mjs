@@ -1,3 +1,8 @@
+import {
+  runCachedProfileResilienceScenarios,
+  seedCompleteProfile,
+} from './cached-profile-resilience.mjs';
+
 export async function runOnlineLoadingPanelScenarios(suite) {
   const { visit, out, check } = suite;
 
@@ -30,6 +35,201 @@ export async function runOnlineLoadingPanelScenarios(suite) {
     }
     check(run.errs.length === 0, `page errors during the ${name} loading transition`, run.errs);
   }
+
+  /* A complete local Profile is the screen. Only the positional standing is
+     still a wait, and that wait occupies the rank value rather than covering
+     facts the device can already paint. Hold standing independently from the
+     other profile reads so a fast mock cannot conceal the boundary. */
+  const cachedProfile = await visit({
+    preauthenticated: true,
+    gameCenterBridge: 'linked',
+    identityDelay: 700,
+    dataDelay: 900,
+    deferStanding: true,
+    inspectEntry: true,
+    initScript: seedCompleteProfile,
+    skipStandardProbes: true,
+    returnAfterProbe: true,
+    probe: async (page, routes) => {
+      const beforeIdentity = await page.evaluate(() => {
+        const panel = document.getElementById('onAccount');
+        const rank = document.getElementById('btnRank');
+        const rect = rank?.getBoundingClientRect();
+        const hit = rect
+          ? document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+          : null;
+        return {
+          panelInert: panel?.inert === true,
+          rankDisabled: rank instanceof HTMLButtonElement && rank.disabled,
+          rankOwnsHit: !!hit && !!rank?.contains(hit),
+        };
+      });
+      await Promise.race([
+        routes.standingStarted,
+        new Promise((_, reject) => setTimeout(() => reject(new Error(
+          'Profile never started its independently deferred standing read',
+        )), 5000)),
+      ]);
+      /* The shared die has a 200 ms no-flash grace and a 250 ms reveal. The
+         coherent refresh is still held by match history for 900 ms, so this
+         samples a fully visible die while the local snapshot is unquestionably
+         still the presentation underneath it. */
+      await page.waitForTimeout(520);
+      const before = await page.evaluate(() => {
+        const visible = (element) => {
+          if (!element) return false;
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          return rect.width > 0 && rect.height > 0
+            && style.visibility === 'visible' && style.display !== 'none'
+            && Number(style.opacity) > .9;
+        };
+        const tile = document.getElementById('btnRank')?.getBoundingClientRect();
+        const loader = document.querySelector('#accRank .die.ldclock');
+        const loaderRect = loader?.getBoundingClientRect();
+        return {
+          accountVisible: visible(document.getElementById('onAccount')),
+          fullLoaderHidden: !visible(document.querySelector('#onLoading .ldwait')),
+          name: document.getElementById('accName')?.textContent,
+          points: document.getElementById('accPoints')?.textContent,
+          peak: document.getElementById('accPeak')?.textContent,
+          streak: document.getElementById('accStreak')?.textContent,
+          opponent: document.querySelector('#accRecent .nm')?.textContent,
+          rankBusy: document.getElementById('btnRank')?.getAttribute('aria-busy'),
+          loaderVisible: visible(loader),
+          loaderSize: loaderRect ? [loaderRect.width, loaderRect.height] : null,
+          loaderNumeral: loader?.querySelector('.num')
+            ? getComputedStyle(loader.querySelector('.num')).display : null,
+          visibleLoaders: [...document.querySelectorAll('.die.ldclock')].filter(visible).length,
+          tile: tile ? { x: tile.x, y: tile.y, width: tile.width, height: tile.height } : null,
+        };
+      });
+      const beforeRankAccessible = await page.getByRole('button', {
+        name: /rank.*loading.*open the ladder/i,
+      }).count();
+      routes.releaseStanding();
+      await routes.standingFinished;
+      await page.waitForFunction(() => document.getElementById('accRank')?.textContent === '#2');
+      const after = await page.evaluate(() => {
+        const tile = document.getElementById('btnRank')?.getBoundingClientRect();
+        return {
+          rank: document.getElementById('accRank')?.textContent,
+          busy: document.getElementById('btnRank')?.hasAttribute('aria-busy'),
+          loaderGone: !document.querySelector('#accRank .ldclock'),
+          panelInert: document.getElementById('onAccount')?.inert === true,
+          rankDisabled: document.getElementById('btnRank')?.disabled === true,
+          tile: tile ? { x: tile.x, y: tile.y, width: tile.width, height: tile.height } : null,
+        };
+      });
+      const afterRankAccessible = await page.getByRole('button', {
+        name: /rank.*#2.*open the ladder/i,
+      }).count();
+      await page.evaluate(() => {
+        Object.defineProperty(navigator, 'languages', {
+          configurable: true, get: () => ['de-DE'],
+        });
+        window.dispatchEvent(new Event('languagechange'));
+      });
+      await page.waitForFunction(() => document.documentElement.dataset.locale === 'de');
+      const localizedRankAccessible = await page.getByRole('button', {
+        name: /rang.*#2.*rangliste öffnen/i,
+      }).count();
+      await page.click('#btnOnlineBack');
+      await page.waitForSelector('#ovStart.on', { timeout: 5000 });
+      const home = await page.locator('#homeChip').innerText();
+      return { beforeIdentity, before, beforeRankAccessible,
+        after, afterRankAccessible, localizedRankAccessible, home };
+    },
+  });
+  out.onlineLoading.cachedProfile = cachedProfile.probeResult;
+  const cached = cachedProfile.probeResult;
+  check(cachedProfile.standingCallsBeforeOnline === 0,
+    'Home fetched standing before an online door was opened', cachedProfile.standingCallsBeforeOnline);
+  check(cachedProfile.homeStyles?.before?.chip.includes('#17'),
+    'Home did not paint its cached rank immediately', cachedProfile.homeStyles?.before);
+  check(cachedProfile.entry?.frames > 0 && cachedProfile.entry.emptyFrames === 0
+      && cachedProfile.entry.first?.visiblePanels?.join() === 'onAccount',
+  'a complete cached Profile showed a full-view wait during entry', cachedProfile.entry);
+  check(!cached?.beforeIdentity?.panelInert && cached.beforeIdentity.rankDisabled
+      && !cached.beforeIdentity.rankOwnsHit,
+    'cached Profile controls were live before their account was verified',
+    cached?.beforeIdentity);
+  check(cached?.before?.accountVisible && cached.before.fullLoaderHidden
+      && cached.before.name === 'CachedPlayer' && cached.before.points === '321'
+      && cached.before.peak === '500' && cached.before.streak === '9'
+      && cached.before.opponent === 'CachedOpponent',
+  'a complete cached Profile was not painted before its remote refresh', cached?.before);
+  check(cached?.before?.rankBusy === 'true' && cached.before.loaderVisible
+      && cached.before.loaderSize?.every((size) => Math.abs(size - 16) <= .5)
+      && cached.before.loaderNumeral === 'none' && cached.before.visibleLoaders === 1,
+  'rank did not own the one visible, pips-only inline loading die', cached?.before);
+  check(cached?.beforeRankAccessible === 1 && cached.afterRankAccessible === 1
+      && cached.localizedRankAccessible === 1,
+    'the rank wait/value was absent from the button accessibility name', cached);
+  check(cached?.after?.rank === '#2' && !cached.after.busy && cached.after.loaderGone
+      && !cached.after.panelInert && !cached.after.rankDisabled,
+    'fresh standing did not replace the inline rank wait', cached?.after);
+  check(cached?.before?.tile && cached.after.tile
+      && Math.abs(cached.before.tile.x - cached.after.tile.x) <= .5
+      && Math.abs(cached.before.tile.y - cached.after.tile.y) <= .5
+      && Math.abs(cached.before.tile.width - cached.after.tile.width) <= .5
+      && Math.abs(cached.before.tile.height - cached.after.tile.height) <= .5,
+  'the rank tile moved when its inline loader became the value', cached);
+  check(cached?.home.includes('#2'),
+    'Home did not adopt the fresh rank after Profile loaded it', cached?.home);
+  check(cachedProfile.errs.length === 0,
+    'page errors during cached Profile rank loading', cachedProfile.errs);
+
+  /* First-rune discovery is independent of the complete cached Profile. If it
+     is unavailable, Profile still verifies and unlocks ordinary controls;
+     only the authority-owned rune seat stays closed while rank waits inline. */
+  const unavailableEntryRunes = await visit({
+    preauthenticated: true,
+    failRuneOnCall: 'all',
+    deferStanding: true,
+    initScript: seedCompleteProfile,
+    skipStandardProbes: true,
+    returnAfterProbe: true,
+    probe: async (page, routes) => {
+      await Promise.race([
+        routes.standingStarted,
+        page.waitForTimeout(5000).then(() => { throw new Error(
+          'Profile did not start standing after entry rune hydration failed'); }),
+      ]);
+      await page.waitForFunction(() => !document.getElementById('onAccount')
+        ?.hasAttribute('data-account-pending'));
+      const state = await page.evaluate(() => ({
+        profileVisible: document.getElementById('onAccount')?.hidden === false,
+        fullLoaderHidden: document.getElementById('onLoading')?.hidden === true,
+        name: document.getElementById('accName')?.textContent,
+        avatarEnabled: !document.getElementById('btnAvatar')?.disabled,
+        claimEnabled: !document.getElementById('btnClaim')?.disabled,
+        seatDisabled: document.getElementById('accSeat')?.disabled,
+        rankBusy: document.getElementById('btnRank')?.getAttribute('aria-busy'),
+        inlineRankLoader: !!document.querySelector('#accRank .die.ldclock'),
+        visibleLoaders: [...document.querySelectorAll('.die.ldclock')]
+          .filter((element) => element.getClientRects().length > 0).length,
+      }));
+      const runeCalls = routes.runeCalls();
+      routes.releaseStanding();
+      await routes.standingFinished;
+      return { ...state, runeCalls };
+    },
+  });
+  out.onlineLoading.unavailableEntryRunes = unavailableEntryRunes.probeResult;
+  const unavailableEntry = unavailableEntryRunes.probeResult;
+  check(unavailableEntry?.profileVisible && unavailableEntry.fullLoaderHidden
+      && unavailableEntry.name === 'TestGuest001'
+      && unavailableEntry.avatarEnabled && unavailableEntry.claimEnabled
+      && unavailableEntry.seatDisabled && unavailableEntry.rankBusy === 'true'
+      && unavailableEntry.inlineRankLoader && unavailableEntry.visibleLoaders === 1
+      && unavailableEntry.runeCalls >= 2,
+  'entry rune failure left a complete cached Profile locked or fully loading', unavailableEntry);
+  check(unavailableEntryRunes.errs.length === 0,
+    'page errors while Profile recovered from unavailable entry runes',
+    unavailableEntryRunes.errs);
+
+  await runCachedProfileResilienceScenarios(suite);
 
   const paginationRace = await visit({
     door: 'board',

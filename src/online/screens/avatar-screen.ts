@@ -15,17 +15,20 @@ import {
 import { makeDie } from '../../ui/die.ts';
 import { $, byId } from '../../ui/dom.ts';
 import { loaderDie } from '../../ui/loader.ts';
+import { readAccountProfileCache } from '../../profile-cache.ts';
 import { repaintOnlineMessage } from '../message-copy.ts';
-import { myProfile, setAvatar } from '../identity/profile.ts';
+import { myProfileLookup, setAvatar } from '../identity/profile.ts';
 import { showOnlinePanel } from './shell.ts';
 
 export interface AvatarScreen {
   bind(): void;
-  show(): Promise<void>;
+  show(accountId: string): Promise<void>;
 }
 
 export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScreen {
   let pick: ProfileAvatar = DEFAULT_AVATAR;
+  let ownerAccountId: string | null = null;
+  let showRevision = 0;
   let avatarError: (() => string) | null = null;
   const clearAvatarError = (): void => {
     avatarError = null;
@@ -61,13 +64,36 @@ export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScre
     if (panel && !panel.hidden && avatarError) $('#onAvErr').textContent = avatarError();
   });
 
-  async function show(): Promise<void> {
+  async function show(accountId: string): Promise<void> {
+    const run = ++showRevision;
+    const expectedAccountId = accountId.toLowerCase();
+    const cached = readAccountProfileCache(expectedAccountId);
+    /* A reopened picker must not retain the previous account's choice. Save
+       remains inert until this owner has supplied either a fresh row or its
+       complete account-bound snapshot. */
+    ownerAccountId = null;
+    pick = canonicalProfileAvatar(cached?.profile.avatar ?? null);
+    const save = $('#btnAvatarSave') as HTMLButtonElement;
+    save.disabled = true;
     showOnlinePanel('onAvatar');
     clearAvatarError();
     const preview = $('#avPreview');
     if (!preview.firstChild) preview.appendChild(loaderDie(40));
-    const profile = await myProfile();
-    pick = canonicalProfileAvatar(profile?.avatar);
+    const profileResult = await myProfileLookup();
+    if (run !== showRevision) return;
+    if ((profileResult.ok
+      && profileResult.profile.id.toLowerCase() !== expectedAccountId)
+      || (!profileResult.ok && profileResult.reason === 'account-mismatch')) {
+      ownerAccountId = null;
+      await showAccount();
+      return;
+    }
+    if (!profileResult.ok && !cached) {
+      await showAccount();
+      return;
+    }
+    pick = canonicalProfileAvatar(profileResult.ok
+      ? profileResult.profile.avatar : cached?.profile.avatar ?? null);
     const draw = (): void => {
       const current = parseAvatar(pick);
       paintAvatar($('#avPreview'), pick, 86);
@@ -105,19 +131,36 @@ export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScre
       paintLabels();
     }
     draw();
+    ownerAccountId = expectedAccountId;
+    save.disabled = false;
   }
 
   function bind(): void {
     $('#btnAvatarSave').addEventListener('click', async () => {
       Sfx.tap();
       clearAvatarError();
-      const error = await setAvatar(pick);
-      if (error) {
-        const returned = error;
+      const accountId = ownerAccountId;
+      if (!accountId) {
+        await showAccount();
+        return;
+      }
+      const button = $('#btnAvatarSave') as HTMLButtonElement;
+      button.disabled = true;
+      const result = await setAvatar(accountId, pick);
+      if (!result.ok && result.reason === 'account-mismatch') {
+        ownerAccountId = null;
+        await showAccount();
+        return;
+      }
+      if (!result.ok) {
+        button.disabled = false;
+        const returned = result.message;
         showAvatarError(() => repaintOnlineMessage(returned));
         return;
       }
+      if (ownerAccountId !== accountId) return;
       clearAvatarError();
+      ownerAccountId = null;
       await showAccount();
     });
   }

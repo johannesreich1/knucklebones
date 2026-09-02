@@ -46,15 +46,18 @@
 :where(#kbroot) #onAccount .fact{flex:1;text-align:center;padding:9px 5px;border-radius:12px;
   background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);font-family:inherit;color:inherit}
 :where(#kbroot) #onAccount button.fact{cursor:pointer;appearance:none;-webkit-appearance:none}
+:where(#kbroot) #onAccount[data-account-pending] :is(button,input,select,textarea){pointer-events:none}
 :where(#kbroot) #onAccount button.fact:focus-visible{outline:2px solid var(--p1);outline-offset:2px}
 /* nowrap matters: the record is "W 12 · L 7", which wrapped to three lines in
    a third of the width and made the row twice as tall as the other two */
-:where(#kbroot) #onAccount .fact b{display:block;font-size:clamp(13.5px,3.4vw,15px);font-weight:900;color:var(--txt);
+:where(#kbroot) #onAccount .fact > b,:where(#kbroot) #onAccount .fact > .factvalue{display:block;font-size:clamp(13.5px,3.4vw,15px);font-weight:900;color:var(--txt);
   white-space:nowrap}
+:where(#kbroot) #onAccount .fact > .factvalue{height:16px;line-height:16px}
+:where(#kbroot) #onAccount #accRank .ldclock{display:inline-grid;vertical-align:middle}
 :where(#kbroot) #onAccount .fact .n1,:where(#kbroot) #onAccount .fact .n2{font-size:clamp(13.5px,3.4vw,15px)}
 /* display:block because text-indent only applies to block containers — as a
    plain inline the indent is ignored and the caption stays half a space left */
-:where(#kbroot) #onAccount .fact span{display:block;font-size:clamp(8px,2.1vw,9px);letter-spacing:.2em;text-indent:.2em;color:var(--dim);text-transform:uppercase}
+:where(#kbroot) #onAccount .fact > span:not(.factvalue){display:block;font-size:clamp(8px,2.1vw,9px);letter-spacing:.2em;text-indent:.2em;color:var(--dim);text-transform:uppercase}
 /* Gold is reserved for the number that is LIVE — the points you have right
    now. The peak is a fact like the others and reads white; its gold belongs on
    the ring, where the notch has to stand out against the cyan fill. */

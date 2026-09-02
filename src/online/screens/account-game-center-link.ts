@@ -46,17 +46,17 @@ export interface AccountGameCenterPorts extends AccountProviderPorts {
 export function bindAccountGameCenterLink(ports: AccountGameCenterPorts): void {
   const provider = ports.gameCenter ?? GAME_CENTER;
   bindAccountProviderControl({
+    accountId: ports.accountId,
     refresh: ports.refresh,
+    invalidate: ports.invalidate,
     control: '#btnLinkGameCenter',
-    run: async () => {
-      const message = await provider.attach();
-      /* The player just proved this native revision belongs to this account,
-         so ranked entry must not immediately demand the same assertion again
-         (see gameCenterSessionAction). Same acknowledgement the auth sheet
-         records for its own Game Center tap. */
-      if (message === null) acknowledgeCurrentAccount();
-      return message;
-    },
+    identityPatch: { gameCenterLinked: true },
+    run: (accountId) => provider.attach(accountId),
+    /* The player just proved this native revision belongs to this account,
+       so ranked entry must not immediately demand the same assertion again
+       (see gameCenterSessionAction). Publication waits for the shared control's
+       post-provider account boundary; an A answer may not acknowledge B. */
+    published: () => acknowledgeCurrentAccount(),
     rejected: () => GAME_CENTER_IDENTITY_MESSAGES.failed,
   });
 }

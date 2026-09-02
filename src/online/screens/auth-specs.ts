@@ -17,7 +17,11 @@ interface AuthSpec {
   acts: {
     label: LocaleKey<'online'>;
     primary?: boolean;
-    run(email: string, password: string): Promise<string | null>;
+    run(
+      email: string,
+      password: string,
+      expectedAccountId?: string,
+    ): Promise<string | null>;
   }[];
   swap?: { label: LocaleKey<'online'>; to: AuthMode };
   fresh?: {

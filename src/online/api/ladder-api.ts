@@ -13,17 +13,35 @@ export interface Standing {
   percentile: number;
 }
 
-export async function myStanding(): Promise<Standing | null> {
-  const user = await currentUser();
-  if (!user) return null;
-  const { data } = await supa().rpc('player_standing', { p: user.id });
+export type StandingLookup =
+  | { readonly ok: true; readonly accountId: string; readonly standing: Standing | null }
+  | { readonly ok: false; readonly reason: 'unavailable' | 'account-mismatch' };
+
+/** Keep a genuine no-standing answer separate from an unavailable request. */
+export async function myStandingLookup(): Promise<StandingLookup> {
+  const requestedUser = await currentUser();
+  if (!requestedUser) return { ok: false, reason: 'unavailable' };
+  const { data, error } = await supa().rpc('player_standing', { p: requestedUser.id });
+  /* Standing is deliberately allowed to resolve after the rest of Profile.
+     Bind that late answer to the session that requested it, just as profile
+     rows and rune ownership are bound at their eventual paint boundary. */
+  const activeUser = await currentUser();
+  if (activeUser?.id.toLowerCase() !== requestedUser.id.toLowerCase()) {
+    return { ok: false, reason: 'account-mismatch' };
+  }
+  if (error) return { ok: false, reason: 'unavailable' };
   const row = Array.isArray(data) ? data[0] : data;
-  return row ? {
+  return { ok: true, accountId: requestedUser.id.toLowerCase(), standing: row ? {
     points: row.points,
     rank: Number(row.rank),
     population: Number(row.population),
     percentile: Number(row.percentile),
-  } : null;
+  } : null };
+}
+
+export async function myStanding(): Promise<Standing | null> {
+  const result = await myStandingLookup();
+  return result.ok ? result.standing : null;
 }
 
 export interface Ladder {
@@ -37,33 +55,62 @@ export interface Ladder {
   runeSeatUnlocked: boolean;
 }
 
-export async function myLadder(): Promise<Ladder | null> {
-  const user = await currentUser();
-  if (!user) return null;
-  const { data: season } = await supa().rpc('current_season');
+export type LadderLookup =
+  | { readonly ok: true; readonly accountId: string; readonly ladder: Ladder }
+  | { readonly ok: false };
+
+export async function myLadderLookup(): Promise<LadderLookup> {
+  const requestedUser = await currentUser();
+  if (!requestedUser) return { ok: false };
+  const { data: season, error: seasonError } = await supa().rpc('current_season');
+  if (seasonError || !season) return { ok: false };
   const [currentResult, historicalSilverResult] = await Promise.all([
     supa().from('season_ratings')
       .select('points, peak, wins, losses, draws')
-      .eq('season_id', season).eq('player', user.id).maybeSingle(),
+      .eq('season_id', season).eq('player', requestedUser.id).maybeSingle(),
     /* Do not rely on a season rollover copying the previous peak. The match
        authority uses the same all-season fact, and this indexed owner query
        keeps Profile consistent with it after any future rollover policy. */
     supa().from('season_ratings')
       .select('peak')
-      .eq('player', user.id).gte('peak', SILVER_FLOOR).limit(1),
+      .eq('player', requestedUser.id).gte('peak', SILVER_FLOOR).limit(1),
   ]);
+  if (currentResult.error || historicalSilverResult.error) return { ok: false };
+  const activeUser = await currentUser();
+  if (activeUser?.id.toLowerCase() !== requestedUser.id.toLowerCase()) return { ok: false };
   const data = currentResult.data;
   const runeSeatUnlocked = (historicalSilverResult.data?.length ?? 0) > 0;
   // A season row is created at the first pairing; no row is an honest zero.
-  return {
+  return { ok: true, accountId: requestedUser.id.toLowerCase(), ladder: {
     ...(data ?? { points: 0, peak: 0, wins: 0, losses: 0, draws: 0 }),
     runeSeatUnlocked,
-  };
+  } };
+}
+
+export async function myLadder(): Promise<Ladder | null> {
+  const result = await myLadderLookup();
+  return result.ok ? result.ladder : null;
+}
+
+export type BestStreakLookup =
+  | { readonly ok: true; readonly accountId: string; readonly streak: number }
+  | { readonly ok: false };
+
+export async function bestStreakLookup(): Promise<BestStreakLookup> {
+  const requestedUser = await currentUser();
+  if (!requestedUser) return { ok: false };
+  const { data, error } = await supa().rpc('best_streak');
+  const streak = Number(data ?? 0);
+  if (error || !Number.isFinite(streak)) return { ok: false };
+  const activeUser = await currentUser();
+  return activeUser?.id.toLowerCase() === requestedUser.id.toLowerCase()
+    ? { ok: true, accountId: requestedUser.id.toLowerCase(), streak }
+    : { ok: false };
 }
 
 export async function bestStreak(): Promise<number> {
-  const { data } = await supa().rpc('best_streak');
-  return Number(data ?? 0);
+  const result = await bestStreakLookup();
+  return result.ok ? result.streak : 0;
 }
 
 export interface HistoryRow {
@@ -79,6 +126,10 @@ export interface HistoryRow {
 
 export interface HistoryCursor { when: string; id: string }
 
+export type MatchHistoryLookup =
+  | { readonly ok: true; readonly accountId: string; readonly rows: HistoryRow[] }
+  | { readonly ok: false };
+
 export function historyPageArgs(limit = 40, before?: HistoryCursor): Record<string, unknown> {
   const args: Record<string, unknown> = { limit_n: limit };
   if (before) {
@@ -88,11 +139,20 @@ export function historyPageArgs(limit = 40, before?: HistoryCursor): Record<stri
   return args;
 }
 
-export async function matchHistory(limit = 40, before?: HistoryCursor): Promise<HistoryRow[]> {
+export async function matchHistoryLookup(
+  limit = 40,
+  before?: HistoryCursor,
+): Promise<MatchHistoryLookup> {
+  const requestedUser = await currentUser();
+  if (!requestedUser) return { ok: false };
   /* Stable keyset ordering is `(finished_at, id)`. Passing only the timestamp
      can skip rows when several matches settle in the same database instant. */
-  const { data } = await supa().rpc('match_history', historyPageArgs(limit, before));
-  return (data ?? []).map((row: Record<string, unknown>) => ({
+  const { data, error } = await supa().rpc('match_history', historyPageArgs(limit, before));
+  if (error) return { ok: false };
+  const activeUser = await currentUser();
+  if (activeUser?.id.toLowerCase() !== requestedUser.id.toLowerCase()) return { ok: false };
+  return { ok: true, accountId: requestedUser.id.toLowerCase(),
+    rows: (data ?? []).map((row: Record<string, unknown>) => ({
     id: String(row.id),
     when: String(row.finished_at ?? ''),
     opponent: String(row.opponent ?? '???'),
@@ -101,7 +161,12 @@ export async function matchHistory(limit = 40, before?: HistoryCursor): Promise<
     theirs: Number(row.theirs ?? 0),
     delta: Number(row.delta ?? 0),
     result: row.result as HistoryRow['result'],
-  }));
+  })) };
+}
+
+export async function matchHistory(limit = 40, before?: HistoryCursor): Promise<HistoryRow[]> {
+  const result = await matchHistoryLookup(limit, before);
+  return result.ok ? result.rows : [];
 }
 
 /* One screen, one word: the client says LADDER everywhere. The SQL functions

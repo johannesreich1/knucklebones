@@ -18,6 +18,7 @@ export async function installOnlineRoutes(
        ACCOUNT ACCESS box for a player who is not a guest. */
     member = false,
     identity = { gameCenterLinked: false, appleLinked: false, appleRevocationReady: false },
+    identityDelay = 0,
     ladderNearBottom = false,
     /* Extra season matches beyond the fixed three, so a test can reach page two.
        Zero by default: every existing probe sees exactly what it always saw. */
@@ -27,6 +28,7 @@ export async function installOnlineRoutes(
     passwordAuth = 'error',
     appleAuth = 'invalid',
     deferAppleAuth = false,
+    deferAppleRegistration = false,
     runes = [],
     /* Which rune the account carries, as the profiles row reports it. */
     equippedRune = null,
@@ -34,8 +36,15 @@ export async function installOnlineRoutes(
        its concrete compatibility fallback. */
     randomRuneMode = false,
     standingPoints = null,
+    reportedStandingPoints = null,
     standingPeak = null,
     historicalSilverReached = null,
+    deferStanding = false,
+    failStanding = false,
+    emptyStanding = false,
+    failLadder = false,
+    failStreak = false,
+    failHistory = false, failRuneOnCall = null,
     unseenRunes = [],
     markRunesSeenAfterFirstRead = false,
     SESSION,
@@ -48,7 +57,7 @@ export async function installOnlineRoutes(
   let signupCalls = 0;
   let passwordCalls = 0;
   let profileCalls = 0;
-  let profileAccountId = GUEST_ID;
+  let profileAccountId = SESSION.user.id;
   let tierProfileCalls = 0;
   let equippedProfileCalls = 0;
   let randomModeProfileCalls = 0;
@@ -69,11 +78,12 @@ export async function installOnlineRoutes(
   const collectedRunes = [...runes];
   const seenRunes = new Set(runes.filter((runeId) => !unseenRunes.includes(runeId)));
   let deferNextRune = false;
-  let failRuneResponseOnCall = null;
+  let failRuneResponseOnCall = failRuneOnCall;
   let markRuneRequestStarted;
   let releaseRuneRequest;
   let markRuneRequestFinished;
   let deferNextAccountProfile = false;
+  let failNextAccountProfile = false;
   let markAccountProfileStarted;
   let releaseAccountProfile;
   let markAccountProfileFinished;
@@ -117,11 +127,12 @@ export async function installOnlineRoutes(
     : Promise.resolve();
   const nearBottomBoard = ladderBoardFixture(ladderBoard ?? ladderNearBottom);
   const identityRoutes = await installIdentityRoutes(page, {
-    identity, gameCenter: gameCenterBridge, session,
+    identity, gameCenter: gameCenterBridge, session, statusDelay: identityDelay,
   });
   const appleRoutes = await installAppleAuthRoutes(page, {
     mode: appleAuth,
     defer: deferAppleAuth,
+    deferRegistration: deferAppleRegistration,
     session,
     onRegistered: () => identityRoutes.setAppleIdentity(true, true),
   });
@@ -161,8 +172,10 @@ export async function installOnlineRoutes(
   });
   /* stateful, like the live table: the claim PATCH flips named_at (migration
      `20260820190459_0026_one_name_forever.sql` stamps it server-side), and
-     every later GET tells the claimed truth — nickname included */
+     every later GET tells the claimed truth — nickname and avatar included */
   let claimed = named;
+  let profileNickname = null;
+  let currentAvatar = 'die:5:cy';
   let currentEquippedRune = equippedRune;
   let currentRandomRuneMode = randomRuneMode;
   await page.route('**/rest/v1/rpc/set_rune_equipment*', async (r) => {
@@ -192,6 +205,7 @@ export async function installOnlineRoutes(
     if (r.request().method() === 'PATCH') {
       const body = r.request().postDataJSON() ?? {};
       if (Object.hasOwn(body, 'nickname')) claimed = true;
+      if (typeof body.avatar === 'string') currentAvatar = body.avatar;
       return r.fulfill({ status: 204, body: '' });
     }
     /* FOUR different reads hit this one table, and they are told apart by the
@@ -212,6 +226,12 @@ export async function installOnlineRoutes(
       await accountProfileRelease;
     }
     await hold(.35);
+    if (accountRead && failNextAccountProfile) {
+      failNextAccountProfile = false;
+      await r.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+      if (deferred) markAccountProfileFinished();
+      return;
+    }
     if (tierRead) {
       tierProfileCalls++;
       return r.fulfill({ status: 200, contentType: 'application/json',
@@ -231,9 +251,10 @@ export async function installOnlineRoutes(
     const appleProfile = appleRoutes.appleProfile();
     const response = r.fulfill({ status: 200, contentType: 'application/json',
       body: JSON.stringify([{ id: appleProfile?.id ?? profileAccountId,
-                              nickname: appleProfile?.nickname
+                              nickname: appleProfile?.nickname ?? profileNickname
         ?? (claimed && door === 'claim' ? 'NeonKing77' : 'TestGuest001'),
                               rating: 1000, created_at: new Date().toISOString(),
+                              avatar: currentAvatar,
                               named_at: appleProfile?.named_at
         ?? (claimed ? '2026-08-01T00:00:00Z' : null) }]) });
     if (deferred) void response.then(markAccountProfileFinished);
@@ -250,9 +271,10 @@ export async function installOnlineRoutes(
       markRuneRequestStarted();
       await runeRequestRelease;
     }
-    if (runeCalls === failRuneResponseOnCall) {
-      failRuneResponseOnCall = null;
-      await r.fulfill({ status: 503, contentType: 'application/json', body: '[]' });
+    if (runeCalls === failRuneResponseOnCall || failRuneResponseOnCall === 'all') {
+      if (failRuneResponseOnCall !== 'all') failRuneResponseOnCall = null;
+      await r.fulfill({ status: failRuneResponseOnCall === 'all' ? 500 : 503,
+        contentType: 'application/json', body: '[]' });
       if (deferred) markRuneRequestFinished();
       return;
     }
@@ -308,9 +330,10 @@ export async function installOnlineRoutes(
   }));
   /* Both read the same board: the standing is derived from the rows the
      leaderboard serves, never restated beside them. */
-  await installProfileRoutes(page, {
-    hold, nearBottomBoard, historyDepth, standingPoints, standingPeak,
-    historicalSilverReached,
+  const profileRoutes = await installProfileRoutes(page, {
+    hold, nearBottomBoard, historyDepth, standingPoints, reportedStandingPoints, standingPeak,
+    historicalSilverReached, deferStanding, failStanding, emptyStanding,
+    failLadder, failStreak, failHistory,
   });
   const ladder = await installLadderRoutes(page, { hold, nearBottomBoard, paginationRace });
   await page.route('**/auth/v1/.well-known/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"keys":[]}' }));
@@ -320,6 +343,7 @@ export async function installOnlineRoutes(
       body: '"11111111-1111-4111-8111-111111111111"' });
   });
   return {
+    ...profileRoutes,
     ...identityRoutes,
     ...appleRoutes,
     ...ladder,
@@ -331,6 +355,7 @@ export async function installOnlineRoutes(
     passwordCalls: () => passwordCalls,
     profileCalls: () => profileCalls,
     setProfileAccountId: (accountId) => { profileAccountId = accountId; },
+    setProfileNickname: (nickname) => { profileNickname = nickname; },
     tierProfileCalls: () => tierProfileCalls,
     equippedProfileCalls: () => equippedProfileCalls,
     randomModeProfileCalls: () => randomModeProfileCalls,
@@ -349,6 +374,7 @@ export async function installOnlineRoutes(
     releaseRuneResponse: () => releaseRuneRequest(),
     runeRequestFinished,
     deferNextAccountProfileResponse: () => { deferNextAccountProfile = true; },
+    failNextAccountProfileResponse: () => { failNextAccountProfile = true; },
     accountProfileStarted,
     releaseAccountProfileResponse: () => releaseAccountProfile(),
     accountProfileFinished,
@@ -360,6 +386,13 @@ export async function installOnlineRoutes(
     makeRuneUnseen: (runeId) => {
       if (!collectedRunes.includes(runeId)) collectedRunes.push(runeId);
       seenRunes.delete(runeId);
+    },
+    setRuneState: (nextRunes, nextEquippedRune, nextRandomMode = false) => {
+      collectedRunes.splice(0, collectedRunes.length, ...nextRunes);
+      seenRunes.clear();
+      nextRunes.forEach((runeId) => seenRunes.add(runeId));
+      currentEquippedRune = nextEquippedRune;
+      currentRandomRuneMode = nextRandomMode;
     },
   };
 }

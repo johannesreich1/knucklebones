@@ -11,7 +11,7 @@ import {
   writeRuneCollectionSnapshot,
 } from '../../rune-collection-cache.ts';
 import type { EquippedRuneSelection } from '../../rune-collection-cache.ts';
-import { supa } from '../api/client.ts';
+import { authorizationForAccount, supa } from '../api/client.ts';
 
 export type { EquippedRuneSelection } from '../../rune-collection-cache.ts';
 
@@ -61,9 +61,10 @@ export async function setRuneEquipment(
   accountId: string,
   selection: EquippedRuneSelection,
 ): Promise<EquippedRuneSelection> {
+  const expectedAccountId = accountId.toLowerCase();
   const snapshot = readRuneCollectionSnapshot();
-  const owned = snapshot?.accountId === accountId.toLowerCase() ? snapshot.collected : [];
-  const previous = snapshot?.accountId === accountId.toLowerCase()
+  const owned = snapshot?.accountId === expectedAccountId ? snapshot.collected : [];
+  const previous = snapshot?.accountId === expectedAccountId
     ? snapshot.equipment
     : { kind: 'none' } as const;
   const write = resolveRuneEquipmentWrite(selection, owned, snapshot?.equippedRune ?? null);
@@ -73,15 +74,19 @@ export async function setRuneEquipment(
      exits RANDOM. Only the RPC can change both v2 fields without that legacy
      meaning; it derives the row from auth.uid(), so accountId never crosses
      the trust boundary as a writable target. */
-  const { error } = await supa().rpc('set_rune_equipment', {
+  const client = supa();
+  const { data: { session } } = await client.auth.getSession();
+  const authorization = authorizationForAccount(session, expectedAccountId);
+  if (!authorization) return previous;
+  const { error } = await client.rpc('set_rune_equipment', {
     p_equipped_rune: equippedRune,
     p_random_rune_mode: randomRuneMode,
-  });
+  }).setHeader('Authorization', authorization);
   if (error) return previous;
   const current = readRuneCollectionSnapshot();
   /* Only restamp a cache that still belongs to this account: a sign-out or an
      account switch may have landed while the write was in flight. */
-  if (current?.accountId === accountId.toLowerCase()) {
+  if (current?.accountId === expectedAccountId) {
     writeRuneCollectionSnapshot(
       accountId, current.collected, current.verifiedAt, current.poolTier,
       equippedRune, randomRuneMode,

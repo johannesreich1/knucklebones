@@ -161,8 +161,8 @@ async function probeAccountCredentialSuccess(page, routes) {
   }), routes.passwordCalls());
 }
 
-/* Profile is a cover over the still-live result. If Back wins while Profile's
-   coherent account read is held, that abandoned read must not later call the
+/* Profile is a cover over the still-live result. If Back wins while its cached
+   view is refreshing, that abandoned read must not later call the
    mutable global exit slot (which now means Home) and close the restored
    result a second time. */
 async function probeResultProfileLoadingBack(page, routes) {
@@ -170,7 +170,7 @@ async function probeResultProfileLoadingBack(page, routes) {
   routes.deferNextAccountProfileResponse();
   await openResultProfile(page);
   await Promise.all([
-    page.waitForSelector('#ovOnline.on #onLoading:not([hidden])', { timeout: 15000 }),
+    page.waitForSelector('#ovOnline.on #onAccount:not([hidden])', { timeout: 15000 }),
     routes.accountProfileStarted,
   ]);
   await page.click('#btnOnlineBack');
