@@ -5,7 +5,7 @@
    across all 7 modes and all 7 groups, 0 differences; what is pinned HERE is
    the contract that keeps it safe to call from two places. */
 import {
-  AI, ME, emptyBoard, legalCols, CLASSIC, COLSHIELD,
+  AI, ME, emptyBoard, legalCols, CLASSIC, COLSHIELD, ROWSWITCH,
   type Mode, type GameState,
 } from '../../src/core/rules.ts';
 import { searchRoot } from '../../src/core/ai.ts';
@@ -17,7 +17,9 @@ import {
   botShapeAt,
   type BotStanding,
 } from '../../src/core/ladder.ts';
-import { botMove, botMoveWithShape } from '../../src/core/bot.ts';
+import {
+  botMove, botMoveWithShape, declinesFreeUpgrade, scoreColumns,
+} from '../../src/core/bot.ts';
 import { seeded } from './policy-duel-bench.ts';
 
 type Check = (ok: boolean, message: string, detail?: unknown) => void;
@@ -127,4 +129,31 @@ export function checkBotMoveContract(check: Check): void {
   check(demoted === 1 && crowned === 0,
     'the apex POSITION, not the points, decides whether a top bot attacks the double six',
     { demoted, crowned });
+  // The free-upgrade predicate on the photographed position (2026-09-02):
+  // an Obsidian bot holding [6],[4,4],[] under ROWS with a 4 in hand played
+  // the middle column for 18 when either side column paid 26, and the
+  // human's [6],[5],[3] was untouched either way. The scorer and the
+  // predicate are the ones production consults, so the bench's
+  // unforced-error metric and the slip filter cannot disagree about it.
+  const photographed: GameState = [[[6], [4, 4], []], [[6], [5], [3]]];
+  const scored = scoreColumns(photographed, AI, 4, ROWSWITCH);
+  check(scored.every((score) => score.oppLoss === 0),
+    'the photographed position must not touch the human either way', scored);
+  check(declinesFreeUpgrade(scored, 1) && !declinesFreeUpgrade(scored, 0)
+      && !declinesFreeUpgrade(scored, 2),
+    'the photographed middle column is the declined free upgrade; the sides are not', scored);
+  // The slip branch's draw budget is a replay contract: exactly one slip roll
+  // and one pick, and a zero-slip shape rolls nothing before search jitter.
+  const counting = () => {
+    let n = 0;
+    return { random: () => { n++; return 0; }, draws: () => n };
+  };
+  const slipping = counting();
+  botMoveWithShape(mid, AI, 4, GROUPS[4].bot, CLASSIC, slipping.random);
+  check(slipping.draws() === 2,
+    'the slip branch must draw exactly twice: the roll, then the pick', slipping.draws());
+  const searching = counting();
+  botMoveWithShape(mid, AI, 4, { ...GROUPS[4].bot, slip: 0, openerSlip: 0 }, CLASSIC, searching.random);
+  check(searching.draws() > 2,
+    'a zero-slip shape must draw nothing but search jitter', searching.draws());
 }

@@ -25,6 +25,52 @@ export function botSlip(shape: BotShape, botIdx: Player): number {
   return botIdx === ME ? shape.openerSlip : shape.slip;
 }
 
+/* A free upgrade declined: another legal column with the IDENTICAL effect on
+   the opponent's board and at least this many more points on the bot's own.
+   The photographed move was exactly this gap (a third 4 stacked for 18 under
+   ROWS when either side column paid 26 with the human's board untouched
+   either way); the threshold has a measured knee — 12 misses that move, 4
+   spends four more share points removing errors nobody would notice. */
+export const FREE_UPGRADE_THRESHOLD = 8;
+
+/** What one legal column is worth at depth 0 under the mode's own totals. */
+export interface ColumnScore {
+  col: number;
+  /** Points added to the bot's own board. */
+  own: number;
+  /** Points taken from the opponent's board. */
+  oppLoss: number;
+}
+
+/* Depth-0 worth of every legal column. Draws nothing. The slip's candidate
+   filters, the bench's unforced-error counter and the retune sweep all read
+   this one scorer, so no two of them can disagree about what a column is
+   worth. */
+export function scoreColumns(st: GameState, botIdx: Player, die: number, mode: Mode,
+                             rootCharm?: CharmSt): ColumnScore[] {
+  const opponent = (1 - botIdx) as Player;
+  const ownBefore = boardTotalMode(st[botIdx], mode, rootCharm?.wards[botIdx]);
+  const oppBefore = boardTotalMode(st[opponent], mode, rootCharm?.wards[opponent]);
+  return legalCols(st[botIdx]).map((col) => {
+    const scratch = cloneSt(st);
+    const scratchCharm = rootCharm && cloneCharm(rootCharm);
+    applyMove(scratch, botIdx, col, die, mode, scratchCharm);
+    return {
+      col,
+      own: boardTotalMode(scratch[botIdx], mode, scratchCharm?.wards[botIdx]) - ownBefore,
+      oppLoss: oppBefore - boardTotalMode(scratch[opponent], mode, scratchCharm?.wards[opponent]),
+    };
+  });
+}
+
+/* Whether playing `col` declines a free upgrade: some other column costs the
+   opponent exactly as much and pays the bot at least the threshold more. */
+export function declinesFreeUpgrade(scored: readonly ColumnScore[], col: number): boolean {
+  const mine = scored.find((score) => score.col === col);
+  return mine !== undefined && scored.some((other) => other.col !== col
+    && other.oppLoss === mine.oppLoss && other.own >= mine.own + FREE_UPGRADE_THRESHOLD);
+}
+
 /* The column this bot plays, and nothing else — no board mutation, no logging.
    `bot` is the BOT's own standing: its points (a bot plays the shape of the
    group its own points sit in, docs/LADDER.md §4) and whether the board ranks
@@ -68,21 +114,10 @@ export function botMoveWithShape(st: GameState, botIdx: Player, die: number, sha
        retains the ordinary any-column slip. In either case, choose among the
        columns that cost the opponent the least visible score. */
     if (shape.oppW < 0 || botIdx === ME) {
-      const opponent = (1 - botIdx) as Player;
-      const before = boardTotalMode(st[opponent], mode, rootCharm?.wards[opponent]);
+      const scored = scoreColumns(st, botIdx, die, mode, rootCharm);
       let leastLoss = Infinity;
-      const losses = legal.map((candidate) => {
-        const scratch = cloneSt(st);
-        const scratchCharm = rootCharm && cloneCharm(rootCharm);
-        applyMove(scratch, botIdx, candidate, die, mode, scratchCharm);
-        const after = boardTotalMode(
-          scratch[opponent], mode, scratchCharm?.wards[opponent],
-        );
-        const loss = before - after;
-        leastLoss = Math.min(leastLoss, loss);
-        return loss;
-      });
-      choices = legal.filter((_, index) => losses[index] === leastLoss);
+      for (const score of scored) leastLoss = Math.min(leastLoss, score.oppLoss);
+      choices = scored.filter((score) => score.oppLoss === leastLoss).map((score) => score.col);
     }
     col = choices[Math.floor(rand() * choices.length)];
   } else {

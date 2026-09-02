@@ -104,6 +104,7 @@ export const GATE_SUITES = Object.freeze([
   typed('dice'),
   typed('match'),
   typed('modes'),
+  typed('bot-knowledge'),
   typed('ranked-outcome-presentation'),
   typed('ranked-outcomes'),
   typed('group-transition'),
@@ -169,7 +170,7 @@ export const CI_SHARDS = Object.freeze({
     // `localization-smoke` is its in-gate rot guard. See GATE_SUITES.
     'online-ui-account', 'localization-smoke', 'service-worker-routing', 'native-startup-browser',
     'rune-matchup-analysis', 'scoring-ward-ai', 'online-api', 'design-library',
-    'cssreach', 'legal', 'spells', 'dice', 'release-main', 'gate-manifest',
+    'cssreach', 'legal', 'spells', 'dice', 'bot-knowledge', 'release-main', 'gate-manifest',
     'random-mode-dial', 'profile-cache', 'rune-collection-cache', 'progression-status-cache',
     'ranked-outcome-presentation', 'ranked-outcomes', 'ranked-client-contract',
     'typecheck-tests', 'identity-gateway-origins', 'virtual-ruler',

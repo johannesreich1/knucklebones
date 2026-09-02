@@ -24,6 +24,7 @@ import {
   type CharmSt, type Player,
 } from '../src/core/rules.ts';
 import { machineCastPlan, spellById } from '../src/core/spells.ts';
+import { LEAGUE_FLOORS, NEWCOMER, RUNE_CELL_BASELINE } from './support/bot-calibration.ts';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -36,18 +37,19 @@ function humanMove(
   random: () => number,
   rootCharm?: CharmSt,
 ): number {
-  return searchRoot(state.st, who, state.nextDie!, 1, {
+  return searchRoot(state.st, who, state.nextDie!, NEWCOMER.depth!, {
     mode: CLASSIC,
     random,
-    riskWeight: 0,
-    opponentWeight: 0,
+    riskWeight: NEWCOMER.risk!,
+    opponentWeight: NEWCOMER.oppW!,
     rootCharm,
   }).c;
 }
 
-/* The comparison player is deliberately simple: a seat-neutral depth-one
-   builder using the production Normal spell demand. Dice stay authoritative
-   to the match seed; human and bot decisions have independent keyed streams. */
+/* The comparison player is the bench's NEWCOMER row (tests/support/
+   bot-calibration.ts) — a seat-neutral depth-one builder — casting with the
+   production Normal spell demand. Dice stay authoritative to the match seed;
+   human and bot decisions have independent keyed streams. */
 function appendHumanTurn(
   seed: string,
   rows: RankedActionRow[],
@@ -157,9 +159,20 @@ try {
     const humanFirst = measure(true);
     const botFirst = measure(false);
     humanOutcomeShare[GROUPS[groupIndex].id] = { humanFirst, botFirst };
-    if (humanFirst < 0.50 || botFirst < 0.50) {
+    const floor = LEAGUE_FLOORS[groupIndex];
+    if (humanFirst < floor || botFirst < floor) {
       problems.push(`${GROUPS[groupIndex].id} made the Rune bot the calibrated favourite: `
-        + `${(humanFirst * 100).toFixed(1)}% / ${(botFirst * 100).toFixed(1)}% human share`);
+        + `${(humanFirst * 100).toFixed(1)}% / ${(botFirst * 100).toFixed(1)}% human share `
+        + `(floor ${(floor * 100).toFixed(0)}%)`);
+    }
+    /* botbench weights this cell into the SILVER+ aggregates through the
+       pinned baseline; the pin is exact because every draw here is keyed. */
+    const pinned = RUNE_CELL_BASELINE[GROUPS[groupIndex].id];
+    if (!pinned || Math.abs(pinned.humanFirst - humanFirst) > 1e-9
+        || Math.abs(pinned.botFirst - botFirst) > 1e-9) {
+      problems.push(`${GROUPS[groupIndex].id}'s Rune cell moved: measured `
+        + `${humanFirst} / ${botFirst}, pinned ${pinned?.humanFirst} / ${pinned?.botFirst} — `
+        + 'paste this run into RUNE_CELL_BASELINE in tests/support/bot-calibration.ts');
     }
   }
 } catch (error) {
