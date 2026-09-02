@@ -293,7 +293,7 @@ export async function runAccountAccessScenarios(suite) {
     nativeSwitch.errs);
 
   const switchedError = await visit({ member: true, named: true, identity: REPAIRABLE,
-    appleBridge: true, appleAuth: 'invalid', deferAppleAuth: true,
+    appleBridge: true, appleAuth: 'rejected', deferAppleAuth: true,
     skipStandardProbes: true, probe: probeProviderErrorAccountSwitch });
   out.accessProviderErrorAccountSwitch = switchedError.probeResult;
   const staleError = switchedError.probeResult;

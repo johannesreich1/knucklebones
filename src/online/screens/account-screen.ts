@@ -12,6 +12,7 @@ import {
   type HistoryRow,
 } from '../api/ladder-api.ts';
 import { currentUser, identityStatusLookup } from '../identity/session.ts';
+import { persistedAuthAccountId } from '../identity/session-read.ts';
 import { myProfileLookup } from '../identity/profile.ts';
 import { cacheStanding } from '../../profile-cache.ts';
 import { refreshVerifiedRankedCurveVersion } from '../api/ranked-curve-verification.ts';
@@ -130,7 +131,13 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       return null;
     };
     cancelAccountRuneGuide();
-    const cachedView = readCachedAccountView(options.expectedAccountId);
+    /* Bind the cached paint to the synchronously persisted session, as the
+       entry door already does (entry-wait.ts). A restore that replaced the
+       account must never repaint the previous owner's snapshot: unbound, that
+       stale view was painted, rejected against the new session, and the run
+       exited to Home instead of painting the account that just signed in. */
+    const cacheOwnerId = options.expectedAccountId ?? persistedAuthAccountId();
+    const cachedView = cacheOwnerId ? readCachedAccountView(cacheOwnerId) : null;
     beginPresentation(cachedView);
     accountActions.lock();
     if (cachedView) {
@@ -258,7 +265,13 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     if (!profile || profile.id.toLowerCase() !== activeAccountId || !ladder
         || streak === null || !recent) return cachedView ? rejectPresentation() : null;
     const cachedRunes = cachedAccount;
-    if (!runeCollection.verified && !cachedRunes) return null;
+    /* The entry's collection is a same-turn backup for REWARD discovery, not
+       authority over this screen. Rune facts and the equipment door follow
+       Profile's own verified read; anything else leaves the cached facts as
+       presentation and the seat locked. */
+    const ownRunes = refreshedRunes.verified
+      && refreshedRunes.accountId?.toLowerCase() === activeAccountId;
+    if (!ownRunes && !cachedRunes) return null;
     const resolvedIdentity = identityResult.ok
       ? identityResult.identity
       : cachedView?.account.identity ?? null;
@@ -278,9 +291,9 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       curveVersion,
       streak,
       identity: resolvedIdentity,
-      runes: runeCollection.verified ? runeCollection.collected : cachedRunes!.runes,
-      runeRows: runeCollection.verified ? runeCollection.rows : cachedRunes!.runeRows,
-      equipment: runeCollection.verified ? runeCollection.equipment : cachedRunes!.equipment,
+      runes: ownRunes ? refreshedRunes.collected : cachedRunes!.runes,
+      runeRows: ownRunes ? refreshedRunes.rows : cachedRunes!.runeRows,
+      equipment: ownRunes ? refreshedRunes.equipment : cachedRunes!.equipment,
     };
     lastRecent = recent;
     rankPending = standingState.result === null;
@@ -293,7 +306,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       if (lastAccount) cacheAccountView(lastAccount, lastRecent);
     }
     refreshHomeChip();
-    accountActions.setRuneSeatAvailable(runeCollection.verified);
+    accountActions.setRuneSeatAvailable(ownRunes);
     accountActions.unlock();
     /* A cached Profile supplies the destination CONTENT, not the navigation.
        An entry from the result still wipes into this shell, and sheets and

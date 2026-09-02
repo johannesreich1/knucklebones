@@ -131,7 +131,10 @@ export async function runAccountErrorSheetScenarios(suite) {
     skipStandardProbes: true,
     probe: async (page, routes) => {
       const painted = await readAccountAccess(page);
-      const offered = painted.gameCenterButton?.shown === true;
+      /* The gateway is a build fact, proven by the launch sign-in exchange —
+         not by whether the control happened to paint. A build with the
+         gateway that paints no control must fail below, not skip. */
+      const offered = routes.gameCenterModes().length > 0;
       if (!offered) return { offered: false, painted, modes: routes.gameCenterModes() };
       const probed = await probeRefusal(page, '#btnLinkGameCenter');
       return { offered: true, ...probed,

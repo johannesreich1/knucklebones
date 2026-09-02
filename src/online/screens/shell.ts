@@ -89,9 +89,12 @@ const OVERLAY = `
            glance. The seat is
            the equipment DOOR: it opens the action-only fixed/random/empty mode
            sheet, and EQUIP promotes the existing profile grid into its picker. -->
+      <!-- paintEquippedSeat owns this accessible name: it composes the rune's
+           own name with its state, and re-translates itself on locale change.
+           A data-i18n-attr here would be a second owner overwriting the first
+           with the generic label. The seat stays hidden until that paint. -->
       <button class="accseat" id="accSeat" type="button" hidden
-        aria-label="Equipped rune"
-        data-i18n-attr="aria-label=online:profile.equippedRune"></button>
+        aria-label="Equipped rune"></button>
     </div>
     <!-- the name the ring crowns. Until it is claimed this is the minted
          placeholder; after the claim it is the one line the old edit-field

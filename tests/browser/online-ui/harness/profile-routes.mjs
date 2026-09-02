@@ -53,6 +53,19 @@ export async function installProfileRoutes(page, {
       },
     ]) });
   });
+  /* Under curve 2 the same permanent equipment fact is a durable feature row:
+     myLadder asks player_ranked_features instead of the season peak. Answer it
+     from the one silverReached fact above, or a v2 case's read escapes to the
+     live backend, is refused there, and the ladder lookup's refusal empties
+     Profile back to Home. */
+  await page.route('**/rest/v1/player_ranked_features*', async (r) => {
+    await hold(.65);
+    if (ladderUnavailable) {
+      return r.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+    }
+    return r.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify(silverReached ? [{ feature_id: 'equipped_runes' }] : []) });
+  });
   let markStandingStarted;
   let releaseStanding;
   let markStandingFinished;

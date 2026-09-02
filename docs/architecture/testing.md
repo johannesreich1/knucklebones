@@ -126,8 +126,10 @@ exposes `--only <scenario-id>` for focused iteration. The release runner uses
 four coverage-validated `--shard` selections: every scenario must belong to
 exactly one shard or startup fails. The `--only`/`--shard` grammar and the
 shard-coverage validator live in `tests/support/browser-scenarios.mjs`; the
-online-ui and hud-settings trees expose the same `--only` for focused
-iteration, and any new multi-scenario tree should adopt the shared module
+online-ui tree uses the same grammar with three coverage-validated shards
+(`entry`, `account`, `ranked`, each a gate suite since 2026-09-02, when the
+whole tree outgrew the gate's per-suite limit), hud-settings exposes the same
+`--only`, and any new multi-scenario tree should adopt the shared module
 rather than growing a private parser. Local workers overlap those independent
 browsers; CI distributes the same shard union across its coverage-checked gate
 manifests, without removing or narrowing coverage. Successful selected runs
@@ -540,6 +542,37 @@ output (the stub's recorded calls did not grow). So when a new case passes on th
 FIRST run, disable the code it guards and watch it fail before believing it —
 and if it passes both ways, suspect placement before logic, then read the lines
 around it rather than the diff you thought you wrote.
+
+**A `THREW` in the online UI runner used to hide every scenario after it, and
+a hung one used to hide the whole run.** Until 2026-09-02 the tree was one
+sequential loop inside one try/catch: the first Playwright timeout ended the
+run while the report still listed the `check()` failures collected before it,
+so "2 problems" stood in front of five more and roughly thirty scenarios that
+had never executed on that branch. The same day a scenario parked on a harness
+promise nobody resolved ran for 45 minutes with WebKit alive and no report at
+all — the gate would simply have killed it at its per-suite limit, reportless.
+The runner now gives every scenario its own watchdog (`SCENARIO_TIMEOUT_MS`)
+and its own `THREW in <id>` line, replaces the engine after a hang so the next
+owner starts clean, stops itself inside the gate's per-suite budget
+(`SUITE_BUDGET_MS`) with a `NOT RUN` line naming what it skipped, writes one
+`online-ui: <id> start|done in Ns` line per scenario to stderr, and reports a
+`timings` block. Contexts also carry a 20s default wait instead of the driver's
+30s; every wait in the tree that legitimately needs more already asks for 15s
+explicitly. When a report carries `NOT RUN`, a shard has outgrown its budget:
+rebalance the three shards from `timings` or add a fourth in the runner and
+the gate manifest; do not raise the budget.
+
+**An endpoint nobody stubbed is answered by production.** The online UI
+harness routes only what it knows; a request for anything else continues to
+the origin baked into the bundle, i.e. the live project, which refuses the
+fixture's `.stub`-signed token. Measured 2026-09-02: the v2 `player_ranked_features`
+read had no stub, came back 401, the merged ladder lookup rightly refused the
+fact, and the weekly-achievements scenario read as "Profile exits to Home" for
+an hour of investigation. When a scenario fails after a new client read is
+introduced, grep the harness for the endpoint before reading the product; a
+first-registered catch-all route that reports every escaped request through
+`onHarnessError` would close this hole for good and is the next harness change
+worth making.
 
 ## Change verification
 

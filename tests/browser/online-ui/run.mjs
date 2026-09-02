@@ -122,10 +122,38 @@ const SCENARIOS = Object.freeze([
   // a focused investigation surface, reached only through an explicit --only.
   { id: 'rune-reward-races', run: runRuneRewardRaceScenarios, manual: true },
 ]);
-validateScenarioShards('online UI browser', SCENARIOS);
+/* GATE SHARDS. The gate kills any one suite at its per-suite limit and this
+   tree outgrew it once three release streams landed together (measured
+   2026-09-02: 23 of 40 scenarios took 260s). Each shard is a separate gate
+   suite (tests/support/gate-manifest.mjs) so four workers overlap them; the
+   validator refuses a scenario that is in no shard or in two. Balance by the
+   report's `timings`, not by feel. A no-argument run still walks the whole
+   tree, with three shards' budget. */
+const SHARDS = Object.freeze({
+  entry: Object.freeze([
+    'matchmaking', 'fresh-account', 'ladder-faceoff', 'ladder-scroll', 'history-crawl',
+    'explicit-guest-session', 'menu-press-feedback', 'loading-panels',
+    'page-navigation-motion', 'ranked-game-motion-exclusion', 'entry-without-die',
+    'offline-entry', 'auth-modal', 'auth-credentials',
+  ]),
+  account: Object.freeze([
+    'account-lifecycle', 'account-mutation-ownership', 'account-access',
+    'account-game-center', 'account-game-center-blocked', 'account-error-sheet',
+    'profile-rune-sheet', 'first-rune-profile-recovery', 'account-achievements-weekly',
+    'rune-trial', 'rune-trial-rail',
+  ]),
+  ranked: Object.freeze([
+    'away-forfeit', 'seat-colours', 'equipped-seat', 'equipped-seat-interlocks',
+    'trial-move-latency', 'trial-refused-action', 'ranked-reveal-layout',
+    'flying-die-colour', 'trial-cast-latency', 'bot-opening-beat', 'row-switch-opening',
+    'group-transition', 'group-transition-demotion', 'group-transition-responsive',
+    'group-transition-account-race',
+  ]),
+});
+validateScenarioShards('online UI browser', SCENARIOS, SHARDS);
 let scenarios;
 try {
-  scenarios = selectScenarios('online UI browser', SCENARIOS, process.argv.slice(2));
+  scenarios = selectScenarios('online UI browser', SCENARIOS, process.argv.slice(2), SHARDS);
 } catch (error) {
   console.error(error.message);
   process.exit(2);
@@ -161,14 +189,15 @@ let browser = await webkit.launch();
 let webkitVisits = 0;
 let visitOnBrowser = createVisit({ browser, URL, SESSION, GUEST_ID,
   onHarnessError: (message) => problems.push(message) });
+const recycleWebKit = async () => {
+  await browser.close().catch(() => {});
+  browser = await webkit.launch();
+  visitOnBrowser = createVisit({ browser, URL, SESSION, GUEST_ID,
+    onHarnessError: (message) => problems.push(message) });
+  webkitVisits = 0;
+};
 const visit = async (options) => {
-  if (webkitVisits >= WEBKIT_VISITS_PER_BROWSER) {
-    await browser.close();
-    browser = await webkit.launch();
-    visitOnBrowser = createVisit({ browser, URL, SESSION, GUEST_ID,
-      onHarnessError: (message) => problems.push(message) });
-    webkitVisits = 0;
-  }
+  if (webkitVisits >= WEBKIT_VISITS_PER_BROWSER) await recycleWebKit();
   const result = await visitOnBrowser(options);
   webkitVisits++;
   return result;
@@ -188,11 +217,54 @@ const visitChromium = async (options) => {
 };
 const suite = { visit, visitChromium, out, check };
 
-try {
-  for (const scenario of scenarios) await scenario.run(suite);
-} catch (e) {
-  problems.push('THREW :: ' + e.message);
+/* EVERY SCENARIO ANSWERS, AND THE TREE ANSWERS IN BOUNDED TIME. A scenario
+   that awaits a harness promise nobody resolves used to hang the whole run
+   (measured 2026-09-02: 45 minutes with WebKit alive and no report), and one
+   thrown wait used to abort every scenario after it while the report listed
+   only the checks collected before it. Each owner now gets its own watchdog
+   and its own THREW line, a hung owner's engine is replaced so the next one
+   starts clean, and the tree stops itself inside the gate's per-suite budget
+   so a red run still names what it did not reach instead of being killed
+   without a report. Timings are part of the report so a slow owner is a
+   number, not a feeling. */
+const SCENARIO_TIMEOUT_MS = 180_000;
+const SHARD_BUDGET_MS = 420_000;
+const SUITE_BUDGET_MS = process.argv.includes('--shard') || process.argv.includes('--only')
+  ? SHARD_BUDGET_MS : SHARD_BUDGET_MS * Object.keys(SHARDS).length;
+const timings = {};
+const suiteStarted = performance.now();
+const progress = (line) => process.stderr.write(`online-ui: ${line}\n`);
+for (const [index, scenario] of scenarios.entries()) {
+  const elapsed = performance.now() - suiteStarted;
+  if (elapsed > SUITE_BUDGET_MS) {
+    const skipped = scenarios.slice(index).map(({ id }) => id);
+    problems.push(`NOT RUN :: budget of ${SUITE_BUDGET_MS / 1000}s exhausted after `
+      + `${(elapsed / 1000).toFixed(1)}s; skipped ${skipped.join(', ')}`);
+    break;
+  }
+  const started = performance.now();
+  progress(`${scenario.id} start`);
+  let watchdog;
+  const running = scenario.run(suite);
+  const expiry = new Promise((_, reject) => {
+    watchdog = setTimeout(() => reject(new Error(
+      `hung: no answer within ${SCENARIO_TIMEOUT_MS / 1000}s`)), SCENARIO_TIMEOUT_MS);
+  });
+  try {
+    await Promise.race([running, expiry]);
+  } catch (e) {
+    problems.push(`THREW in ${scenario.id} :: ${e.message}`);
+    /* The owner may still be parked on a promise nobody will resolve, holding
+       its contexts. Its rejection, once the engine goes, is expected. */
+    running.catch(() => {});
+    await recycleWebKit();
+    if (chrome) { await chrome.close().catch(() => {}); chrome = null; chromeVisit = null; }
+  } finally {
+    clearTimeout(watchdog);
+  }
+  timings[scenario.id] = Math.round(performance.now() - started);
+  progress(`${scenario.id} done in ${(timings[scenario.id] / 1000).toFixed(1)}s`);
 }
 await browser.close();
 await chrome?.close();
-emitReport({ out, problems }, problems.length);
+emitReport({ out, timings, problems }, problems.length);

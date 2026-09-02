@@ -3,6 +3,7 @@
 // never teach account B with account A's progression or reward.
 import { installProgressionRoutes, showTransitionResult } from './group-transition-harness.mjs';
 import { PROGRESSION, REPORT } from './group-transition-fixtures.mjs';
+import { waitForOverlayTransitions } from '../../support/overlay-transitions.mjs';
 
 const ACCOUNT_B = '11111111-2222-4333-8444-555555555555';
 const MATCH_ID = '90000000-0000-4000-8000-000000000099';
@@ -75,6 +76,9 @@ async function accountSwitchProbe(page, routes) {
   const switched = await switchStoredAccount(page, routes);
   await page.click('#gtNext');
   await page.waitForFunction(() => !document.getElementById('ovOnline')?.classList.contains('on'));
+  /* The return to the result is the shared Neon Wipe, which borrows inert on
+     the result until it lands (src/ui/page-motion.ts); sample after it. */
+  await waitForOverlayTransitions(page, '#ovOnline');
   return {
     switched,
     progressionAcks: progression.acknowledgements.length,

@@ -12,6 +12,7 @@ import {
   installProgressionRoutes,
   showTransitionResult,
 } from './group-transition-harness.mjs';
+import { waitForOverlayTransitions } from '../../support/overlay-transitions.mjs';
 
 const COPY = RESOURCES.en;
 
@@ -89,6 +90,10 @@ async function silverOwnedRuneProbe(page) {
   await page.waitForSelector('.faceoff #accSeatEquip', { state: 'detached' });
   await page.click('#btnOnlineBack');
   await page.waitForFunction(() => !document.getElementById('ovOnline')?.classList.contains('on'));
+  /* Back runs the shared Neon Wipe, which borrows inert on the incoming
+     result until it lands (src/ui/page-motion.ts). Judge the restored result
+     where the player can act on it. */
+  await waitForOverlayTransitions(page, '#ovOnline');
   const returned = await page.evaluate(() => ({
     resultOpen: document.getElementById('ovEnd')?.classList.contains('on') ?? false,
     resultInert: document.getElementById('ovEnd')?.inert ?? true,

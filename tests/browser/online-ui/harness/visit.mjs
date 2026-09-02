@@ -5,6 +5,7 @@ import { guardRoutes } from './guard-routes.mjs';
 import { probeFaceoff } from '../scenarios/faceoff-probe.mjs';
 import { probeAccountActions } from './account-probes.mjs';
 import { installNativeBridges } from './native-bridges.mjs';
+import { waitForOverlayTransitions } from '../../support/overlay-transitions.mjs';
 /* One harness: open the app with Supabase answering however this case wants,
    tap Account, and report what the player is looking at. */
 export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError }) {
@@ -23,7 +24,9 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
     deferAppleNative = false,
     /* The bridge normally returns an invalid credential so provider-error
        probes cannot accidentally become successful sign-ins. A focused auth
-       probe opts into a valid Apple result and the matching Supabase route. */
+       probe opts into a valid Apple result and the matching Supabase route.
+       'rejected' hands the app a token that Supabase then refuses — the only
+       mode besides 'success' that issues the exchange `deferAppleAuth` holds. */
     appleAuth = 'invalid',
     deferAppleAuth = false,
     /* Hold the authorization-code registration after linkIdentity has already
@@ -130,6 +133,11 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
     const ctx = await browser.newContext({ viewport, hasTouch: true,
                                            locale,
                                            ...(motion ? { reducedMotion: motion } : {}) });
+    /* Every explicit wait in this tree that needs more asks for 15s; the
+       driver's 30s default only ever priced an unknown failure at half a
+       minute apiece. Keep unknown failures cheap without undercutting the
+       explicit budgets. */
+    ctx.setDefaultTimeout(20000);
     const page = await ctx.newPage();
     /* Before ANY module installs a stub: a handler that throws must fail the
        suite rather than leave a dead endpoint that reads as a missing
@@ -294,7 +302,17 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
         return (a && !a.hidden) || (s && !s.hidden);
       }, null, { timeout: 15000 });
     }
-    if (!expectReward) await page.waitForTimeout(250);
+    if (!expectReward) {
+      /* Page motion made `hidden` an early, non-visual event: a hydrated panel
+         is laid out under the pinned die and released only when the entry
+         wipe lands (page-motion.ts holdHydration), and every .btn inside then
+         runs its own .15s transition out of that inherited visibility:hidden,
+         which WebKit reads as hidden until the next frame. Settle the wipe
+         before the grace, or a stub that answers inside 80ms lands a probe in
+         that window and reads painted rows beside invisible controls. */
+      await waitForOverlayTransitions(page, '#ovOnline');
+      await page.waitForTimeout(250);
+    }
     // online.css has now landed. Its selectors may style its own screens and
     // body-level sheets, but must not repaint the eager Home hiding underneath.
     const homeAfterOnline = await homeSnapshot();

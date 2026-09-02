@@ -1019,11 +1019,11 @@ export async function runPageNavigationMotionScenarios(suite) {
       const forward = await motionSample(page);
       await waitForMotionIdle(page);
       await page.click('#btnOnlineBack');
-      await page.waitForFunction(() => {
-        const loader = document.querySelector('#onLoading .ldwait');
-        return document.getElementById('kbroot')?.classList.contains('page-motion-active')
-          && Number(loader ? getComputedStyle(loader).opacity : 0) > .05;
-      }, null, { timeout: 1000 });
+      /* Profile is already cached by the time Avatar opened, so Back wipes
+         straight back into it. There is no loading page to wait for. */
+      await page.waitForFunction(
+        () => document.getElementById('kbroot')?.classList.contains('page-motion-active'),
+        null, { timeout: 1000 });
       const back = await motionSample(page, { delay: 0 });
       await page.waitForFunction(() => document.getElementById('onAccount')?.hidden === false,
         null, { timeout: 15000 });
@@ -1041,11 +1041,11 @@ export async function runPageNavigationMotionScenarios(suite) {
   subpage.probeResult?.forward);
   check(subpage.probeResult?.back.direction === 'back'
       && subpage.probeResult.back.sourceId === 'onAvatar'
-      && subpage.probeResult.back.targetId === 'onLoading'
-      && subpage.probeResult.back.loader.painted
+      && subpage.probeResult.back.targetId === 'onAccount'
+      && !subpage.probeResult.back.loader.painted
       && exactIds(subpage.probeResult.back.ids, BACK_IDS)
       && overlapsViewport(subpage.probeResult.back),
-  'Avatar Back does not use the shared bracket beat and visibly painted loading-page wipe',
+  'Avatar Back does not wipe straight back into the cached Profile',
   subpage.probeResult?.back);
   check(subpage.probeResult?.settled.transientCount === 0
       && subpage.probeResult.settled.ids.length === 0,

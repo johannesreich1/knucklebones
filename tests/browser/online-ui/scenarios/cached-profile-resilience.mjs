@@ -183,7 +183,10 @@ export async function runCachedProfileResilienceScenarios(suite) {
     member: true,
     named: true,
     deferStanding: true,
-    failRuneOnCall: 2,
+    /* The scenario is an UNAVAILABLE authority. A single failing call still
+       leaves an earlier verified-empty read standing, which is authority
+       saying "no runes" — a different situation with a different right answer. */
+    failRuneOnCall: 'all',
     initScript: seedRichProfile,
     skipStandardProbes: true,
     returnAfterProbe: true,
@@ -220,8 +223,11 @@ export async function runCachedProfileResilienceScenarios(suite) {
   out.onlineLoading.unavailableRuneAuthority = unavailableRuneAuthority.probeResult;
   const unavailableStates = unavailableRuneAuthority.probeResult
     ? Object.values(unavailableRuneAuthority.probeResult) : [];
+  /* The seat must keep NAMING its rune, in the language on screen: the third
+     state is read after a switch to German, where FATE is SCHICKSAL. A label
+     that fell back to the generic "equipped rune" is the regression. */
   check(unavailableStates.length === 3 && unavailableStates.every((state) => (state.hidden
-      || (state.disabled && /fate/i.test(state.label ?? ''))) && !state.sheetOpen
+      || (state.disabled && /fate|schicksal/i.test(state.label ?? ''))) && !state.sheetOpen
       && state.cachedEquipment?.runeId === 'fate'
       && !state.runeAuthority?.collected?.includes('fate')),
   'cached rune facts unlocked an equipment action without matching authority',

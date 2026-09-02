@@ -3,6 +3,11 @@
   gap:18px;padding:30px var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 30px);background-color:#04050c;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
   opacity:0;pointer-events:none;visibility:hidden;transition:opacity .28s,visibility 0s .28s}
 :where(#kbroot) .ov.on{opacity:1;pointer-events:auto;visibility:visible;transition:opacity .28s}
+/* The chunk-download die is a WAIT, not a room. Its destination may now paint
+   from cache with no full-screen die of its own, and holding this one for the
+   generic .28s exit puts a second spinner over a finished screen. It leaves at
+   once; every other overlay keeps the shared fade. */
+:where(#kbroot) #ovLoad{transition:opacity .28s,visibility 0s}
 /* the ambience paints ONCE, on the TOPMOST open overlay: overlays STACK
    (home stays on beneath pages, pages beneath sheets) and a copy per layer
    compounded into mud (user report). Same z everywhere means paint order is

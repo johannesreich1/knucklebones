@@ -81,9 +81,17 @@ export async function runProfileCacheBoundaryScenarios(suite, seedCompleteProfil
     probe: async (page, routes) => {
       await routes.standingStarted;
       await page.waitForFunction(() => document.getElementById('accPoints')?.textContent === '465');
+      /* Only NEON waits for the standing. The league the points already prove
+         is painted with them, not the reset's STONE. */
+      const readGroup = () => page.evaluate(() => ({
+        label: document.getElementById('accGroup')?.textContent?.trim(),
+        ringMaterial: document.getElementById('accRing')?.style.getPropertyValue('--lr-material'),
+      }));
+      const pendingGroup = await readGroup();
       routes.releaseStanding();
       await routes.standingFinished;
       await page.waitForFunction(() => document.getElementById('accPoints')?.textContent === '1,260');
+      const settledGroup = await readGroup();
       const value = await page.evaluate(() => ({
         small: JSON.parse(localStorage.getItem('knucklebones.online.profile') ?? 'null'),
         full: JSON.parse(localStorage.getItem(
@@ -91,7 +99,7 @@ export async function runProfileCacheBoundaryScenarios(suite, seedCompleteProfil
       }));
       await page.click('#btnOnlineBack');
       await page.waitForSelector('#ovStart.on', { timeout: 5000 });
-      return { ...value, home: await page.locator('#homeChip').innerText() };
+      return { ...value, pendingGroup, settledGroup, home: await page.locator('#homeChip').innerText() };
     },
   });
   out.onlineLoading.settledProfilePoints = settledPoints.probeResult;
@@ -100,6 +108,11 @@ export async function runProfileCacheBoundaryScenarios(suite, seedCompleteProfil
       && settled.full?.profile?.rating === 1260 && settled.full?.ladder?.points === 1260
       && settled.full?.standing?.points === 1260 && settled.home.includes('#2'),
   'fresh standing rank and points were split across Profile/Home cache generations', settled);
+  check(settled?.pendingGroup?.label === 'BONE'
+      && settled.pendingGroup.ringMaterial === 'var(--g-bone)'
+      && settled.settledGroup?.label && settled.settledGroup.label !== 'BONE',
+  'a fresh Profile waited for the standing before painting the league its points prove',
+  { pending: settled?.pendingGroup, settled: settled?.settledGroup });
 
   const resultSwitch = await visit({
     preauthenticated: true,

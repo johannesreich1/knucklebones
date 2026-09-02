@@ -275,13 +275,30 @@ export async function runEquippedSeatInterlockScenarios({ visit, out, check }) {
       await page.click('#btnOnlineBack');
       await page.waitForSelector('#ovStart.on', { timeout: 5000 });
       await page.click('#homeChip');
+      const sampleB = () => page.evaluate(() => {
+        const seat = document.getElementById('accSeat');
+        return {
+          accountHidden: document.getElementById('onAccount')?.hidden,
+          loadingHidden: document.getElementById('onLoading')?.hidden,
+          name: document.getElementById('accName')?.textContent?.trim(),
+          seatLabel: seat?.getAttribute('aria-label'),
+          seatDisabled: seat?.disabled,
+          pending: document.getElementById('onAccount')?.hasAttribute('data-account-pending'),
+          rankBusy: document.getElementById('btnRank')?.getAttribute('aria-busy'),
+          home: document.getElementById('ovStart')?.classList.contains('on'),
+          online: document.getElementById('ovOnline')?.classList.contains('on'),
+        };
+      });
       await page.waitForFunction(() => {
         const seat = document.getElementById('accSeat');
         return document.getElementById('onAccount')?.hidden === false
           && document.getElementById('accName')?.textContent?.trim() === 'AccountB'
           && /PILFER/i.test(seat?.getAttribute('aria-label') ?? '')
           && !document.getElementById('onAccount')?.hasAttribute('data-account-pending');
-      }, null, { timeout: 10000 });
+      }, null, { timeout: 10000 }).catch(async (error) => {
+        /* Name what B's Profile actually shows when it never settles. */
+        throw new Error(`${error.message} :: ${JSON.stringify(await sampleB())}`);
+      });
       await page.waitForFunction(() => {
         const seat = document.getElementById('accSeat');
         return !seat?.disabled && !seat?.hasAttribute('aria-busy');

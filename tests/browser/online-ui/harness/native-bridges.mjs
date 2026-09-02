@@ -27,9 +27,14 @@ export async function installNativeBridges(page, {
             started: true,
           };
           if (deferAppleNative) await nativeRelease;
+          /* 'invalid' is a credential the app refuses on its own (no token, so
+             Supabase is never asked); 'rejected' is one it sends and Supabase
+             refuses, which is the only way a token-exchange error can be held. */
           return appleAuth === 'success'
             ? { idToken: 'apple-id-token', authorizationCode: 'apple-authorization-code' }
-            : { idToken: '' };
+            : appleAuth === 'rejected'
+              ? { idToken: 'apple-rejected-token' }
+              : { idToken: '' };
         },
       };
     }

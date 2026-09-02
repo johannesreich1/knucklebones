@@ -181,6 +181,12 @@ export async function installOnlineRoutes(
   let currentRandomRuneMode = randomRuneMode;
   await page.route('**/rest/v1/rpc/set_rune_equipment*', async (r) => {
     const body = r.request().postDataJSON() ?? {};
+    /* The RPC writes the row of auth.uid(), so a write belongs to the account
+       this stub served when the request ARRIVED. A probe may hand the stub to
+       another account (setProfileAccountId / setRuneState) while the answer is
+       held; the late write still lands on the earlier account's row, never on
+       the row the stub now speaks for. */
+    const writeAccountId = profileAccountId;
     const deferred = deferNextEquipmentWrite;
     if (deferred) {
       deferNextEquipmentWrite = false;
@@ -194,11 +200,15 @@ export async function installOnlineRoutes(
       if (deferred) markEquipmentWriteFinished();
       return;
     }
-    currentEquippedRune = body.p_equipped_rune ?? null;
-    currentRandomRuneMode = body.p_random_rune_mode === true;
+    const equippedRune = body.p_equipped_rune ?? null;
+    const randomRuneMode = body.p_random_rune_mode === true;
+    if (writeAccountId === profileAccountId) {
+      currentEquippedRune = equippedRune;
+      currentRandomRuneMode = randomRuneMode;
+    }
     await r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
-      equipped_rune: currentEquippedRune,
-      random_rune_mode: currentRandomRuneMode,
+      equipped_rune: equippedRune,
+      random_rune_mode: randomRuneMode,
     }) });
     if (deferred) markEquipmentWriteFinished();
   });
@@ -229,7 +239,14 @@ export async function installOnlineRoutes(
     await hold(.35);
     if (accountRead && failNextAccountProfile) {
       failNextAccountProfile = false;
-      await r.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+      /* A TERMINAL failure, deliberately not a 503. postgrest-js retries a GET
+         that answers 503/520 (RETRYABLE_STATUS_CODES, RETRYABLE_METHODS) with a
+         1s/2s/4s backoff, so a 503 here parks the client's row read for a full
+         second, and by the time the retry arrives this one-shot flag is spent
+         and the retry is answered 200 — a probe sampling the failure sees a
+         still-pending read, never the outage it asked for. Same choice as the
+         'all' rune failure below. */
+      await r.fulfill({ status: 500, contentType: 'application/json', body: '{}' });
       if (deferred) markAccountProfileFinished();
       return;
     }

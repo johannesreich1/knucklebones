@@ -35,7 +35,18 @@ export const GATE_SUITES = Object.freeze([
      `--smoke` mode stays in the gate below as `localization-smoke`, so the
      manual matrix cannot silently rot. */
   // file('localization-browser', 'tests/browser/localization/run.mjs'),
-  file('online-ui-browser', 'tests/browser/online-ui/run.mjs', { needsServer: true }),
+  /* One WebKit tree, three gate suites: the tree outgrew the per-suite limit
+     (2026-09-02). The runner validates that every scenario is in exactly one
+     shard; rebalance from the report's `timings`. */
+  file('online-ui-entry', 'tests/browser/online-ui/run.mjs', {
+    needsServer: true, args: ['--shard', 'entry'],
+  }),
+  file('online-ui-account', 'tests/browser/online-ui/run.mjs', {
+    needsServer: true, args: ['--shard', 'account'],
+  }),
+  file('online-ui-ranked', 'tests/browser/online-ui/run.mjs', {
+    needsServer: true, args: ['--shard', 'ranked'],
+  }),
   file('online-localization-browser', 'tests/browser/online-localization/run.mjs'),
   file('rune-deal-reveal'),
   file('widget-isolation'),
@@ -156,7 +167,7 @@ export const CI_SHARDS = Object.freeze({
   'ci-1': Object.freeze([
     // The full `localization-browser` matrix is intentionally manual-only;
     // `localization-smoke` is its in-gate rot guard. See GATE_SUITES.
-    'localization-smoke', 'service-worker-routing', 'native-startup-browser',
+    'online-ui-account', 'localization-smoke', 'service-worker-routing', 'native-startup-browser',
     'rune-matchup-analysis', 'scoring-ward-ai', 'online-api', 'design-library',
     'cssreach', 'legal', 'spells', 'dice', 'release-main', 'gate-manifest',
     'random-mode-dial', 'profile-cache', 'rune-collection-cache', 'progression-status-cache',
@@ -165,7 +176,7 @@ export const CI_SHARDS = Object.freeze({
     'virtual-cache', 'scroll-settled',
   ]),
   'ci-2': Object.freeze([
-    'online-ui-browser', 'hud-settings-browser', 'spells-presentation',
+    'online-ui-entry', 'hud-settings-browser', 'spells-presentation',
     'pwa-service-worker',
     'spells-interaction', 'legal-browser', 'first-run-offer', 'live-safety',
     'rune-sunder-sensitivity', 'i18n', 'androidship', 'iosship', 'ladderbench',
@@ -173,7 +184,7 @@ export const CI_SHARDS = Object.freeze({
     'ranked-actions', 'online-watchdog', 'idempotent-command', 'play-sync',
   ]),
   'ci-3': Object.freeze([
-    'online-localization-browser', 'duo-pass-and-play', 'responsive-browser',
+    'online-ui-ranked', 'online-localization-browser', 'duo-pass-and-play', 'responsive-browser',
     'tutorial-persistence', 'spells-advanced',
     'design-cards-render', 'botbench', 'profile-back-navigation',
     'limited-bag-gauge', 'architecture', 'rune-ward-sensitivity',

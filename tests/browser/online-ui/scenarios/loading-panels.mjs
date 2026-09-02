@@ -209,6 +209,14 @@ export async function runOnlineLoadingPanelScenarios(suite) {
         inlineRankLoader: !!document.querySelector('#accRank .die.ldclock'),
         visibleLoaders: [...document.querySelectorAll('.die.ldclock')]
           .filter((element) => element.getClientRects().length > 0).length,
+        /* Name the owner of every painted die: a bare count cannot say which
+           surface is showing a second one. */
+        loaderOwners: [...document.querySelectorAll('.die.ldclock')]
+          .filter((element) => element.getClientRects().length > 0)
+          .map((element) => element.closest('[id]')?.id ?? '?'),
+        ovLoadState: (() => { const o = document.getElementById('ovLoad');
+          if (!o) return null; const c = getComputedStyle(o);
+          return { cls: o.className, opacity: c.opacity, visibility: c.visibility }; })(),
       }));
       const runeCalls = routes.runeCalls();
       routes.releaseStanding();

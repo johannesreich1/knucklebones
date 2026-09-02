@@ -120,10 +120,12 @@ export function bindAccountScreen(ports: AccountBindingPorts): void {
     if (!await stillOwnsVisibleAccount(accountId)) return;
     ports.showAuth('attach', 'account', null, accountId);
   });
-  $('#btnHaveAcc').addEventListener('click', async () => {
+  /* Restore names no account: the credentials decide which one signs in, and
+     the auth sheet's own revision settles any race with an entry still loading
+     this Profile. Keep it a plain door; an ownership guard here would refuse
+     the tap whenever no account has painted yet. */
+  $('#btnHaveAcc').addEventListener('click', () => {
     Sfx.tap();
-    const accountId = visibleAccountId();
-    if (!await stillOwnsVisibleAccount(accountId)) return;
     ports.showAuth('restore', 'account');
   });
   /* Every ACCOUNT ACCESS control answers on the shared warning card and

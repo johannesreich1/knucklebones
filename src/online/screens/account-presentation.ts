@@ -83,11 +83,11 @@ export function paintAccountDetails(
   const apex = standing
     ? currentInApex(points, standing.rank, standing.population, account.curveVersion) : false;
   $('#accPoints').textContent = formatNumber(points);
-  /* NEON is positional: it needs the rank and population that arrive with the
-     standing, which is the one fact Profile loads separately. While no standing
-     has ever been confirmed, keep the label rather than assert the non-apex
-     league a bare points row implies; applyStanding() repaints it on arrival. */
-  if (standing || !rankPending) paintGroup(points, apex, account.curveVersion);
+  /* NEON is positional: the rank and population that confirm it arrive with
+     the standing, the one fact Profile loads separately. The points already
+     prove every league below it, so paint that league at once rather than the
+     reset's bottom one; applyStanding() lifts an apex player to NEON. */
+  paintGroup(points, apex, account.curveVersion);
   $('#accPeak').textContent = formatNumber(peak);
   $('#accGames').textContent = games
     ? t('online', 'profile.gamesLink', { count: games, formatted: formatNumber(games) })
@@ -126,15 +126,13 @@ export function paintAccountFrame(
     ? currentInApex(ladder.points, standing.rank, standing.population, account.curveVersion)
     : false;
   const ring = $('#accRing') as HTMLElement;
-  /* The ring reads the same positional league as the label, so it waits on the
-     same fact rather than briefly drawing an apex player's non-apex arc. */
-  if (standing || !rankPending) {
-    const peakPosition = currentGroupRingPeakState(ladder.points, ladder.peak, apex, account.curveVersion);
-    fillAccountRing(ring, currentGroupRingFill(ladder.points, apex, account.curveVersion));
-    ring.classList.toggle('haspeak', peakPosition.kind !== 'at');
-    if (peakPosition.kind === 'ahead') ring.style.setProperty('--pk', String(peakPosition.fill));
-    if (peakPosition.kind === 'above') ring.style.setProperty('--pk', '1');
-  }
+  /* The ring reads the same league as the label: the points-proven one now,
+     the positional apex once the standing has confirmed it. */
+  const peakPosition = currentGroupRingPeakState(ladder.points, ladder.peak, apex, account.curveVersion);
+  fillAccountRing(ring, currentGroupRingFill(ladder.points, apex, account.curveVersion));
+  ring.classList.toggle('haspeak', peakPosition.kind !== 'at');
+  if (peakPosition.kind === 'ahead') ring.style.setProperty('--pk', String(peakPosition.fill));
+  if (peakPosition.kind === 'above') ring.style.setProperty('--pk', '1');
   paintAccountDetails(account, recent, rankPending);
 }
 

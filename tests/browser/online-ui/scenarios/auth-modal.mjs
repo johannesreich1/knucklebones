@@ -2,6 +2,8 @@
 // stacks under, what a drag and an Escape do to it, and where focus lands when
 // it goes. What SUBMITTING it does to the flow lives in auth-credentials.mjs.
 
+import { waitForOverlayTransitions } from '../../support/overlay-transitions.mjs';
+
 async function beginTouchDrag(page, locator, distance, pointerId) {
   const box = await locator.boundingBox();
   if (!box) return null;
@@ -63,12 +65,16 @@ async function probeSessionlessModal(page) {
 
   await page.click('#btnAuthPrivacy');
   await page.waitForSelector('#ovPrivacy.on');
+  /* Legal arrives through the shared page wipe, which suppresses target input
+     by design until it lands. Hit-test what the player can reach afterwards. */
+  await waitForOverlayTransitions(page, '#ovPrivacy');
   const nested = await page.evaluate(() => {
     const overlay = document.getElementById('ovPrivacy');
     const rect = overlay.getBoundingClientRect();
     const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + Math.min(150, rect.height / 2));
     return {
       legalTopmost: !!hit && overlay.contains(hit),
+      hit: hit ? `${hit.tagName.toLowerCase()}#${hit.id}.${hit.className}` : null,
       authInert: document.querySelector('.authsheet')?.inert,
       email: document.getElementById('onEmail')?.value,
       password: document.getElementById('onPass')?.value,

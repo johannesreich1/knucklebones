@@ -120,9 +120,16 @@ async function resultRewardRecoveryProbe(page, routes) {
   };
 
   await page.click('#homeChip');
-  await page.waitForSelector('.rune-reward-sheet .focard', { timeout: 15000 });
-  const recoveredArrival = await page.evaluate(() => {
+  /* Profile deals this sheet only once the Home -> Profile wipe has settled
+     (account-screen.ts awaits whenPageMotionSettled before presenting), so
+     the card first exists ~300ms after the tap. waitForSelector polls on
+     Playwright's 0/20/50/100/100/500ms backoff: its ~280ms attempt races that
+     deal and the next one, at ~800ms, finds a card that has already landed
+     and been acknowledged. Sample the arrival in the first animation frame
+     the card exists, so the flight itself is what gets measured. */
+  const recoveredArrival = await (await page.waitForFunction(() => {
     const card = document.querySelector('.rune-reward-sheet .focard');
+    if (!card) return null;
     const matrix = new DOMMatrixReadOnly(getComputedStyle(card).transform);
     return {
       kicker: card.querySelector('.rune-reward-sheet__kicker')?.textContent?.trim(),
@@ -131,7 +138,7 @@ async function resultRewardRecoveryProbe(page, routes) {
       transformY: matrix.m42,
       animations: card.getAnimations().map(({ playState }) => playState),
     };
-  });
+  }, null, { polling: 'raf', timeout: 15000 })).jsonValue();
   const acknowledgementsBeforeSheetLanded = routes.acknowledgeCalls();
   await Promise.race([
     routes.acknowledgeStarted,
