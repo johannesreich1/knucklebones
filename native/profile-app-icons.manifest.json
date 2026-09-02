@@ -118,8 +118,8 @@
     },
     {
       "path": "src/styles/game/motion.css",
-      "bytes": 2742,
-      "sha256": "dc322d6569ab6a414a2239e249072d8767587003a65c04df0d77b442485012b0"
+      "bytes": 3007,
+      "sha256": "1935fd5c9cae893ae6807dbcd255914ef8bb3866343eebd03cfde77ea8b5b604"
     },
     {
       "path": "src/styles/game/pilfer.css",
@@ -203,8 +203,8 @@
     },
     {
       "path": "src/styles/shell/paged-view.css",
-      "bytes": 17452,
-      "sha256": "5f04eded485272d63b3b7f06ae6b0371fe10ab2fd6b8acf100698928f6443d4c"
+      "bytes": 21119,
+      "sha256": "e060c436c2567d6aaf6bf11ba06b5ef7a61c5237bba237e20c3d855afd4c1300"
     },
     {
       "path": "src/ui/die-markup.ts",
@@ -213,8 +213,8 @@
     },
     {
       "path": "tools/appicon.mjs",
-      "bytes": 13333,
-      "sha256": "cbcafe6febe5e98c1e31fdc25fb2fcdf692e5f26e45c99e50c176540a82b77a2"
+      "bytes": 13561,
+      "sha256": "1cced074f4d8a4c0c59cd20cea59340902915c00af603cd027d32eb8a2d02efa"
     },
     {
       "path": "tools/profile-app-icons.mjs",
