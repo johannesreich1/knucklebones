@@ -1,0 +1,7 @@
+5db2e00c64ed8b0bc2a40aee8a196ecbefc5c35b22b4683d246ee10cb5faa1d6  01-ranked-row-multiply-hero.png
+8aefeda90b15a868a40599ae78b8798cfc4ad7e68136681923c426df99fce31a  02-ranked-mode-dial-hero.png
+61214bfbd7116c54ccb6d332c0b39ee447f96098405f64086b785f166739a49e  03-ward-runic-seal-hero.png
+c6d09dec6f5813d53aef95c22ba29607c978b93cf0e63dff879158cc8942ee44  04-sunder-overload-hero.png
+cf9beb0dd1c912e28a32d8a379d4b90f21208592309f609a5a7876a59f6dbcf3  05-ranked-bounty-active.png
+3ce3a33118b04c015da67dff585c1bbc2c1d4cbfdba3cd0c3aed943b111cf309  05-ranked-bounty-hero.png
+6c97139aebb3d1739b12612482c5a5daa7bdf565ee7e85c8e5d0db1c5206d1ca  06-neon-ladder-hero.png
