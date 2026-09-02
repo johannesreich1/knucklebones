@@ -1,0 +1,80 @@
+<!-- meta name="Icon 05 — Knockout" group="5b · The launcher icon" subtitle="Dark-mode launcher study: my die lands in front while the opponent's, behind it, is caught mid-burst at the dying keyframe's peak brightness with its pips flying loose. Faces are fixed by the design — the profile avatar never moves them" height=869 sizes="md" links="iOS launch, Home, Profile" -->
+<style>
+  /* The mark is the capture — the one beat the whole game turns on. Two of
+     the app's own die tokens showing the SAME face, because a match is what
+     knocks a die out: mine landing in front, the opponent's behind it caught
+     as it dies. The face is a THREE, not a four: the die body is glass, so
+     wherever the front die overlaps the back one every pip underneath shows
+     through it — a four over a four either paints a magenta pip inside the
+     cyan die or hides that corner and reads 3-vs-4, no match. A three's
+     diagonal leaves the overlapped corner pip-free.
+     The back wrapper is NOT a frame of the dying animation. It holds the
+     keyframe's peak brightness — dice.css:37 fires brightness(2.4) at 30%,
+     together with scale(1.24) rotate(6deg) — at the opacity the die has a
+     beat later, .7 on its way to the 100% frame's 0. The keyframe's scale and
+     spin are left to the wrapper's own placement. A launcher study fixes its
+     faces on purpose: the shipped icon follows the profile avatar, and this
+     board exists to ask whether the mark should stop doing that. */
+  .ia5 .icoframe{background:
+    radial-gradient(34% 34% at 68% 33%,rgba(var(--p2-rgb),.6),rgba(var(--p2-rgb),.22) 50%,transparent 100%),
+    radial-gradient(70% 60% at 22% 86%,rgba(var(--p1-rgb),.2),transparent 70%),
+    linear-gradient(#2e2e31,#111113)}
+  /* The loose pips are the card's own — the app's dying die emits none. They
+     borrow the pip's exact recipe (white core to the owner's hue, a glow of
+     the same hue) so debris and die read as one material. */
+  .ia5 .ia5defs{position:absolute;width:0;height:0}
+  .ia5 .ia5burst{position:absolute;left:0;top:0;width:120px;height:120px;overflow:visible;display:block}
+  .ia5 .ia5burst circle{fill:url(#ia5g);
+    filter:drop-shadow(0 0 1.5px rgba(var(--p2-rgb),.95)) drop-shadow(0 0 4px rgba(var(--p2-rgb),.55))}
+</style>
+<div class="stage ia5"><div class="bgfx"></div><div class="scr">
+  <svg class="ia5defs" width="0" height="0" aria-hidden="true"><radialGradient id="ia5g" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#fff"/><stop offset="1" style="stop-color:var(--p2)"/></radialGradient></svg>
+  <div class="icohead">
+    <div class="eyebrow">Open study · launcher · dark appearance</div>
+    <h1>ICON 05 · KNOCKOUT</h1>
+    <p>My die lands, theirs bursts. The moment the whole game is about, caught with the opponent's die at its brightest and its pips already leaving.</p>
+  </div>
+
+  <!-- The burst debris (the ia5burst SVG: pips as circles, white core to
+       var(--p2), glow of the same hue) is drawn locally in this card. If this
+       study wins, its single implementation moves to tools/appicon.mjs. -->
+  <div class="icohero">
+    <div class="icoframe" style="--S:180"><div class="icomark">
+      <i class="icopos" style="left:60px;top:18px;transform:rotate(14deg);opacity:.7;filter:brightness(2.4)">{{die:3:p2:44}}</i>
+      <svg class="ia5burst" viewBox="0 0 120 120" aria-hidden="true"><circle cx="111" cy="48" r="3.4"/><circle cx="110" cy="63" r="3.1"/><circle cx="105" cy="84" r="2.7"/><circle cx="90" cy="87" r="2.4"/><circle cx="102" cy="101" r="2"/></svg>
+      <i class="icopos" style="left:14px;top:41px;transform:rotate(-8deg)">{{die:3:p1:66}}</i>
+    </div></div>
+    <span class="cap2">App Store · 1024</span>
+  </div>
+
+  <div class="icohome"><div class="icorow">
+    <div class="icoapp">{{appicon:60}}<span class="nm">Shipped</span></div>
+    <div class="icoapp"><div class="icoframe" style="--S:60"><div class="icomark">
+      <i class="icopos" style="left:60px;top:18px;transform:rotate(14deg);opacity:.7;filter:brightness(2.4)">{{die:3:p2:44}}</i>
+      <svg class="ia5burst" viewBox="0 0 120 120" aria-hidden="true"><circle cx="111" cy="48" r="3.4"/><circle cx="110" cy="63" r="3.1"/><circle cx="105" cy="84" r="2.7"/><circle cx="90" cy="87" r="2.4"/><circle cx="102" cy="101" r="2"/></svg>
+      <i class="icopos" style="left:14px;top:41px;transform:rotate(-8deg)">{{die:3:p1:66}}</i>
+    </div></div><span class="nm">Knucklebones</span></div>
+    <div class="icoapp"><span class="icotile"></span><span class="nm">Settings</span></div>
+    <div class="icoapp"><span class="icotile"></span><span class="nm">Notes</span></div>
+  </div></div>
+
+  <div class="icosizes">
+    <div class="icosize"><div class="icoframe" style="--S:60"><div class="icomark">
+      <i class="icopos" style="left:60px;top:18px;transform:rotate(14deg);opacity:.7;filter:brightness(2.4)">{{die:3:p2:44}}</i>
+      <svg class="ia5burst" viewBox="0 0 120 120" aria-hidden="true"><circle cx="111" cy="48" r="3.4"/><circle cx="110" cy="63" r="3.1"/><circle cx="105" cy="84" r="2.7"/><circle cx="90" cy="87" r="2.4"/><circle cx="102" cy="101" r="2"/></svg>
+      <i class="icopos" style="left:14px;top:41px;transform:rotate(-8deg)">{{die:3:p1:66}}</i>
+    </div></div><span class="cap2">Home · 60</span></div>
+    <div class="icosize"><div class="icoframe" style="--S:40"><div class="icomark">
+      <i class="icopos" style="left:60px;top:18px;transform:rotate(14deg);opacity:.7;filter:brightness(2.4)">{{die:3:p2:44}}</i>
+      <svg class="ia5burst" viewBox="0 0 120 120" aria-hidden="true"><circle cx="111" cy="48" r="3.4"/><circle cx="110" cy="63" r="3.1"/><circle cx="105" cy="84" r="2.7"/><circle cx="90" cy="87" r="2.4"/><circle cx="102" cy="101" r="2"/></svg>
+      <i class="icopos" style="left:14px;top:41px;transform:rotate(-8deg)">{{die:3:p1:66}}</i>
+    </div></div><span class="cap2">Spotlight · 40</span></div>
+    <div class="icosize"><div class="icoframe" style="--S:29"><div class="icomark">
+      <i class="icopos" style="left:60px;top:18px;transform:rotate(14deg);opacity:.7;filter:brightness(2.4)">{{die:3:p2:44}}</i>
+      <svg class="ia5burst" viewBox="0 0 120 120" aria-hidden="true"><circle cx="111" cy="48" r="3.4"/><circle cx="110" cy="63" r="3.1"/><circle cx="105" cy="84" r="2.7"/><circle cx="90" cy="87" r="2.4"/><circle cx="102" cy="101" r="2"/></svg>
+      <i class="icopos" style="left:14px;top:41px;transform:rotate(-8deg)">{{die:3:p1:66}}</i>
+    </div></div><span class="cap2">Settings · 29</span></div>
+  </div>
+
+  <div class="note" style="margin-top:14px"><b>Why a knockout.</b> The shipped mark is one die that follows the profile avatar, so 42 players own 42 launchers. This one is the capture itself: mine landing in front, the opponent's behind it caught at the dying keyframe's peak brightness with its pips flying loose. Both faces are the design's — a three over a three, because a match is what knocks a die out, and a three keeps every pip of both dice visible where the glass of one die crosses the other — and the profile never moves them: a player picks an avatar, not a launcher. The dark appearance keeps the charcoal ground; the magenta flash under the bursting die is the only thing that brightens.</div>
+</div></div>

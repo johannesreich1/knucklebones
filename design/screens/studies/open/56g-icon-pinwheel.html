@@ -1,0 +1,84 @@
+<!-- meta name="Icon 07 — Pinwheel" group="5b · The launcher icon" subtitle="Dark-mode launcher study: four small dice, faces 1 to 4, set as a windmill around a dark hub — mine and the opponent's on opposite corners, each die a quarter-turn on from the last. Faces are fixed by the design — the profile avatar never moves them" height=885 sizes="md" links="iOS launch, Home, Profile" -->
+<style>
+  /* The mark is a windmill of four real dice: faces 1, 2, 3, 4 clockwise from
+     the top-left, all leaning the same way and each turned a quarter more
+     than the last, so the ring itself reads as motion. Owners alternate round
+     the ring — the two p1 dice share a diagonal, the two p2 dice the other.
+     The die token is translucent glass and takes the value of whatever ground
+     lies under it: on bare charcoal its body sinks to the ground's own value
+     and the 60px Home tile read as four LED squares. So each die stands on
+     its own pool — the owner's highlight hue (the token's --p1-hi / --p2-hi)
+     at low alpha, held inside the die's footprint — which lifts the body a
+     few steps above the charcoal and tints it, while the hub and the corners
+     keep the reference's own dark ground. Faces are the design's, not the
+     profile's: the shipped icon follows the avatar, and this board asks
+     whether the mark should stop doing that. */
+  .ia7 .icoframe{background:
+    radial-gradient(22% 22% at 29.2% 29.2%,color-mix(in srgb,var(--p1-hi) 42%,transparent) 0 58%,transparent 100%),
+    radial-gradient(22% 22% at 70.8% 70.8%,color-mix(in srgb,var(--p1-hi) 42%,transparent) 0 58%,transparent 100%),
+    radial-gradient(22% 22% at 70.8% 29.2%,color-mix(in srgb,var(--p2-hi) 42%,transparent) 0 58%,transparent 100%),
+    radial-gradient(22% 22% at 29.2% 70.8%,color-mix(in srgb,var(--p2-hi) 42%,transparent) 0 58%,transparent 100%),
+    linear-gradient(#2e2e31,#111113)}
+  /* local: the hub is card-only — the winner's single implementation moves to
+     tools/appicon.mjs. It is the small dark centre the four blades turn
+     around, deepened so it stays a hole and not a patch of ground even at 29px */
+  .ia7 .ia7hub{position:absolute;left:45px;top:45px;width:30px;height:30px;border-radius:50%;
+    background:radial-gradient(circle,rgba(0,0,0,.92),rgba(0,0,0,.6) 46%,transparent 70%)}
+</style>
+<div class="stage ia7"><div class="bgfx"></div><div class="scr">
+  <div class="icohead">
+    <div class="eyebrow">Open study · launcher · dark appearance</div>
+    <h1>ICON 07 · PINWHEEL</h1>
+    <p>Four real dice in a windmill: faces 1, 2, 3, 4 round the ring, all leaning the same way and each a quarter-turn on from the last, mine and the opponent's on opposite corners. A dark hub is what they spin around.</p>
+  </div>
+
+  <div class="icohero">
+    <div class="icoframe" style="--S:180"><div class="icomark">
+      <b class="ia7hub"></b>
+      <i class="icopos" style="left:13px;top:13px;transform:rotate(14deg)">{{die:1:p1:44}}</i>
+      <i class="icopos" style="left:63px;top:13px;transform:rotate(104deg)">{{die:2:p2:44}}</i>
+      <i class="icopos" style="left:63px;top:63px;transform:rotate(194deg)">{{die:3:p1:44}}</i>
+      <i class="icopos" style="left:13px;top:63px;transform:rotate(284deg)">{{die:4:p2:44}}</i>
+    </div></div>
+    <span class="cap2">App Store · 1024</span>
+  </div>
+
+  <div class="icohome"><div class="icorow">
+    <div class="icoapp">{{appicon:60}}<span class="nm">Shipped</span></div>
+    <div class="icoapp"><div class="icoframe" style="--S:60"><div class="icomark">
+      <b class="ia7hub"></b>
+      <i class="icopos" style="left:13px;top:13px;transform:rotate(14deg)">{{die:1:p1:44}}</i>
+      <i class="icopos" style="left:63px;top:13px;transform:rotate(104deg)">{{die:2:p2:44}}</i>
+      <i class="icopos" style="left:63px;top:63px;transform:rotate(194deg)">{{die:3:p1:44}}</i>
+      <i class="icopos" style="left:13px;top:63px;transform:rotate(284deg)">{{die:4:p2:44}}</i>
+    </div></div><span class="nm">Knucklebones</span></div>
+    <div class="icoapp"><span class="icotile"></span><span class="nm">Settings</span></div>
+    <div class="icoapp"><span class="icotile"></span><span class="nm">Notes</span></div>
+  </div></div>
+
+  <div class="icosizes">
+    <div class="icosize"><div class="icoframe" style="--S:60"><div class="icomark">
+      <b class="ia7hub"></b>
+      <i class="icopos" style="left:13px;top:13px;transform:rotate(14deg)">{{die:1:p1:44}}</i>
+      <i class="icopos" style="left:63px;top:13px;transform:rotate(104deg)">{{die:2:p2:44}}</i>
+      <i class="icopos" style="left:63px;top:63px;transform:rotate(194deg)">{{die:3:p1:44}}</i>
+      <i class="icopos" style="left:13px;top:63px;transform:rotate(284deg)">{{die:4:p2:44}}</i>
+    </div></div><span class="cap2">Home · 60</span></div>
+    <div class="icosize"><div class="icoframe" style="--S:40"><div class="icomark">
+      <b class="ia7hub"></b>
+      <i class="icopos" style="left:13px;top:13px;transform:rotate(14deg)">{{die:1:p1:44}}</i>
+      <i class="icopos" style="left:63px;top:13px;transform:rotate(104deg)">{{die:2:p2:44}}</i>
+      <i class="icopos" style="left:63px;top:63px;transform:rotate(194deg)">{{die:3:p1:44}}</i>
+      <i class="icopos" style="left:13px;top:63px;transform:rotate(284deg)">{{die:4:p2:44}}</i>
+    </div></div><span class="cap2">Spotlight · 40</span></div>
+    <div class="icosize"><div class="icoframe" style="--S:29"><div class="icomark">
+      <b class="ia7hub"></b>
+      <i class="icopos" style="left:13px;top:13px;transform:rotate(14deg)">{{die:1:p1:44}}</i>
+      <i class="icopos" style="left:63px;top:13px;transform:rotate(104deg)">{{die:2:p2:44}}</i>
+      <i class="icopos" style="left:63px;top:63px;transform:rotate(194deg)">{{die:3:p1:44}}</i>
+      <i class="icopos" style="left:13px;top:63px;transform:rotate(284deg)">{{die:4:p2:44}}</i>
+    </div></div><span class="cap2">Settings · 29</span></div>
+  </div>
+
+  <div class="note" style="margin-top:14px"><b>Why a pinwheel.</b> Four dice instead of one, and the layout does the talking: every blade leans the same way and each is turned a quarter further than the last, so the ring reads as a wheel mid-turn, with both owners on it before a match is played. The faces — 1, 2, 3, 4 — and their pips are fixed by the design; the profile avatar never moves them, where the shipped mark changes with every avatar. A plain 2×2 block with a slight slide was tried first: at 60px it read as a grid of tiles, and the leaning wheel read as a spin, so the wheel stays. The dark appearance keeps the charcoal ground; only the hue pooled under each owner's dice changes.</div>
+</div></div>

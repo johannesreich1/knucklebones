@@ -210,6 +210,44 @@ body{display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px
 .spcount .spnew{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
 /* the nameplate at each end of a study board, narrowed to the phone's column */
 .pline{max-width:206px;margin:0 auto}
+
+/* THE LAUNCHER STUDY BOARD, once. An app-icon study pictures the same things
+   every time — the mark inside iOS's squircle at App Store scale, the same
+   mark at Home (60), Spotlight (40) and Settings (29) size on a dark Home
+   screen beside the SHIPPED icon, and a note — so that scaffold lives here and
+   a study writes only its own mark. A mark is authored ONCE in a 120-unit
+   square (.icomark) and every frame scales it with --S, so the 29px Settings
+   reading is the hero's own pixels rather than a redrawn small version. The
+   dice inside are the app's own die token; a study positions them through
+   .icopos wrappers because a card cannot add a class to a token. */
+.icohead{width:100%;max-width:var(--w-col);margin:4px auto 0;text-align:left}
+.icohead .eyebrow{font-size:9px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+.icohead h1{font-size:18px;text-align:left;margin:4px 0 7px}
+.icohead p{font-size:10px;line-height:1.55;letter-spacing:.1em;color:var(--dim);margin:0}
+.icoframe{position:relative;width:calc(var(--S)*1px);height:calc(var(--S)*1px);flex:0 0 auto;
+  border-radius:22.4%;overflow:hidden;isolation:isolate;
+  background:linear-gradient(#313131,#141414);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),0 8px 22px rgba(0,0,0,.55)}
+.icomark{position:absolute;left:0;top:0;width:120px;height:120px;transform-origin:0 0;
+  transform:scale(calc(var(--S)/120));overflow:hidden}
+.icomark .icopos{position:absolute;display:block;line-height:0;transform-origin:50% 50%}
+.icomark .die{animation:none}
+.icomark .pip{transition:none}
+.icohero{display:flex;flex-direction:column;align-items:center;gap:10px;margin:16px auto 0}
+.icohome{width:100%;max-width:var(--w-col);box-sizing:border-box;margin:14px auto 0;
+  padding:16px 14px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.08);
+  background:radial-gradient(120% 90% at 50% 0%,#141527 0%,#07070c 58%,#000 100%)}
+.icorow{display:flex;justify-content:space-between;align-items:flex-start}
+.icoapp{display:flex;flex-direction:column;align-items:center;gap:6px;width:64px}
+.icoapp .nm{font-family:-apple-system,"SF Pro Text",system-ui,sans-serif;font-size:10.5px;
+  color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);white-space:nowrap}
+.icotile{width:60px;height:60px;border-radius:22.4%;flex:0 0 auto;
+  background:linear-gradient(160deg,#2b2c35,#15161c);box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+.icoapp .appicon-mark{width:60px;height:60px;border-radius:22.4%;display:block;
+  box-shadow:0 8px 22px rgba(0,0,0,.55)}
+.icosizes{display:flex;justify-content:center;align-items:flex-end;gap:26px;margin:14px auto 0}
+.icosize{display:flex;flex-direction:column;align-items:center;gap:7px}
+.icosize .cap2{font-size:8px;letter-spacing:.18em}
 `;
 
 /* An avatar is a die wearing a RAW hue (ui/avatar.ts) — never the duel pair,

@@ -1,0 +1,77 @@
+<!-- meta name="Icon 03 — Clash" group="5b · The launcher icon" subtitle="Dark-mode launcher study: two dice meet corner to corner on the diagonal, mine lower-left and the opponent's upper-right, both showing the same four — the face that knocks the other out — under one gold impact glint. Faces are fixed by the design; the profile avatar never moves them" height=848 sizes="md" links="iOS launch, Home, Profile" -->
+<style>
+  /* The mark is the rule of the game in one picture: a matching face is a
+     knockout, so two fours meeting at the corner ARE the clash. Both dice are
+     the app's own token; only the glint at the contact is drawn here. A
+     launcher study fixes its faces on purpose (4 against 4): the shipped icon
+     follows the profile avatar, and this board asks whether it should stop. */
+  .ia3 .icoframe{background:
+    radial-gradient(64% 58% at 24% 82%,rgba(var(--p1-rgb),.22),transparent 70%),
+    radial-gradient(64% 58% at 78% 18%,rgba(var(--p2-rgb),.2),transparent 70%),
+    radial-gradient(32% 32% at 47% 47%,rgba(var(--gold-rgb),.18),transparent 72%),
+    linear-gradient(#27272b,#0e0e10)}
+  /* Each die's rim is lit from outside by its owner's hue: the token's hairline
+     border is the board's, drawn for a 74px die, and a launcher shrinks the
+     whole mark to 29px, where a hairline is a quarter pixel. The wrapper's
+     halo hugs the silhouette so the two squares still read as dice at
+     Settings size — the die itself is untouched. */
+  .ia3 .ia3die{filter:drop-shadow(0 0 .7px rgba(var(--o),.9)) drop-shadow(0 0 1.6px rgba(var(--o),.28))}
+  /* the impact glint: a four-point star, long arms across the line of impact,
+     glowing gold; small enough to stay a spark at 29px rather than a blob */
+  .ia3 .ia3glint{display:block;width:20px;height:20px;overflow:visible;
+    filter:drop-shadow(0 0 3px rgba(var(--gold-rgb),.95)) drop-shadow(0 0 12px rgba(var(--gold-rgb),.5))}
+  .ia3 .ia3glint .ia3star{fill:var(--gold)}
+  .ia3 .ia3glint .ia3core{fill:rgba(255,255,255,.94)}
+</style>
+<div class="stage ia3"><div class="bgfx"></div><div class="scr">
+  <div class="icohead">
+    <div class="eyebrow">Open study · launcher · dark appearance</div>
+    <h1>ICON 03 · CLASH</h1>
+    <p>Two dice meet corner to corner: mine from the lower left, the opponent's from the upper right, both showing a four. In Knucklebones a matching face knocks the other die out — the same face is the clash.</p>
+  </div>
+
+  <div class="icohero">
+    <div class="icoframe" style="--S:180"><div class="icomark">
+      <i class="icopos ia3die" style="left:55.5px;top:12.5px;transform:rotate(10deg);--o:var(--p2-rgb)">{{die:4:p2:52}}</i>
+      <i class="icopos ia3die" style="left:12.5px;top:55.5px;transform:rotate(-10deg);--o:var(--p1-rgb)">{{die:4:p1:52}}</i>
+      <!-- local glint: the winner's single implementation moves to tools/appicon.mjs -->
+      <i class="icopos" style="left:46px;top:46px;transform:rotate(-45deg)"><svg class="ia3glint" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path class="ia3star" d="M12 0 L13.8 10.2 L22 12 L13.8 13.8 L12 24 L10.2 13.8 L2 12 L10.2 10.2 Z"/><circle class="ia3core" cx="12" cy="12" r="2.2"/></svg></i>
+    </div></div>
+    <span class="cap2">App Store · 1024</span>
+  </div>
+
+  <div class="icohome"><div class="icorow">
+    <div class="icoapp">{{appicon:60}}<span class="nm">Shipped</span></div>
+    <div class="icoapp"><div class="icoframe" style="--S:60"><div class="icomark">
+      <i class="icopos ia3die" style="left:55.5px;top:12.5px;transform:rotate(10deg);--o:var(--p2-rgb)">{{die:4:p2:52}}</i>
+      <i class="icopos ia3die" style="left:12.5px;top:55.5px;transform:rotate(-10deg);--o:var(--p1-rgb)">{{die:4:p1:52}}</i>
+      <!-- local glint: the winner's single implementation moves to tools/appicon.mjs -->
+      <i class="icopos" style="left:46px;top:46px;transform:rotate(-45deg)"><svg class="ia3glint" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path class="ia3star" d="M12 0 L13.8 10.2 L22 12 L13.8 13.8 L12 24 L10.2 13.8 L2 12 L10.2 10.2 Z"/><circle class="ia3core" cx="12" cy="12" r="2.2"/></svg></i>
+    </div></div><span class="nm">Knucklebones</span></div>
+    <div class="icoapp"><span class="icotile"></span><span class="nm">Settings</span></div>
+    <div class="icoapp"><span class="icotile"></span><span class="nm">Notes</span></div>
+  </div></div>
+
+  <div class="icosizes">
+    <div class="icosize"><div class="icoframe" style="--S:60"><div class="icomark">
+      <i class="icopos ia3die" style="left:55.5px;top:12.5px;transform:rotate(10deg);--o:var(--p2-rgb)">{{die:4:p2:52}}</i>
+      <i class="icopos ia3die" style="left:12.5px;top:55.5px;transform:rotate(-10deg);--o:var(--p1-rgb)">{{die:4:p1:52}}</i>
+      <!-- local glint: the winner's single implementation moves to tools/appicon.mjs -->
+      <i class="icopos" style="left:46px;top:46px;transform:rotate(-45deg)"><svg class="ia3glint" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path class="ia3star" d="M12 0 L13.8 10.2 L22 12 L13.8 13.8 L12 24 L10.2 13.8 L2 12 L10.2 10.2 Z"/><circle class="ia3core" cx="12" cy="12" r="2.2"/></svg></i>
+    </div></div><span class="cap2">Home · 60</span></div>
+    <div class="icosize"><div class="icoframe" style="--S:40"><div class="icomark">
+      <i class="icopos ia3die" style="left:55.5px;top:12.5px;transform:rotate(10deg);--o:var(--p2-rgb)">{{die:4:p2:52}}</i>
+      <i class="icopos ia3die" style="left:12.5px;top:55.5px;transform:rotate(-10deg);--o:var(--p1-rgb)">{{die:4:p1:52}}</i>
+      <!-- local glint: the winner's single implementation moves to tools/appicon.mjs -->
+      <i class="icopos" style="left:46px;top:46px;transform:rotate(-45deg)"><svg class="ia3glint" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path class="ia3star" d="M12 0 L13.8 10.2 L22 12 L13.8 13.8 L12 24 L10.2 13.8 L2 12 L10.2 10.2 Z"/><circle class="ia3core" cx="12" cy="12" r="2.2"/></svg></i>
+    </div></div><span class="cap2">Spotlight · 40</span></div>
+    <div class="icosize"><div class="icoframe" style="--S:29"><div class="icomark">
+      <i class="icopos ia3die" style="left:55.5px;top:12.5px;transform:rotate(10deg);--o:var(--p2-rgb)">{{die:4:p2:52}}</i>
+      <i class="icopos ia3die" style="left:12.5px;top:55.5px;transform:rotate(-10deg);--o:var(--p1-rgb)">{{die:4:p1:52}}</i>
+      <!-- local glint: the winner's single implementation moves to tools/appicon.mjs -->
+      <i class="icopos" style="left:46px;top:46px;transform:rotate(-45deg)"><svg class="ia3glint" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path class="ia3star" d="M12 0 L13.8 10.2 L22 12 L13.8 13.8 L12 24 L10.2 13.8 L2 12 L10.2 10.2 Z"/><circle class="ia3core" cx="12" cy="12" r="2.2"/></svg></i>
+    </div></div><span class="cap2">Settings · 29</span></div>
+  </div>
+
+  <div class="note" style="margin-top:14px"><b>Why a clash.</b> The shipped mark is one die that follows the profile avatar, so 42 players own 42 launchers. This one is the rule that decides every match: my four meets the opponent's four at the corner, and the gold glint is the knockout. Faces and pips are fixed by the design — the profile never moves them, and neither seat is the player's to change. The dark appearance keeps the charcoal ground; each owner's hue washes only its own corner and lights only its own die's rim, and the impact wash under the glint is the only warm light.</div>
+</div></div>

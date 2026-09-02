@@ -1,0 +1,159 @@
+<!-- meta name="Icon 08 — Neon outline" group="5b · The launcher icon" subtitle="Dark-mode launcher study: no glass at all — two neon die outlines, mine in cyan showing 5, the opponent's in magenta showing 3, crossing in one bright lens. Faces are fixed by the design — the profile avatar never moves them" height=921 sizes="md" links="iOS launch, Home, Profile" -->
+<style>
+  /* The one study that is deliberately NOT the app's glass die: pure line art,
+     the direction iOS's tinted appearance could take unchanged. Everything in
+     the mark is local SVG (see the comment on the markup); the die bodies have
+     no fill, only a stroke in the owner's hue, pips are filled discs of that
+     hue, and the lens where the two outlines cross is the one bright spot.
+     Pips sit at 20% padding, not the glass die's 15.5%, so the crossing line
+     passes between them instead of through one (measured: 2.5 units clear).
+     Both dice stop 12 units short of the squircle at their outer corners, so
+     the glow fades into ground before the corner curve instead of on it. */
+  .ia8 .icoframe{background:
+    radial-gradient(70% 60% at 22% 84%,rgba(var(--p1-rgb),.13),transparent 70%),
+    radial-gradient(70% 60% at 82% 16%,rgba(var(--p2-rgb),.11),transparent 70%),
+    linear-gradient(#232326,#0b0b0d)}
+  /* the shared clip shapes live once, outside every frame, out of flow */
+  .ia8 .ia8defs{position:absolute;width:0;height:0;overflow:hidden}
+  .ia8 .ia8svg{display:block;width:120px;height:120px;overflow:visible}
+  .ia8 .ia8body{fill:none;stroke-linejoin:round}
+  /* mine in front wears the heavier line and is painted last, so at both
+     crossings it is the unbroken one; 3.8 units is 0.9px at Settings size */
+  .ia8 .ia8d1 .ia8body,.ia8 .ia8hot1 rect{stroke-width:3.8}
+  .ia8 .ia8d2 .ia8body,.ia8 .ia8hot2 rect{stroke-width:3.4}
+  .ia8 .ia8d1 .ia8body{stroke:var(--p1)}
+  .ia8 .ia8d2 .ia8body{stroke:var(--p2)}
+  .ia8 .ia8d1 .ia8pip{fill:var(--p1);filter:drop-shadow(0 0 2px rgba(var(--p1-rgb),.9))}
+  .ia8 .ia8d2 .ia8pip{fill:var(--p2);filter:drop-shadow(0 0 2px rgba(var(--p2-rgb),.9))}
+  .ia8 .ia8d1{filter:drop-shadow(0 0 2.5px rgba(var(--p1-rgb),.6)) drop-shadow(0 0 7px rgba(var(--p1-rgb),.3))}
+  .ia8 .ia8d2{filter:drop-shadow(0 0 2.5px rgba(var(--p2-rgb),.6)) drop-shadow(0 0 7px rgba(var(--p2-rgb),.3))}
+  /* the lens: the exact intersection filled pale (measured at 180 and 60:
+     about three times the luminance of the ground beside it), and the two
+     stroke segments that cross it burn paler than the rest of their line,
+     each still glowing in its owner's hue. A bloom around the lens was tried
+     and measured at 4 luminance units of 110 — not worth its filter. */
+  .ia8 .ia8lens{fill:rgba(255,255,255,.22)}
+  .ia8 .ia8hot1 rect,.ia8 .ia8hot2 rect{fill:none;stroke:rgba(255,255,255,.6);stroke-linejoin:round}
+  .ia8 .ia8hot1{filter:drop-shadow(0 0 1.5px rgba(var(--p1-rgb),.45))}
+  .ia8 .ia8hot2{filter:drop-shadow(0 0 1.5px rgba(var(--p2-rgb),.45))}
+</style>
+<div class="stage ia8"><div class="bgfx"></div><div class="scr">
+  <!-- Local, not a token: the whole mark is hand-drawn line art on purpose.
+       If this study wins, its single implementation moves to tools/appicon.mjs;
+       the card keeps no second copy. The clip shapes are declared once here
+       and referenced by every frame's mark: the front die's outline (the lens
+       is the rear die clipped to it), each outline inset by half its own
+       stroke, so a crossing segment stops at the other line's inner edge
+       instead of painting over it. -->
+  <svg class="ia8defs" aria-hidden="true"><defs>
+    <clipPath id="ia8c1" clipPathUnits="userSpaceOnUse"><rect x="16" y="46" width="58" height="58" rx="12.76" transform="rotate(-7 45 75)"/></clipPath>
+    <clipPath id="ia8c1i" clipPathUnits="userSpaceOnUse"><rect x="18.1" y="48.1" width="53.8" height="53.8" rx="10.66" transform="rotate(-7 45 75)"/></clipPath>
+    <clipPath id="ia8c2i" clipPathUnits="userSpaceOnUse"><rect x="61.9" y="18.4" width="40.2" height="40.2" rx="7.78" transform="rotate(12 82 38.5)"/></clipPath>
+  </defs></svg>
+
+  <div class="icohead">
+    <div class="eyebrow">Open study · launcher · dark appearance</div>
+    <h1>ICON 08 · NEON OUTLINE</h1>
+    <p>No glass, no body: two neon outlines, mine in front showing 5, the opponent's behind showing 3, and one bright lens where the lines cross. A drawing, not a render — the same drawing in any tint.</p>
+  </div>
+
+  <div class="icohero">
+    <div class="icoframe" style="--S:180"><div class="icomark">
+      <svg class="ia8svg" viewBox="0 0 120 120" aria-hidden="true">
+        <g clip-path="url(#ia8c1)"><rect class="ia8lens" x="60" y="16.5" width="44" height="44" rx="9.68" transform="rotate(12 82 38.5)"/></g>
+        <g class="ia8d2" transform="rotate(12 82 38.5)">
+          <rect class="ia8body" x="60" y="16.5" width="44" height="44" rx="9.68"/>
+          <circle class="ia8pip" cx="73.2" cy="29.7" r="4.2"/><circle class="ia8pip" cx="82" cy="38.5" r="4.2"/><circle class="ia8pip" cx="90.8" cy="47.3" r="4.2"/>
+        </g>
+        <g class="ia8d1" transform="rotate(-7 45 75)">
+          <rect class="ia8body" x="16" y="46" width="58" height="58" rx="12.76"/>
+          <circle class="ia8pip" cx="33.4" cy="63.4" r="4.8"/><circle class="ia8pip" cx="56.6" cy="63.4" r="4.8"/>
+          <circle class="ia8pip" cx="45" cy="75" r="4.8"/>
+          <circle class="ia8pip" cx="33.4" cy="86.6" r="4.8"/><circle class="ia8pip" cx="56.6" cy="86.6" r="4.8"/>
+        </g>
+        <g class="ia8hot2" clip-path="url(#ia8c1i)"><rect x="60" y="16.5" width="44" height="44" rx="9.68" transform="rotate(12 82 38.5)"/></g>
+        <g class="ia8hot1" clip-path="url(#ia8c2i)"><rect x="16" y="46" width="58" height="58" rx="12.76" transform="rotate(-7 45 75)"/></g>
+      </svg>
+    </div></div>
+    <span class="cap2">App Store · 1024</span>
+  </div>
+
+  <div class="icohome"><div class="icorow">
+    <div class="icoapp">{{appicon:60}}<span class="nm">Shipped</span></div>
+    <div class="icoapp"><div class="icoframe" style="--S:60"><div class="icomark">
+      <svg class="ia8svg" viewBox="0 0 120 120" aria-hidden="true">
+        <g clip-path="url(#ia8c1)"><rect class="ia8lens" x="60" y="16.5" width="44" height="44" rx="9.68" transform="rotate(12 82 38.5)"/></g>
+        <g class="ia8d2" transform="rotate(12 82 38.5)">
+          <rect class="ia8body" x="60" y="16.5" width="44" height="44" rx="9.68"/>
+          <circle class="ia8pip" cx="73.2" cy="29.7" r="4.2"/><circle class="ia8pip" cx="82" cy="38.5" r="4.2"/><circle class="ia8pip" cx="90.8" cy="47.3" r="4.2"/>
+        </g>
+        <g class="ia8d1" transform="rotate(-7 45 75)">
+          <rect class="ia8body" x="16" y="46" width="58" height="58" rx="12.76"/>
+          <circle class="ia8pip" cx="33.4" cy="63.4" r="4.8"/><circle class="ia8pip" cx="56.6" cy="63.4" r="4.8"/>
+          <circle class="ia8pip" cx="45" cy="75" r="4.8"/>
+          <circle class="ia8pip" cx="33.4" cy="86.6" r="4.8"/><circle class="ia8pip" cx="56.6" cy="86.6" r="4.8"/>
+        </g>
+        <g class="ia8hot2" clip-path="url(#ia8c1i)"><rect x="60" y="16.5" width="44" height="44" rx="9.68" transform="rotate(12 82 38.5)"/></g>
+        <g class="ia8hot1" clip-path="url(#ia8c2i)"><rect x="16" y="46" width="58" height="58" rx="12.76" transform="rotate(-7 45 75)"/></g>
+      </svg>
+    </div></div><span class="nm">Knucklebones</span></div>
+    <div class="icoapp"><span class="icotile"></span><span class="nm">Settings</span></div>
+    <div class="icoapp"><span class="icotile"></span><span class="nm">Notes</span></div>
+  </div></div>
+
+  <div class="icosizes">
+    <div class="icosize"><div class="icoframe" style="--S:60"><div class="icomark">
+      <svg class="ia8svg" viewBox="0 0 120 120" aria-hidden="true">
+        <g clip-path="url(#ia8c1)"><rect class="ia8lens" x="60" y="16.5" width="44" height="44" rx="9.68" transform="rotate(12 82 38.5)"/></g>
+        <g class="ia8d2" transform="rotate(12 82 38.5)">
+          <rect class="ia8body" x="60" y="16.5" width="44" height="44" rx="9.68"/>
+          <circle class="ia8pip" cx="73.2" cy="29.7" r="4.2"/><circle class="ia8pip" cx="82" cy="38.5" r="4.2"/><circle class="ia8pip" cx="90.8" cy="47.3" r="4.2"/>
+        </g>
+        <g class="ia8d1" transform="rotate(-7 45 75)">
+          <rect class="ia8body" x="16" y="46" width="58" height="58" rx="12.76"/>
+          <circle class="ia8pip" cx="33.4" cy="63.4" r="4.8"/><circle class="ia8pip" cx="56.6" cy="63.4" r="4.8"/>
+          <circle class="ia8pip" cx="45" cy="75" r="4.8"/>
+          <circle class="ia8pip" cx="33.4" cy="86.6" r="4.8"/><circle class="ia8pip" cx="56.6" cy="86.6" r="4.8"/>
+        </g>
+        <g class="ia8hot2" clip-path="url(#ia8c1i)"><rect x="60" y="16.5" width="44" height="44" rx="9.68" transform="rotate(12 82 38.5)"/></g>
+        <g class="ia8hot1" clip-path="url(#ia8c2i)"><rect x="16" y="46" width="58" height="58" rx="12.76" transform="rotate(-7 45 75)"/></g>
+      </svg>
+    </div></div><span class="cap2">Home · 60</span></div>
+    <div class="icosize"><div class="icoframe" style="--S:40"><div class="icomark">
+      <svg class="ia8svg" viewBox="0 0 120 120" aria-hidden="true">
+        <g clip-path="url(#ia8c1)"><rect class="ia8lens" x="60" y="16.5" width="44" height="44" rx="9.68" transform="rotate(12 82 38.5)"/></g>
+        <g class="ia8d2" transform="rotate(12 82 38.5)">
+          <rect class="ia8body" x="60" y="16.5" width="44" height="44" rx="9.68"/>
+          <circle class="ia8pip" cx="73.2" cy="29.7" r="4.2"/><circle class="ia8pip" cx="82" cy="38.5" r="4.2"/><circle class="ia8pip" cx="90.8" cy="47.3" r="4.2"/>
+        </g>
+        <g class="ia8d1" transform="rotate(-7 45 75)">
+          <rect class="ia8body" x="16" y="46" width="58" height="58" rx="12.76"/>
+          <circle class="ia8pip" cx="33.4" cy="63.4" r="4.8"/><circle class="ia8pip" cx="56.6" cy="63.4" r="4.8"/>
+          <circle class="ia8pip" cx="45" cy="75" r="4.8"/>
+          <circle class="ia8pip" cx="33.4" cy="86.6" r="4.8"/><circle class="ia8pip" cx="56.6" cy="86.6" r="4.8"/>
+        </g>
+        <g class="ia8hot2" clip-path="url(#ia8c1i)"><rect x="60" y="16.5" width="44" height="44" rx="9.68" transform="rotate(12 82 38.5)"/></g>
+        <g class="ia8hot1" clip-path="url(#ia8c2i)"><rect x="16" y="46" width="58" height="58" rx="12.76" transform="rotate(-7 45 75)"/></g>
+      </svg>
+    </div></div><span class="cap2">Spotlight · 40</span></div>
+    <div class="icosize"><div class="icoframe" style="--S:29"><div class="icomark">
+      <svg class="ia8svg" viewBox="0 0 120 120" aria-hidden="true">
+        <g clip-path="url(#ia8c1)"><rect class="ia8lens" x="60" y="16.5" width="44" height="44" rx="9.68" transform="rotate(12 82 38.5)"/></g>
+        <g class="ia8d2" transform="rotate(12 82 38.5)">
+          <rect class="ia8body" x="60" y="16.5" width="44" height="44" rx="9.68"/>
+          <circle class="ia8pip" cx="73.2" cy="29.7" r="4.2"/><circle class="ia8pip" cx="82" cy="38.5" r="4.2"/><circle class="ia8pip" cx="90.8" cy="47.3" r="4.2"/>
+        </g>
+        <g class="ia8d1" transform="rotate(-7 45 75)">
+          <rect class="ia8body" x="16" y="46" width="58" height="58" rx="12.76"/>
+          <circle class="ia8pip" cx="33.4" cy="63.4" r="4.8"/><circle class="ia8pip" cx="56.6" cy="63.4" r="4.8"/>
+          <circle class="ia8pip" cx="45" cy="75" r="4.8"/>
+          <circle class="ia8pip" cx="33.4" cy="86.6" r="4.8"/><circle class="ia8pip" cx="56.6" cy="86.6" r="4.8"/>
+        </g>
+        <g class="ia8hot2" clip-path="url(#ia8c1i)"><rect x="60" y="16.5" width="44" height="44" rx="9.68" transform="rotate(12 82 38.5)"/></g>
+        <g class="ia8hot1" clip-path="url(#ia8c2i)"><rect x="16" y="46" width="58" height="58" rx="12.76" transform="rotate(-7 45 75)"/></g>
+      </svg>
+    </div></div><span class="cap2">Settings · 29</span></div>
+  </div>
+
+  <div class="note" style="margin-top:14px"><b>Why line art.</b> The other seven studies are the app's glass die; this one is the drawing under it. Two outlines in the two hues from Settings — mine in front on the heavier line, the opponent's behind — with faces the design chose: 5 over 3, fixed by the design, and the profile avatar never moves them. No body, no fill, so on iOS's tinted appearance the icon survives as itself: tinting keeps luminance and discards hue, and a glass gradient turns to grey mud, but strokes and pips on near-black are pure luminance and come back as the same drawing in one colour, the two owners still told apart by front and behind. The dark appearance keeps the charcoal ground and lets the two lines glow; only the faint wash under each die changes.</div>
+</div></div>

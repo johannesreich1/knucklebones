@@ -1,0 +1,99 @@
+<!-- meta name="Icon 06 — Cube" group="5b · The launcher icon" subtitle="Dark-mode launcher study: one die seen as a solid — three of the app's own faces folded into an isometric cube at a real die's 1-2-3 corner, mine on top and left, the opponent's face on the right. Faces are fixed by the design — the profile avatar never moves them" height=888 sizes="md" links="iOS launch, Home, Profile" -->
+<style>
+  /* Three of the app's own die faces folded into a solid: a real die's 1-2-3
+     corner, seen from above and a little to the left. The faces are the token
+     itself; only the camera, the cube's body and the ground are local. The
+     launcher fixes its faces on purpose — the shipped icon follows the profile
+     avatar, and this board asks whether the mark should stop doing that. */
+  /* the ground sits a step darker than the pair's, and its two washes at half
+     strength, so the cube and not the squircle carries the value and the hue */
+  .ia6 .icoframe{background:
+    radial-gradient(70% 56% at 22% 96%,rgba(var(--p1-rgb),.12),transparent 70%),
+    radial-gradient(60% 52% at 94% 54%,rgba(var(--p2-rgb),.11),transparent 70%),
+    linear-gradient(#26262a,#0d0d10)}
+  .ia6 .ia6cam{position:absolute;inset:0;perspective:720px;perspective-origin:50% 50%}
+  .ia6 .ia6cube{position:absolute;left:27px;top:26px;width:66px;height:66px;
+    transform-style:preserve-3d;transform:rotateX(-35.264deg) rotateY(45deg)}
+  /* the body: three square planes a hair behind the faces and a unit wider
+     than them, so the rounded faces leave no notch where three meet and every
+     shared edge is a chamfer of body between two owners' outlines rather than
+     two outlines stacked, and the chamfer catches a hair of light. Lit from
+     above: the top plane brightest, mine on the left a step down with a
+     breath of my hue, the opponent's face darkest and washed in theirs —
+     value tells the three faces apart at 29px, where the pips are down to
+     two pixels each */
+  .ia6 .ia6b{position:absolute;left:0;top:0;width:66px;height:66px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.10)}
+  .ia6 .ia6bt{background:radial-gradient(90% 90% at 100% 0%,rgba(255,255,255,.14),transparent 70%),#474b58;
+    transform:rotateX(90deg) translateZ(33px)}
+  .ia6 .ia6bl{background:linear-gradient(90deg,rgba(var(--p1-rgb),.14),transparent 70%),#36383d;
+    transform:rotateY(-90deg) translateZ(33px)}
+  .ia6 .ia6br{background:linear-gradient(270deg,rgba(var(--p2-rgb),.26),transparent 72%),#2e2c33;
+    transform:translateZ(33px)}
+  /* a face's own glow and drop shadow are painted in its plane, so on a solid
+     they would spill past the edge onto the neighbouring face and the ground;
+     the wrapper clips each face to its die, and the edges stay crisp */
+  .ia6 .icopos{overflow:hidden}
+</style>
+<div class="stage ia6"><div class="bgfx"></div><div class="scr">
+  <div class="icohead">
+    <div class="eyebrow">Open study · launcher · dark appearance</div>
+    <h1>ICON 06 · CUBE</h1>
+    <p>One die as a solid: three real faces folded into a cube at the 1-2-3 corner. Mine is the top and the left; the opponent's hue is the face on the right.</p>
+  </div>
+
+  <!-- Local to this study: the camera, the cube and its three body planes are card-local CSS 3D; the winner's single implementation moves to tools/appicon.mjs. -->
+  <div class="icohero">
+    <div class="icoframe" style="--S:180"><div class="icomark">
+      <div class="ia6cam"><div class="ia6cube">
+        <span class="ia6b ia6bt"></span><span class="ia6b ia6bl"></span><span class="ia6b ia6br"></span>
+        <i class="icopos" style="left:1px;top:1px;transform:rotateX(90deg) translateZ(33.6px)">{{die:1:p1:64}}</i>
+        <i class="icopos" style="left:1px;top:1px;transform:rotateY(-90deg) translateZ(33.6px)">{{die:2:p1:64}}</i>
+        <i class="icopos" style="left:1px;top:1px;transform:translateZ(33.6px)">{{die:3:p2:64}}</i>
+      </div></div>
+    </div></div>
+    <span class="cap2">App Store · 1024</span>
+  </div>
+
+  <div class="icohome"><div class="icorow">
+    <div class="icoapp">{{appicon:60}}<span class="nm">Shipped</span></div>
+    <div class="icoapp"><div class="icoframe" style="--S:60"><div class="icomark">
+      <div class="ia6cam"><div class="ia6cube">
+        <span class="ia6b ia6bt"></span><span class="ia6b ia6bl"></span><span class="ia6b ia6br"></span>
+        <i class="icopos" style="left:1px;top:1px;transform:rotateX(90deg) translateZ(33.6px)">{{die:1:p1:64}}</i>
+        <i class="icopos" style="left:1px;top:1px;transform:rotateY(-90deg) translateZ(33.6px)">{{die:2:p1:64}}</i>
+        <i class="icopos" style="left:1px;top:1px;transform:translateZ(33.6px)">{{die:3:p2:64}}</i>
+      </div></div>
+    </div></div><span class="nm">Knucklebones</span></div>
+    <div class="icoapp"><span class="icotile"></span><span class="nm">Settings</span></div>
+    <div class="icoapp"><span class="icotile"></span><span class="nm">Notes</span></div>
+  </div></div>
+
+  <div class="icosizes">
+    <div class="icosize"><div class="icoframe" style="--S:60"><div class="icomark">
+      <div class="ia6cam"><div class="ia6cube">
+        <span class="ia6b ia6bt"></span><span class="ia6b ia6bl"></span><span class="ia6b ia6br"></span>
+        <i class="icopos" style="left:1px;top:1px;transform:rotateX(90deg) translateZ(33.6px)">{{die:1:p1:64}}</i>
+        <i class="icopos" style="left:1px;top:1px;transform:rotateY(-90deg) translateZ(33.6px)">{{die:2:p1:64}}</i>
+        <i class="icopos" style="left:1px;top:1px;transform:translateZ(33.6px)">{{die:3:p2:64}}</i>
+      </div></div>
+    </div></div><span class="cap2">Home · 60</span></div>
+    <div class="icosize"><div class="icoframe" style="--S:40"><div class="icomark">
+      <div class="ia6cam"><div class="ia6cube">
+        <span class="ia6b ia6bt"></span><span class="ia6b ia6bl"></span><span class="ia6b ia6br"></span>
+        <i class="icopos" style="left:1px;top:1px;transform:rotateX(90deg) translateZ(33.6px)">{{die:1:p1:64}}</i>
+        <i class="icopos" style="left:1px;top:1px;transform:rotateY(-90deg) translateZ(33.6px)">{{die:2:p1:64}}</i>
+        <i class="icopos" style="left:1px;top:1px;transform:translateZ(33.6px)">{{die:3:p2:64}}</i>
+      </div></div>
+    </div></div><span class="cap2">Spotlight · 40</span></div>
+    <div class="icosize"><div class="icoframe" style="--S:29"><div class="icomark">
+      <div class="ia6cam"><div class="ia6cube">
+        <span class="ia6b ia6bt"></span><span class="ia6b ia6bl"></span><span class="ia6b ia6br"></span>
+        <i class="icopos" style="left:1px;top:1px;transform:rotateX(90deg) translateZ(33.6px)">{{die:1:p1:64}}</i>
+        <i class="icopos" style="left:1px;top:1px;transform:rotateY(-90deg) translateZ(33.6px)">{{die:2:p1:64}}</i>
+        <i class="icopos" style="left:1px;top:1px;transform:translateZ(33.6px)">{{die:3:p2:64}}</i>
+      </div></div>
+    </div></div><span class="cap2">Settings · 29</span></div>
+  </div>
+
+  <div class="note" style="margin-top:14px"><b>Why a cube.</b> The shipped mark is one flat face that follows the profile avatar, so 42 players own 42 launchers. This one is the die itself: three real faces folded into a solid at the 1-2-3 corner, the way a die sits on the table. The faces and their pips are fixed by the design — the profile never moves them. Mine is the lit top and the left; the opponent's hue is the whole right face, which still reads at 60px, where a magenta rim light raking a cyan face only washed its three pips white. The body between the faces is a hair wider than they are, so each edge is a chamfer rather than two owners' outlines stacked. The dark appearance keeps the charcoal ground; only the hue wash under each owner's side changes.</div>
+</div></div>
