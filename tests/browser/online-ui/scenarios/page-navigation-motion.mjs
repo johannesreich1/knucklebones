@@ -867,6 +867,12 @@ export async function runPageNavigationMotionScenarios(suite) {
           && Number(loader ? getComputedStyle(loader).opacity : 0) > .05;
       }, null, { timeout: 1000 });
       const held = await readMotionState(page);
+      /* The held frame lives only until the entry wipe lands (~80ms after the
+         die paints). Under gate load a click round trip outruns it and Back
+         lands on a settled page; freeze the wipe so Back always interrupts. */
+      await page.evaluate(() => document.getAnimations({ subtree: true })
+        .filter((animation) => /^kb-(page|duel)-/.test(animation.id))
+        .forEach((animation) => animation.pause()));
       await page.click('#btnOnlineBack');
       const departing = await motionSample(page, { progress: .03 });
       await page.waitForSelector('#ovStart.on', { timeout: 15000 });
