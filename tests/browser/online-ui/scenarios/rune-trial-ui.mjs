@@ -335,7 +335,8 @@ export async function runRuneTrialUiScenarios({ visit, out, check }) {
   });
   out.runeRewardProfileOcclusion = profileOcclusion.probeResult;
   check(profileOcclusion.probeResult?.whileCovered?.onlineVisible
-      && profileOcclusion.probeResult.whileCovered.profileLoading
+      && profileOcclusion.probeResult.whileCovered.profileVisible
+      && profileOcclusion.probeResult.whileCovered.fullLoaderHidden
       && profileOcclusion.probeResult.whileCovered.resultStillMounted
       && !profileOcclusion.probeResult.whileCovered.rewardOwnsHit
       && profileOcclusion.probeResult.acknowledgementsWhileCovered === 0

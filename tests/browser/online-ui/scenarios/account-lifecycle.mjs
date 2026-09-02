@@ -118,6 +118,29 @@ async function probeAccountFooter(page) {
   return { before, after: await sample() };
 }
 
+async function probeAvatarMutation(page, routes) {
+  await page.click('#btnAvatar');
+  await page.waitForSelector('#onAvatar:not([hidden])', { timeout: 5000 });
+  await page.click('#avFaces button[data-face="2"]');
+  await page.click('#avHues button[data-hue="mg"]');
+  routes.failNextAccountProfileResponse();
+  await page.click('#btnAvatarSave');
+  await page.waitForFunction(() => {
+    const account = document.getElementById('onAccount');
+    return account && !account.hidden && !account.hasAttribute('data-account-pending')
+      && account.querySelector('#accDie .die')?.getAttribute('data-v') === '2';
+  }, null, { timeout: 15000 });
+  return page.evaluate(() => {
+    const die = document.querySelector('#accDie .die');
+    return {
+      face: die?.getAttribute('data-v'),
+      hue: die ? getComputedStyle(die).getPropertyValue('--dc').trim() : null,
+      cached: JSON.parse(localStorage.getItem(
+        'knucklebones.online.account-profile') ?? 'null'),
+    };
+  });
+}
+
 export async function runAccountLifecycleScenarios(suite) {
   const { visit, out, check } = suite;
   /* Both identity offers occupy one visible slot: directly after the three
@@ -214,6 +237,16 @@ export async function runAccountLifecycleScenarios(suite) {
         'the way-up offer does not wear primary on its yes', claimRun.claimFlow);
   check(claimRun.errs.length === 0, 'page errors on the claim flow', claimRun.errs);
 
+  const avatarRun = await visit({ skipStandardProbes: true,
+    returnAfterProbe: true, probe: probeAvatarMutation });
+  out.avatarRefreshFailure = avatarRun.probeResult;
+  check(avatarRun.probeResult?.face === '2' && avatarRun.probeResult.hue === '#ff2fa0'
+      && avatarRun.probeResult.cached?.profile?.avatar === 'die:2:mg',
+  'a successful avatar change was lost when its immediate Profile refresh failed',
+  avatarRun.probeResult);
+  check(avatarRun.errs.length === 0,
+    'page errors while retaining an avatar across a failed refresh', avatarRun.errs);
+
   // 2 · the project with anonymous sign-ins off: degrade to the old panel
   const off = await visit({ anonymous: 422 });
   out.providerOff = off.seen;
@@ -231,7 +264,7 @@ export async function runAccountLifecycleScenarios(suite) {
   /* 4 · ...AND THERE IS STILL A WAY BACK IN. Refusing to mint a guest over a
      returning player is right; leaving them with no other door is the trap it
      became. `attached` is written once and never cleared inside the app
-     (session.ts clears it only in deleteAccount, which needs the session the
+     (account deletion clears it only after deleteAccount, which needs the session the
      player no longer has), so a player who signs out of a provider that cannot
      currently sign them back in met the same sheet on every ranked tap, for
      good. Reported 2026-08-30: "I logged out of my apple account and it's

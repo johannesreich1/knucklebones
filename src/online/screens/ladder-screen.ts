@@ -8,7 +8,9 @@ import {
 import { Sfx } from '../../ui/audio.ts';
 import { $, byId } from '../../ui/dom.ts';
 import { paintAvatar } from '../../ui/avatar.ts';
+import { refreshHomeChip } from '../../ui/homechip.ts';
 import { recordHtml } from '../../ui/record.ts';
+import { cacheStanding } from '../../profile-cache.ts';
 import {
   mountVirtualList,
   type VirtualList,
@@ -19,11 +21,12 @@ import {
   ladderPage,
   ladderPageBefore,
   activeRankedCurveVersion,
-  myLadder,
-  myStanding,
+  myLadderLookup,
+  myStandingLookup,
   type LadderRow,
 } from '../api/ladder-api.ts';
 import { myProfile } from '../identity/profile.ts';
+import { currentUser } from '../identity/session.ts';
 import { esc, pts, rank } from './format.ts';
 import { showFaceoff } from './faceoff.ts';
 import { isOnlinePanelCurrent, showOnlineLoading, showOnlinePanel } from './shell.ts';
@@ -67,16 +70,36 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
     virtual = null;
     listElement.innerHTML = '';
 
-    const [me, ladder, standing, curveVersion] = await Promise.all([
-      myProfile(), myLadder(), myStanding(), activeRankedCurveVersion(),
+    const [profile, ladderResult, standingResult, curveVersion] = await Promise.all([
+      myProfile(), myLadderLookup(), myStandingLookup(), activeRankedCurveVersion(),
     ]);
+    const boundaryUser = await currentUser();
     if (run !== showRevision || !isOnlinePanelCurrent('onLadder')) return;
+    /* An unknown server curve cannot be mapped to a league at all; the panel
+       keeps its loading surface rather than labelling a rank from a guess. */
     if (curveVersion === null) return;
+    const accountId = profile?.id.toLowerCase() ?? null;
+    const coherent = !!accountId && ladderResult.ok
+      && ladderResult.accountId === accountId
+      && boundaryUser?.id.toLowerCase() === accountId;
+    const me = coherent ? profile : null;
+    const ladderBase = coherent && ladderResult.ok ? ladderResult.ladder : null;
+    const standing = coherent && standingResult.ok
+        && standingResult.accountId === accountId
+      ? standingResult.standing : null;
+    const ladder = ladderBase && standing
+      ? { ...ladderBase, points: standing.points } : ladderBase;
+    const mineApex = !!standing && inApex(
+      standing.points, standing.rank, standing.population, curveVersion,
+    );
+
+    if (me && standingResult.ok && standingResult.accountId === accountId) {
+      cacheStanding(me.id, standing, mineApex);
+      refreshHomeChip();
+    }
 
     const alive = () => run === showRevision && isOnlinePanelCurrent('onLadder');
-    const myApex = !!ladder && !!standing
-      && inApex(ladder.points, standing.rank, standing.population, curveVersion);
-    const myGroup = ladder ? boardGroup(ladder.points, myApex, curveVersion) : null;
+    const myGroup = ladder ? boardGroup(ladder.points, mineApex, curveVersion) : null;
     /* Which row a mounted button is showing right now. A slot outlives any one
        item — a tombstone becomes a row, and a shifting board can re-seat it —
        so the tap has to read the CURRENT row rather than close over the first. */
@@ -194,7 +217,7 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
               return;
             }
             showFaceoff(row, me && ladder
-              ? { name: me.nickname, avatar: me.avatar ?? null, lad: ladder, apex: myApex }
+              ? { name: me.nickname, avatar: me.avatar ?? null, lad: ladder, apex: mineApex }
               : null, undefined, curveVersion);
           });
           return button;

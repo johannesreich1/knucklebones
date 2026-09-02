@@ -222,11 +222,17 @@ not need a framework store, event bus, or dependency-injection container.
   launcher and the other 41 map to canonical `die-<face>-<hue>` ids. Do not
   grow another avatar or launcher registry in a screen.
 - `src/profile-cache.ts` scopes cached profile presentation to the Supabase
-  account id. An unscoped legacy entry may paint Home once, but it cannot drive
-  a launcher change or merge into a newly authenticated account. A profile
-  response re-checks the active session before publishing; sign-out and a
-  detected account replacement clear the cache and request the primary icon
-  before the next account's row may repaint either surface.
+  account id. Its small eager record paints Home without importing Supabase
+  and deliberately keeps the last confirmed rank; Home never fetches standing.
+  A separate versioned snapshot is valid only when every Profile-visible fact
+  is present, so Profile paints a complete local view immediately and refreshes
+  standing behind the 16 px die in the rank value. Missing/incomplete snapshots
+  retain the shared full-view loader. An unscoped legacy entry may paint Home
+  once, but it cannot drive a launcher change or merge into a newly
+  authenticated account. A profile response re-checks the active session
+  before publishing; sign-out and a detected account replacement clear both
+  records and request the primary icon before the next account's row may
+  repaint either surface.
 - `src/native/app-icon.ts` is the web-safe coordinator over the injected
   `Capacitor.Plugins.AppIcon` capability. Its Settings choice is rendered only
   when that bridge exists in an installed iOS or Android app. It is off by

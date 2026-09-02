@@ -105,8 +105,7 @@ const OVERLAY = `
       <b id="accPoints">0</b><span data-i18n="online:profile.ladderPoints">Ladder points</span>
     </button>
     <div class="facts">
-      <button class="fact" id="btnRank" type="button" aria-label="Open the ladder"
-        data-i18n-attr="aria-label=online:profile.openLadder"><b id="accRank">–</b><span data-i18n="online:profile.rank">RANK</span></button>
+      <button class="fact" id="btnRank" type="button" aria-label="Open the ladder"><span class="factvalue" id="accRank">–</span><span data-i18n="online:profile.rank">RANK</span></button>
       <div class="fact"><b id="accStreak">0</b><span data-i18n="online:profile.bestStreak">BEST STREAK</span></div>
       <div class="fact pk"><b id="accPeak">0</b><span data-i18n="online:profile.peak">PEAK</span></div>
     </div>

@@ -52,7 +52,7 @@ export interface AppleIdentityPorts {
      the app to revoke its own access at account deletion, and the single-use
      authorization code is the ONLY moment that credential can be obtained —
      so a refusal here is the player's business, never a swallowed detail. */
-  registerAuthorizationCode(code: string): Promise<boolean>;
+  registerAuthorizationCode(code: string, expectedAccountId?: string): Promise<boolean>;
   /* ASKED BEFORE A GUEST IS REPLACED, and only then. Signing in with Apple
      REPLACES the session rather than merging it, so a player who has been
      playing as a guest loses that run's rating, runes and history the moment
@@ -125,7 +125,7 @@ async function requestAppleCredential(ports: AppleIdentityPorts): Promise<AppleC
    identity, so it answers a wider contract than OneTap: `repair` re-runs the
    authorization for the credential alone. */
 export interface AppleIdentity extends OneTap {
-  repair(): Promise<string | null>;
+  repair(expectedAccountId?: string): Promise<string | null>;
 }
 
 export function createAppleIdentity(ports: AppleIdentityPorts): AppleIdentity {
@@ -140,6 +140,7 @@ export function createAppleIdentity(ports: AppleIdentityPorts): AppleIdentity {
     mode: 'restore' | 'attach',
     reportRegistration = false,
     lifecycle?: OneTapRestoreLifecycle,
+    expectedAccountId?: string,
   ): Promise<string | null> => {
     const credential = await requestAppleCredential(ports);
     if (typeof credential === 'string') return credential;
@@ -171,6 +172,13 @@ export function createAppleIdentity(ports: AppleIdentityPorts): AppleIdentity {
       else {
         const { data, error: sessionError } = await auth.getSession();
         if (sessionError) return APPLE_IDENTITY_MESSAGES.failed;
+        /* Native Apple authorization can outlive the Profile that opened it.
+           Re-read after that wait and before linkIdentity: A's proof must not
+           become an instruction to mutate B just because B is current now. */
+        if (expectedAccountId
+            && data.session?.user.id.toLowerCase() !== expectedAccountId.toLowerCase()) {
+          return APPLE_IDENTITY_MESSAGES.failed;
+        }
         if (!data.session) ({ error } = await auth.signInWithIdToken(proof));
         else ({ error } = await auth.linkIdentity(proof));
       }
@@ -184,9 +192,16 @@ export function createAppleIdentity(ports: AppleIdentityPorts): AppleIdentity {
       const message = authErrorMessage(error);
       if (message) return message;
       if (credential.authorizationCode) {
-        const stored = await ports.registerAuthorizationCode(credential.authorizationCode)
+        const stored = await ports.registerAuthorizationCode(
+          credential.authorizationCode,
+          mode === 'attach' ? expectedAccountId : undefined,
+        )
           .catch(() => false);
         if (!stored && reportRegistration) return APPLE_IDENTITY_MESSAGES.revocationSetup;
+      } else if (reportRegistration) {
+        /* A repair promises the deletion credential, not merely an already
+           linked identity. Apple returning no one-use code cannot satisfy it. */
+        return APPLE_IDENTITY_MESSAGES.revocationSetup;
       }
       return null;
     } catch { return APPLE_IDENTITY_MESSAGES.failed; }
@@ -196,8 +211,12 @@ export function createAppleIdentity(ports: AppleIdentityPorts): AppleIdentity {
     get label(): string { return t('online', 'auth.continueApple'); },
     available: () => !!ports.getPlugin() && ports.getPlatform() === 'ios',
     restore: (lifecycle) => authenticate('restore', false, lifecycle),
-    attach: () => authenticate('attach'),
-    repair: () => authenticate('attach', true),
+    attach: (expectedAccountId) => authenticate(
+      'attach', false, undefined, expectedAccountId,
+    ),
+    repair: (expectedAccountId) => authenticate(
+      'attach', true, undefined, expectedAccountId,
+    ),
   };
 }
 
@@ -207,8 +226,15 @@ export function createAppleIdentity(ports: AppleIdentityPorts): AppleIdentity {
    and then never send the POST — a total, silent failure. callFunction sends
    only allow-listed headers and reports status 0 for its own timeout/abort,
    which is a failed registration exactly like any non-2xx answer. */
-export async function registerAppleAuthorizationCode(code: string): Promise<boolean> {
-  const { status } = await callFunction('apple-token-register', { authorizationCode: code });
+export async function registerAppleAuthorizationCode(
+  code: string,
+  expectedAccountId?: string,
+): Promise<boolean> {
+  const { status } = await callFunction(
+    'apple-token-register',
+    { authorizationCode: code },
+    { expectedAccountId },
+  );
   return status >= 200 && status < 300;
 }
 

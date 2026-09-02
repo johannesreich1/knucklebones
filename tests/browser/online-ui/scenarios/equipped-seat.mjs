@@ -195,6 +195,8 @@ export async function runEquippedSeatScenarios({ visit, out, check }) {
         choosingAfter: await page.evaluate(() => document.getElementById('accRunes')
           ?.classList.contains('choosing') ?? false),
         after: await page.evaluate(measureEquippedSeat),
+        cachedEquipment: await page.evaluate(() => JSON.parse(localStorage.getItem(
+          'knucklebones.online.account-profile') ?? 'null')?.equipment),
       };
     },
   });
@@ -238,8 +240,9 @@ export async function runEquippedSeatScenarios({ visit, out, check }) {
       && JSON.stringify(p.writes) === JSON.stringify([{
         p_equipped_rune: 'pilfer', p_random_rune_mode: false,
       }]) && p.after.hasRune && !p.after.none
-      && /PILFER/i.test(p.after.label),
-    'selecting an owned rune did not exit selection and persist through the profile write seam', p);
+      && /PILFER/i.test(p.after.label)
+      && JSON.stringify(p.cachedEquipment) === JSON.stringify({ kind: 'fixed', runeId: 'pilfer' }),
+    'selecting a rune did not repaint and cache the persisted equipment selection', p);
 
   /* Unequip is the quiet third path. It reuses the canonical `.btn.small`
      primitive (the compact ask/forfeit action), not another seat-only button

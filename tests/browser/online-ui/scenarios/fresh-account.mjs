@@ -6,7 +6,9 @@ export async function runFreshAccountScenarios(suite) {
   out.homeStyles = fresh.homeStyles;
   check(fresh.homeStyles.before?.row.gap === '8px',
         'the Home style probe no longer targets the eager action row', fresh.homeStyles);
-  check(JSON.stringify(fresh.homeStyles.before) === JSON.stringify(fresh.homeStyles.after),
+  const styleOnly = ({ chip: _chip, ...styles } = {}) => styles;
+  check(JSON.stringify(styleOnly(fresh.homeStyles.before))
+      === JSON.stringify(styleOnly(fresh.homeStyles.after)),
         'opening Online changed Home computed styles', fresh.homeStyles);
   check(fresh.seen.panel === 'account', 'newcomer was asked to sign in', fresh.seen);
   check(fresh.seen.accName === 'TestGuest001' && fresh.seen.accNameShown === true,

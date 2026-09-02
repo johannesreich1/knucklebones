@@ -12,11 +12,17 @@ import {
   requireGameCenterAssertion,
   startFreshGuest,
 } from '../identity/session.ts';
-import type { OneTap, OneTapRestoreLifecycle } from '../identity/identity-provider.ts';
+import type { OneTapRestoreLifecycle } from '../identity/identity-provider.ts';
 import { onlineMessage, repaintOnlineMessage } from '../message-copy.ts';
 import { AUTH, type AuthMode, type AuthOrigin, type AuthPorts } from './auth-specs.ts';
+import {
+  routeChangedAttachOwner,
+  runOneTapFromAuthSheet,
+  type AuthOwnership,
+} from './auth-account-ownership.ts';
 
 export type { AuthMode, AuthOrigin, AuthPorts } from './auth-specs.ts';
+export { runOneTapFromAuthSheet } from './auth-account-ownership.ts';
 
 let sessionless = false;
 let authMessage: string | null = null;
@@ -47,6 +53,18 @@ function ownsAuthOperation(view: number, operation: number): boolean {
     && !authPanel().hidden;
 }
 
+const routeIfAttachOwnerChanged = (
+  mode: AuthMode,
+  expectedAccountId: string | undefined,
+  ports: AuthPorts,
+  ownership: AuthOwnership,
+): Promise<boolean> => routeChangedAttachOwner(
+  mode,
+  expectedAccountId,
+  () => ownsAuthOperation(ownership.view, ownership.operation),
+  async () => { closeAuthSheet(false); await ports.showAccount(); },
+);
+
 function clearAuthError(): void {
   authMessage = null;
   $('#onAuthErr').textContent = '';
@@ -72,31 +90,20 @@ export function setSessionless(value: boolean): void {
   sessionless = value;
 }
 
-export async function runOneTapFromAuthSheet(
-  method: Pick<OneTap, 'id' | 'restore' | 'attach'>,
-  mode: AuthMode,
-  readCurrentUser: typeof currentUser = currentUser,
-  lifecycle?: OneTapRestoreLifecycle,
-): Promise<string | null> {
-  /* Home's sessionless CREATE ACCOUNT sheet uses attach copy, but Game Center
-     has no account to attach to there. Restore its authenticated native player
-     instead; a real guest/account session keeps the explicit attach path. */
-  const effectiveMode = method.id === 'gamecenter' && mode === 'attach'
-    && !(await readCurrentUser()) ? 'restore' : mode;
-  return effectiveMode === 'restore' ? method.restore(lifecycle) : method.attach();
-}
-
 function closeAuthSheet(restoreOpener = true): void {
   authSheet?.close(restoreOpener);
 }
 
-interface AuthOwnership { view: number; operation: number }
-
 /** Reclaim AUTH after one of its explicit nested questions and keep the same
  * operation visibly single-flight. The fresh-guest door and native providers
  * share this exact busy-sheet contract. */
-function showOwnedBusyAuth(mode: AuthMode, ports: AuthPorts, origin: AuthOrigin): AuthOwnership {
-  showAuth(mode, ports, origin);
+function showOwnedBusyAuth(
+  mode: AuthMode,
+  ports: AuthPorts,
+  origin: AuthOrigin,
+  expectedAccountId?: string,
+): AuthOwnership {
+  showAuth(mode, ports, origin, null, expectedAccountId);
   const ownership = { view: authViewRevision, operation: ++authOperationRevision };
   clearAuthError();
   setAuthBusy(true);
@@ -116,6 +123,7 @@ export function showAuth(
   ports: AuthPorts,
   origin: AuthOrigin = 'home',
   notice: string | null = null,
+  expectedAccountId?: string,
 ): void {
   /* A sheet stops intercepting the room as soon as its exit starts. If that
      room immediately opens auth again, retire the old 190ms flight before it
@@ -169,12 +177,15 @@ export function showAuth(
       clearAuthError();
       const operation = ++authOperationRevision;
       setAuthBusy(true);
+      const ownership = { view: viewRevision, operation };
+      if (await routeIfAttachOwnerChanged(mode, expectedAccountId, ports, ownership)) return;
       let message: string | null;
       try {
-        message = await action.run(...creds());
+        message = await action.run(...creds(), expectedAccountId);
       } catch {
         message = onlineMessage('errors.generic');
       }
+      if (await routeIfAttachOwnerChanged(mode, expectedAccountId, ports, ownership)) return;
       if (!ownsAuthOperation(viewRevision, operation)) return;
       if (message) {
         setAuthBusy(false);
@@ -192,12 +203,8 @@ export function showAuth(
     });
     acts.appendChild(button);
   }
-  /* THE GUEST DOOR, offered only where it is the answer: this device has held a
-     real account (so the silent guest path is off) and holds no session now.
-     A player who can still sign in never sees it; a player who cannot would
-     otherwise have no way back into ranked at all. The question is asked before
-     anything changes, and what it promises is exactly what happens — the old
-     account is untouched on the server and signing in returns to it. */
+  /* The guest door appears only on a remembered device with no session. Its
+     question changes nothing server-side: signing in still restores the old account. */
   const guest = $('#btnAuthGuest') as HTMLButtonElement;
   const strandedDevice = mode === 'restore' && sessionless && hadRealAccount();
   guest.hidden = !strandedDevice;
@@ -218,15 +225,9 @@ export function showAuth(
         restoreFocus: guest,
       });
       if (!yes || revision !== authViewRevision) return;
-      /* The shared question is itself the one live sheet, so opening it
-         deliberately retires this auth sheet. Recreate the same view before
-         the network request: it is both the visible busy surface and the
-         ownership boundary that prevents a late response from navigating over
-         a newer auth attempt. A refusal now has somewhere honest to report. */
-      /* Unlike a password/provider attempt, this request changes which
-         account the device will use. Keep this one visible and single-flight
-         until Supabase has either stored the new guest or refused it. */
-      const ownership = showOwnedBusyAuth(mode, ports, origin);
+      /* Recreate AUTH after its question retires the sheet. It stays the busy,
+         single-flight owner until Supabase stores the new guest or refuses it. */
+      const ownership = showOwnedBusyAuth(mode, ports, origin, expectedAccountId);
       let message: string | null;
       try {
         message = await startFreshGuest();
@@ -252,10 +253,10 @@ export function showAuth(
     swap.textContent = t('online', spec.swap.label);
     swap.onclick = () => {
       Sfx.tap();
-      showAuth(spec.swap!.to, ports, origin);
+      showAuth(spec.swap!.to, ports, origin, null, expectedAccountId);
     };
   }
-  showOneTapRow(mode, ports, viewRevision, origin);
+  showOneTapRow(mode, ports, viewRevision, origin, expectedAccountId);
   translateDom(panel);
   refreshLegalUi(panel);
   if (!authSheet) {
@@ -291,6 +292,7 @@ function showOneTapRow(
   ports: AuthPorts,
   viewRevision: number,
   origin: AuthOrigin,
+  expectedAccountId?: string,
 ): void {
   const row = $('#onOneTap');
   row.innerHTML = '';
@@ -306,32 +308,30 @@ function showOneTapRow(
       clearAuthError();
       let ownership = { view: viewRevision, operation: ++authOperationRevision };
       setAuthBusy(true);
+      if (await routeIfAttachOwnerChanged(mode, expectedAccountId, ports, ownership)) return;
       let message: string | null;
       const lifecycle: OneTapRestoreLifecycle = {
         nestedSheetSettled: (accepted) => {
           if (!ownsAuthAttempt(ownership.view, ownership.operation)) return;
           if (accepted) {
-            /* The accepted warning retires itself before the token exchange.
-               Reclaim an inert, non-dismissible AUTH sheet first, so the stale
-               Profile cannot be operated while Apple/Supabase are in flight. */
-            ownership = showOwnedBusyAuth(mode, ports, origin);
+            /* Reclaim inert AUTH before token exchange so stale Profile stays covered. */
+            ownership = showOwnedBusyAuth(mode, ports, origin, expectedAccountId);
           } else {
-            /* Only this provider-owned confirmation may recreate a cancelled
-               form. An unrelated sheet replacement or real AUTH dismissal
-               still invalidates the operation and can never pull AUTH back. */
-            showAuth(mode, ports, origin);
+            /* Provider cancellation may reclaim AUTH; unrelated replacement cannot. */
+            showAuth(mode, ports, origin, null, expectedAccountId);
             ownership = { view: authViewRevision, operation: authOperationRevision };
           }
         },
       };
       try {
-        message = await runOneTapFromAuthSheet(method, mode, currentUser, lifecycle);
+        message = await runOneTapFromAuthSheet(
+          method, mode, currentUser, lifecycle, expectedAccountId,
+        );
       } catch {
         message = onlineMessage('errors.generic');
       }
-      /* Success is allowed to navigate only from the mounted sheet this exact
-         operation owns. Revision ownership alone cannot protect a stale
-         Profile that became interactive after a nested sheet retired AUTH. */
+      if (await routeIfAttachOwnerChanged(mode, expectedAccountId, ports, ownership)) return;
+      /* Only this operation's still-mounted sheet may navigate on success. */
       if (!ownsAuthOperation(ownership.view, ownership.operation)) return;
       if (message !== null) {
         releaseOwnedBusyAuth();

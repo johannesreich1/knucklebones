@@ -22,16 +22,22 @@ function accessTokenFor(session, accountId) {
 export async function installAppleAuthRoutes(page, {
   mode = 'invalid',
   defer = false,
+  deferRegistration = false,
   session,
   onRegistered = () => undefined,
 }) {
   let signedIn = false;
+  let linkedCurrentAccount = false;
   let tokenCalls = 0;
   let registrationCalls = 0;
   let startToken;
   let releaseToken;
+  let startRegistration;
+  let releaseRegistration;
   const tokenStarted = new Promise((resolve) => { startToken = resolve; });
   const tokenRelease = new Promise((resolve) => { releaseToken = resolve; });
+  const registrationStarted = new Promise((resolve) => { startRegistration = resolve; });
+  const registrationRelease = new Promise((resolve) => { releaseRegistration = resolve; });
   const user = {
     ...session.user,
     id: APPLE_ACCOUNT_ID,
@@ -51,10 +57,17 @@ export async function installAppleAuthRoutes(page, {
     named_at: '2026-08-01T00:00:00Z',
   };
 
+  const linkedUser = {
+    ...session.user,
+    identities: [
+      ...(session.user.identities ?? []).filter((identity) => identity.provider !== 'apple'),
+      { id: session.user.id, provider: 'apple' },
+    ],
+  };
   await page.route('**/auth/v1/user*', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify(signedIn ? user : session.user),
+    body: JSON.stringify(signedIn ? user : linkedCurrentAccount ? linkedUser : session.user),
   }));
   await page.route('**/auth/v1/token?grant_type=id_token', async (route) => {
     tokenCalls++;
@@ -65,16 +78,22 @@ export async function installAppleAuthRoutes(page, {
       contentType: 'application/json',
       body: JSON.stringify({ error_code: 'invalid_credentials', message: 'Invalid Apple token' }),
     });
-    signedIn = true;
+    const linking = route.request().postDataJSON()?.link_identity === true;
+    if (linking) linkedCurrentAccount = true;
+    else signedIn = true;
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(appleSession),
+      body: JSON.stringify(linking ? { ...session, user: linkedUser } : appleSession),
     });
   });
-  await page.route('**/functions/v1/apple-token-register', (route) => {
+  await page.route('**/functions/v1/apple-token-register', async (route) => {
     registrationCalls++;
-    if (signedIn) onRegistered();
+    if (deferRegistration) {
+      startRegistration();
+      await registrationRelease;
+    }
+    if (signedIn || linkedCurrentAccount) onRegistered();
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -87,6 +106,8 @@ export async function installAppleAuthRoutes(page, {
     appleRegistrationCalls: () => registrationCalls,
     appleTokenStarted: tokenStarted,
     releaseAppleToken: () => releaseToken(),
+    appleRegistrationStarted: registrationStarted,
+    releaseAppleRegistration: () => releaseRegistration(),
     appleAccountId: () => APPLE_ACCOUNT_ID,
     appleProfile: () => signedIn ? { ...profile } : null,
   };

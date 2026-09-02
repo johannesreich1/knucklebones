@@ -4,17 +4,23 @@ import { Sfx } from '../../ui/audio.ts';
 import { $ } from '../../ui/dom.ts';
 import type { AuthMode, AuthOrigin } from './auth-screen.ts';
 import { onlineMessage, repaintOnlineMessage } from '../message-copy.ts';
-import { deleteAccount } from '../identity/session.ts';
+import { deleteAccount } from '../identity/account-deletion.ts';
 import { refreshHomeChip } from '../../ui/homechip.ts';
 import { showAccountProblem } from './account-problem-sheet.ts';
 
 interface AccountDeletePorts {
   showAuth(mode: AuthMode, origin: AuthOrigin, notice?: string | null): void;
+  accountId(): string | null;
+  invalidate(accountId: string): void;
 }
 
 export function bindAccountDelete(ports: AccountDeletePorts): void {
   $('#btnDeleteAcc').addEventListener('click', async () => {
     Sfx.tap();
+    /* The question belongs to the Profile underneath it, even if auth storage
+       is replaced while the player is reading the destructive warning. */
+    const accountId = ports.accountId()?.toLowerCase() ?? null;
+    if (!accountId) return;
     const confirmed = await ask({
       head: () => t('online', 'profile.deleteTitle'),
       body: () => t('online', 'profile.deleteDetail'),
@@ -25,7 +31,15 @@ export function bindAccountDelete(ports: AccountDeletePorts): void {
       restoreFocus: $('#btnDeleteAcc'),
     });
     if (!confirmed) return;
-    const deletion = await deleteAccount();
+    if (ports.accountId()?.toLowerCase() !== accountId) {
+      ports.invalidate(accountId);
+      return;
+    }
+    const deletion = await deleteAccount(accountId);
+    if (deletion.accountMismatch) {
+      ports.invalidate(accountId);
+      return;
+    }
     if (deletion.error) {
       /* Same answer shape as a refused provider link — the tap did not happen
          and the account is untouched — so it wears the same warning card

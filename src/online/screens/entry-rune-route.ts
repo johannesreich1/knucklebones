@@ -25,7 +25,12 @@ export function createEntryRuneRewardRouter(
     revision: number,
   ): Promise<void> => {
     if (view === 'account') {
-      await ports.routeAccount({ verifiedRuneFallback: collection });
+      /* Profile paints one coherent account. Bind the fallback to the account
+         that produced it so a swap mid-entry cannot attribute it elsewhere. */
+      await ports.routeAccount({
+        verifiedRuneFallback: collection,
+        ...(collection.accountId ? { expectedAccountId: collection.accountId } : {}),
+      });
       return;
     }
     const firstRune = firstCollectedRuneReward(collection);

@@ -39,17 +39,35 @@ export interface Standing {
   percentile: number;
 }
 
-export async function myStanding(): Promise<Standing | null> {
-  const user = await currentUser();
-  if (!user) return null;
-  const { data } = await supa().rpc('player_standing', { p: user.id });
+export type StandingLookup =
+  | { readonly ok: true; readonly accountId: string; readonly standing: Standing | null }
+  | { readonly ok: false; readonly reason: 'unavailable' | 'account-mismatch' };
+
+/** Keep a genuine no-standing answer separate from an unavailable request. */
+export async function myStandingLookup(): Promise<StandingLookup> {
+  const requestedUser = await currentUser();
+  if (!requestedUser) return { ok: false, reason: 'unavailable' };
+  const { data, error } = await supa().rpc('player_standing', { p: requestedUser.id });
+  /* Standing is deliberately allowed to resolve after the rest of Profile.
+     Bind that late answer to the session that requested it, just as profile
+     rows and rune ownership are bound at their eventual paint boundary. */
+  const activeUser = await currentUser();
+  if (activeUser?.id.toLowerCase() !== requestedUser.id.toLowerCase()) {
+    return { ok: false, reason: 'account-mismatch' };
+  }
+  if (error) return { ok: false, reason: 'unavailable' };
   const row = Array.isArray(data) ? data[0] : data;
-  return row ? {
+  return { ok: true, accountId: requestedUser.id.toLowerCase(), standing: row ? {
     points: row.points,
     rank: Number(row.rank),
     population: Number(row.population),
     percentile: Number(row.percentile),
-  } : null;
+  } : null };
+}
+
+export async function myStanding(): Promise<Standing | null> {
+  const result = await myStandingLookup();
+  return result.ok ? result.standing : null;
 }
 
 export interface Ladder {
@@ -63,45 +81,80 @@ export interface Ladder {
   runeSeatUnlocked: boolean;
 }
 
-export async function myLadder(
+export type LadderLookup =
+  | { readonly ok: true; readonly accountId: string; readonly ladder: Ladder }
+  | { readonly ok: false };
+
+/** The account-bound read. Profile caches per account, so a lookup that
+ *  resolved after a session swap must be refused rather than attributed. */
+export async function myLadderLookup(
   knownCurveVersion?: LadderCurveVersion,
-): Promise<Ladder | null> {
-  const user = await currentUser();
-  if (!user) return null;
-  const [{ data: season }, curveVersion] = await Promise.all([
+): Promise<LadderLookup> {
+  const requestedUser = await currentUser();
+  if (!requestedUser) return { ok: false };
+  const [{ data: season, error: seasonError }, curveVersion] = await Promise.all([
     supa().rpc('current_season'),
     knownCurveVersion ?? activeRankedCurveVersion(),
   ]);
-  if (curveVersion === null) return null;
+  if (seasonError || !season || curveVersion === null) return { ok: false };
   const silverFloor = groupsForCurve(curveVersion)
     .find(({ id }) => id === 'silver')!.floor;
+  /* Do not rely on a season rollover copying the previous peak. The match
+     authority uses the same all-season fact, and this indexed owner query
+     keeps Profile consistent with it after any future rollover policy. */
   const equipmentUnlock = curveVersion === 2
     ? supa().from('player_ranked_features')
-      .select('feature_id').eq('player_id', user.id)
+      .select('feature_id').eq('player_id', requestedUser.id)
       .eq('feature_id', 'equipped_runes').limit(1)
     : supa().from('season_ratings')
-      .select('peak').eq('player', user.id).gte('peak', silverFloor).limit(1);
+      .select('peak').eq('player', requestedUser.id).gte('peak', silverFloor).limit(1);
   const [currentResult, equipmentResult] = await Promise.all([
     supa().from('season_ratings')
       .select('points, peak, wins, losses, draws')
-      .eq('season_id', season).eq('player', user.id).maybeSingle(),
+      .eq('season_id', season).eq('player', requestedUser.id).maybeSingle(),
     equipmentUnlock,
   ]);
+  if (currentResult.error || equipmentResult.error) return { ok: false };
+  const activeUser = await currentUser();
+  if (activeUser?.id.toLowerCase() !== requestedUser.id.toLowerCase()) return { ok: false };
   const data = currentResult.data;
   /* V1 proves the milestone from any historical peak. V2 owns it as an
      explicit durable feature, including a low-points positional-NEON catch-up
      where raw points cannot prove every lower entitlement granted. */
   const runeSeatUnlocked = (equipmentResult.data?.length ?? 0) > 0;
   // A season row is created at the first pairing; no row is an honest zero.
-  return {
+  return { ok: true, accountId: requestedUser.id.toLowerCase(), ladder: {
     ...(data ?? { points: 0, peak: 0, wins: 0, losses: 0, draws: 0 }),
     runeSeatUnlocked,
-  };
+  } };
+}
+
+export async function myLadder(
+  knownCurveVersion?: LadderCurveVersion,
+): Promise<Ladder | null> {
+  const result = await myLadderLookup(knownCurveVersion);
+  return result.ok ? result.ladder : null;
+}
+
+export type BestStreakLookup =
+  | { readonly ok: true; readonly accountId: string; readonly streak: number }
+  | { readonly ok: false };
+
+export async function bestStreakLookup(): Promise<BestStreakLookup> {
+  const requestedUser = await currentUser();
+  if (!requestedUser) return { ok: false };
+  const { data, error } = await supa().rpc('best_streak');
+  const streak = Number(data ?? 0);
+  if (error || !Number.isFinite(streak)) return { ok: false };
+  const activeUser = await currentUser();
+  return activeUser?.id.toLowerCase() === requestedUser.id.toLowerCase()
+    ? { ok: true, accountId: requestedUser.id.toLowerCase(), streak }
+    : { ok: false };
 }
 
 export async function bestStreak(): Promise<number> {
-  const { data } = await supa().rpc('best_streak');
-  return Number(data ?? 0);
+  const result = await bestStreakLookup();
+  return result.ok ? result.streak : 0;
 }
 
 export interface HistoryRow {
@@ -120,6 +173,10 @@ export interface HistoryRow {
 
 export interface HistoryCursor { when: string; id: string }
 
+export type MatchHistoryLookup =
+  | { readonly ok: true; readonly accountId: string; readonly rows: HistoryRow[] }
+  | { readonly ok: false };
+
 export function historyPageArgs(limit = 40, before?: HistoryCursor): Record<string, unknown> {
   const args: Record<string, unknown> = { limit_n: limit };
   if (before) {
@@ -129,11 +186,20 @@ export function historyPageArgs(limit = 40, before?: HistoryCursor): Record<stri
   return args;
 }
 
-export async function matchHistory(limit = 40, before?: HistoryCursor): Promise<HistoryRow[]> {
+export async function matchHistoryLookup(
+  limit = 40,
+  before?: HistoryCursor,
+): Promise<MatchHistoryLookup> {
+  const requestedUser = await currentUser();
+  if (!requestedUser) return { ok: false };
   /* Stable keyset ordering is `(finished_at, id)`. Passing only the timestamp
      can skip rows when several matches settle in the same database instant. */
-  const { data } = await supa().rpc('match_history', historyPageArgs(limit, before));
-  return (data ?? []).map((row: Record<string, unknown>) => ({
+  const { data, error } = await supa().rpc('match_history', historyPageArgs(limit, before));
+  if (error) return { ok: false };
+  const activeUser = await currentUser();
+  if (activeUser?.id.toLowerCase() !== requestedUser.id.toLowerCase()) return { ok: false };
+  return { ok: true, accountId: requestedUser.id.toLowerCase(),
+    rows: (data ?? []).map((row: Record<string, unknown>) => ({
     id: String(row.id),
     when: String(row.finished_at ?? ''),
     opponent: String(row.opponent ?? '???'),
@@ -145,7 +211,12 @@ export async function matchHistory(limit = 40, before?: HistoryCursor): Promise<
     finishDelta: row.finish_delta == null ? null : Number(row.finish_delta),
     scoringVersion: Number(row.scoring_version ?? 1),
     result: row.result as HistoryRow['result'],
-  }));
+  })) };
+}
+
+export async function matchHistory(limit = 40, before?: HistoryCursor): Promise<HistoryRow[]> {
+  const result = await matchHistoryLookup(limit, before);
+  return result.ok ? result.rows : [];
 }
 
 /* One screen, one word: the client says LADDER everywhere. The SQL functions

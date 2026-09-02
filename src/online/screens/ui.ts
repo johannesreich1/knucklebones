@@ -4,7 +4,6 @@ import '../online.css';
 import { Sfx } from '../../ui/audio.ts';
 import { $, byId, hide, show } from '../../ui/dom.ts';
 import { closeEnd } from '../../ui/endscreen.ts';
-import { isNewcomer } from '../../ui/firstrun.ts';
 import { refreshHomeChip } from '../../ui/homechip.ts';
 import { S } from '../../state.ts';
 import { saveStats } from '../../persist.ts';
@@ -15,24 +14,15 @@ import { showHistory } from './history-screen.ts';
 import { createLadderScreen } from './ladder-screen.ts';
 import { createQueueScreen } from './queue-screen.ts';
 import { createResultScreen } from './result-screen.ts';
-import { ensureIdentity } from '../identity/session.ts';
-import { myProfile } from '../identity/profile.ts';
-import { syncAccountPreferences } from '../preferences.ts';
-import {
-  refreshRuneCollection,
-  runeCollectionMatchesActiveAccount,
-  type RuneCollectionRefresh,
-} from '../runes/rune-collection.ts';
+import { currentUser, ensureIdentity } from '../identity/session.ts';
+import type { RuneCollectionRefresh } from '../runes/rune-collection.ts';
 import { refreshRankedProgressionStatus } from '../api/progression-status-api.ts';
 import {
   activeWeeklyChallenge,
   readProgressionStatusSnapshot,
 } from '../../progression-status-cache.ts';
 import { verifyRankedEntryContract } from './ranked-entry-contract.ts';
-import {
-  installOnlineShell,
-  showOnlineLoading,
-} from './shell.ts';
+import { installOnlineShell } from './shell.ts';
 import { setFinishHandler, type FinishReport } from '../play/play.ts';
 import { createEntryRuneRewardPresenter } from './entry-rune-reward.ts';
 import { createEntryRuneRewardRouter } from './entry-rune-route.ts';
@@ -41,6 +31,8 @@ import {
   createResultEntry,
   type OnlineView,
 } from './result-entry.ts';
+import { focusOnlineTitle, paintOnlineEntryWait } from './entry-wait.ts';
+import { hydrateOnlineEntry } from './entry-hydration.ts';
 
 export type { OnlineView } from './result-entry.ts';
 export interface OnlinePorts {
@@ -71,7 +63,7 @@ const { presentConnectionIssue, handleIdentityFailure } =
     retry: (view, ports) => { void openOnline(view, ports); },
     restore: (view, sessionless) => {
       pendingView = view;
-      showAuthPanel('restore', 'home', null, sessionless);
+      showAuthPanel('restore', 'home', null, null, sessionless);
     },
   });
 
@@ -128,6 +120,7 @@ function showAuthPanel(
   mode: AuthMode,
   origin: AuthOrigin,
   notice: string | null = null,
+  expectedAccountId: string | null = null,
   sessionless = origin === 'home',
 ): void {
   if (origin === 'home') {
@@ -142,17 +135,19 @@ function showAuthPanel(
        assistive technology after the auth sheet restores its inert snapshot. */
     goHome();
   }
-  showAuth(mode, { entered, showAccount, dismiss: dismissAuth }, origin, notice);
+  showAuth(
+    mode,
+    { entered, showAccount, dismiss: dismissAuth },
+    origin,
+    notice,
+    expectedAccountId ?? undefined,
+  );
 }
 
 function dismissAuth(origin: AuthOrigin): void {
   if (origin === 'account') return;
   pendingView = null;
   goHome();
-}
-
-function focusOnlineTitle(): void {
-  $('#onTitle').focus({ preventScroll: true });
 }
 
 async function showAccount(): Promise<void> {
@@ -227,13 +222,10 @@ async function route(view: OnlineView, accountOptions?: AccountShowOptions): Pro
 }
 
 function showEntryWait(view: OnlineView | null): void {
-  if (view === 'account') { void showOnlineLoading('onAccount'); return; }
-  if (view === 'ladder') { void showOnlineLoading('onLadder'); return; }
-  /* Play paints its real destination at once: the queue's searching state
-     shows nothing account-derived, so it need not wait for identity. Only
-     newcomers keep the die — the tutorial offer may still route them away. */
-  if (isNewcomer()) { void showOnlineLoading('onQueue'); return; }
-  queue.showSearching(view === 'weekly' ? 'weekly' : 'ordinary');
+  paintOnlineEntryWait(view, {
+    showCachedAccount: account.showCached,
+    showQueueSearching: () => queue.showSearching(view === 'weekly' ? 'weekly' : 'ordinary'),
+  });
 }
 
 async function entered(): Promise<void> {
@@ -243,16 +235,22 @@ async function entered(): Promise<void> {
   showEntryWait(view);
   show('#ovOnline');
   focusOnlineTitle();
-  const [, collection, progression] = await Promise.all([
-    myProfile(), refreshRuneCollection(), refreshRankedProgressionStatus(),
+  /* Retain the account that completed Auth. If a cross-tab/provider switch
+     happens during hydration, Profile must reject and cover the cached owner
+     rather than leaving its private facts mounted behind locked controls. */
+  const enteredUser = await currentUser();
+  const expectedAccountId = enteredUser?.id.toLowerCase();
+  const [collection, progression] = await Promise.all([
+    hydrateOnlineEntry(expectedAccountId, view !== 'account'),
+    refreshRankedProgressionStatus(),
   ]);
   if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
-  await syncAccountPreferences();
-  if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
-  const ownsCollection = await runeCollectionMatchesActiveAccount(collection);
-  if (!ownsCollection || revision !== entryRevision
-      || !$('#ovOnline').classList.contains('on')) return;
+  if (!collection) return view === 'account'
+    ? routeAccount(expectedAccountId ? { expectedAccountId } : undefined) : undefined;
   const entryView = view ?? 'play';
+  /* A door must name the rotation the server actually holds before it
+     queues. An uncertain refresh keeps it retryable rather than silently
+     entering a different mode. */
   if (!await verifyRankedEntryContract(entryView, progression)) {
     if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
     presentConnectionIssue(entryView);
@@ -311,8 +309,9 @@ export async function openOnline(view: OnlineView, ports: OnlinePorts): Promise<
   }
   /* The online overlay is reused, so its last panel may still be fading out
      when Home opens it again. Establish the new destination — play's searching
-     queue, or a held loading die — before identity or Game Center can yield;
-     otherwise a retained Ladder can paint during that wait. */
+     queue, a complete cached Profile, or a held loading die — before identity
+     or Game Center can yield; otherwise a retained Ladder can paint during
+     that wait. */
   pendingView = null;
   showEntryWait(view);
   show('#ovOnline');
@@ -324,24 +323,27 @@ export async function openOnline(view: OnlineView, ports: OnlinePorts): Promise<
   }
   const user = identity.user;
   setSessionless(false);
-  {
-    /* Hydration stays behind the current hold — the searching queue for play,
-       the die otherwise; partial account data never paints either way. */
-    const [, collection, , progression] = await Promise.all([
-      syncAccountPreferences(),
-      refreshRuneCollection(user.id), myProfile(), refreshRankedProgressionStatus(),
-    ]);
+  /* Cached Profile is already on screen. Its first collection read discovers
+     rewards; the screen's immediate second read confirms them and is allowed
+     to fall back to this verified result. Other doors also refresh Home. */
+  const [collection, progression] = await Promise.all([
+    hydrateOnlineEntry(user.id, view !== 'account'),
+    refreshRankedProgressionStatus(),
+  ]);
+  if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
+  /* Profile owns a complete account-bound fallback, including rune
+     presentation. If first-rune discovery is unavailable, let Profile run
+     its own refresh/fallback boundary. */
+  if (!collection) return view === 'account'
+    ? routeAccount({ expectedAccountId: user.id }) : undefined;
+  /* A door must name the rotation the server actually holds before it
+     queues. An uncertain refresh keeps it retryable rather than silently
+     entering a different mode. */
+  if (!await verifyRankedEntryContract(view, progression)) {
     if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
-    if (collection.accountId?.toLowerCase() !== user.id.toLowerCase()) return;
-    const ownsCollection = await runeCollectionMatchesActiveAccount(collection);
-    if (!ownsCollection || revision !== entryRevision
-        || !$('#ovOnline').classList.contains('on')) return;
-    if (!await verifyRankedEntryContract(view, progression)) {
-      if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
-      presentConnectionIssue(view);
-      return;
-    }
-    showEntryWait(view);
-    return routeWithRuneReward(view, collection, revision);
+    presentConnectionIssue(view);
+    return;
   }
+  showEntryWait(view);
+  return routeWithRuneReward(view, collection, revision);
 }

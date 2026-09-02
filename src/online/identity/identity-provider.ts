@@ -13,5 +13,6 @@ export interface OneTap {
   label: string;
   available(): boolean;
   restore(lifecycle?: OneTapRestoreLifecycle): Promise<string | null>;
-  attach(): Promise<string | null>;
+  /** Account screens pass the verified visible owner; auth/guest flows omit it. */
+  attach(expectedAccountId?: string): Promise<string | null>;
 }

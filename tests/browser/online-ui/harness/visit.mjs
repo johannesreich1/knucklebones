@@ -4,34 +4,37 @@ import { readOnlineView } from './read-view.mjs';
 import { guardRoutes } from './guard-routes.mjs';
 import { probeFaceoff } from '../scenarios/faceoff-probe.mjs';
 import { probeAccountActions } from './account-probes.mjs';
-
+import { installNativeBridges } from './native-bridges.mjs';
 /* One harness: open the app with Supabase answering however this case wants,
    tap Account, and report what the player is looking at. */
 export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError }) {
   return async function visit({
     anonymous = 200,
-    /* The Apple provider is reachable only where the Capacitor plugin is —
-       iOS. WebKit has no bridge, which is the honest default here and the
-       state the web/Android player is really in; set this to stand a device
-       that DOES have one up, so the profile's Apple offers can be met. The
-       stub answers with a credential the app must reject, so a tap runs the
-       whole provider path and lands on the profile's own error line rather
-       than reaching Apple. */
+    /* A restored session; a genuinely new anonymous signup deliberately
+       clears the preceding account's presentation. */
+    preauthenticated = false,
+    /* A direct/cross-tab account replacement can leave the eager Home cache
+       on A while Supabase storage already owns B. */
+    sessionAccountId = null,
+    /* Stand up the iOS-only Apple bridge. Its default credential is invalid,
+       so a tap exercises the provider error path without reaching Apple. */
     appleBridge = false,
+    /* Hold the native credential itself, before Supabase has been touched. */
+    deferAppleNative = false,
     /* The bridge normally returns an invalid credential so provider-error
        probes cannot accidentally become successful sign-ins. A focused auth
        probe opts into a valid Apple result and the matching Supabase route. */
     appleAuth = 'invalid',
     deferAppleAuth = false,
+    /* Hold the authorization-code registration after linkIdentity has already
+       committed/stored its session; account-publication races switch here. */
+    deferAppleRegistration = false,
     attached = false,
     authDelay = 0,
     dataDelay = 0,
     door = 'chip',
-    /* Game Center is reachable only where GameKit is AND the build carries an
-       identity gateway origin. This stands the device half up: an iOS bridge
-       whose local player is already authenticated, exactly as the phone that
-       greeted the player by name at launch. 'linked' | 'conflict' also chooses
-       how the gateway answers the attach (see identity-routes). */
+    /* Stand up an authenticated iOS Game Center bridge; `linked`/`conflict`
+       also choose the identity-gateway attach answer. */
     gameCenterBridge = null,
     /* What the DEVICE says about vouching for a stable identifier, on the auth
        state itself — `scopedIDsArePersistent()` as GameCenterPlugin.swift now
@@ -53,7 +56,10 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
        so the refusal under test is the one the player's TAP asks for. */
     proofRefusal = null,
     identity = { gameCenterLinked: false, appleLinked: false, appleRevocationReady: false },
-    inspectLoading = false,
+    identityDelay = 0, inspectLoading = false, inspectEntry = false,
+    deferStanding = false, failStanding = false,
+    emptyStanding = false, failLadder = false,
+    failStreak = false, failHistory = false, failRuneOnCall = null,
     member = false,
     named = false,
     motion = null,
@@ -73,6 +79,9 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
     /* Ladder points decide the current GROUP. Null keeps every existing probe
        on its BONE default. */
     standingPoints = null,
+    /* Let a settlement land after the ladder/profile mirror so a regression
+       can prove the standing tuple wins across every cached surface. */
+    reportedStandingPoints = null,
     /* Historical season high-water mark. Null retains the route fixture's
        ordinary max(700, points) default; an explicit value lets a profile
        regression distinguish a demoted player from one never past SILVER. */
@@ -112,6 +121,10 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
        here is the only way to time entry itself. */
     initScript = null,
   }) {
+    const activeSession = sessionAccountId ? {
+      ...SESSION,
+      user: { ...SESSION.user, id: sessionAccountId },
+    } : SESSION;
     // NO isMobile here: under WebKit it quietly disables page.route(), and a
     // stub that never fires would let this suite talk to the live backend.
     const ctx = await browser.newContext({ viewport, hasTouch: true,
@@ -124,15 +137,18 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
     if (onHarnessError) guardRoutes(page, onHarnessError);
     const errs = [];
     page.on('pageerror', (e) => errs.push(e.message));
-
     const routes = await installOnlineRoutes(page, {
       anonymous, attached, authDelay,
       dataDelay: inspectLoading ? 900 : dataDelay, markRunesSeenAfterFirstRead,
-      door, gameCenterBridge, identity, member, named, ladderNearBottom, ladderBoard, historyDepth,
+      door, gameCenterBridge, identity, identityDelay, member, named,
+      ladderNearBottom, ladderBoard, historyDepth,
       paginationRace,
-      passwordAuth, appleAuth, deferAppleAuth,
+      passwordAuth, appleAuth, deferAppleAuth, deferAppleRegistration,
       runes, unseenRunes, equippedRune, randomRuneMode,
-      standingPoints, standingPeak, historicalSilverReached, SESSION, GUEST_ID,
+      standingPoints, reportedStandingPoints, standingPeak, historicalSilverReached,
+      deferStanding, failStanding, emptyStanding,
+      failLadder, failStreak, failHistory, failRuneOnCall,
+      SESSION: activeSession, GUEST_ID,
       progressionStatus,
     });
     /* Registered AFTER the base stub on purpose: Playwright gives the most
@@ -143,59 +159,22 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
         GUEST_ID, ...(trialMatch === true ? {} : trialMatch),
       }));
     }
-    /* ONE Capacitor object: the native bridges are plugins on the same global,
-       and two init scripts each installing their own would leave whichever ran
-       last as the only device the app can see. */
-    if (appleBridge || gameCenterBridge) {
-      await page.addInitScript(({ apple, appleAuth, gameCenter, refusal, persistent }) => {
-        const Plugins = {};
-        if (apple) {
-          Plugins.AppleSignIn = {
-            initialize: async () => {},
-            signIn: async (options) => {
-              globalThis.__appleSignIn = { calls: (globalThis.__appleSignIn?.calls ?? 0) + 1,
-                                           options: options ?? null };
-              return appleAuth === 'success'
-                ? { idToken: 'apple-id-token', authorizationCode: 'apple-authorization-code' }
-                : { idToken: '' };
-            },
-          };
-        }
-        if (gameCenter) {
-          globalThis.__gameCenter = { proofs: 0 };
-          // an older binary omits the field entirely, which is not the same
-          // claim as sending `false` — so it is genuinely absent here too
-          const state = { status: 'authenticated', revision: 1 };
-          if (persistent !== null) state.persistentIdentity = persistent;
-          Plugins.GameCenter = {
-            initialize: async () => state,
-            getAuthState: async () => state,
-            addListener: () => ({ remove() {} }),
-            fetchIdentityProof: async () => {
-              globalThis.__gameCenter.proofs++;
-              if (refusal && globalThis.__gameCenter.proofs > (refusal.afterProofs ?? 0)) {
-                // Capacitor surfaces a plugin reject() as an Error carrying the
-                // plugin's code; the web layer classifies on that code.
-                const error = new Error(refusal.message);
-                if (refusal.code) error.code = refusal.code;
-                throw error;
-              }
-              return { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-12.cer',
-                       signature: 'signed', salt: 'salt', timestamp: '123',
-                       teamPlayerID: 'team-player' };
-            },
-          };
-        }
-        globalThis.Capacitor = { getPlatform: () => 'ios', Plugins };
-      }, { apple: appleBridge, appleAuth, gameCenter: !!gameCenterBridge, refusal: proofRefusal,
-           persistent: gameCenterPersistent });
-    }
+    await installNativeBridges(page, {
+      appleBridge, appleAuth, deferAppleNative, gameCenterBridge,
+      proofRefusal, gameCenterPersistent,
+    });
     if (door === 'play' || door === 'match' || door === 'auth-play') {
       /* Ranked newcomers stop at the once-only tutorial offer. This probe is
          about the queue the returning player sees, so enter as a played device. */
       await page.addInitScript(() => localStorage.setItem(
         'knucklebones.v1', JSON.stringify({ played: true }),
       ));
+    }
+
+    if (preauthenticated) {
+      await page.addInitScript(({ session }) => localStorage.setItem(
+        'sb-euzjcejbkxvqfrttgaxu-auth-token', JSON.stringify(session),
+      ), { session: activeSession });
     }
 
     if (initScript) await page.addInitScript(initScript);
@@ -211,6 +190,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
       if (!row || !button) return null;
       const rs = getComputedStyle(row), bs = getComputedStyle(button);
       return {
+        chip: document.getElementById('homeChip')?.textContent?.trim() ?? '',
         row: { display: rs.display, gap: rs.gap, alignItems: rs.alignItems,
                fontSize: rs.fontSize, width: rs.width },
         button: { paddingTop: bs.paddingTop, paddingRight: bs.paddingRight,
@@ -219,7 +199,8 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
       };
     });
     const homeBeforeOnline = await homeSnapshot();
-    if (inspectLoading) {
+    const standingCallsBeforeOnline = routes.standingCalls();
+    if (inspectLoading || inspectEntry) {
       await page.evaluate(() => {
         window.__onlineEntry = { frames: 0, emptyFrames: 0, first: null };
         const sample = () => {
@@ -318,10 +299,15 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
     // body-level sheets, but must not repaint the eager Home hiding underneath.
     const homeAfterOnline = await homeSnapshot();
     const probeResult = probe ? await probe(page, routes) : null;
+    const entryState = inspectEntry
+      ? await page.evaluate(() => window.__onlineEntry ?? null)
+      : null;
 
     if (returnAfterProbe) {
       await ctx.close();
-      return { probeResult, errs, rootLang: null };
+      return { probeResult, errs, rootLang: null, standingCallsBeforeOnline,
+               entry: entryState,
+               homeStyles: { before: homeBeforeOnline, after: homeAfterOnline } };
     }
 
     if (door === 'match') {
@@ -363,7 +349,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
       const rootLang = await page.locator('html').getAttribute('lang');
       await ctx.close();
       return { queueLabel: samples, queueCancel, errs, loading, signupCalls: routes.signupCalls(),
-               rootLang, probeResult,
+               rootLang, probeResult, standingCallsBeforeOnline,
                homeStyles: { before: homeBeforeOnline, after: homeAfterOnline } };
     }
 
@@ -371,10 +357,11 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
     const faceoff = skipStandardProbes ? null : await probeFaceoff(page, { door, motion });
     const { claimFlow, askAbove, rankDoor, ptsDoor } = skipStandardProbes
       ? { claimFlow: null, askAbove: null, rankDoor: null, ptsDoor: null }
-      : await probeAccountActions(page, { door, named });
+      : await probeAccountActions(page, { door, named }, routes);
 
     await ctx.close();
-    return { seen, errs, loading, signupCalls: routes.signupCalls(), faceoff, rankDoor, ptsDoor, claimFlow, askAbove, probeResult,
+    return { seen, errs, loading, signupCalls: routes.signupCalls(), standingCallsBeforeOnline,
+             faceoff, rankDoor, ptsDoor, claimFlow, askAbove, probeResult,
              homeStyles: { before: homeBeforeOnline, after: homeAfterOnline } };
   };
 }

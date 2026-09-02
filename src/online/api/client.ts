@@ -11,18 +11,58 @@ export function supa(): SupabaseClient {
   return client;
 }
 
-export async function callFunction<T>(fn: string, body: object): Promise<{ status: number; data: T | null }> {
+export interface FunctionCallOptions {
+  /** Refuse before fetch unless this exact account owns the captured bearer. */
+  expectedAccountId?: string;
+}
+
+export interface FunctionCallResult<T> {
+  status: number;
+  data: T | null;
+  accountMismatch?: true;
+}
+
+export interface AccountSessionBearer {
+  readonly access_token: string;
+  readonly user: { readonly id: string };
+}
+
+/** Bind a bearer to the same account the visible interaction retained. */
+export function authorizationForAccount(
+  session: AccountSessionBearer | null,
+  expectedAccountId: string,
+): string | null {
+  return session?.user.id.toLowerCase() === expectedAccountId.toLowerCase()
+    ? `Bearer ${session.access_token}` : null;
+}
+
+export async function callFunction<T>(
+  fn: string,
+  body: object,
+  options: FunctionCallOptions = {},
+): Promise<FunctionCallResult<T>> {
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | null = null;
   try {
-    const request = (async () => {
+    const request: Promise<FunctionCallResult<T>> = (async () => {
       const { data: { session } } = await supa().auth.getSession();
+      const expectedAccountId = options.expectedAccountId?.toLowerCase();
+      /* Guard the exact session snapshot whose bearer is sent. A separate
+         current-user check leaves a cross-tab A -> B gap before getSession. */
+      let authorization = `Bearer ${session?.access_token ?? ''}`;
+      if (expectedAccountId) {
+        const guardedAuthorization = authorizationForAccount(session, expectedAccountId);
+        if (!guardedAuthorization) {
+          return { status: 0, data: null, accountMismatch: true };
+        }
+        authorization = guardedAuthorization;
+      }
       const response = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${session?.access_token ?? ''}`,
+          Authorization: authorization,
         },
         body: JSON.stringify(body),
         signal: controller.signal,
@@ -31,7 +71,7 @@ export async function callFunction<T>(fn: string, body: object): Promise<{ statu
       try { data = await response.json(); } catch { /* empty body */ }
       return { status: response.status, data };
     })();
-    const timeout = new Promise<{ status: number; data: T | null }>((resolve) => {
+    const timeout = new Promise<FunctionCallResult<T>>((resolve) => {
       timer = setTimeout(() => {
         controller.abort();
         resolve({ status: 0, data: null });

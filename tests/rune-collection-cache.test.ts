@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { authorizationForAccount } from '../src/online/api/client.ts';
 import { resolveRuneEquipmentWrite } from '../src/online/runes/rune-equip.ts';
 import {
   RUNE_COLLECTION_CACHE_KEY,
@@ -23,6 +25,15 @@ const values = new Map<string, string>();
 
 const account = '11111111-2222-4333-8444-555555555555';
 const other = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+
+assert.equal(authorizationForAccount(null, account), null);
+assert.equal(authorizationForAccount({ access_token: 'a-token', user: { id: account } }, account),
+  'Bearer a-token');
+assert.equal(authorizationForAccount({ access_token: 'b-token', user: { id: other } }, account),
+  null, 'account B supplied a bearer for account A equipment');
+const equipmentSource = readFileSync('src/online/runes/rune-equip.ts', 'utf8');
+assert.equal(equipmentSource.includes(".setHeader('Authorization', authorization)"), true,
+  'equipment RPC no longer pins the bearer verified for its retained account');
 
 assert.deepEqual(
   resolveRuneEquipmentWrite({ kind: 'fixed', runeId: 'ward' }, ['fate', 'ward'], null),

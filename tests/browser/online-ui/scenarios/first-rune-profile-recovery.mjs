@@ -68,7 +68,6 @@ async function directAccountFailureProbe(page, routes) {
   await page.waitForSelector('#ovStart.on', { timeout: 15000 });
   routes.setProfileAccountId('11111111-2222-4333-8444-555555555555');
   await page.click('#homeChip');
-  await page.waitForSelector('#ovOnline.on #onLoading:not([hidden])', { timeout: 15000 });
   await page.waitForFunction(() =>
     document.getElementById('ovStart')?.classList.contains('on')
       && !document.getElementById('ovOnline')?.classList.contains('on'));

@@ -249,7 +249,7 @@ clearProfileCache();
 cacheProfileIdentity({
   accountId: ACCOUNT_A, nickname: 'Alpha', rating: 1200, avatar: 'die:6:blue',
 });
-cacheStanding(7, false);
+cacheStanding(ACCOUNT_A, { points: 1200, rank: 7, population: 100, percentile: 7 }, false);
 cacheProfileAvatar(ACCOUNT_A, 'die:2:mg');
 assert.deepEqual(readProfileCacheForAccount(ACCOUNT_A), {
   accountId: ACCOUNT_A.toLowerCase(), nickname: 'Alpha', rating: 1200,

@@ -98,7 +98,10 @@ function isGameCenterConflict(status: number, value: unknown): boolean {
 }
 
 export function createGameCenterIdentity(ports: GameCenterIdentityPorts): OneTap {
-  const authenticate = async (link: boolean): Promise<string | null> => {
+  const authenticate = async (
+    link: boolean,
+    expectedAccountId?: string,
+  ): Promise<string | null> => {
     if (!ports.available()) return GAME_CENTER_IDENTITY_MESSAGES.unavailable;
 
     let signed: GameCenterProof;
@@ -116,6 +119,13 @@ export function createGameCenterIdentity(ports: GameCenterIdentityPorts): OneTap
         // A failed read is not the same as a missing session. Sending the
         // assertion without the guest JWT could restore a different owner.
         if (error) return GAME_CENTER_IDENTITY_MESSAGES.failed;
+        /* GameKit proof collection is a native wait. The Profile may have
+           become another account while it was open; refuse before the gateway
+           sees a bearer token for that new account. */
+        if (expectedAccountId
+            && data.session?.user.id.toLowerCase() !== expectedAccountId.toLowerCase()) {
+          return GAME_CENTER_IDENTITY_MESSAGES.failed;
+        }
         accessToken = data.session?.access_token;
       }
 
@@ -169,7 +179,7 @@ export function createGameCenterIdentity(ports: GameCenterIdentityPorts): OneTap
     get label(): string { return t('online', 'auth.continueGameCenter'); },
     available: ports.available,
     restore: () => authenticate(false),
-    attach: () => authenticate(true),
+    attach: (expectedAccountId) => authenticate(true, expectedAccountId),
   };
 }
 

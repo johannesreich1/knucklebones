@@ -32,7 +32,7 @@ export async function resultRewardProfileOcclusionProbe(page, routes) {
      profile repaint can replace the plate between pointerdown and up. */
   await page.$eval('#endPlates > button:first-child .gpill', (pill) => pill.click());
   await Promise.all([
-    page.waitForSelector('#ovOnline.on #onLoading:not([hidden])', { timeout: 15000 }),
+    page.waitForSelector('#ovOnline.on #onAccount:not([hidden])', { timeout: 15000 }),
     Promise.race([
       routes.runeRequestStarted,
       new Promise((_, reject) => setTimeout(() => reject(new Error(
@@ -47,7 +47,8 @@ export async function resultRewardProfileOcclusionProbe(page, routes) {
     const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
     return {
       onlineVisible: document.getElementById('ovOnline')?.classList.contains('on'),
-      profileLoading: document.getElementById('onLoading')?.hidden === false,
+      profileVisible: document.getElementById('onAccount')?.hidden === false,
+      fullLoaderHidden: document.getElementById('onLoading')?.hidden === true,
       resultStillMounted: document.getElementById('ovEnd')?.classList.contains('on'),
       rewardOwnsHit: !!hit && feature.contains(hit),
     };

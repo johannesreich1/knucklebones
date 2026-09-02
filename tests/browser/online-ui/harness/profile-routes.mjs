@@ -12,8 +12,15 @@ export async function installProfileRoutes(page, {
   nearBottomBoard,
   historyDepth,
   standingPoints,
+  reportedStandingPoints,
   standingPeak,
   historicalSilverReached,
+  deferStanding,
+  failStanding,
+  emptyStanding,
+  failLadder,
+  failStreak,
+  failHistory,
 }) {
   /* BONE by default, which is what every existing probe has always seen. A
      case that needs a different current standing or historical equipment
@@ -21,8 +28,14 @@ export async function installProfileRoutes(page, {
   const points = standingPoints ?? 465;
   const currentPeak = standingPeak ?? Math.max(700, points);
   const silverReached = historicalSilverReached ?? currentPeak >= 1260;
+  let ladderUnavailable = failLadder;
+  let streakUnavailable = failStreak;
+  let historyUnavailable = failHistory;
   await page.route('**/rest/v1/season_ratings*', async (r) => {
     await hold(.65);
+    if (ladderUnavailable) {
+      return r.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+    }
     /* myLadder issues a second, owner-scoped existence read for an all-season
        SILVER peak. It is deliberately independent of the current-season row:
        a rollover may start that row below the permanent unlock threshold. */
@@ -40,9 +53,31 @@ export async function installProfileRoutes(page, {
       },
     ]) });
   });
+  let markStandingStarted;
+  let releaseStanding;
+  let markStandingFinished;
+  let standingCalls = 0;
+  let standingDeferred = false;
+  let standingUnavailable = failStanding;
+  const standingStarted = new Promise((resolve) => { markStandingStarted = resolve; });
+  const standingRelease = new Promise((resolve) => { releaseStanding = resolve; });
+  const standingFinished = new Promise((resolve) => { markStandingFinished = resolve; });
   await page.route('**/rest/v1/rpc/player_standing*', async (r) => {
+    standingCalls++;
+    const deferred = deferStanding && !standingDeferred;
+    if (deferred) {
+      standingDeferred = true;
+      markStandingStarted();
+      await standingRelease;
+    }
     await hold(.7);
-    return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
+    if (standingUnavailable) {
+      await r.fulfill({ status: 503, contentType: 'application/json', body: '[]' });
+      if (deferred) markStandingFinished();
+      return;
+    }
+    await r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(
+      emptyStanding ? [] : [
       /* Rank 2 of 199 is just outside floor(1%): this must agree with the
          ladder row's apex:false so both surfaces resolve BONE. */
       /* Derived from the board rather than restated beside it: a hand-kept
@@ -54,11 +89,16 @@ export async function installProfileRoutes(page, {
           return { points: me?.points ?? points, rank: me?.rank ?? 1,
                    population: nearBottomBoard.length, percentile: 96 };
         })()
-        : { points, rank: 2, population: RUN_A_POPULATION, percentile: 1 },
-    ]) });
+        : { points: reportedStandingPoints ?? points, rank: 2,
+            population: RUN_A_POPULATION, percentile: 1 },
+      ]) });
+    if (deferred) markStandingFinished();
   });
   await page.route('**/rest/v1/rpc/best_streak*', async (r) => {
     await hold(.8);
+    if (streakUnavailable) {
+      return r.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+    }
     return r.fulfill({ status: 200, contentType: 'application/json', body: '4' });
   });
   /* Deliberately last during loading probes: the profile must keep its die up
@@ -66,6 +106,9 @@ export async function installProfileRoutes(page, {
      one endpoint at a time. */
   await page.route('**/rest/v1/rpc/match_history*', async (r) => {
     await hold(1);
+    if (historyUnavailable) {
+      return r.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+    }
     /* A REAL KEYSET, not a fixed page. The old stub answered three rows and
        ignored limit_n/before_t/before_id, so `3 < PAGE` marked the list
        finished on its first response and the paging branch was unreachable in
@@ -85,4 +128,16 @@ export async function installProfileRoutes(page, {
       : season).slice(0, limit);
     return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(page) });
   });
+  return {
+    standingCalls: () => standingCalls,
+    setStandingUnavailable: (value) => { standingUnavailable = value; },
+    setProfileFactsUnavailable: (value) => {
+      ladderUnavailable = value;
+      streakUnavailable = value;
+      historyUnavailable = value;
+    },
+    standingStarted,
+    releaseStanding: () => releaseStanding(),
+    standingFinished,
+  };
 }

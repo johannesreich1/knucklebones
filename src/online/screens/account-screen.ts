@@ -1,108 +1,57 @@
-import {
-  currentGroupFill,
-  currentGroupRingFill,
-  currentGroupRingPeakState,
-  currentInApex,
-} from '../../ladder-presentation.ts';
-import {
-  formatDate,
-  formatNumber,
-  subscribeLocale,
-  t,
-} from '../../i18n/index.ts';
-import { DEFAULT_AVATAR, paintAvatar } from '../../ui/avatar.ts';
+import { inApex } from '../../core/ladder.ts';
+import { subscribeLocale, t } from '../../i18n/index.ts';
 import { $, byId } from '../../ui/dom.ts';
 import { refreshHomeChip } from '../../ui/homechip.ts';
 import {
-  bestStreak,
-  matchHistory,
-  myLadder,
-  myStanding,
+  bestStreakLookup,
+  matchHistoryLookup,
+  myLadderLookup,
+  myStandingLookup,
+  type HistoryRow,
 } from '../api/ladder-api.ts';
-import { refreshVerifiedRankedCurveVersion } from '../api/ranked-curve-verification.ts';
-import { currentUser, identityStatus } from '../identity/session.ts';
-import { myProfile } from '../identity/profile.ts';
-import { cacheStanding, readProfileCache } from '../../profile-cache.ts';
+import { currentUser, identityStatusLookup } from '../identity/session.ts';
+import { myProfileLookup } from '../identity/profile.ts';
+import { cacheStanding } from '../../profile-cache.ts';
 import { cachedLadderCurveVersion } from '../../progression-status-cache.ts';
-import { historyRow } from './history-screen.ts';
+import { refreshVerifiedRankedCurveVersion } from '../api/ranked-curve-verification.ts';
 import {
   acknowledgeRuneReward,
   refreshRuneCollection,
   runeCollectionMatchesActiveAccount,
   type RuneCollectionRefresh,
 } from '../runes/rune-collection.ts';
-import {
-  firstCollectedRuneReward,
-  type RuneRewardPresentation,
-} from '../runes/rune-reward-presentation.ts';
-import { fillAccountRing } from './account-ring.ts';
-import { paintAccountRunes, paintEquippedSeat } from './account-runes.ts';
+import { firstCollectedRuneReward } from '../runes/rune-reward-presentation.ts';
 import { isOnlinePanelCurrent, showOnlineLoading, showOnlinePanel } from './shell.ts';
-import type { AuthMode, AuthOrigin } from './auth-screen.ts';
-import type { Ladder, Standing } from '../api/ladder-api.ts';
-import type { IdentityStatus, Me } from '../identity/session.ts';
-import type { Profile } from '../identity/profile.ts';
-import { paintAccountProviders } from './account-provider-view.ts';
 import { bindAccountScreen } from './account-bindings.ts';
 import {
   cancelAccountRuneGuide,
   repaintAccountRuneGuide,
   startAccountRuneGuide,
-  type AccountRuneGuideRequest,
 } from './account-rune-guide.ts';
 import {
-  accountProgressionSnapshot,
-  paintAccountAchievements,
-} from './account-achievements.ts';
-import { accountRankText, paintAccountGroup } from './account-ladder.ts';
+  cacheAccountView,
+  readCachedAccountView,
+  retainKnownStandingTuple,
+  type CachedAccountView,
+  type AccountViewData,
+} from './account-profile-cache.ts';
+import {
+  paintAccountDetails,
+  paintAccountFrame,
+  resetAccountPresentation,
+} from './account-presentation.ts';
+import { createAccountActionLock } from './account-action-lock.ts';
+import type { PersistedRuneEquipment } from './account-runes.ts';
+import type { AccountPorts, AccountScreen, AccountShowOptions } from './account-screen-types.ts';
 
-interface AccountPorts {
-  showAuth(mode: AuthMode, origin: AuthOrigin, notice?: string | null): void;
-  showAvatar(): Promise<void>;
-  showLadder(): Promise<void>;
-  showHistory(): Promise<void>;
-  presentRuneReward(
-    collection: RuneCollectionRefresh,
-    owns: () => boolean,
-    onContinue?: () => void,
-    actionLabel?: () => string,
-    deferAcknowledgement?: boolean,
-  ): boolean;
-}
-
-export interface AccountShowOptions {
-  readonly runeGuide?: AccountRuneGuideRequest;
-  /** A result-origin guide belongs to the account that owned that result. */
-  readonly expectedAccountId?: string;
-  /** The same first-rune sheet already handed this player to Profile. Keep
-      that durable row unseen and do not deal a duplicate sheet here. */
-  readonly deferredRuneReward?: RuneRewardPresentation;
-  /** Entry already verified this collection; use it only if Profile's own
-      immediately-following refresh is transiently unavailable. */
-  readonly verifiedRuneFallback?: RuneCollectionRefresh;
-}
-
-export interface AccountScreen {
-  bind(): void;
-  show(options?: AccountShowOptions): Promise<RuneCollectionRefresh | null>;
-}
-
+export type { AccountScreen, AccountShowOptions } from './account-screen-types.ts';
 export function createAccountScreen(ports: AccountPorts): AccountScreen {
-  let lastAccount: {
-    profile: Profile | null;
-    user: Me | null;
-    ladder: Ladder | null;
-    standing: Standing | null;
-    streak: number;
-    identity: IdentityStatus | null;
-    progression: ReturnType<typeof accountProgressionSnapshot>;
-    runes: readonly string[];
-    runeRows: RuneCollectionRefresh['rows'];
-  } | null = null;
-  let lastRecent: Awaited<ReturnType<typeof matchHistory>> = [];
-  let pendingCachedRating: number | null = null;
+  let lastAccount: AccountViewData | null = null;
+  let lastRecent: HistoryRow[] = [];
+  let rankPending = false;
   let nickError: (() => string) | null = null;
   let showRevision = 0;
+  const accountActions = createAccountActionLock();
 
   /* The profile's ONE remaining inline error line, and it is the only kind
      that belongs inline: nickname validation answers a field the player is
@@ -118,129 +67,142 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     nickError = render;
     $('#onNickErr').textContent = render();
   };
-  /* THREE, NEWEST FIRST, ON EVERY DEVICE (user call 2026-08-28). The strip used
-     to paint three rows and then remove them one at a time while the shared
-     .pbody overflowed, which made the section's length a property of the
-     hardware. It is a section with a heading now: it either states the three
-     newest duels or — for a player who has none — is not there at all. Where
-     the profile no longer fits, the .pbody scrolls, exactly as it already does
-     for a short device. matchHistory answers newest-first, so appending in
-     order puts the latest duel on top. */
-  const paintRecent = (): void => {
-    const recent = $('#accRecent');
-    recent.innerHTML = '';
-    for (const row of lastRecent.slice(0, 3)) recent.appendChild(historyRow(row));
-    $('#accRecentBox').hidden = !recent.childElementCount;
+  const repaintAccount = (): void => {
+    if (lastAccount) paintAccountDetails(lastAccount, lastRecent, rankPending);
+    accountActions.repaint();
   };
-
-  const paintAccount = (): void => {
-    if (!lastAccount) return;
-    const {
-      profile,
-      user,
-      ladder,
-      standing,
-      streak,
-      identity,
-      progression,
-      runes,
-      runeRows,
-    } = lastAccount;
-    $('#accSince').textContent = !user?.guest && profile?.created_at
-      ? t('online', 'profile.memberSince', {
-        date: formatDate(new Date(profile.created_at), { month: 'long', year: 'numeric' }),
-      })
-      : '';
-    const points = ladder?.points ?? 0;
-    const peak = ladder?.peak ?? 0;
-    const games = ladder ? ladder.wins + ladder.losses + ladder.draws : 0;
-    const apex = standing ? currentInApex(points, standing.rank, standing.population) : false;
-    $('#accPoints').textContent = formatNumber(points);
-    paintAccountGroup(points, apex);
-    $('#accPeak').textContent = formatNumber(peak);
-    $('#accGames').textContent = games
-      ? t('online', 'profile.gamesLink', { count: games, formatted: formatNumber(games) })
-      : t('online', 'profile.noneYet');
-    $('#accRank').textContent = accountRankText(standing, games);
-    $('#accStreak').textContent = formatNumber(streak);
-    paintAccountProviders(user, identity);
-    paintAccountRunes(runes, runeRows);
-    paintAccountAchievements(progression);
-    /* The ring and PEAK label stay current-season. The rune seat instead uses
-       the all-season SILVER fact; mutable profile rating is not evidence that
-       this permanent achievement happened. */
-    paintEquippedSeat(ladder?.runeSeatUnlocked ? 'silver' : null);
-    paintRecent();
+  const repaintFrame = (): void => {
+    if (lastAccount) paintAccountFrame(lastAccount, lastRecent, rankPending, clearNickError);
+    accountActions.repaint();
   };
 
   subscribeLocale(() => {
     const panel = byId('onAccount');
     if (!panel || panel.hidden) return;
-    if (lastAccount) paintAccount();
-    else if (pendingCachedRating !== null) {
-      $('#accPoints').textContent = formatNumber(pendingCachedRating);
-      paintAccountGroup(pendingCachedRating);
-    }
+    repaintAccount();
     repaintAccountRuneGuide();
     if (nickError) $('#onNickErr').textContent = nickError();
   });
 
-  async function show(options: AccountShowOptions = {}): Promise<RuneCollectionRefresh | null> {
+  const beginPresentation = (cachedView: CachedAccountView | null): void => {
+    accountActions.reset();
+    accountActions.setRuneSeatAvailable(false);
+    rankPending = true;
+    lastAccount = cachedView?.account ?? null;
+    lastRecent = cachedView?.recent ?? [];
+    resetAccountPresentation(cachedView, clearNickError);
+  };
+  const invalidatePresentation = (): void => {
+    showRevision++;
+    beginPresentation(null);
+    accountActions.lock();
+    if (isOnlinePanelCurrent('onAccount')) showOnlineLoading('onAccount');
+  };
+
+  /* A cached points row may only be classified through a curve the server has
+     confirmed. Without one, the shared die holds the view rather than naming a
+     league a staged cutover could have moved. */
+  const readClassifiableCachedView = (accountId?: string): CachedAccountView | null =>
+    (cachedLadderCurveVersion() === null ? null : readCachedAccountView(accountId));
+
+  function showCached(accountId: string): boolean {
+    const cachedView = readClassifiableCachedView(accountId);
+    if (!cachedView) return false;
+    /* Invalidate an older Profile refresh before this new door becomes the
+       active presentation. Its verified identity will start a fresh run. */
+    showRevision++;
+    cancelAccountRuneGuide();
+    beginPresentation(cachedView);
+    /* This is a presentation preview, not yet an authenticated account door.
+       Back remains outside the panel; every account action waits until the
+       session has proved it owns this snapshot. */
+    accountActions.lock();
+    showOnlinePanel('onAccount');
+    return true;
+  }
+  async function show(options: AccountShowOptions = {}):
+  Promise<RuneCollectionRefresh | 'cached' | null> {
     const run = ++showRevision;
     const ownsRun = (): boolean => run === showRevision && isOnlinePanelCurrent('onAccount');
+    const rejectPresentation = (): null => {
+      /* A session can be replaced while Profile's independent reads are in
+         flight. Remove the preceding account before the covered route exits;
+         otherwise that private snapshot remains the mounted panel and can
+         flash when the online overlay is opened again. */
+      if (ownsRun()) {
+        invalidatePresentation();
+      }
+      return null;
+    };
     cancelAccountRuneGuide();
-    showOnlineLoading('onAccount');
-    lastAccount = null;
-    pendingCachedRating = null;
-    lastRecent = [];
-    clearNickError();
-    $('#accSince').textContent = '';
-    $('#accPoints').textContent = formatNumber(0);
-    paintAccountGroup(0);
-    $('#accPeak').textContent = formatNumber(0);
-    $('#accGames').textContent = t('online', 'profile.noneYet');
-    $('#accRank').textContent = '–';
-    $('#accStreak').textContent = formatNumber(0);
-    $('#accName').textContent = '';
-    $('#accGuest').hidden = true;
-    paintAccountProviders(null, null);
-    ($('#btnSignOut') as HTMLElement).hidden = true;
-    $('#accClaim').hidden = true;
-    paintAvatar($('#accDie'), DEFAULT_AVATAR);
-    paintAccountRunes([]);
-    paintAccountAchievements(null);
-    paintEquippedSeat(null);
-    paintRecent();
-    const ring = $('#accRing') as HTMLElement;
-    ring.classList.remove('haspeak');
-    ring.style.setProperty('--p', '0');
-    // A forgetful host simply reads as nothing cached; the fresh row below
-    // paints everything anyway.
-    const cached = readProfileCache()?.rating;
-    if (typeof cached === 'number' && cachedLadderCurveVersion() !== null) {
-      pendingCachedRating = cached;
-      fillAccountRing(ring, currentGroupFill(cached));
-      $('#accPoints').textContent = formatNumber(cached);
-      paintAccountGroup(cached);
+    const cachedView = readClassifiableCachedView(options.expectedAccountId);
+    beginPresentation(cachedView);
+    accountActions.lock();
+    if (cachedView) {
+      showOnlinePanel('onAccount');
+    } else {
+      showOnlineLoading('onAccount');
     }
-    /* Resolve the server's curve before accepting a freshly mapped points row.
-       A v2 rating may never be classified through cached v1 floors; an older
-       server simply answers no status and myLadder retains its public-v1
-       fallback. The shared die still holds the view throughout. */
-    const curveVersion = await refreshVerifiedRankedCurveVersion();
-    if (!ownsRun() || curveVersion === null) return null;
-    /* Nothing on the profile is useful half-painted. Fetch every independent
-       answer together, then reveal one coherent card (recent matches included)
-       in a single rendering turn. */
-    const [profile, user, ladder, standing, streak, recent, identity, refreshedRunes]
+    /* Standing is the one independently visible wait. It owns the exact rank
+       and positional NEON state; every other fact arrives as one refresh. */
+    const standingState: { result: Awaited<ReturnType<typeof myStandingLookup>> | null } = {
+      result: null,
+    };
+    const applyStanding = (): void => {
+      const standingResult = standingState.result;
+      if (!standingResult || !lastAccount || !ownsRun()) return;
+      if (!standingResult.ok && standingResult.reason === 'account-mismatch') {
+        rejectPresentation(); return;
+      }
+      if (standingResult.ok
+          && standingResult.accountId !== lastAccount.user.id.toLowerCase()) return;
+      if (standingResult.ok) {
+        rankPending = false;
+        lastAccount = {
+          ...lastAccount,
+          profile: standingResult.standing
+            ? { ...lastAccount.profile, rating: standingResult.standing.points }
+            : lastAccount.profile,
+          ladder: standingResult.standing
+            ? { ...lastAccount.ladder, points: standingResult.standing.points }
+            : lastAccount.ladder,
+          standing: standingResult.standing,
+          standingKnown: true,
+        };
+        const apex = standingResult.standing
+          ? inApex(lastAccount.ladder.points, standingResult.standing.rank,
+            standingResult.standing.population)
+          : false;
+        cacheStanding(standingResult.accountId, standingResult.standing, apex);
+        cacheAccountView(lastAccount, lastRecent, true);
+        refreshHomeChip();
+      } else {
+        /* An outage is not a confirmed "unranked" answer. A snapshot that
+           has never learned its standing keeps the inline die until a later
+           successful read; a known cached rank remains useful meanwhile, but
+           only with the points from that same confirmed standing tuple. */
+        rankPending = !lastAccount.standingKnown;
+        lastAccount = retainKnownStandingTuple(lastAccount);
+      }
+      repaintFrame();
+    };
+    void myStandingLookup().then((result) => {
+      standingState.result = result;
+      applyStanding();
+    }).catch(() => {
+      standingState.result = { ok: false, reason: 'unavailable' };
+      applyStanding();
+    });
+    const curveVersionRefresh = refreshVerifiedRankedCurveVersion();
+    const [profileResult, user, ladderResult, streakResult, recentResult,
+      identityResult, refreshedRunes]
       = await Promise.all([
-      myProfile(),
+      myProfileLookup(),
       currentUser(),
-      myLadder(curveVersion),
-      myStanding(),
-      bestStreak(),
-      matchHistory(3),
-      identityStatus(),
+      myLadderLookup(),
+      bestStreakLookup(),
+      matchHistoryLookup(3),
+      identityStatusLookup(),
       refreshRuneCollection(),
     ]);
     let runeCollection = refreshedRunes;
@@ -251,51 +213,93 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       runeCollection = fallback;
     }
     const collectionAccountId = runeCollection.accountId?.toLowerCase() ?? null;
-    if (!ownsRun() || !collectionAccountId || !profile
-        || user?.id.toLowerCase() !== collectionAccountId
-        || profile.id.toLowerCase() !== collectionAccountId) return null;
-    const ownsCollection = await runeCollectionMatchesActiveAccount(runeCollection);
-    if (!ownsCollection || !ownsRun()) return null;
-    if (options.runeGuide && options.expectedAccountId
-        && collectionAccountId !== options.expectedAccountId.toLowerCase()) return null;
-    const progression = accountProgressionSnapshot(collectionAccountId);
-    refreshHomeChip();
-    $('#accGuest').hidden = !user?.guest;
-    ($('#btnSignOut') as HTMLElement).hidden = !!user?.guest;
-    $('#accName').textContent = profile?.nickname ?? '';
-    const claim = $('#accClaim');
-    claim.hidden = !profile || !!profile.named_at;
-    if (!claim.hidden) {
-      ($('#onNick') as HTMLInputElement).placeholder = profile!.nickname;
-      clearNickError();
+    if (!ownsRun()) return null;
+    /* A v2 rating may never be classified through cached v1 floors. An older
+       server answers no status at all and myLadderLookup keeps its public v1
+       fallback; an unresolved curve leaves the cached view standing. */
+    const curveVersion = await curveVersionRefresh;
+    if (!ownsRun() || curveVersion === null) return null;
+    /* A verified session loss or account mismatch invalidates the local view.
+       A same-account refresh outage leaves the complete cached presentation
+       standing, which is exactly what made it renderable in the first place. */
+    if (!profileResult.ok && profileResult.reason === 'account-mismatch') {
+      return rejectPresentation();
     }
-    paintAvatar($('#accDie'), profile?.avatar ?? DEFAULT_AVATAR);
-    const points = ladder?.points ?? 0;
-    const peak = ladder?.peak ?? 0;
-    const apex = standing ? currentInApex(points, standing.rank, standing.population) : false;
+    if (!user) return rejectPresentation();
+    const activeAccountId = user.id.toLowerCase();
+    const cachedAccountId = cachedView?.account.user.id.toLowerCase() ?? null;
+    if ((cachedAccountId && cachedAccountId !== activeAccountId)
+        || (collectionAccountId && collectionAccountId !== activeAccountId)
+        || (ladderResult.ok && ladderResult.accountId !== activeAccountId)
+        || (streakResult.ok && streakResult.accountId !== activeAccountId)
+        || (recentResult.ok && recentResult.accountId !== activeAccountId)
+        || (identityResult.ok && identityResult.accountId !== activeAccountId)
+        || (standingState.result?.ok === false
+          && standingState.result.reason === 'account-mismatch')
+        || (standingState.result?.ok
+          && standingState.result.accountId !== activeAccountId)
+        || (options.expectedAccountId
+          && options.expectedAccountId.toLowerCase() !== activeAccountId)) {
+      return rejectPresentation();
+    }
+    /* Parallel snapshots can all still name A while the stored session changes
+       to B. This is the eventual interaction/cache boundary, so verify once
+       more even when an individual request was merely unavailable. */
+    const boundaryUser = await currentUser();
+    if (!ownsRun()) return null;
+    if (boundaryUser?.id.toLowerCase() !== activeAccountId) {
+      return rejectPresentation();
+    }
+    if (collectionAccountId) {
+      const ownsCollection = await runeCollectionMatchesActiveAccount(runeCollection);
+      if (!ownsRun()) return null;
+      if (!ownsCollection) return rejectPresentation();
+    }
+    const cachedAccount = cachedAccountId === activeAccountId ? cachedView?.account ?? null : null;
+    const profile = profileResult.ok ? profileResult.profile : cachedAccount?.profile ?? null;
+    const ladder = ladderResult.ok ? ladderResult.ladder : cachedAccount?.ladder ?? null;
+    const streak = streakResult.ok ? streakResult.streak : cachedAccount?.streak ?? null;
+    const recent = recentResult.ok ? recentResult.rows : cachedView?.recent ?? null;
+    if (!profile || profile.id.toLowerCase() !== activeAccountId || !ladder
+        || streak === null || !recent) return cachedView ? rejectPresentation() : null;
+    const cachedRunes = cachedAccount;
+    if (!runeCollection.verified && !cachedRunes) return null;
+    const resolvedIdentity = identityResult.ok
+      ? identityResult.identity
+      : cachedView?.account.identity ?? null;
+    if (!resolvedIdentity) return null;
     lastAccount = {
       profile,
       user,
       ladder,
-      standing,
+      standing: standingState.result?.ok
+          && standingState.result.accountId === activeAccountId
+        ? standingState.result.standing
+        : cachedView?.account.standing ?? null,
+      standingKnown: standingState.result?.ok
+        ? true : cachedView?.account.standingKnown ?? false,
       streak,
-      identity,
-      progression,
-      runes: runeCollection.collected,
-      runeRows: runeCollection.rows,
+      identity: resolvedIdentity,
+      runes: runeCollection.verified ? runeCollection.collected : cachedRunes!.runes,
+      runeRows: runeCollection.verified ? runeCollection.rows : cachedRunes!.runeRows,
+      equipment: runeCollection.verified ? runeCollection.equipment : cachedRunes!.equipment,
     };
     lastRecent = recent;
-    pendingCachedRating = null;
-    paintAccount();
-    cacheStanding(standing?.rank ?? null, apex);
+    rankPending = standingState.result === null;
+    if (standingState.result) {
+      applyStanding();
+      if (!ownsRun()) return null;
+      if (!standingState.result.ok) cacheAccountView(lastAccount, lastRecent);
+    } else {
+      repaintFrame();
+      cacheAccountView(lastAccount, lastRecent);
+    }
     refreshHomeChip();
-
-    const peakPosition = currentGroupRingPeakState(points, peak, apex);
-    fillAccountRing(ring, currentGroupRingFill(points, apex));
-    ring.classList.toggle('haspeak', peakPosition.kind !== 'at');
-    if (peakPosition.kind === 'ahead') ring.style.setProperty('--pk', String(peakPosition.fill));
-    if (peakPosition.kind === 'above') ring.style.setProperty('--pk', '1');
-    const presented = showOnlinePanel('onAccount');
+    accountActions.setRuneSeatAvailable(runeCollection.verified);
+    accountActions.unlock();
+    /* A cached Profile is already the presented destination; only a cold run
+       still owes the entry wipe before sheets and guides may begin. */
+    const presented = cachedView ? Promise.resolve() : showOnlinePanel('onAccount');
     const firstUnseenRune = firstCollectedRuneReward(runeCollection);
     const guidedReward = options.deferredRuneReward ?? firstUnseenRune;
     const requestedGuide = options.runeGuide ?? (firstUnseenRune ? {
@@ -336,18 +340,33 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     if (!rewardShown) beginGuide();
     return runeCollection;
   }
-
-
+  const equipmentChanged = (result: PersistedRuneEquipment): boolean => {
+    if (!lastAccount
+        || lastAccount.user.id.toLowerCase() !== result.accountId.toLowerCase()) return false;
+    lastAccount = { ...lastAccount, equipment: result.selection };
+    cacheAccountView(lastAccount, lastRecent);
+    repaintAccount();
+    return true;
+  };
+  const equipmentMismatch = (accountId: string): void => {
+    if (lastAccount?.user.id.toLowerCase() === accountId.toLowerCase()) {
+      invalidatePresentation();
+    }
+  };
   const bind = (): void => bindAccountScreen({
     showAuth: ports.showAuth,
-    showAvatar: () => ports.showAvatar(),
+    showAvatar: ports.showAvatar,
     showLadder: () => ports.showLadder(),
     showHistory: () => ports.showHistory(),
     refresh: show,
-    repaint: paintAccount,
+    providerAccountId: () => lastAccount?.user.id.toLowerCase() ?? null,
+    providerInvalidated: equipmentMismatch,
+    equipmentChanged,
+    equipmentMismatch,
+    equipmentSettled: accountActions.repaint,
     clearNickError,
     showNickError,
   });
 
-  return { bind, show };
+  return { bind, showCached, show };
 }
