@@ -393,11 +393,21 @@ whether the BOT spends a rune well: for every entry of the registry, a bot
 dealt the rune and allowed to cast it plays a bot of the same league shape
 dealt the same rune that never casts, on the same seeded dice through the
 production action log, seats alternating. Casting must never be worse than
-holding. Measured 2026-09-02 at GOLD over 600 games each: FATE 61.3%, PILFER
-68.7%, SUNDER 59.6%, ANVIL 55.6%, NUDGE 54.8%, WARD 51.6%. WARD is the
-narrowest — consistent with the COLUMN SHIELD inactivity noted below — and
-the floor is parity, so a `cpuCast` that starts spending charges into worse
+holding. Measured 2026-09-02 at OBSIDIAN over 600 games each: PILFER 70.6%, SUNDER
+59.6%, FATE 58.7%, NUDGE 58.4%, ANVIL 57.4%, WARD 55.3%. WARD is the
+narrowest, consistent with the COLUMN SHIELD inactivity noted below, and the
+floor is parity, so a `cpuCast` that starts spending charges into worse
 positions fails the gate rather than showing up as a balance argument later.
+
+The cell is measured at a league whose `castDemand` is the merit default of 16,
+because that is what the rune policies are written against. A league that
+holds runes longer can cost a rune its edge: at GOLD's calibrated demand of 20,
+WARD's caster measures 49.3% — parity — because WARD's own `cpuCast` multiplies
+the league demand by 1.5 and then waits for a 30-point swing a three-column
+board rarely offers. That is a consequence of the ladder calibration rather
+than of the rune policy, and it is the one rune where the two interact enough
+to matter; a future WARD tuning should cap its own threshold instead of
+compounding the league's.
 
 `tools/spellsim.ts` — seeded self-play, pure Node, **not** a gate. Placement
 play is the offline Medium anchor (depth 2, risk 0.9), the same yardstick

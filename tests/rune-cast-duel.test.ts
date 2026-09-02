@@ -20,9 +20,15 @@ import { emitReport } from './support/emit-report.mjs';
 const problems: string[] = [];
 const errs: string[] = [];
 const GAMES = 600;                     // SE ≈ 2.0pp per cell
-/* GOLD: full board sight, depth 2, and the ordinary merit demand — the league
-   where a cast decision is the bot's own rather than its slip's. */
-const LEAGUE = 4;
+/* OBSIDIAN: full board sight, real depth, and the ordinary MERIT demand of
+   16. The league matters because castDemand is a ladder calibration lever —
+   SILVER, GOLD and NEON deliberately hold runes longer to keep their Rune
+   Trial floors — and this cell asks about the rune POLICY, which is written
+   against the merit demand. What a cautious league costs a rune is a separate,
+   measured fact: at GOLD's demand of 20, WARD's caster measures 49.3% because
+   its own cpuCast multiplies the league demand by 1.5 and then waits for a
+   30-point swing that a three-column board rarely offers (docs/SPELLS.md). */
+const LEAGUE = 5;
 const bot = { points: GROUPS[LEAGUE].floor, apex: false };
 /* Casting must never be worse than holding. Measured cells sit well above
    this (recorded in the report); the floor catches a cpuCast that starts
