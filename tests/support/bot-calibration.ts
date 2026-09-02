@@ -123,9 +123,9 @@ export const LEAGUE_CELL_BASELINE: Readonly<Record<string, { humanOpens: number;
   // botbench 2026-09-02 at the retuned shapes; percentages as the report prints them.
   stone: { humanOpens: 80.1, botOpens: 64.8 },
   bone: { humanOpens: 62.7, botOpens: 61.8 },
-  ivory: { humanOpens: 52.5, botOpens: 53.1 },
+  ivory: { humanOpens: 52.6, botOpens: 53.2 },
   silver: { humanOpens: 52.5, botOpens: 53.7 },
   gold: { humanOpens: 51.6, botOpens: 51.8 },
   obsidian: { humanOpens: 48.8, botOpens: 49.5 },
-  neon: { humanOpens: 46.5, botOpens: 46.4 },
+  neon: { humanOpens: 46.4, botOpens: 46.3 },
 };

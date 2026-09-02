@@ -7,7 +7,7 @@
 import { DICE_FACES } from '../config.ts';
 import {
   SPEC, type GameState, type Player, type Mode,
-  CLASSIC, ROWSWITCH, SINGLESTRIKE, BOUNTY,
+  CLASSIC, ROWSWITCH, BOUNTY,
   bountyFor, cloneCharm, cloneSt, applyMove, legalCols, boardTotalMode, countOf, isFull,
   type CharmSt,
 } from './rules.ts';
@@ -59,10 +59,21 @@ export function riskOf(st: GameState, p: Player, mode: Mode = CLASSIC): number {
       const k = countOf(col, v);
       if (!k) continue;
       // 1-in-DICE_FACES chance they roll exactly this value. Per-mode loss:
-      // SINGLESTRIKE removes one die from a k-stack (v·k² → v·(k−1)², so
-      // v·(2k−1)); BOUNTY adds the +1/die they bank on top of the classic hit.
+      // BOUNTY adds the +1/die they bank on top of the classic hit.
+      // SINGLESTRIKE is deliberately ABSENT: its own heuristic (a strike
+      // removes ONE die from a k-stack, v·k² → v·(k−1)², so v·(2k−1)) is a
+      // true fact about the rules and won NOTHING — 49.9% against a twin
+      // scoring risk as classic over 4 seeds × 1,200 keyed games, and the
+      // linear v·k alternative 49.0% (2026-09-02). Deleted rather than kept:
+      // dead understanding is a maintenance cost pretending to be a feature.
+      // The destruction rule itself stays in the search, where victimsOf
+      // takes only the centre-closest match.
+      // LIMITED is absent for the same reason, measured the same way: the bag
+      // is countable and a bot could weight its reply expectation by what
+      // remains, but a search that did (plus the bag's own end condition)
+      // measured 49.4% against a uniform twin, and the end condition alone
+      // 49.0%. Knowing the supply is not worth what it costs to carry.
       const loss = mode === ROWSWITCH ? v * k
-        : mode === SINGLESTRIKE ? v * (2 * k - 1)
         : mode === BOUNTY ? v * k * k + k
         : v * k * k;
       r += loss / DICE_FACES;

@@ -298,6 +298,26 @@ because it is what the mode pays, not because it wins more; its bar is
 "never a handicap", and the position tests in `tests/modes.test.ts` pin the
 two decisions it does change.
 
+**SINGLESTRIKE is the mode whose heuristic was measured and DELETED.** Its
+risk term priced a strike honestly — one die off a k-stack is `v·(2k−1)`, not
+`v·k²` — and it changed no decision the search does not already make through
+`applyMove`: 49.9% against a twin scoring risk as classic over four seeds of
+1,200 keyed games, and the linear `v·k` alternative 49.0% (2026-09-02). The
+branch is gone and `tests/modes.test.ts` pins the equality, so the mode's
+truth now lives only where it is load-bearing, in `victimsOf`. Understanding
+that measures inert is a maintenance cost pretending to be a feature; the bar
+for keeping one is a duel it wins, not a fact it states.
+
+**LIMITED's bag was measured and deliberately NOT counted.** The supply is
+finite and public — the gauge shows every player how many of each face are
+left — so a bot could weight its reply expectation by what remains and know
+that the last die ends the game. Both were built and measured (2026-09-02):
+the full counting search won 49.4% against a uniform twin over four seeds of
+1,200 keyed games, and the end condition alone 49.0%. Neither cleared the 53%
+bar the fix had to earn, so neither shipped, and `tests/bot-knowledge.test.ts`
+holds LIMITED at "never a handicap" instead. The mode changes supply, not
+scoring; knowing the supply is not the same as playing better with it.
+
 **A mode's own mark may not name a colour.** ROW MULTIPLY brackets a row match
 in the multiplier heat, and that heat is not a constant: a ×2 is gold and a ×3
 hot orange *unless that side's player wears that hue*, in which case only their

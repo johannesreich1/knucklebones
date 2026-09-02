@@ -187,6 +187,17 @@ const fullCol: GameState = [[[3, 3, 3], [], []], [[], [], []]];
 check(riskOf(fullCol, AI, COLSHIELD) === riskOf(fullCol, AI, CLASSIC),
       'colshield risk must read classic — the shield skip lost games', riskOf(fullCol, AI, COLSHIELD));
 check(riskOf(fullCol, AI, CLASSIC) > 0, 'classic full column still at risk', riskOf(fullCol, AI, CLASSIC));
+/* SINGLESTRIKE's risk term reads classic too — measured, not reasoned. Its
+   own v·(2k−1) heuristic (a strike removes ONE die from a k-stack) is a true
+   fact about the rules and won nothing: 49.9% against a twin scoring risk as
+   classic over 4 seeds × 1,200 keyed games, and the linear v·k alternative
+   49.0%. The DESTRUCTION rule still lives in the search, where victimsOf
+   takes only the centre-closest match. Understanding that measures inert is
+   a maintenance cost pretending to be a feature (docs/MODES.md). */
+const strikeStack: GameState = [[[3, 3], [], []], [[], [], []]];
+check(riskOf(strikeStack, AI, SINGLESTRIKE) === riskOf(strikeStack, AI, CLASSIC),
+  'singlestrike risk must read classic — the v·(2k−1) term measured inert',
+  [riskOf(strikeStack, AI, SINGLESTRIKE), riskOf(strikeStack, AI, CLASSIC)]);
 
 /* ---- the search knows what it is playing for ----
    BOUNTY banks +1 per destroyed die OUTSIDE the boards, and the search once

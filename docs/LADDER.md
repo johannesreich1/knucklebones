@@ -487,11 +487,11 @@ same policy; their points still affect pairing and which group policy applies.
 |---|---:|---:|---|---:|---:|---|---:|---:|
 | STONE | 1 | 0 | **spares it** (`oppW -0.5`) | 70 / 70% | 16 | any column | **80.1%** | **64.8%** |
 | BONE | 1 | 0 | builds blind (`oppW 0`) | 70 / 70% | 16 | any column | **62.7%** | **61.8%** |
-| IVORY | 1 | 0.25 | glances (`oppW 0.05`) | 70 / 70% | 16 | never declines 8 | **52.5%** | **53.1%** |
+| IVORY | 1 | 0.25 | glances (`oppW 0.05`) | 70 / 70% | 16 | never declines 8 | **52.6%** | **53.2%** |
 | SILVER | 1 | 0.6 | yes | 84 / 79.5% | 32 | never declines 8 | **52.5%** | **53.7%** |
 | GOLD | 2 | 1.2 | yes | 78 / 74% | 16 | never declines 8 | **51.6%** | **51.8%** |
 | OBSIDIAN | 3 | 1.2 | yes | 74 / 70% | 16 | never declines 8 | **48.8%** | **49.5%** |
-| NEON | 4 | 1.2 | yes | 58 / 61% | 24 | never declines 8 | **46.5%** | **46.4%** |
+| NEON | 4 | 1.2 | yes | 58 / 61% | 24 | never declines 8 | **46.4%** | **46.3%** |
 
 The last two columns are the **human's production-weighted board-policy share**
 against NEWCOMER — a seat-neutral depth-one builder that never looks at your

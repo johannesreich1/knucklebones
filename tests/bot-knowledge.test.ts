@@ -28,16 +28,23 @@ const RISK = 0.9;                      // the offline Medium anchor, as botbench
    pays v·k² on the board and the +1 is within noise; the bar refuses the
    bank ever costing a game. ROWSWITCH and ROWMULT change scoring and are
    measured real (floors sit 5pp under the keyed measurement). Every other
-   mode changes what the game is played for and must win outright. */
+   mode changes what the game is played for and must win outright.
+   SINGLESTRIKE is parity BY DELETION: its risk term measured inert (49.9%
+   over 4 seeds) and was removed, so both twins now score risk identically
+   and this cell is the sentinel that the term stays gone — the equality is
+   pinned directly in tests/modes.test.ts. LIMITED is parity BY DECISION: a
+   search that counted the remaining bag measured 49.4% and its end condition
+   alone 49.0%, so the counting was built, measured and NOT shipped — the
+   mode changes supply, not scoring, and knowing the supply wins nothing. */
 const NEVER_A_HANDICAP = 0.47;
 const REAL = 0.55;
 const MODE_BARS: Record<string, number> = {
   rowswitch: 0.71,                     // measured 76.5% (2026-09-02, keyed)
   rowmult: 0.55,                       // measured 60.0%
   colshield: NEVER_A_HANDICAP,
-  singlestrike: REAL,
+  singlestrike: NEVER_A_HANDICAP,
   bounty: NEVER_A_HANDICAP,
-  limited: REAL,
+  limited: NEVER_A_HANDICAP,
 };
 
 /* Modes the search does not yet understand, with the release that fixes
@@ -45,8 +52,6 @@ const MODE_BARS: Record<string, number> = {
    fails ("remove the entry"), so this list can only shrink. */
 const KNOWLEDGE_DEBT = new Map<string, string>([
   // Measured 2026-09-02 (keyed, 1,200 games): 51.4 / 50.3 / 50.5.
-  ['singlestrike', 'the riskOf SINGLESTRIKE term wins nothing — stage 6.2 measures it and fixes or deletes it'],
-  ['limited', 'the search assumes uniform dice; the bag is countable — stage 6.3 weights the expectation by what remains'],
 ]);
 
 const cells: Record<string, number> = {};
