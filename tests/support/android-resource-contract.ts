@@ -263,11 +263,24 @@ export function verifyAndroidResourceContract(
         `${file} has a clipped horizontal edge in its loading-screen glow at ${edge}`);
     }
   }
-  for (const [x, y] of [[.4496, .4569], [.5646, .4664], [.5, .5], [.4354, .5336], [.5504, .5431]]) {
+  /* The launch mark became the SPLIT die on 2026-09-03, so the five cyan pips
+     this used to pin are gone. These read the mark's argument back off the
+     pixels instead — one die, two owners, one seam — which a regression to a
+     single-hue die cannot satisfy. Coordinates are this rendition's (320x480);
+     the iOS contract carries its own, because the two canvases differ. */
+  for (const [x, y] of [[.4600, .4688], [.4440, .5440]] as const) {
     const pip = pixelAt(splashPixels, x, y);
-    check(pip.red >= 150 && pip.green >= 240 && pip.blue >= 250,
-      `the Android loading-screen pip at ${x},${y} must be filled and luminous`);
+    check(pip.blue >= 230 && pip.green >= 210 && pip.red <= 190,
+      `the Android loading-screen pip at ${x},${y} must be lit in P1's cyan (left column)`);
   }
+  for (const [x, y] of [[.5664, .4792], [.5600, .5528]] as const) {
+    const pip = pixelAt(splashPixels, x, y);
+    check(pip.red >= 240 && pip.blue >= 140 && pip.green <= 130,
+      `the Android loading-screen pip at ${x},${y} must be lit in P2's magenta (right column)`);
+  }
+  const androidSeam = pixelAt(splashPixels, .5, .5);
+  check(androidSeam.red >= 200 && androidSeam.green >= 200 && androidSeam.blue >= 200,
+    'the Android loading screen must cut the two owners apart on a lit white seam');
 
   return { splashRenditions: splashFiles.length };
 }

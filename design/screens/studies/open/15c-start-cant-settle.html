@@ -38,26 +38,28 @@
   .sa3 .stmark{animation-name:a3cant}
   .sa3 .sttype,.sa3 .homestack{animation-name:a3home}
   @keyframes a3launch{
-    0%{opacity:1}
-    17.3%{opacity:1;animation-timing-function:steps(1,end)}
-    17.4%{opacity:0}
-    92%{opacity:0;animation-timing-function:steps(1,end)}
-    92.1%{opacity:1}
-    100%{opacity:1}}
+    0%,40%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    46%{opacity:1;animation-timing-function:steps(1,end)}
+    56%{opacity:0}
+    100%{opacity:0}}
   /* over-turned, then one unwind with a soft overshoot the eye reads as weight */
   @keyframes a3cant{
-    0%,17.4%{opacity:0;transform:rotate(9deg) scale(.985);animation-timing-function:cubic-bezier(.16,1,.3,1)}
-    19%{opacity:1;transform:rotate(9deg) scale(.985);animation-timing-function:cubic-bezier(.34,1.3,.42,1)}
-    32%{transform:rotate(-1.2deg) scale(1);animation-timing-function:cubic-bezier(.4,0,.2,1)}
-    38%{transform:rotate(0deg) scale(1)}
-    92%{opacity:1;transform:rotate(0deg) scale(1);animation-timing-function:steps(1,end)}
-    92.1%,100%{opacity:0;transform:rotate(9deg) scale(.985)}}
+    0%{opacity:1;transform:rotate(0deg) scale(1)}
+    46%{opacity:1;transform:rotate(0deg) scale(1);animation-timing-function:steps(1,end)}
+    50%{opacity:0;transform:rotate(9deg) scale(.985)}
+    56%{opacity:0;transform:rotate(9deg) scale(.985);animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    60%{opacity:1;transform:rotate(9deg) scale(.985);animation-timing-function:cubic-bezier(.34,1.3,.42,1)}
+    77%{transform:rotate(-1.2deg) scale(1);animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    84%{transform:rotate(0deg) scale(1)}
+    100%{opacity:1;transform:rotate(0deg) scale(1)}}
   /* the type does NOT turn — only the die was thrown */
   @keyframes a3home{
-    0%,22%{opacity:0;animation-timing-function:cubic-bezier(.16,1,.3,1)}
-    36%{opacity:1}
-    92%{opacity:1;animation-timing-function:steps(1,end)}
-    92.1%,100%{opacity:0}}
+    0%{opacity:1}
+    46%{opacity:1;animation-timing-function:steps(1,end)}
+    50%{opacity:0}
+    68%{opacity:0;animation-timing-function:cubic-bezier(.16,1,.3,1)}
+    84%{opacity:1}
+    100%{opacity:1}}
 
   @media (prefers-reduced-motion:reduce){
     /* a rotation has nothing to degrade to: drop it and keep the settled mark */

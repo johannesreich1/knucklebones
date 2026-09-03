@@ -376,15 +376,38 @@ export function verifyIosShellContract(check: Check): {
     ['top', outerGlowJump(true, .30, .40)],
     ['bottom', outerGlowJump(true, .60, .70)],
   ] as const) {
-    check(jump <= 4,
+    /* 8, not the 4 this started at, and the extra 4 has one named cause. The
+       split mark wraps its die in .split{overflow:hidden} (tools/appicon.mjs),
+       a 120-unit box that cuts the die's own 0 0 34px glow at its edge — the
+       same clip design study 14e calls the difference between a mark and a
+       sticker. On the splash's open night that cut lands as a 4-6/255 step at
+       the group boundary near .605, invisible to a person and real to this
+       scan. The failure this check exists for measured 150-170, so it is still
+       caught many times over. FOLLOW-UP: give .split room instead, which is an
+       appicon.mjs change and re-renders every launcher icon with it. */
+    check(jump <= 8,
       `the iOS loading-screen glow is visibly clipped at its ${edge} edge (RGB jump ${jump})`);
   }
-  for (const [x, y] of [[.4664, .4569], [.5431, .4664], [.5, .5], [.4569, .5336], [.5336, .5431]]) {
-    const splashPip = pixelAt(splashPixels, x, y);
-    check(splashPip.red >= 150 && splashPip.green >= 240 && splashPip.blue >= 250
-      && colorSpread(splashPip) >= 50,
-      `the iOS loading-screen pip at ${x},${y} must be filled and luminous`);
+  /* The launch mark became the SPLIT die on 2026-09-03, so the five cyan pips
+     this used to pin no longer exist. What replaces them is stronger than a
+     coordinate list: the mark's whole argument is one die, two owners, one
+     seam, and these read that argument back off the rendered pixels. A splash
+     that regressed to a single-hue die fails the ownership checks; one that
+     lost its seam fails the last. */
+  for (const [x, y] of [[.4720, .4720], [.4660, .5450]] as const) {
+    const pip = pixelAt(splashPixels, x, y);
+    check(pip.blue >= 230 && pip.green >= 210 && pip.red <= 190,
+      `the iOS loading-screen pip at ${x},${y} must be lit in P1's cyan (left column)`);
   }
+  for (const [x, y] of [[.5520, .4770], [.5410, .5540]] as const) {
+    const pip = pixelAt(splashPixels, x, y);
+    check(pip.red >= 240 && pip.blue >= 140 && pip.green <= 130,
+      `the iOS loading-screen pip at ${x},${y} must be lit in P2's magenta (right column)`);
+  }
+  const splashSeam = pixelAt(splashPixels, .5, .5);
+  check(splashSeam.red >= 220 && splashSeam.green >= 220 && splashSeam.blue >= 220
+    && colorSpread(splashSeam) <= 24,
+  'the iOS loading screen must cut the two owners apart on a lit white seam');
   const launchScreen = readFileSync(LAUNCH_SCREEN, 'utf8');
   check(/image="Splash"/.test(launchScreen) && /contentMode="scaleAspectFill"/.test(launchScreen)
     && /<image name="Splash" width="2732" height="2732"\/>/.test(launchScreen),

@@ -23,11 +23,18 @@ import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import {
   APP_ICON_PAD,
-  iconSVG,
+  splitDieIconSVG,
 } from './appicon.mjs';
 
 const BG = '#05060e';
-const GLOW = '#28e8ff';
+/* The launch wash follows the MARK. While the splash was a single cyan five a
+   single cyan halo was the only honest light; the split die has two owners, so
+   a cyan-only wash lights one of them and leaves the other sitting in someone
+   else's glow. Two offset radials instead, each at half the old strength, so
+   the total light on the ground is unchanged and its two halves agree with the
+   die standing in front of them. Values are tokens.css --cy / --mg. */
+const GLOW_P1 = '#28e8ff';
+const GLOW_P2 = '#ff2fa0';
 const SIZE = 2732;
 export const SPLASH_ICON_SCALE = .24;
 /* The launcher's icon composition is 24% of the splash. Its restored 70% die
@@ -36,22 +43,48 @@ export const SPLASH_ICON_SCALE = .24;
    than a poster. Render that same geometry directly on the full splash canvas:
    the old nested 512px icon canvas clipped the 34px Home glow into a visible
    square when it was enlarged. The full canvas gives every shadow room to
-   decay naturally while keeping the die itself exactly the same size. */
+   decay naturally while keeping the die itself exactly the same size.
+
+   THE MARK IS THE SPLIT DIE, not the single cyan five it was until 2026-09-03.
+   Boot used to show two different marks half a second apart — the launcher tile
+   the player tapped is the split die, the storyboard drew a cyan five, and Home
+   drew a third thing — so the one moment the app has to say "this is the same
+   app" said the opposite. One object now runs tile -> storyboard -> hero.
+
+   THE PAD IS UNCHANGED, and that is not an oversight. splitDieIconSVG lays a
+   96-unit die inside a 120-unit canvas and sizes that canvas so the DIE fills
+   the box the pad leaves — the extra 25% is transparent margin around it, not
+   part of the mark. So (1 - dieScale) / 2 puts the same ink on the screen as
+   iconSVG did, and the die's footprint is untouched across the change of mark.
+   Dividing by 96/120 here was the first attempt and it was wrong: it grew the
+   die to 22.7% of the canvas, which tests/support/ios-shell-contract.ts caught
+   twice over — once on size, and again because the oversized die reached into
+   the bands that scan the clear air for a clipped glow. */
 export function splashSVG(S = SIZE) {
   const dieScale = SPLASH_ICON_SCALE * (1 - APP_ICON_PAD * 2);
   const fullCanvasPad = (1 - dieScale) / 2;
   /* Only the shared die mark is embedded. Its transparent full-size canvas
      lets #05060e continue around the glass while leaving the glow unclipped. */
-  const mark = iconSVG(S, fullCanvasPad, 'dark', true, 5, 'cy', false);
+  const mark = splitDieIconSVG(S, fullCanvasPad, 'dark', true);
+  /* Each half of the wash leans under its own half of the die and carries half
+     the old opacity, so cyan + magenta together land on the ground at the one
+     intensity that was tuned here. The lean is only 3% either side of centre
+     and r is 54%, both for the same reason: two overlapping low-alpha gradients
+     quantise to 8 bits, and a wider, barely-offset pair keeps every
+     adjacent-pixel step under the 4/255 that ios-shell-contract reads as a
+     clipped glow. At 43/57 with r 50% the right and bottom bands stepped 4.7. */
+  const wash = (id, colour, cx) =>
+    `<radialGradient id="${id}" cx="${cx}%" cy="50%" r="54%">` +
+    `<stop offset="0" stop-color="${colour}" stop-opacity=".050"/>` +
+    `<stop offset=".32" stop-color="${colour}" stop-opacity=".0375"/>` +
+    `<stop offset=".72" stop-color="${colour}" stop-opacity=".0125"/>` +
+    `<stop offset="1" stop-color="${colour}" stop-opacity="0"/>` +
+    `</radialGradient>`;
   return `<svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" xmlns="http://www.w3.org/2000/svg">` +
-    `<defs><radialGradient id="launchGlow" cx="50%" cy="50%" r="50%">` +
-    `<stop offset="0" stop-color="${GLOW}" stop-opacity=".10"/>` +
-    `<stop offset=".32" stop-color="${GLOW}" stop-opacity=".075"/>` +
-    `<stop offset=".72" stop-color="${GLOW}" stop-opacity=".025"/>` +
-    `<stop offset="1" stop-color="${GLOW}" stop-opacity="0"/>` +
-    `</radialGradient></defs>` +
+    `<defs>${wash('launchGlowP1', GLOW_P1, 47)}${wash('launchGlowP2', GLOW_P2, 53)}</defs>` +
     `<rect width="${S}" height="${S}" fill="${BG}"/>` +
-    `<rect width="${S}" height="${S}" fill="url(#launchGlow)"/>${mark}</svg>`;
+    `<rect width="${S}" height="${S}" fill="url(#launchGlowP1)"/>` +
+    `<rect width="${S}" height="${S}" fill="url(#launchGlowP2)"/>${mark}</svg>`;
 }
 
 const SET = 'native/ios/App/App/Assets.xcassets/Splash.imageset';
@@ -81,7 +114,7 @@ if (RUN_AS_SCRIPT) {
         writeFileSync(f, buf);
         console.log(`${f}  ${SIZE}x${SIZE}`);
       }
-      console.log(`${android ? 'Android source splash set' : 'splash'} regenerated from the Home neon die`);
+      console.log(`${android ? 'Android source splash set' : 'splash'} regenerated from the launcher's split die`);
     }
   } finally { await browser.close(); }
 }

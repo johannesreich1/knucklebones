@@ -32,6 +32,8 @@
     background:radial-gradient(120% 80% at 50% -10%,#17123a 0%,transparent 60%),
                radial-gradient(110% 70% at 50% 110%,#04263a 0%,transparent 60%)}
 
+  /* Phase map: see A1 (15a). Settled at rest, reset hidden under the launch
+     frame, animation 56-84%. */
   .sa5 .stlaunch,.sa5 .stbg,.sa5 .stmark,.sa5 .sttype,.sa5 .homestack{
     animation-duration:5200ms;animation-iteration-count:infinite;animation-fill-mode:both}
   .sa5 .stlaunch{animation-name:a5launch}
@@ -39,35 +41,43 @@
   .sa5 .stmark{animation-name:a5focus}
   .sa5 .sttype,.sa5 .homestack{animation-name:a5home}
   @keyframes a5launch{
-    0%{opacity:1}
-    17.3%{opacity:1;animation-timing-function:steps(1,end)}
-    17.4%{opacity:0}
-    92%{opacity:0;animation-timing-function:steps(1,end)}
-    92.1%{opacity:1}
-    100%{opacity:1}}
+    0%,40%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    46%{opacity:1;animation-timing-function:steps(1,end)}
+    56%{opacity:0}
+    100%{opacity:0}}
   /* the ground arrives BEFORE its contents — the room, then what is in it */
   @keyframes a5ground{
-    0%,17.4%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
-    27%{opacity:1}
-    92%{opacity:1;animation-timing-function:steps(1,end)}
-    92.1%,100%{opacity:0}}
+    0%{opacity:1}
+    46%{opacity:1;animation-timing-function:steps(1,end)}
+    50%{opacity:0}
+    56%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    66%{opacity:1}
+    100%{opacity:1}}
   /* out of focus into focus. 7px is chosen against the die's own pip spacing:
      enough that the face is not a six, not so much that the object is a smear */
   @keyframes a5focus{
-    0%,19%{opacity:0;filter:blur(7px) saturate(.5)
+    0%{opacity:1;filter:blur(0) saturate(1)
+      drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))}
+    46%{opacity:1;filter:blur(0) saturate(1)
+      drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22));
+      animation-timing-function:steps(1,end)}
+    50%{opacity:0;filter:blur(7px) saturate(.5)
+      drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))}
+    58%{opacity:0;filter:blur(7px) saturate(.5)
       drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22));
       animation-timing-function:cubic-bezier(.22,.9,.28,1)}
-    40%{opacity:1;filter:blur(0) saturate(1)
+    82%{opacity:1;filter:blur(0) saturate(1)
       drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))}
-    92%{opacity:1;animation-timing-function:steps(1,end)}
-    92.1%,100%{opacity:0;filter:blur(7px) saturate(.5)
+    100%{opacity:1;filter:blur(0) saturate(1)
       drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))}}
   /* the type develops a beat behind the mark, never ahead of it */
   @keyframes a5home{
-    0%,26%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
-    44%{opacity:1}
-    92%{opacity:1;animation-timing-function:steps(1,end)}
-    92.1%,100%{opacity:0}}
+    0%{opacity:1}
+    46%{opacity:1;animation-timing-function:steps(1,end)}
+    50%{opacity:0}
+    66%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    88%{opacity:1}
+    100%{opacity:1}}
 
   @media (prefers-reduced-motion:reduce){
     /* a focus pull is not motion in the vestibular sense, but a blur that

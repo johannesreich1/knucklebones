@@ -35,6 +35,8 @@
     -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
     color:transparent;will-change:opacity}
 
+  /* Phase map: see A1 (15a). Settled at rest, reset hidden under the launch
+     frame, animation 56-84%. */
   .sa7 .stlaunch,.sa7 .stmark,.sa7 .sttype,.sa7 .homestack,.sa7 .stcold h1::after{
     animation-duration:5200ms;animation-iteration-count:infinite;animation-fill-mode:both}
   .sa7 .stlaunch{animation-name:a7launch}
@@ -42,32 +44,40 @@
   .sa7 .stcold h1::after{animation-name:a7type}
   .sa7 .sttype,.sa7 .homestack{animation-name:a7home}
   @keyframes a7launch{
-    0%{opacity:1}
-    17.3%{opacity:1;animation-timing-function:steps(1,end)}
-    17.4%{opacity:0}
-    92%{opacity:0;animation-timing-function:steps(1,end)}
-    92.1%{opacity:1}
-    100%{opacity:1}}
+    0%,40%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    46%{opacity:1;animation-timing-function:steps(1,end)}
+    56%{opacity:0}
+    100%{opacity:0}}
   /* cold to lit. The glow arrives WITH the colour, not before it: an unlit die
      with a coloured halo is the one frame that would look broken. */
   @keyframes a7warm{
-    0%,19%{filter:grayscale(1) brightness(.62) drop-shadow(0 0 0 rgba(var(--p1-rgb),0));
-      animation-timing-function:cubic-bezier(.4,0,.2,1)}
-    40%{filter:grayscale(0) brightness(1)
+    0%{filter:grayscale(0) brightness(1)
       drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))}
-    92%{animation-timing-function:steps(1,end)}
-    92.1%,100%{filter:grayscale(1) brightness(.62) drop-shadow(0 0 0 rgba(var(--p1-rgb),0))}}
+    46%{filter:grayscale(0) brightness(1)
+      drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22));
+      animation-timing-function:steps(1,end)}
+    50%{filter:grayscale(1) brightness(.62) drop-shadow(0 0 0 rgba(var(--p1-rgb),0)) drop-shadow(0 0 0 rgba(var(--p2-rgb),0))}
+    58%{filter:grayscale(1) brightness(.62) drop-shadow(0 0 0 rgba(var(--p1-rgb),0)) drop-shadow(0 0 0 rgba(var(--p2-rgb),0));
+      animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    82%{filter:grayscale(0) brightness(1)
+      drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))}
+    100%{filter:grayscale(0) brightness(1)
+      drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))}}
   /* the type warms on the SAME curve and the same window — together is the point */
   @keyframes a7type{
-    0%,19%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
-    40%{opacity:1}
-    92%{opacity:1;animation-timing-function:steps(1,end)}
-    92.1%,100%{opacity:0}}
+    0%{opacity:1}
+    46%{opacity:1;animation-timing-function:steps(1,end)}
+    50%{opacity:0}
+    58%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    82%{opacity:1}
+    100%{opacity:1}}
   @keyframes a7home{
-    0%,17.4%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
-    26%{opacity:1}
-    92%{opacity:1;animation-timing-function:steps(1,end)}
-    92.1%,100%{opacity:0}}
+    0%{opacity:1}
+    46%{opacity:1;animation-timing-function:steps(1,end)}
+    50%{opacity:0}
+    56%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    64%{opacity:1}
+    100%{opacity:1}}
 
   @media (prefers-reduced-motion:reduce){
     /* a colour change is not vestibular motion, but it is still an effect the

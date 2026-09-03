@@ -26,6 +26,12 @@
      Row 2 of 14e is that failure; this card is the same evidence in motion. */
   .stlamp{position:relative;display:block;line-height:0;margin-bottom:4px;isolation:isolate}
   .stlamp .appicon-mark{display:block}
+  /* THE MARK ARRIVES UNLIT, and that is what makes this card work at all. The
+     first version left the die fully lit the whole way through, so two lamps
+     swept in, lit nothing, and read as two stray blobs crossing a finished
+     logo. The lamps now carry the only light in the frame: the die is grey
+     until they reach it. */
+  .stlamp .stbase{display:block;line-height:0;will-change:filter}
   /* the settled glow: 14e's two shadows, faded up at the crossing */
   .stlamp .stglow{position:absolute;inset:0;z-index:-1;opacity:0;will-change:opacity;
     filter:drop-shadow(0 0 26px rgba(var(--p1-rgb),.5)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.5))}
@@ -38,49 +44,68 @@
   .stlamp .stl2{left:50%;margin-left:-39px;
     background:radial-gradient(circle,rgba(var(--p2-rgb),.55) 0%,rgba(var(--p2-rgb),.16) 42%,transparent 68%)}
 
-  .sa4 .stlaunch,.sa4 .stl1,.sa4 .stl2,.sa4 .stglow,.sa4 .sttype,.sa4 .homestack{
+  /* Phase map: see A1 (15a). Settled at rest, reset hidden under the launch
+     frame, animation 56-84%. */
+  .sa4 .stlaunch,.sa4 .stl1,.sa4 .stl2,.sa4 .stglow,.sa4 .stbase,.sa4 .sttype,.sa4 .homestack{
     animation-duration:5200ms;animation-iteration-count:infinite;animation-fill-mode:both}
   .sa4 .stlaunch{animation-name:a4launch}
   .sa4 .stl1{animation-name:a4lampL}
   .sa4 .stl2{animation-name:a4lampR}
+  .sa4 .stbase{animation-name:a4wake}
   .sa4 .stglow{animation-name:a4glow}
   .sa4 .sttype,.sa4 .homestack{animation-name:a4home}
   @keyframes a4launch{
-    0%{opacity:1}
-    17.3%{opacity:1;animation-timing-function:steps(1,end)}
-    17.4%{opacity:0}
-    92%{opacity:0;animation-timing-function:steps(1,end)}
-    92.1%{opacity:1}
-    100%{opacity:1}}
+    0%,40%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    46%{opacity:1;animation-timing-function:steps(1,end)}
+    56%{opacity:0}
+    100%{opacity:0}}
   /* mine comes from my side of the board — left — and stops ON the seam */
   @keyframes a4lampL{
-    0%,18%{opacity:0;transform:translateX(-104px);animation-timing-function:cubic-bezier(.16,1,.3,1)}
-    21%{opacity:.9;transform:translateX(-92px);animation-timing-function:cubic-bezier(.4,0,.2,1)}
-    34%{opacity:.9;transform:translateX(0);animation-timing-function:linear}
-    41%{opacity:0;transform:translateX(0)}
-    92%,100%{opacity:0;transform:translateX(-104px)}}
+    0%{opacity:0;transform:translateX(0)}
+    46%{opacity:0;transform:translateX(0);animation-timing-function:steps(1,end)}
+    50%{opacity:0;transform:translateX(-104px)}
+    57%{opacity:0;transform:translateX(-104px);animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    61%{opacity:.9;transform:translateX(-92px);animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    76%{opacity:.9;transform:translateX(0);animation-timing-function:linear}
+    84%{opacity:0;transform:translateX(0)}
+    100%{opacity:0;transform:translateX(0)}}
   @keyframes a4lampR{
-    0%,18%{opacity:0;transform:translateX(104px);animation-timing-function:cubic-bezier(.16,1,.3,1)}
-    21%{opacity:.9;transform:translateX(92px);animation-timing-function:cubic-bezier(.4,0,.2,1)}
-    34%{opacity:.9;transform:translateX(0);animation-timing-function:linear}
-    41%{opacity:0;transform:translateX(0)}
-    92%,100%{opacity:0;transform:translateX(104px)}}
+    0%{opacity:0;transform:translateX(0)}
+    46%{opacity:0;transform:translateX(0);animation-timing-function:steps(1,end)}
+    50%{opacity:0;transform:translateX(104px)}
+    57%{opacity:0;transform:translateX(104px);animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    61%{opacity:.9;transform:translateX(92px);animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    76%{opacity:.9;transform:translateX(0);animation-timing-function:linear}
+    84%{opacity:0;transform:translateX(0)}
+    100%{opacity:0;transform:translateX(0)}}
+  /* the die takes its colour only as the lamps reach it — they are the light */
+  @keyframes a4wake{
+    0%{filter:grayscale(0) brightness(1)}
+    46%{filter:grayscale(0) brightness(1);animation-timing-function:steps(1,end)}
+    50%{filter:grayscale(1) brightness(.46)}
+    64%{filter:grayscale(1) brightness(.46);animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    80%{filter:grayscale(0) brightness(1)}
+    100%{filter:grayscale(0) brightness(1)}}
   /* the crossing hands off to the glow that stays */
   @keyframes a4glow{
-    0%,30%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
-    38%{opacity:1;animation-timing-function:linear}
-    46%{opacity:.44}
-    92%{opacity:.44;animation-timing-function:steps(1,end)}
-    92.1%,100%{opacity:0}}
+    0%{opacity:.44}
+    46%{opacity:.44;animation-timing-function:steps(1,end)}
+    50%{opacity:0}
+    70%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    82%{opacity:.44}
+    100%{opacity:.44}}
   @keyframes a4home{
-    0%,24%{opacity:0;animation-timing-function:cubic-bezier(.16,1,.3,1)}
-    40%{opacity:1}
-    92%{opacity:1;animation-timing-function:steps(1,end)}
-    92.1%,100%{opacity:0}}
+    0%{opacity:1}
+    46%{opacity:1;animation-timing-function:steps(1,end)}
+    50%{opacity:0}
+    72%{opacity:0;animation-timing-function:cubic-bezier(.16,1,.3,1)}
+    88%{opacity:1}
+    100%{opacity:1}}
 
   @media (prefers-reduced-motion:reduce){
-    /* the lamps are travel; the glow is state. Keep the state, drop the travel. */
+    /* the lamps are travel; the glow and the lit die are state. Keep the state. */
     .sa4 .stl1,.sa4 .stl2{animation:none;opacity:0}
+    .sa4 .stbase{animation:none;filter:none}
     .sa4 .stglow{animation:none;opacity:.44}
     .sa4 .sttype,.sa4 .homestack{animation:none;opacity:1}
     .sa4 .stlaunch{animation:none;opacity:0}}
@@ -102,7 +127,7 @@
     <div class="hero">
       <i class="stlamp">
         <span class="stglow">{{appicon:96}}</span>
-        {{appicon:96}}
+        <span class="stbase">{{appicon:96}}</span>
         <i class="stl1"></i><i class="stl2"></i>
       </i>
       <div class="sttype">

@@ -1,4 +1,4 @@
-<!-- meta name="iOS launch" group="3c · Loading" subtitle="The launch screen is static by platform law, so it is the app's first frame: the larger tilted Home neon die with luminous cyan pips, on the same #05060e canvas the game reveals underneath it" width=412 height=1030 links="Home" -->
+<!-- meta name="iOS launch" group="3c · Loading" subtitle="The launch screen is static by platform law, so it is the app's first frame: the SAME split die the launcher tile and the Home hero carry, on the #05060e canvas the game reveals underneath it — one object across all three, since 2026-09-03" width=412 height=1045 links="Home" -->
 <style>
   .ldwrap{display:flex;flex-direction:column;align-items:center;gap:22px;margin:auto 0;padding:10px 0}
   .ldcap{font-size:9.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;text-align:center}
@@ -34,15 +34,15 @@
   <div class="ldwrap">
     <div class="lbl">The static frame · every iPhone</div>
     <div class="ldphone">{{splashmark:99}}</div>
-    <div class="ldcap">No text, no wordmark — text on a launch screen reads as slow</div>
+    <div class="ldcap">No text, no wordmark — text on a launch screen reads as slow. The mark is the tile the player just tapped.</div>
     <div class="ldbeats">
       <div class="ldbeat"><span class="n">1</span><div class="mini">{{splashmark:24}}</div>
         <span class="t">Storyboard — static, before any code runs</span></div>
       <div class="ldbeat"><span class="n">2</span><div class="mini">{{splashmark:24}}</div>
-        <span class="t">Webview boots on the same night — #05060e under both</span></div>
+        <span class="t">Webview boots on the same night — #05060e and the same mark under both</span></div>
       <div class="ldbeat"><span class="n">3</span><div class="mini pair dice-static">{{die:5:p1:15}}{{die:3:p2:15}}</div>
         <span class="t">Home is simply there — its own dice, no frame between them</span></div>
     </div>
-    <div class="ldnote">Generated from Home's own neon die (tools/splash.mjs) · the larger tilted glass face and luminous cyan pips are baked into every native rendition · ground #05060e stays continuous into the app</div>
+    <div class="ldnote">Generated from the launcher's own split die (tools/splash.mjs, splitDieIconSVG) · until 2026-09-03 this frame drew a single cyan five, so boot showed two different marks half a second apart · the wash is now two hues, one per owner, at the intensity the single cyan one carried · ground #05060e stays continuous into the app</div>
   </div>
 </div></div>

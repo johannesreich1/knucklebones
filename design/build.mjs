@@ -18,7 +18,7 @@
 //   {{appicon[:px][:light]}}     the shipped launcher mark (the split die), at its
 //                              launcher scale and clockwise tilt; `:light` is the
 //                              iOS light appearance with its own light ground
-//   {{splashmark[:px]}}          the launch screen's mark — still the single cyan five
+//   {{splashmark[:px]}}          the launch screen's mark — the split die since 2026-09-03
 //   {{mico:MODE[:px]}}          a mode icon — the APP's, imported below
 //   {{mhue:MODE}}               a mode's hue — likewise
 //   {{sico:SPELL[:px]}}         a rune icon — the APP's (ui/spellicons.ts)
@@ -60,7 +60,7 @@ import { spellById } from '../src/core/spells.ts';
 import { modeById } from '../src/core/modes.ts';
 import { libraryBody, libraryCards, pickerButtons, pickInfo, MODE_LIB, SPELL_LIB, MODE_PICKS, SPELL_PICKS } from '../src/ui/library.ts';
 import { inlineCssGraph } from '../tools/css-graph.mjs';
-import { APP_ICON_PAD, SPLIT_ICON_PAD, iconSVG, splitDieIconSVG } from '../tools/appicon.mjs';
+import { SPLIT_ICON_PAD, splitDieIconSVG } from '../tools/appicon.mjs';
 import { discoverDesignScreens } from './screen-library.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -270,11 +270,14 @@ function appIconMarkup(size, appearance) {
   return `<img class="appicon-mark" src="${source}" width="${size}" height="${size}" alt="">`;
 }
 
-/* The LAUNCH mark is not the app icon: the splash keeps the single cyan five
-   (tools/splash.mjs renders iconSVG without its outer glow), so a card that
-   pictures the launch screen asks for this rather than the split die. */
+/* The LAUNCH mark is the SAME split die as the launcher, since 2026-09-03:
+   tools/splash.mjs draws splitDieIconSVG so that tile, storyboard and hero are
+   one object. The token stays separate from {{appicon}} because the two are
+   still not interchangeable — the splash renders the mark WITHOUT the launcher
+   tile's ground and at its own scale — but a card picturing the launch screen
+   now correctly shows the split die, not the cyan five it showed before. */
 function splashMarkMarkup(size) {
-  const svg = iconSVG(512, APP_ICON_PAD, 'dark', true, 5, 'cy', false);
+  const svg = splitDieIconSVG(512, SPLIT_ICON_PAD, 'dark', true);
   const source = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
   return `<img class="appicon-mark" src="${source}" width="${size}" height="${size}" alt="">`;
 }

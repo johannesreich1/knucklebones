@@ -40,6 +40,8 @@
   .sthalf2{clip-path:inset(0 0 0 50%);
     filter:drop-shadow(6px 0 20px rgba(var(--p2-rgb),.42))}
 
+  /* Phase map: see A1 (15a). Settled at rest, reset hidden under the launch
+     frame, animation 56-84%. */
   .sa6 .stlaunch,.sa6 .sthalf1,.sa6 .sthalf2,.sa6 .sttype,.sa6 .homestack{
     animation-duration:5200ms;animation-iteration-count:infinite;animation-fill-mode:both}
   .sa6 .stlaunch{animation-name:a6launch}
@@ -47,33 +49,35 @@
   .sa6 .sthalf2{animation-name:a6right}
   .sa6 .sttype,.sa6 .homestack{animation-name:a6home}
   @keyframes a6launch{
-    0%{opacity:1}
-    17.3%{opacity:1;animation-timing-function:steps(1,end)}
-    17.4%{opacity:0}
-    92%{opacity:0;animation-timing-function:steps(1,end)}
-    92.1%{opacity:1}
-    100%{opacity:1}}
+    0%,40%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    46%{opacity:1;animation-timing-function:steps(1,end)}
+    56%{opacity:0}
+    100%{opacity:0}}
   /* 54px of separation, not 100: the halves must stay recognisably ONE object
      coming together rather than two objects meeting. Beyond about 60 the eye
      stops predicting the join and the beat becomes a collision. */
   @keyframes a6left{
-    0%,17.4%{opacity:0;transform:translateX(-54px);animation-timing-function:cubic-bezier(.16,1,.3,1)}
-    20%{opacity:1;transform:translateX(-54px);animation-timing-function:cubic-bezier(.16,1,.3,1)}
-    36%{transform:translateX(0)}
-    92%{opacity:1;transform:translateX(0);animation-timing-function:steps(1,end)}
-    92.1%,100%{opacity:0;transform:translateX(-54px)}}
+    0%{opacity:1;transform:translateX(0)}
+    46%{opacity:1;transform:translateX(0);animation-timing-function:steps(1,end)}
+    50%{opacity:1;transform:translateX(-54px)}
+    57%{opacity:1;transform:translateX(-54px);animation-timing-function:cubic-bezier(.16,1,.3,1)}
+    80%{transform:translateX(0)}
+    100%{opacity:1;transform:translateX(0)}}
   @keyframes a6right{
-    0%,17.4%{opacity:0;transform:translateX(54px);animation-timing-function:cubic-bezier(.16,1,.3,1)}
-    20%{opacity:1;transform:translateX(54px);animation-timing-function:cubic-bezier(.16,1,.3,1)}
-    36%{transform:translateX(0)}
-    92%{opacity:1;transform:translateX(0);animation-timing-function:steps(1,end)}
-    92.1%,100%{opacity:0;transform:translateX(54px)}}
+    0%{opacity:1;transform:translateX(0)}
+    46%{opacity:1;transform:translateX(0);animation-timing-function:steps(1,end)}
+    50%{opacity:1;transform:translateX(54px)}
+    57%{opacity:1;transform:translateX(54px);animation-timing-function:cubic-bezier(.16,1,.3,1)}
+    80%{transform:translateX(0)}
+    100%{opacity:1;transform:translateX(0)}}
   /* the type waits for the object to exist before naming it */
   @keyframes a6home{
-    0%,30%{opacity:0;transform:translateY(6px);animation-timing-function:cubic-bezier(.16,1,.3,1)}
-    44%{opacity:1;transform:translateY(0)}
-    92%{opacity:1;transform:translateY(0);animation-timing-function:steps(1,end)}
-    92.1%,100%{opacity:0;transform:translateY(6px)}}
+    0%{opacity:1;transform:translateY(0)}
+    46%{opacity:1;transform:translateY(0);animation-timing-function:steps(1,end)}
+    50%{opacity:0;transform:translateY(6px)}
+    74%{opacity:0;transform:translateY(6px);animation-timing-function:cubic-bezier(.16,1,.3,1)}
+    88%{opacity:1;transform:translateY(0)}
+    100%{opacity:1;transform:translateY(0)}}
 
   @media (prefers-reduced-motion:reduce){
     /* the closing IS the card; reduced motion gets the assembled mark */
