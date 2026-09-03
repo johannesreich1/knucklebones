@@ -19,7 +19,7 @@ import { $ } from '../../ui/dom.ts';
 import { loaderDie } from '../../ui/loader.ts';
 import type { HistoryRow, Standing } from '../api/ladder-api.ts';
 import { paintAccountProviders } from './account-provider-view.ts';
-import { fillAccountRing } from './account-ring.ts';
+import { clearAccountRing, fillAccountRing } from './account-ring.ts';
 import {
   accountProgressionSnapshot,
   paintAccountAchievements,
@@ -139,6 +139,10 @@ export function paintAccountFrame(
 export function resetAccountPresentation(
   cached: CachedAccountView | null,
   clearNickError: () => void,
+  /* Whether Profile is ARRIVING, rather than restating the frame it is already
+     wearing. Only an arrival empties the ring, so its one sweep survives the
+     further presentations a single open produces (account-screen.ts). */
+  arriving = true,
 ): void {
   clearNickError();
   $('#accSince').textContent = '';
@@ -160,6 +164,6 @@ export function resetAccountPresentation(
   paintRecent([]);
   const ring = $('#accRing') as HTMLElement;
   ring.classList.remove('haspeak');
-  ring.style.setProperty('--p', '0');
+  if (arriving || !cached) clearAccountRing(ring);
   if (cached) paintAccountFrame(cached.account, cached.recent, true, clearNickError);
 }

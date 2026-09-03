@@ -47,6 +47,7 @@ import {
 } from './scenarios/account-game-center-blocked.mjs';
 import { runAccountErrorSheetScenarios } from './scenarios/account-error-sheet.mjs';
 import { runProfileRuneSheetScenarios } from './scenarios/profile-rune-sheet.mjs';
+import { runProfileRingSweepScenarios } from './scenarios/profile-ring-sweep.mjs';
 import {
   runFirstRuneProfileRecoveryScenario,
 } from './scenarios/first-rune-profile-recovery.mjs';
@@ -106,6 +107,7 @@ const SCENARIOS = Object.freeze([
   { id: 'account-game-center-blocked', run: runAccountGameCenterBlockedScenarios },
   { id: 'account-error-sheet', run: runAccountErrorSheetScenarios },
   { id: 'profile-rune-sheet', run: runProfileRuneSheetScenarios },
+  { id: 'profile-ring-sweep', run: runProfileRingSweepScenarios },
   { id: 'first-rune-profile-recovery', run: runFirstRuneProfileRecoveryScenario },
   { id: 'rune-trial', run: runRuneTrialUiScenarios },
   { id: 'rune-trial-rail', run: runRuneTrialRailScenarios },
@@ -149,7 +151,8 @@ const SHARDS = Object.freeze({
     'account-lifecycle', 'account-mutation-ownership', 'account-access',
     'settings-colour-avatar',
     'account-game-center', 'account-game-center-blocked', 'account-error-sheet',
-    'profile-rune-sheet', 'first-rune-profile-recovery', 'account-achievements-weekly',
+    'profile-rune-sheet', 'profile-ring-sweep',
+    'first-rune-profile-recovery', 'account-achievements-weekly',
     'rune-trial', 'rune-trial-rail',
   ]),
   ranked: Object.freeze([

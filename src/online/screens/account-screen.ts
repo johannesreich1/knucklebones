@@ -87,12 +87,22 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
   });
 
   const beginPresentation = (cachedView: CachedAccountView | null): void => {
+    /* ONE SWEEP PER ARRIVAL. A single tap on Profile reaches this three times:
+       the entry door paints the cached snapshot, ui.ts restates that same wait
+       once hydration returns, and the authenticated route then begins its own
+       run. Emptying the ring on each of them restarted its 850ms fill, so the
+       player watched the circle sweep, snap back to nothing, and sweep again
+       (reported from a device 2026-09-03). An arrival is a panel that is not
+       already wearing this account — read before lastAccount is replaced. */
+    const arriving = !isOnlinePanelCurrent('onAccount')
+      || (cachedView?.account.user.id.toLowerCase() ?? null)
+        !== (lastAccount?.user.id.toLowerCase() ?? null);
     accountActions.reset();
     accountActions.setRuneSeatAvailable(false);
     rankPending = true;
     lastAccount = cachedView?.account ?? null;
     lastRecent = cachedView?.recent ?? [];
-    resetAccountPresentation(cachedView, clearNickError);
+    resetAccountPresentation(cachedView, clearNickError, arriving);
   };
   const invalidatePresentation = (): void => {
     showRevision++;
