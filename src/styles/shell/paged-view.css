@@ -120,10 +120,19 @@
    are different ideas (how tall the frost is, how far content sits below it)
    and ui/dom.ts adds them BY NAME — deleting it would hand that sum a NaN and
    fall silently back to a 40px ramp. */
-/* --barpad MATCHES the 16px above the bar's content, so the title and Back
-   sit dead centre in the visible bar rather than 1px high. The safe-area inset
-   is added on top of that 16 and is not part of the reckoning: it is the
-   notch's space, not the bar's. */
+/* --barpad MATCHES the bar's own air above its content, so on a flat screen
+   the title and Back sit dead centre in the visible bar rather than 1px high.
+   THE NOTCH'S SPACE IS NOT THE BAR'S — and that cuts both ways. A phone has
+   already handed the bar 47-62px above its content, and stacking a second full
+   16 on top of that read as a hole between the Dynamic Island and the title
+   (owner report, from a device 2026-09-03). So --bartop takes the LARGER of
+   the flat-screen 16 and a smaller 6 above the inset: a screen with no notch
+   is untouched and stays optically centred, while a notched one shares air it
+   was already given rather than being paid twice.
+   --safetop names the inset separately because env() cannot be emulated:
+   tests/practice-sheet-stability.mjs substitutes it to measure both halves of
+   that max(), the way tests/browser/responsive emulates the game shell's
+   padding by hand. Do not fold it back into the calc. */
 /* The glass's two lengths are DERIVED from the geometry above, not chosen —
    they are its optics, not two more numbers to keep in step by hand:
      --glassfade  how much of the BAR the fade occupies, measured up from the
@@ -140,7 +149,8 @@
    back out of getComputedStyle as text, not as a number — asking for the
    derived one there fails silently into a fallback, which is the drift this
    is meant to prevent, wearing a disguise. */
-:where(#kbroot) .ov.paged{--band:12px;--barpad:16px;--bartop:calc(env(safe-area-inset-top,0px) + 16px);
+:where(#kbroot) .ov.paged{--band:12px;--barpad:16px;
+  --safetop:env(safe-area-inset-top,0px);--bartop:max(16px,calc(var(--safetop) + 6px));
   --headh:calc(var(--bartop) + 30px + var(--barpad));--headgap:0px;
   --glasstail:calc(var(--band) + var(--headgap) - 6px);
   /* the fade's SEAMS, as offsets into the glass layer — the bar's own parts,

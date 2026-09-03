@@ -203,8 +203,8 @@
     },
     {
       "path": "src/styles/shell/paged-view.css",
-      "bytes": 22629,
-      "sha256": "72cc43cd5f35c11c3b72447842d89b5e7a0e1f175bac40a6c0365f389575d2dd"
+      "bytes": 23362,
+      "sha256": "6d4e07a05fcb92a63b842379fcf28a1af378e7af1d13a36479c3c854fd38fbc2"
     },
     {
       "path": "src/ui/die-markup.ts",

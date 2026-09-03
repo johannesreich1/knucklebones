@@ -295,6 +295,49 @@ try {
         `${p.id} does not wear the shared labelled Duel Brackets Back control on the left: ` + label, p.nav);
       check(!p.nav.hasX, `${p.id} still carries a header ✕: ` + label, p.nav);
     }
+
+    /* THE NOTCH'S SPACE IS NOT THE BAR'S. Every measurement above is taken at
+       a zero inset, where the bar keeps the 16px that matches --barpad and
+       centres its title. On a phone the inset already hands the bar 47-62px of
+       air, and adding a second 16 on top of it read as a hole between the
+       Dynamic Island and the title (owner report, from a device 2026-09-03).
+       --bartop therefore takes the LARGER of the flat-screen 16 and a smaller
+       share above the inset — so this is the one place the two disagree, and
+       the only place the disagreement can be measured: WebKit cannot be told
+       to report an inset, so --safetop exists to be substituted here exactly
+       as tests/browser/responsive emulates the game shell's padding by hand. */
+    const island = await page.evaluate(async () => {
+      const ov = document.querySelector('.ov.paged');
+      const head = ov?.querySelector('.shead');
+      if (!head) return null;
+      const was = ov.classList.contains('on');
+      ov.classList.add('on');
+      const read = (inset) => {
+        ov.style.setProperty('--safetop', inset);
+        const style = getComputedStyle(head);
+        return { top: parseFloat(style.paddingTop), bottom: parseFloat(style.paddingBottom) };
+      };
+      const flat = read('0px');
+      const notch = read('47px');
+      const dynamicIsland = read('59px');
+      ov.style.removeProperty('--safetop');
+      const restored = parseFloat(getComputedStyle(head).paddingTop);
+      if (!was) ov.classList.remove('on');
+      return { id: ov.id, flat, notch, dynamicIsland, restored };
+    });
+    out['bar inset ' + label] = island;
+    check(island && island.flat.top === 16 && island.flat.top === island.flat.bottom,
+      'a flat screen no longer centres the bar on --barpad: ' + label, island);
+    check(island && island.dynamicIsland.top === 65 && island.notch.top === 53,
+      'the bar no longer shares the notch\'s air — it is back to a flat 16px '
+      + 'on top of the inset, which reads as a hole under the island: ' + label,
+      island);
+    /* Whatever the inset, the bar's content still starts BELOW it: this is the
+       floor the trim may never cross. */
+    check(island && island.dynamicIsland.top >= 59 && island.notch.top >= 47,
+      'the bar now starts inside the safe area and runs under the notch: ' + label,
+      island);
+
     await ctx.close();
   }
 } finally { await browser.close(); }
