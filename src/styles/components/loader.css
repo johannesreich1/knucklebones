@@ -30,6 +30,16 @@
    once, never to one stranded invisible. tests/browser/responsive holds this. */
 :where(#kbroot) .ldwait,:where(#kbroot) .die.ldclock{animation:ldreveal .25s ease-out .2s backwards}
 @keyframes ldreveal{from{opacity:0}to{opacity:1}}
+/* INSIDE THE WRAP, THE REVEAL BELONGS TO THE WRAP. The rule above hands that
+   grace to the wrapper AND to the die nested in it — one idea written twice —
+   so whatever re-times the wrapper splits the pair. A wait entered through a
+   page transition does exactly that: paged-view.css zeroes .ldwait's delay so
+   the wait can travel in with its page, the die kept its own 200ms, and the
+   player read "Loading" and only then saw the dice (reported from a device
+   2026-09-03, on the Ladder; measured 182ms apart). The wrapper's fade carries
+   the die with it, so only the STANDALONE inline die — a rank value, a faceoff
+   — still needs a grace of its own. The pips are children and keep theirs. */
+:where(#kbroot) .ldwait .die.ldclock{animation:none}
 /* Whatever the in-game dice-face setting says, a loader tells time in pips.
    Numerals normally reach only .game-die; keep the invariant pinned here too
    so a future loader refactor cannot turn a wait into a numbered square.

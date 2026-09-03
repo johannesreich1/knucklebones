@@ -53,8 +53,8 @@
     },
     {
       "path": "src/styles/components/loader.css",
-      "bytes": 3171,
-      "sha256": "8b6ecc780e6b93ec713fcb60646537f3d10b6b712edb7f497e540ab0cee38df0"
+      "bytes": 3938,
+      "sha256": "a5101dc46b248b9196bd13ca4dd01db3e36f8f77696b4c3af42a023a9fdbf29f"
     },
     {
       "path": "src/styles/components/mode-dial.css",

@@ -31,6 +31,7 @@ import {
 import { runExplicitGuestSessionScenarios } from './scenarios/explicit-guest-session.mjs';
 import { runOnlineMenuPressFeedbackScenarios } from './scenarios/menu-press-feedback.mjs';
 import { runOnlineLoadingPanelScenarios } from './scenarios/loading-panels.mjs';
+import { runWaitRevealScenarios } from './scenarios/wait-reveal.mjs';
 import { runPageNavigationMotionScenarios } from './scenarios/page-navigation-motion.mjs';
 import {
   runPageNavigationPerformanceScenarios,
@@ -99,6 +100,7 @@ const SCENARIOS = Object.freeze([
   { id: 'explicit-guest-session', run: runExplicitGuestSessionScenarios },
   { id: 'menu-press-feedback', run: runOnlineMenuPressFeedbackScenarios },
   { id: 'loading-panels', run: runOnlineLoadingPanelScenarios },
+  { id: 'wait-reveal', run: runWaitRevealScenarios },
   { id: 'page-navigation-motion', run: runPageNavigationMotionScenarios },
   { id: 'page-navigation-performance', run: runPageNavigationPerformanceScenarios },
   { id: 'ranked-game-motion-exclusion', run: runRankedGameMotionExclusionScenarios },
@@ -171,6 +173,10 @@ const SHARDS = Object.freeze({
        there realigns entry's heavy phase onto `account`, where
        account-achievements-weekly is timing-fragile enough to fail on it. */
     'expired-session-door',
+    /* Same reasoning, and it is where this one was born: it split OUT of
+       loading-panels, which lives in `entry`. Putting it back there would have
+       re-lengthened the shard the note above exists to protect. */
+    'wait-reveal',
   ]),
 });
 validateScenarioShards('online UI browser', SCENARIOS, SHARDS);
