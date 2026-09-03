@@ -102,8 +102,7 @@ async function probeAchievementsAndWeeklyEntry(page, routes) {
     await page.waitForTimeout(25);
   }
   const join = routes.joinBodies().at(-1);
-  if (await page.locator('#btnQueueCancel').isVisible()) await page.click('#btnQueueCancel');
-  await page.waitForSelector('#ovStart.on');
+  await leaveQueue(page);
 
   /* A completed rotation remains durable history, but once its half-open
      window ends it is neither the Home entry nor the Profile's CURRENT weekly
@@ -142,8 +141,7 @@ async function probeAchievementsAndWeeklyEntry(page, routes) {
     queueCopy: await page.locator('#qSub').textContent(),
     join: routes.joinBodies().at(-1),
   };
-  if (await page.locator('#btnQueueCancel').isVisible()) await page.click('#btnQueueCancel');
-  await page.waitForSelector('#ovStart.on');
+  await leaveQueue(page);
 
   /* Even with NEXT_STATUS still cached and active, a failed fresh replay
      verification must stop on the retryable connection sheet without joining. */
@@ -173,6 +171,26 @@ async function probeAchievementsAndWeeklyEntry(page, routes) {
     boundary,
     refreshFailure,
   };
+}
+
+/* LEAVING THE QUEUE IS A CONTRACT, NOT A GLANCE. Cancel flies in WITH the
+   searching panel, so asking whether it is visible right now is a race — and
+   when that race lost, the tap was skipped silently and #onQueue stayed
+   mounted over Home for every later step of this scenario. Home is still `.on`
+   underneath, so waiting for #ovStart.on proved nothing and the failure
+   surfaced 20s later as "#onQueue intercepts pointer events" on an unrelated
+   #homeChip click, in whichever shard happened to be scheduled beside this one
+   (diagnosed by knucklebones-d0, 2026-09-03, at the cost of two gate runs).
+   Playwright's own click waits for visible, stable, enabled AND hit-testable,
+   which is the wait this needed all along; then require that the online
+   overlay has actually LEFT rather than merely that Home is present. */
+async function leaveQueue(page) {
+  await page.locator('#btnQueueCancel').click();
+  await page.waitForFunction(() => {
+    const online = document.getElementById('ovOnline');
+    const home = document.getElementById('ovStart');
+    return !online?.classList.contains('on') && !!home?.classList.contains('on');
+  }, null, { timeout: 15000 });
 }
 
 export async function runAccountAchievementsWeeklyScenarios({ visit, out, check }) {

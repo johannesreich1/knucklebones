@@ -97,7 +97,18 @@ jobs:
       # isolated and keep JOBS=1 inside
       # each balanced shard, avoiding browser contention in a two-core VM.
       - run: npx playwright install --with-deps chromium webkit
+      # THE GATE BUILDS THE APP, so it needs the same one build-time value the
+      # deploy job passes. Vite inlines it, and an unset value ships a bundle
+      # whose identity-gateway URL is the empty string: the Game Center attach
+      # then posts to a relative path the online-ui harness never stubs, the
+      # app fail-closes on it exactly as designed, and offline-entry reports a
+      # CAN'T CONNECT sheet as a product defect. That is why this job has been
+      # red on every commit for as long as anyone has looked — it was measuring
+      # a bundle no player ever gets. Same reason a worktree without .env
+      # cannot run that scenario locally.
       - run: npm test -- --ci-shard "${{ matrix.shard }}"
+        env:
+          VITE_IDENTITY_GATEWAY_URL: ${{ vars.VITE_IDENTITY_GATEWAY_URL }}
 
   # Preserve the historical stable `test` check for branch protection and
   # downstream automation while the detailed shard checks stay visible.
