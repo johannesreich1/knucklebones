@@ -243,6 +243,17 @@ export async function runBackNavigationMotionScenarios(suite) {
       && /-12px 0px 32px/.test(sample.overShadow)
       && sample.bracketTransforms.every((value) => value && value !== 'none'),
     `${kind} Back is not visibly painting the selected push and bracket beat`, sample);
+    /* THE DEPARTING PAGE IS STILL A PAINTED PAGE. Back removes .on before the
+       compositor takes over, and .ov without .on is opacity:0 — so the source
+       is only on screen because the push holds it there. At 0 it is a hole:
+       the source alone covers the strip right of the arriving page, and
+       through that hole the player sees #app (z-index:2), the duel table with
+       the in-game Leave button in its top-right corner. Reported from a device
+       2026-09-03 as flickering on the right plus a stray quit button. */
+    check(Number(sample.sourceOpacity) === 1,
+      `${kind} Back leaves the departing page unpainted, so the board and its `
+      + `Leave button show through the right edge for the whole push`,
+      { sourceOpacity: sample.sourceOpacity, sourceId: sample.sourceId, sample });
     /* the heat: nothing animates layout or paint, no surface re-blurs its
        backdrop while it moves, and the compositor is promised only what it
        can composite */

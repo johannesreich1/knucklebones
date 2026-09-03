@@ -42,8 +42,23 @@ export interface PushTimeline {
 }
 
 export function pushTimeline(direction: PageMotionDirection): PushTimeline {
-  const over = [{ transform: OVER_OFFSTAGE }, { transform: HOME }];
-  const under = [{ transform: HOME }, { transform: UNDER_OFFSTAGE }];
+  /* THE OPACITY IS LOAD-BEARING, not decoration. Routing removes .on before
+     the compositor takes over, and a bare .ov is opacity:0 (overlays.css) with
+     its fade cancelled by .page-motion-source — which restores visibility and
+     says nothing about opacity. So a departing page is only on screen because
+     this timeline holds it there. Without it Back slid an INVISIBLE page out:
+     the source alone covers the strip to the right of the arriving page, and
+     through that hole the player watched the duel table, in-game Leave button
+     included, for the whole 420ms (reported from a device 2026-09-03). The
+     wipe this replaced carried the same 1 in every keyframe. */
+  const over = [
+    { transform: OVER_OFFSTAGE, opacity: 1 },
+    { transform: HOME, opacity: 1 },
+  ];
+  const under = [
+    { transform: HOME, opacity: 1 },
+    { transform: UNDER_OFFSTAGE, opacity: 1 },
+  ];
   const scrim = [{ opacity: 0 }, { opacity: SCRIM_OPACITY }];
   const travel = direction === 'forward' ? TITLE_TRAVEL_PX : -TITLE_TRAVEL_PX;
   const title = [
