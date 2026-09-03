@@ -37,6 +37,22 @@ export function makeInert(element: HTMLElement): InertSnapshot {
   };
 }
 
+/** Hold ONE durable borrow on an element, driven by state rather than by a
+ * matching release call — for a background that should stay inert as long as
+ * something covers it, across any number of modals opening and closing over
+ * the top. Held through makeInert()'s lock, so a sheet that borrows the same
+ * element and releases restores this hold instead of clearing it. */
+const HELD = new WeakMap<HTMLElement, InertSnapshot>();
+export function holdInert(element: HTMLElement, inert: boolean): void {
+  const held = HELD.get(element);
+  if (inert === !!held) return;
+  if (inert) HELD.set(element, makeInert(element));
+  else {
+    held?.release();
+    HELD.delete(element);
+  }
+}
+
 /** Borrow inert for an entire subtree while leaving one control exposed. The
  * exception's ancestor chain stays live; every sibling branch is borrowed
  * through makeInert(), so nested sheet/navigation owners still unwind safely. */

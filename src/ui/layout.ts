@@ -3,6 +3,7 @@
 import { SPEC, ROWSWITCH, ROWMULT } from '../core/rules.ts';
 import { S } from '../state.ts';
 import { appRoot, isEmbed } from './embed.ts';
+import { holdInert } from './modal-background.ts';
 import { $ } from './query.ts';
 import {
   setLandscapeLayout,
@@ -49,20 +50,38 @@ const LANDSCAPE_SCREENS = new Set(['ovPractice', 'ovEnd', 'ovPass', 'ovWheel']);
 const PASSTHROUGH = new Set(['ovAsk', 'ovLoad', 'ovFirst', 'ovGroupTransition']);
 /* Overlays STACK (home stays on beneath pages), and paint order is DOM order,
    so the last `.on` sibling is the one the player is looking at. */
-function landscapeScreen(): boolean {
+function topScreen(): string {
   let top = '';
   for (const ov of appRoot().querySelectorAll<HTMLElement>('.ov.on')) {
     if (!PASSTHROUGH.has(ov.id)) top = ov.id;
   }
-  return !top || LANDSCAPE_SCREENS.has(top);   // no overlay at all = the table
+  return top;                                  // '' = no overlay at all = the table
+}
+function landscapeScreen(top: string): boolean {
+  return !top || LANDSCAPE_SCREENS.has(top);
 }
 export function fit(): void {
   const app=isEmbed()?appRoot():$('#app');
   if (!app) return;
   const w=app.clientWidth, h=app.clientHeight;
   const short = h < 560;
-  const land = w>h && short && landscapeScreen();   // short, wide, AND a screen that turns
+  const top = topScreen();
+  const land = w>h && short && landscapeScreen(top);   // short, wide, AND a screen that turns
   setLandscapeLayout(land);
+  /* THE BOARD IS ALWAYS MOUNTED, so a page over it is only paint. #app kept its
+     place in the tab order and the accessibility tree behind Settings, Profile,
+     HOW TO PLAY and Home, where Tab reached the in-game Leave control and
+     activating it opened the forfeit ask from underneath an open page. Sheets,
+     legal pages and the group transition have always borrowed inert for the
+     whole background; ordinary .ov.paged pages never did.
+     Driven by the same fact the layout above already needs — which screen the
+     player is actually looking at — so a page cannot arrive without it, and
+     held through makeInert()'s lock so a sheet opening over a page and closing
+     again restores this hold rather than clearing it. A PASSTHROUGH ask over
+     the live table is deliberately not counted: it is a sheet, and it borrows
+     the background itself. In an embedded widget `app` IS the root, so there is
+     no background to hold. */
+  if (!isEmbed()) holdInert(app, top !== '');
   /* A SHORT VIEWPORT IS NOT THE SAME FACT AS A LANDSCAPE LAYOUT, and conflating
      them cost the offline setup screen its Play button: .ov centres its content
      and never scrolls, so on a 390px-tall phone the button sat below the fold

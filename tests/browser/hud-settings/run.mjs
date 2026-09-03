@@ -12,6 +12,7 @@ import { runLanguageSelectorScenarios } from './scenarios/language-selector.mjs'
 import { runOfflineRuneTrialScenarios } from './scenarios/offline-rune-trial.mjs';
 import { runBackNavigationMotionScenarios } from './scenarios/back-navigation-motion.mjs';
 import { runPageOpensAtTopScenarios } from './scenarios/page-opens-at-top.mjs';
+import { runBoardInertBehindPagesScenarios } from './scenarios/board-inert-behind-pages.mjs';
 import {
   LOCALE_REGISTRY,
   RESOURCES,
@@ -30,6 +31,7 @@ const SCENARIOS = Object.freeze([
   { id: 'language-selector', run: runLanguageSelectorScenarios },
   { id: 'back-navigation-motion', run: runBackNavigationMotionScenarios },
   { id: 'page-opens-at-top', run: runPageOpensAtTopScenarios },
+  { id: 'board-inert-behind-pages', run: runBoardInertBehindPagesScenarios },
 ]);
 validateScenarioShards('HUD settings browser', SCENARIOS);
 let scenarios;
