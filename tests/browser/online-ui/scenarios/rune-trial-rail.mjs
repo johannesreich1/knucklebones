@@ -89,8 +89,22 @@ const READ_RAIL_PROBE = () => {
       scalePath: runs(scales),
       distinctScales: [...new Set(scales)].length,
       /* Mid-tween evidence: a frame strictly between the two resting scales
-         this seat is asked to travel between. */
-      intermediate: scales.filter((value) => value > 0.83 && value < 0.945).length,
+         this seat is asked to travel between — measured against THIS seat's own
+         rest positions rather than a hardcoded band. The band was (0.83, 0.945),
+         which is neither seat's actual travel: seat 0 runs 0.82 -> 0.95 and
+         seat 1 runs 1 -> 0.82, so it excluded the first and last slivers of
+         both. An ease-out spends most of its time near the target and crosses
+         the middle fast, so a runner that paints sparsely samples densely at
+         the ends and can miss a narrow middle entirely — on hosted CI seat 0
+         was caught at 0.9455 and 0.9498 and seat 1 at 0.8263 and 0.8202, four
+         unmistakable mid-tween frames, every one of them outside the band, and
+         the check reported two tweening cards as frozen.
+         Strictly-between-its-own-endpoints needs no guess about where the
+         middle is, and still rejects what this exists to catch: a frozen card
+         reports one scale, an instant jump reports only its two rest values,
+         and neither has anything strictly between them. */
+      intermediate: scales.filter((value) =>
+        value > Math.min(...scales) && value < Math.max(...scales)).length,
       minScale: Math.min(...scales),
       maxScale: Math.max(...scales),
       activePath: runs(read.map((entry) => entry.active)),
