@@ -11,6 +11,7 @@ import { runAsymmetricRunePlateScenarios } from './scenarios/asymmetric-rune-pla
 import { runLanguageSelectorScenarios } from './scenarios/language-selector.mjs';
 import { runOfflineRuneTrialScenarios } from './scenarios/offline-rune-trial.mjs';
 import { runBackNavigationMotionScenarios } from './scenarios/back-navigation-motion.mjs';
+import { runPageOpensAtTopScenarios } from './scenarios/page-opens-at-top.mjs';
 import {
   LOCALE_REGISTRY,
   RESOURCES,
@@ -28,6 +29,7 @@ const SCENARIOS = Object.freeze([
   { id: 'asymmetric-rune-plates', run: runAsymmetricRunePlateScenarios },
   { id: 'language-selector', run: runLanguageSelectorScenarios },
   { id: 'back-navigation-motion', run: runBackNavigationMotionScenarios },
+  { id: 'page-opens-at-top', run: runPageOpensAtTopScenarios },
 ]);
 validateScenarioShards('HUD settings browser', SCENARIOS);
 let scenarios;

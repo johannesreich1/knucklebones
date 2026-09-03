@@ -104,10 +104,24 @@ export function show(sel: string): void {
   const el = $(sel);
   el.classList.add('on');
   fit();
-  /* a view opening at the top must not already wear the glass — and one whose
-     body kept its place must. Appending rows fires no scroll event, so the
-     state is settled here rather than inferred later. */
-  el.querySelectorAll('.pbody').forEach(markScrolled);
+  /* A PAGE OPENS AT ITS TOP. A .pbody keeps its scroll while its page is
+     closed, so a view read to the bottom and left came back still at the
+     bottom — and ANIMATED IN that way, wearing the full scrolled frost from
+     its first frame (owner report 2026-09-03; RULES reopened at 942 of 942,
+     SETTINGS at 332 of 332). The reset rides with the .on that opens the page,
+     which is synchronous and so lands before the navigation controller's
+     microtask starts the push: the page is already at its top on frame one
+     rather than jumping there afterwards, where the jump would be seen.
+     The reused Online shell needs no equivalent — its one .pbody collapses
+     during a panel swap and the browser clamps it, which is precisely why the
+     ladder has to save an anchor to get a reading place back at all.
+     Then settle the glass: a view at its top must not wear it. Appending rows
+     fires no scroll event, so the state is settled here rather than inferred
+     later. */
+  el.querySelectorAll('.pbody').forEach((body) => {
+    body.scrollTop = 0;
+    markScrolled(body);
+  });
 }
 export function hide(sel: string): void { $(sel).classList.remove('on'); fit(); }
 
