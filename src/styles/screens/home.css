@@ -3,15 +3,20 @@
 :where(#kbroot) .hero{display:flex;flex-direction:column;align-items:center;gap:4px;margin:6px 0 2px}
 :where(#kbroot) .hero .eyebrow{font-size:9px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
 :where(#kbroot) .hero h1{font-size:23px;letter-spacing:.24em}
-:where(#kbroot) .duel{display:flex;align-items:center;gap:18px;margin:20px 0 6px}
-:where(#kbroot) .duel .die{width:74px;height:74px;--cell:74px;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -6px 12px rgba(0,0,0,.35),
-  0 5px 14px rgba(0,0,0,.55),
-  var(--duel-die-outer-glow,0 0 34px color-mix(in srgb,var(--dc) 45%,transparent))}
-:where(#kbroot) .duel .die.p1{transform:rotate(-9deg)}
-:where(#kbroot) .duel .die.p2{transform:rotate(9deg)}
-:where(#kbroot) .duel .vs{font-size:19px;font-weight:900;letter-spacing:.08em;color:var(--gold);
-  text-shadow:0 0 18px rgba(255,209,102,.65);font-style:italic}
+/* THE HERO MARK. Two numbers here and both are measured, not chosen.
+   4px of margin, not the 12 the eye asks for, because the 120-unit arrangement
+   carries 12 units of transparent margin on every side: at a 96px frame the
+   die's ink stops 9.6px above the box, so 4 + the .hero gap of 4 + that 9.6 is
+   ~18px of VISIBLE air over the eyebrow, and the hero measures the 172px the
+   two dice and the VS used to.
+   The glow is the second. The arrangement clips its own light at the 120-unit
+   box (.split{overflow:hidden}), so the die arrives with its 0 0 34px shadow
+   cut off at the edge — a flat plate with a hairline. These two drop-shadows
+   put it back from outside, in the duel pair's live hues, at the radius the
+   old duel dice used. Delete them and compare before arguing with the number:
+   it is the whole difference between a mark and a sticker. */
+:where(#kbroot) .hero .splitmark{margin-bottom:4px;
+  filter:drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))}
 :where(#kbroot) .sub2{font-size:10px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase;
   text-align:center;margin-bottom:12px}
 /* clear air between the hero and the plate + play pair: the two blocks are

@@ -1,0 +1,71 @@
+/* ============ THE SPLIT MARK ============ */
+/* One six-face die, left pip column in --p1 and right in --p2, cut on a lit
+ * seam. This is the app's mark: the launcher tile, the launch screen and the
+ * Home hero are all this arrangement.
+ *
+ * IT LIVED IN tools/appicon.mjs UNTIL 2026-09-03, because the icon was the only
+ * place it existed and nothing in the app rendered it. Home wears it now
+ * (design study 14e / L5), so it moves here — which is also the fix for the
+ * blocker 14e recorded. As a string inside the generator it could only ever be
+ * baked into an SVG with the icon's own pair stamped on the root, so the mark
+ * was a PICTURE and a player who repointed their duel hues got a
+ * cyan-and-magenta hero over their own colours. Read from a stylesheet by live
+ * DOM, --p1/--p2 resolve from whatever ancestor sets them:
+ *
+ *   on Home            the page's live pair, so the mark follows the player
+ *   on the icon canvas  hueVars(pair) pins the DEVICE's icon pair, which is a
+ *                       separate choice and must NOT follow the page
+ *
+ * Same rules, two contexts, one implementation. tools/appicon.mjs already
+ * inlines this whole stylesheet to render its dice, so it picks these up for
+ * free and no longer owns any drawing code of its own.
+ *
+ * Authored at 120 units and scaled by the consumer: the generator sets its own
+ * inline transform, .splitmark below scales to a pixel size. */
+
+/* The tilt is APP_ICON_TILT_DEG in tools/appicon.mjs and launcherTiltDegrees in
+   native/profile-app-icons.manifest.json. Three copies of one number would
+   drift, so the generator injects --split-tilt from the constant and this is
+   the fallback the app renders with; tests/native-mark-parity asserts they
+   agree rather than trusting the comment. */
+:where(#kbroot) .split{position:absolute;left:0;top:0;width:120px;height:120px;
+  transform-origin:0 0;overflow:hidden}
+:where(#kbroot) .split .half,
+:where(#kbroot) .split .seam,
+:where(#kbroot) .split .plate{position:absolute;left:12px;top:12px;width:96px;height:96px;
+  display:block;line-height:0;transform-origin:50% 50%;
+  transform:rotate(var(--split-tilt,7deg));
+  border-radius:min(var(--r),calc(96px*.25 + 1.5px))}
+/* the mark is a still object wherever it appears — it never inherits the
+   board's roll animation or the pip transitions */
+:where(#kbroot) .split .die{animation:none}
+:where(#kbroot) .split .pip{transition:none}
+:where(#kbroot) .split .left{clip-path:polygon(-40% -40%,50.4% -40%,50.4% 140%,-40% 140%);
+  background:linear-gradient(168deg,rgba(var(--p1-rgb),.40),rgba(var(--p1-rgb),.28) 60%,rgba(var(--p1-rgb),.36))}
+:where(#kbroot) .split .right{clip-path:polygon(49.6% -40%,140% -40%,140% 140%,49.6% 140%);
+  background:linear-gradient(168deg,rgba(var(--p2-rgb),.42),rgba(var(--p2-rgb),.28) 60%,rgba(var(--p2-rgb),.38))}
+:where(#kbroot) .split .seam{pointer-events:none}
+/* on a light ground the translucent glass would read pastel: the light
+   rendition stands the die on an opaque charcoal plate with a soft shadow */
+:where(#kbroot) .split .plate{display:none;background:linear-gradient(160deg,#1e1f25,#0d0e12);
+  box-shadow:0 10px 26px rgba(0,0,0,.28),0 0 0 1px rgba(0,0,0,.06)}
+:where(#kbroot) .appicon-canvas.light .split .plate{display:block}
+:where(#kbroot) .appicon-canvas.light .split .left{background:linear-gradient(168deg,rgba(var(--p1-rgb),.44),rgba(var(--p1-rgb),.30) 60%,rgba(var(--p1-rgb),.40))}
+:where(#kbroot) .appicon-canvas.light .split .right{background:linear-gradient(168deg,rgba(var(--p2-rgb),.46),rgba(var(--p2-rgb),.30) 60%,rgba(var(--p2-rgb),.42))}
+:where(#kbroot) .split .seam::after{content:"";position:absolute;left:0;right:0;top:1px;bottom:1px;
+  background:linear-gradient(90deg,transparent 36%,rgba(var(--p1-rgb),.30) 50%,rgba(var(--p2-rgb),.30) 50%,transparent 64%)}
+:where(#kbroot) .split .seam::before{content:"";position:absolute;left:calc(50% - 1px);top:1px;bottom:1px;width:2px;z-index:1;
+  background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.95) 10%,rgba(255,255,255,.95) 90%,rgba(255,255,255,.55));
+  box-shadow:-1px 0 6px rgba(var(--p1-rgb),.9),1px 0 6px rgba(var(--p2-rgb),.9),0 0 2px rgba(255,255,255,.7)}
+
+/* ---- the app's frame around it ----------------------------------------- */
+/* The generator positions the 120-unit group itself, with an inline transform
+   that centres it on the icon canvas. In the app the mark is an inline block of
+   a given pixel size, so the scale is the only thing that differs: 96/120 =
+   0.8, which is why a 96px mark paints a 76.8px die — within 3px of the 74px
+   duel dice it replaced, so the one object arrives at the weight the two
+   used to share. */
+:where(#kbroot) .splitmark{position:relative;display:block;line-height:0;
+  width:var(--split-size,96px);height:var(--split-size,96px)}
+:where(#kbroot) .splitmark .split{
+  transform:scale(calc(var(--split-size,96px) / 120px))}

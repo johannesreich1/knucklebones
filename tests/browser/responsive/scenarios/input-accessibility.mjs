@@ -55,14 +55,16 @@ export async function runInputAccessibilityScenarios(suite) {
     });
     return {
       numerals: document.getElementById('kbroot').classList.contains('numerals'),
-      logo: read('#homeDuel .die'),
+      // the hero is one split mark now, not two duel dice: both halves wear
+      // the six face, which is the only face whose pips form two clean columns
+      logo: read('#homeMark .die'),
       profile: read('#homeChip .pav .die'),
     };
   });
   const fixedPipsVisible = (faces) => faces.every((face) =>
     face.pipDisplay !== 'none' && face.pipOpacity > .9 && face.pipWidth > 0 && face.numDisplay === 'none');
   check(out.fixedPipFaces.numerals
-        && out.fixedPipFaces.logo.map((face) => face.value).join(',') === '5,3'
+        && out.fixedPipFaces.logo.map((face) => face.value).join(',') === '6,6'
         && out.fixedPipFaces.profile.map((face) => face.value).join(',') === '4'
         && fixedPipsVisible(out.fixedPipFaces.logo)
         && fixedPipsVisible(out.fixedPipFaces.profile),

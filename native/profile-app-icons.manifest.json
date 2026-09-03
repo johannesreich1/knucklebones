@@ -82,6 +82,11 @@
       "sha256": "21e311cd53442a08a39af16e2a319968b0aeafb2eaa0bafca5827960cba6ea8d"
     },
     {
+      "path": "src/styles/components/split-mark.css",
+      "bytes": 4916,
+      "sha256": "dc1b20fe43b8df9bf7abbcc16bc2b70c59af120d17fce2fb7b870433e5c44942"
+    },
+    {
       "path": "src/styles/components/trial-select.css",
       "bytes": 6460,
       "sha256": "f513776a1bac5ada575b21f623056fbd62bd7e20308e85b38ad30de6b96fc0bb"
@@ -178,13 +183,13 @@
     },
     {
       "path": "src/styles/main.css",
-      "bytes": 1241,
-      "sha256": "728c596264eee98c61911cf18752be2544a8a359545cf615edda4eb8887a2503"
+      "bytes": 1422,
+      "sha256": "c127e94c23c57c9857ffbaffba187f38e1db945f91d94be542e6c3bfb0b1e17a"
     },
     {
       "path": "src/styles/screens/home.css",
-      "bytes": 4272,
-      "sha256": "f8120622218ec85f7402782f7c0b41478709b68b1174635975f808970a643675"
+      "bytes": 4686,
+      "sha256": "238f19bf7c5b577e05075d5365c344eb58f1ed05cfd2e791f4d3b3700ea19da6"
     },
     {
       "path": "src/styles/screens/learn-settings.css",
@@ -213,8 +218,8 @@
     },
     {
       "path": "tools/appicon.mjs",
-      "bytes": 19414,
-      "sha256": "982d4f7736b514225e1a1952f8e61e0e1b9d51deb60017b122b6a2959a3d6553"
+      "bytes": 17236,
+      "sha256": "5f5838e1154a821d564e95129dddc2b5d50e1bc81309217b6189ec078760485f"
     },
     {
       "path": "tools/profile-app-icons.mjs",

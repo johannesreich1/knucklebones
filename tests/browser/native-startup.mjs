@@ -82,7 +82,7 @@ for (const scenario of scenarios) {
           hide: async (options) => {
             const home = document.getElementById('ovStart');
             const root = document.getElementById('kbroot');
-            const duel = document.getElementById('homeDuel');
+            const mark = document.getElementById('homeMark');
             const style = home ? getComputedStyle(home) : null;
             const rect = home?.getBoundingClientRect();
             window.__nativeSplashHides.push({
@@ -95,7 +95,8 @@ for (const scenario of scenarios) {
               homeOpacity: style?.opacity ?? null,
               homeWidth: rect?.width ?? 0,
               homeHeight: rect?.height ?? 0,
-              duelDice: duel?.querySelectorAll('.die').length ?? 0,
+              markHalves: mark?.querySelectorAll('.split .half .die').length ?? 0,
+              boardCols: document.querySelectorAll('#topBoard .col').length,
               documentLang: document.documentElement.lang,
               rootOwnsLang: root?.hasAttribute('lang') ?? false,
               navigatorLanguages: [...navigator.languages],
@@ -132,7 +133,7 @@ for (const scenario of scenarios) {
   check(atHide.rootPresent && atHide.hooksPresent && /\bon\b/.test(atHide.homeClasses ?? '')
     && atHide.homeDisplay !== 'none' && atHide.homeVisibility === 'visible'
     && Number(atHide.homeOpacity) > 0 && atHide.homeWidth > 0 && atHide.homeHeight > 0
-    && atHide.duelDice === 2,
+    && atHide.markHalves === 2 && atHide.boardCols > 0,
   `${scenario.name}: native splash hid before the boot-composed Home was visibly ready`, atHide);
   check(atHide.documentLang === scenario.expectedLocale && !atHide.rootOwnsLang,
     `${scenario.name}: native document language ownership was not ready before splash hide`, atHide);

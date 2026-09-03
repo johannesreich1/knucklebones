@@ -30,6 +30,9 @@
 @import "./game/responsive.css";
 @import "./game/motion.css";
 @import "./components/identity.css";
+/* the mark before the screen that wears it: home.css sizes and lights it,
+   so the frame has to be defined by the time that file is read */
+@import "./components/split-mark.css";
 @import "./screens/home.css";
 @import "./components/ask-card.css";
 @import "./screens/learn-settings.css";

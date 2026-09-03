@@ -1,4 +1,4 @@
-<!-- meta name="L5 — Split crown" group="1c · The home logo" subtitle="Stop drawing a second logo: the launcher mark itself crowns the type and the two-die row is deleted — measured dead neutral at 96px, but the token bakes cyan-and-magenta into its own SVG, so a repointed duel pair breaks the hero" width=412 height=1796 sizes="md" links="Matchmaking, Ladder, Settings" -->
+<!-- meta name="L5 — Split crown (SHIPPED)" group="1c · The home logo" subtitle="Stop drawing a second logo: the launcher mark itself crowns the type and the two-die row is deleted — measured dead neutral at 96px, but the token bakes cyan-and-magenta into its own SVG, so a repointed duel pair breaks the hero" width=412 height=1906 sizes="md" links="Matchmaking, Ladder, Settings" -->
 <style>
   /* preview glue, same three lines as the Home baseline (10-home-signed-in) */
   .scr{align-items:center}
@@ -170,13 +170,17 @@
   96px box buys a 76.8px die for what a 74px die cost. At 88 the hero is 164 (−8), at 104 it is
   180 (+8). Ship 96; the reason to shrink was to buy back space the design does not owe. Zero
   motion, zero localisation cost.
-  <b>The blocker, and it is real.</b> splitDieIconSVG writes hueVars(DEFAULT_ICON_PAIR) — literally
-  --p1:var(--cy);--p2:var(--mg) — onto its own SVG root, under anything the page can set. The mark
-  is a picture and the picture is cyan and magenta, so a player who repointed the duel pair gets a
-  cyan-magenta hero over a violet-green title and PLAY button, on the one screen where that is
-  unmissable. Strip row 2 is the evidence; the re-light glow DOES follow the pair, so the failure
-  arrives as a violet-green halo around a magenta die. This ships only after the split CSS leaves
-  tools/appicon.mjs and becomes a live DOM class reading --p1/--p2.
+  <b>SHIPPED 2026-09-03, and the blocker went with it.</b> The objection was real: splitDieIconSVG
+  writes hueVars(DEFAULT_ICON_PAIR) — literally --p1:var(--cy);--p2:var(--mg) — onto its own SVG
+  root, so as a picture the mark could not follow a repointed pair, and the two dice it replaces
+  already did. Shipping it as an image would have COST Home a capability it had. So the split
+  arrangement left tools/appicon.mjs for src/styles/components/split-mark.css, and Home renders it
+  as live DOM (src/ui/split-mark.ts): --p1/--p2 now resolve from the page. Measured on the built
+  app, a violet-green pair repaints the mark violet-green along with the wordmark. The icon canvas
+  still pins its own pair with hueVars, because the DEVICE's icon choice is not the page's — same
+  rules, two contexts, one implementation. Strip row 2 below is the failure that no longer happens.
+  The generator kept rendering byte-identical icons across the move, which is the check that it was
+  the same CSS and not a rewrite of it.
   <b>Two smaller risks.</b> The player tapped this exact tile seconds ago, so showing it again can
   read as a loading state that never resolved; the eyebrow and title beneath are the only thing
   saying otherwise. And the flat grey square the slate feared is not what rendered — each half

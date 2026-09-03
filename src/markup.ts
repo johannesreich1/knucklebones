@@ -14,17 +14,24 @@ import {
 import { OVERLAY_CARDS_MARKUP } from './markup/overlay-cards.ts';
 import { RESULT_MARKUP } from './markup/result.ts';
 import { chromeIcon } from './ui/chromeicons.ts';
+import { splitMarkMarkup } from './ui/split-mark.ts';
 import { pageBackButton } from './ui/page-chrome.ts';
 
 export const MARKUP = `${BOARD_MARKUP}
 
-<!-- HOME: online-first. The duel is the hero, PLAY ONLINE the one primary
-     action; local play sits behind the quiet PRACTICE strip. -->
+<!-- HOME: online-first. The MARK is the hero, PLAY ONLINE the one primary
+     action; local play sits behind the quiet PRACTICE strip.
+     The mark crowns the type rather than sitting wedged inside it (design 14e /
+     L5, chosen 2026-09-03): the tile the player tapped two seconds ago and the
+     screen they land on are one object. The two 74px dice and the gold VS that
+     used to stand here are gone — they were the only place in the product that
+     hand-composed a second logo. It is live DOM, not the icon's SVG, so it
+     still follows a repointed duel pair the way those dice did. -->
 <div class="ov on" id="ovStart">
   <div class="hero">
+    <span id="homeMark">${splitMarkMarkup()}</span>
     <div class="eyebrow" data-i18n="common:app.edition">Neon Edition</div>
     <h1>KNUCKLEBONES</h1>
-    <div class="duel" id="homeDuel"><span class="vs" data-i18n="common:versus">VS</span></div>
     <div class="sub2" data-i18n="common:app.tagline">Ranked dice duels</div>
   </div>
   <div class="homestack">

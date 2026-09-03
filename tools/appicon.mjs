@@ -90,40 +90,13 @@ export function iconSVG(
     `</div></div></foreignObject></svg>`;
 }
 
-/* THE SPLIT DIE. The card's single implementation (56b) moved here: two of the
-   app's own six-face dice at the same spot, tilted the shipped 7°, one clipped
-   to its left pip column and lit by "your colour", the other to its right
-   column and lit by the opponent's, meeting on a white seam that glows in
-   both hues. The die's glass is translucent, so each half stands on a plate
-   of its owner's hue; the ground is the charcoal launcher gradient with a
-   wash of each hue leaning in from the die's outer corners. The hues are
-   pinned to RAW tokens on the canvas — the pair is the icon's, never the
-   page's --p1/--p2. Authored at 120 units and scaled to the canvas. */
-const SPLIT_CSS = `
-.split{position:absolute;left:0;top:0;width:120px;height:120px;transform-origin:0 0;overflow:hidden}
-.split .half,.split .seam,.split .plate{position:absolute;left:12px;top:12px;width:96px;height:96px;
-  display:block;line-height:0;transform-origin:50% 50%;transform:rotate(${APP_ICON_TILT_DEG}deg);
-  border-radius:min(var(--r),calc(96px*.25 + 1.5px))}
-.split .die{animation:none}
-.split .pip{transition:none}
-.split .left{clip-path:polygon(-40% -40%,50.4% -40%,50.4% 140%,-40% 140%);
-  background:linear-gradient(168deg,rgba(var(--p1-rgb),.40),rgba(var(--p1-rgb),.28) 60%,rgba(var(--p1-rgb),.36))}
-.split .right{clip-path:polygon(49.6% -40%,140% -40%,140% 140%,49.6% 140%);
-  background:linear-gradient(168deg,rgba(var(--p2-rgb),.42),rgba(var(--p2-rgb),.28) 60%,rgba(var(--p2-rgb),.38))}
-.split .seam{pointer-events:none}
-/* on a light ground the translucent glass would read pastel: the light
-   rendition stands the die on an opaque charcoal plate with a soft shadow */
-.split .plate{display:none;background:linear-gradient(160deg,#1e1f25,#0d0e12);
-  box-shadow:0 10px 26px rgba(0,0,0,.28),0 0 0 1px rgba(0,0,0,.06)}
-.appicon-canvas.light .split .plate{display:block}
-.appicon-canvas.light .split .left{background:linear-gradient(168deg,rgba(var(--p1-rgb),.44),rgba(var(--p1-rgb),.30) 60%,rgba(var(--p1-rgb),.40))}
-.appicon-canvas.light .split .right{background:linear-gradient(168deg,rgba(var(--p2-rgb),.46),rgba(var(--p2-rgb),.30) 60%,rgba(var(--p2-rgb),.42))}
-.split .seam::after{content:"";position:absolute;left:0;right:0;top:1px;bottom:1px;
-  background:linear-gradient(90deg,transparent 36%,rgba(var(--p1-rgb),.30) 50%,rgba(var(--p2-rgb),.30) 50%,transparent 64%)}
-.split .seam::before{content:"";position:absolute;left:calc(50% - 1px);top:1px;bottom:1px;width:2px;z-index:1;
-  background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.95) 10%,rgba(255,255,255,.95) 90%,rgba(255,255,255,.55));
-  box-shadow:-1px 0 6px rgba(var(--p1-rgb),.9),1px 0 6px rgba(var(--p2-rgb),.9),0 0 2px rgba(255,255,255,.7)}
-`;
+/* The split arrangement now lives in the APP, at src/styles/components/
+   split-mark.css, and arrives here inside HOME_DIE_CSS like every other rule
+   this generator uses. It moved on 2026-09-03 when Home started wearing the
+   mark (design 14e / L5): as a string in this file it could only ever be baked
+   into an SVG, which is what stopped the hero following a repointed pair.
+   The canvas still pins the pair with hueVars below — the DEVICE's icon choice
+   is not the page's — and injects --split-tilt so the tilt has one owner. */
 export const hueVars = (pair) => ['p1', 'p2'].map((slot, index) => {
   const hue = index === 0 ? pair.p1 : pair.p2;
   return `--${slot}:var(--${hue});--${slot}-rgb:var(--${hue}-rgb);--${slot}-hi:var(--${hue}-hi);`;
@@ -154,8 +127,8 @@ export function splitDieIconSVG(
   return `<svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" xmlns="http://www.w3.org/2000/svg">` +
     `<foreignObject x="0" y="0" width="${S}" height="${S}">` +
     `<div xmlns="http://www.w3.org/1999/xhtml" id="kbroot" style="width:${S}px;height:${S}px">` +
-    `<style>${xmlText(HOME_DIE_CSS)}${xmlText(SPLIT_CSS)}</style>` +
-    `<div class="appicon-canvas${light ? ' light' : ''}" style="${hueVars(pair)}width:${S}px;height:${S}px;position:relative;overflow:hidden;background:${ground}">` +
+    `<style>${xmlText(HOME_DIE_CSS)}</style>` +
+    `<div class="appicon-canvas${light ? ' light' : ''}" style="${hueVars(pair)}--split-tilt:${APP_ICON_TILT_DEG}deg;width:${S}px;height:${S}px;position:relative;overflow:hidden;background:${ground}">` +
     `<div class="split" style="transform:translate(${offset}px,${offset}px) scale(${scale})">` +
     `<i class="plate"></i>` +
     `<i class="half left">${die('p1')}</i>` +

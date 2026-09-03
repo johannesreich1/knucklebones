@@ -15,6 +15,7 @@
 //                              app's own die classes, space-separated, so a card
 //                              can picture a MULTIPLIED die (`p2 m2`) instead of
 //                              restating the shared dice CSS's gold in card CSS
+//   {{splitmark[:px]}}          HOME's hero mark, live DOM, following --p1/--p2
 //   {{appicon[:px][:light]}}     the shipped launcher mark (the split die), at its
 //                              launcher scale and clockwise tilt; `:light` is the
 //                              iOS light appearance with its own light ground
@@ -62,6 +63,7 @@ import { modeById } from '../src/core/modes.ts';
 import { libraryBody, libraryCards, pickerButtons, pickInfo, MODE_LIB, SPELL_LIB, MODE_PICKS, SPELL_PICKS } from '../src/ui/library.ts';
 import { inlineCssGraph } from '../tools/css-graph.mjs';
 import { SPLIT_ICON_PAD, splitDieIconSVG } from '../tools/appicon.mjs';
+import { splitMarkMarkup } from '../src/ui/split-mark.ts';
 import { discoverDesignScreens } from './screen-library.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -115,7 +117,26 @@ for (const rule of css.replace(/\/\*[\s\S]*?\*\//g, ' ')
    under the set explaining the proposal. Those were being redeclared per card
    (53, 71, and every study in 6x/7x/8x), which is a copy per card of two
    rules. They live here now, so a study only writes what is actually new. */
-const chrome = `
+/* RETIRED PRODUCT CSS. The two-dice hero left src/styles/screens/home.css on
+   2026-09-03 when Home started wearing the split mark (design 14e / L5). Three
+   boards still have to DRAW it — the archived 13c and the logo studies 14a-14c
+   all argue against today's hero and are worthless without a picture of it — so
+   the rules move here rather than staying dead in the app's bundle. This is the
+   one legitimate place for product CSS the product no longer has: a design
+   library that cannot render its own history cannot be read. */
+const retiredHero = `
+.duel{display:flex;align-items:center;gap:18px;margin:20px 0 6px}
+.duel .die{width:74px;height:74px;--cell:74px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -6px 12px rgba(0,0,0,.35),
+  0 5px 14px rgba(0,0,0,.55),
+  var(--duel-die-outer-glow,0 0 34px color-mix(in srgb,var(--dc) 45%,transparent))}
+.duel .die.p1{transform:rotate(-9deg)}
+.duel .die.p2{transform:rotate(9deg)}
+.duel .vs{font-size:19px;font-weight:900;letter-spacing:.08em;color:var(--gold);
+  text-shadow:0 0 18px rgba(255,209,102,.65);font-style:italic}
+`;
+
+const chrome = `${retiredHero}
 .cap2{font-size:9.5px;letter-spacing:.26em;color:var(--dim);text-transform:uppercase;
   text-align:center;width:100%}
 .note{font-size:11.5px;line-height:1.6;color:#c6d3ee;width:100%;max-width:var(--w-col);
@@ -372,6 +393,10 @@ for (const screen of screens) {
     .replace(/\{\{appicon(?::(\d+))?(?::(light))?\}\}/g,
       (_, size, appearance) => appIconMarkup(size ? +size : 44, appearance))
     .replace(/\{\{splashmark(?::(\d+))?\}\}/g, (_, size) => splashMarkMarkup(size ? +size : 44))
+    /* Home's hero, as LIVE DOM from src/ui/split-mark.ts — the same element the
+       app renders, so a card cannot show a mark the product does not have. The
+       appicon token is the launcher's baked image and is not interchangeable. */
+    .replace(/\{\{splitmark(?::(\d+))?\}\}/g, (_, size) => splitMarkMarkup(size ? +size : 96))
     /* The class slot is a LIST, not one name: a die in play is `p2 m2` when its
        column holds a pair (ui/game/board.ts toggles m2/m3 on that count), and a
        card that could only ask for `p2` had to restate the shared dice CSS to show

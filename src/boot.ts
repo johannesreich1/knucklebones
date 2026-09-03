@@ -1,12 +1,10 @@
 // One typed composition root shared by the standalone and widget entries.
-import { AI, ME } from './core/rules.ts';
 import { endGame, place, sayChoose, armTimer } from './flow/game.ts';
 import { configureMenu, syncSettingsUI } from './flow/menu.ts';
 import { castArmed, configureSpellFlow, renderSpells } from './flow/spells.ts';
 import { configureInput } from './ui/input.ts';
 import { appRoot, setEmbed } from './ui/embed.ts';
-import { $, stampBuild, watchPagedScroll } from './ui/dom.ts';
-import { makeDie } from './ui/die.ts';
+import { stampBuild, watchPagedScroll } from './ui/dom.ts';
 import { repaintBagLocale } from './ui/bag.ts';
 import { buildBoards } from './ui/game/board.ts';
 import { repaintScoreLocale } from './ui/game/scores.ts';
@@ -51,9 +49,10 @@ export function boot(embed: boolean): void {
   updateRecord();
   syncSettingsUI();
 
-  const duel = $('#homeDuel');
-  duel.insertBefore(makeDie(5, ME), duel.firstChild);
-  duel.appendChild(makeDie(3, AI));
+  /* The hero used to be assembled here: two makeDie() calls either side of a
+     gold VS. The mark is one object and ships in the markup, so there is
+     nothing left to build — it takes its hues from the page like any other
+     element. */
   refreshHomeChip();
 
   if (!embed) {

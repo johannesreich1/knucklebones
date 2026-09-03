@@ -115,12 +115,18 @@ await page.waitForTimeout(1200);
 const offline = await page.evaluate(() => ({
   booted: !!window.__kb,
   title: document.querySelector('#ovStart h1') ? document.querySelector('#ovStart h1').textContent : null,
-  dice: document.querySelectorAll('#homeDuel .die').length,   // the hero duel: JS built these
+  // The hero used to be JS-built, so counting its dice proved scripts ran.
+  // The mark ships in the markup now (design 14e / L5) and would count 2 on a
+  // page where nothing executed. buildBoards() still composes the columns, so
+  // that is what actually witnesses a full offline boot.
+  cols: document.querySelectorAll('#topBoard .col').length,
+  markHalves: document.querySelectorAll('#homeMark .split .half .die').length,
   cell: getComputedStyle(document.getElementById('kbroot')).getPropertyValue('--cell').trim(),
   best: window.__kb ? window.__kb.S.best : null,
 }));
 check(offline.booted, 'game did not boot offline', offline);
-check(offline.dice === 2, 'offline boot did not run scripts fully', offline);
+check(offline.cols > 0, 'offline boot did not run scripts fully', offline);
+check(offline.markHalves === 2, 'the offline Home lost its split mark', offline);
 // and it must still be playable offline, not just render
 await page.evaluate(() => window.__kb.openPractice());
 await page.tap('#btnPlay');
