@@ -22,6 +22,7 @@ import { trialSelectionSettled } from '../src/online/runes/trial-offer.ts';
 import { RUNE_TRIAL_PICK_SECS } from '../src/core/rune-trial-offer.ts';
 import { setLanguageOverride, t } from '../src/i18n/index.ts';
 import { emitReport } from './support/emit-report.mjs';
+import { runOnlineReadContractCases } from './support/online-read-contract.ts';
 
 const problems: string[] = [];
 const check = (condition: boolean, message: string, detail?: unknown) => {
@@ -136,35 +137,7 @@ const onlineClientSource = readFileSync('src/online/api/client.ts', 'utf8');
 check(onlineClientSource.includes('new AbortController()')
   && onlineClientSource.includes('Promise.race([request, timeout])'),
   'online function calls have no bounded abort/recovery boundary');
-/* THE READS A PLAYER WATCHES MUST BE ABLE TO END. PostgREST carries no
-   timeout of its own, so a hung connection used to leave the Ladder and the
-   Profile rank waiting with nothing to show and nothing to press (user
-   report, 3 Sep 2026). Each of these reads now runs inside the shared
-   deadline and can be refused for credentials exactly once before it gives
-   up, which is what lets an expired session heal itself in place. */
-check(onlineClientSource.includes('export async function readWithin'),
-  'the shared read deadline is gone; a hung read can strand a screen again');
-const ladderApiSource = readFileSync('src/online/api/ladder-api.ts', 'utf8');
-const profileSource = readFileSync('src/online/identity/profile.ts', 'utf8');
-const carriesDeadline = (source: string, read: string): boolean => {
-  const calls = [...source.matchAll(new RegExp(read.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&'), 'gu'))];
-  return calls.length > 0
-    && calls.every(({ index }) => source.slice(index, index + 160).includes('.abortSignal('));
-};
-for (const [name, source, reads] of [
-  ['ladder-api', ladderApiSource, ["rpc('player_standing'", "rpc('active_ranked_curve_version'"]],
-  ['profile', profileSource, ["from('profiles')\n      .select('id, nickname"]],
-] as const) {
-  for (const read of reads) {
-    check(carriesDeadline(source, read),
-      `${name} has a screen-facing read outside the shared deadline`, read);
-  }
-}
-check(ladderApiSource.includes('isAuthRefusal(first.error)')
-  && profileSource.includes('isAuthRefusal(first.error)')
-  && ladderApiSource.includes('currentUserOrRecover')
-  && profileSource.includes('currentUserOrRecover'),
-'an expired session no longer heals itself: a refused read is reported without one refresh');
+runOnlineReadContractCases(check);
 const moveTransport = matchApiSource.slice(
   matchApiSource.indexOf('async function moveCommand'),
   matchApiSource.indexOf('export async function move('),
