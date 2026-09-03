@@ -1,0 +1,134 @@
+<!-- meta name="A8 — Crown drop" group="1d · The start animation" subtitle="The type is there first and the mark drops onto it from above; the impact runs one sweep along the wordmark's own gradient, so the crown lands on the name instead of arriving beside it" width=412 height=1350 sizes="md" links="iOS launch, Home" -->
+<style>
+  /* Family scaffold and its reasoning: see A1 (15a). */
+  .scr{align-items:center}
+  .hero{margin-top:34px}
+  .stscr{position:relative;min-height:560px;overflow:hidden}
+  .stlaunch{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:#05060e;z-index:3;will-change:opacity}
+  .stlaunch .appicon-mark{width:99px;height:99px;display:block}
+  .sthome{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;
+    width:100%;flex:1 1 auto}
+  .stmark{display:block;line-height:0;margin-bottom:4px;
+    filter:drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22));
+    will-change:transform}
+  .stmark .appicon-mark{display:block}
+
+  /* ── A8 · CROWN DROP ───────────────────────────────────────────────────────
+     THE ONLY CARD THAT INVERTS THE ORDER. Everywhere else the mark leads and
+     the type follows it up. Here the wordmark is already standing when the
+     webview takes the screen, and the mark falls onto it from above — which is
+     the literal reading of what L5 proposes. 14e's word is CROWNING: the mark
+     is not beside the type or inside it, it sits ON it. A drop is that sentence
+     as motion, and the impact is what proves contact.
+
+     The impact is not a bounce. The mark stops dead and the WORDMARK reacts —
+     one sweep of light travelling along the gradient it already has, left to
+     right, once. Light moving through the type is the app's own idiom (the
+     primary CTA's glint is exactly this), so the reaction costs no new
+     vocabulary; it is the button's trick, borrowed for one frame. */
+  .stdrop h1{position:relative;overflow:hidden}
+  /* the sweep: a narrow bright band crossing the wordmark once on contact */
+  .stdrop h1::after{content:"";position:absolute;top:0;bottom:0;left:0;width:56%;opacity:0;
+    pointer-events:none;transform:translateX(-140%);will-change:transform,opacity;
+    background:linear-gradient(105deg,transparent 12%,rgba(255,255,255,.34) 50%,transparent 88%)}
+
+  .sa8 .stlaunch,.sa8 .stmark,.sa8 .sttype,.sa8 .stdrop h1::after,.sa8 .homestack{
+    animation-duration:5200ms;animation-iteration-count:infinite;animation-fill-mode:both}
+  .sa8 .stlaunch{animation-name:a8launch}
+  .sa8 .sttype{animation-name:a8type}
+  .sa8 .stmark{animation-name:a8drop}
+  .sa8 .stdrop h1::after{animation-name:a8sweep}
+  .sa8 .homestack{animation-name:a8stack}
+  @keyframes a8launch{
+    0%{opacity:1}
+    17.3%{opacity:1;animation-timing-function:steps(1,end)}
+    17.4%{opacity:0}
+    92%{opacity:0;animation-timing-function:steps(1,end)}
+    92.1%{opacity:1}
+    100%{opacity:1}}
+  /* the name is standing before anything lands on it */
+  @keyframes a8type{
+    0%,17.4%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    24%{opacity:1}
+    92%{opacity:1;animation-timing-function:steps(1,end)}
+    92.1%,100%{opacity:0}}
+  /* the fall: 38px, accelerating, and it does NOT bounce — a crown that
+     rebounds is a ball. It stops, and the type answers instead. */
+  @keyframes a8drop{
+    0%,24%{opacity:0;transform:translateY(-38px) scale(1.04);animation-timing-function:cubic-bezier(.4,0,1,1)}
+    26%{opacity:1;transform:translateY(-38px) scale(1.04);animation-timing-function:cubic-bezier(.55,0,.85,.6)}
+    35%{transform:translateY(0) scale(1)}
+    92%{opacity:1;transform:translateY(0) scale(1);animation-timing-function:steps(1,end)}
+    92.1%,100%{opacity:0;transform:translateY(-38px) scale(1.04)}}
+  /* contact, and the wordmark answers with one pass of light */
+  @keyframes a8sweep{
+    0%,35%{opacity:0;transform:translateX(-140%);animation-timing-function:cubic-bezier(.3,0,.2,1)}
+    36%{opacity:1;transform:translateX(-140%);animation-timing-function:cubic-bezier(.3,0,.2,1)}
+    47%{opacity:1;transform:translateX(240%)}
+    48%{opacity:0;transform:translateX(240%)}
+    92%,100%{opacity:0;transform:translateX(-140%)}}
+  /* the stack comes last: the hero has to finish before the page offers a tap */
+  @keyframes a8stack{
+    0%,36%{opacity:0;transform:translateY(8px);animation-timing-function:cubic-bezier(.16,1,.3,1)}
+    48%{opacity:1;transform:translateY(0)}
+    92%{opacity:1;transform:translateY(0);animation-timing-function:steps(1,end)}
+    92.1%,100%{opacity:0;transform:translateY(8px)}}
+
+  @media (prefers-reduced-motion:reduce){
+    /* a falling object is exactly what this setting exists to refuse */
+    .sa8 .stmark{animation:none;opacity:1;transform:none}
+    .sa8 .stdrop h1::after{animation:none;opacity:0}
+    .sa8 .sttype{animation:none;opacity:1}
+    .sa8 .homestack{animation:none;opacity:1;transform:none}
+    .sa8 .stlaunch{animation:none;opacity:0}}
+
+  .stclock{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:var(--w-col);
+    margin:12px auto 0;font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+  .stclock b{color:var(--gold);font-weight:800}
+  .stclock i{font-style:normal;color:#c6d3ee}
+  .sthead{width:100%;max-width:var(--w-col);margin:4px auto 0;text-align:left}
+  .sthead .eyebrow{font-size:9px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+  .sthead h1{font-size:18px;text-align:left;margin:4px 0 7px}
+  .sthead p{font-size:10px;line-height:1.55;letter-spacing:.1em;color:var(--dim);margin:0}
+</style>
+<div class="stage sa8"><div class="bgfx"></div><div class="scr stscr">
+
+  <div class="stlaunch">{{splashmark:99}}</div>
+
+  <div class="sthome stdrop">
+    <div class="hero">
+      <i class="stmark">{{appicon:96}}</i>
+      <div class="sttype">
+        <div class="eyebrow">Neon Edition</div>
+        <h1>KNUCKLEBONES</h1>
+        <div class="sub2">Ranked dice duels</div>
+      </div>
+    </div>
+    <div class="homestack">
+      <button class="pplate dice-static">
+        <span class="ringwrap mini" style="--p:.489"><i class="lring"></i><span class="pav">{{die:5:p1:18}}</span></span>
+        <span class="nm2">FrostLynx303</span>
+        <span class="meta2"><span class="mrow"><b>2,494</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #4</span></span>
+        <span class="chev">›</span>
+      </button>
+      <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">{{ico:play:25}}</span><span class="btn-label">Play ranked match</span></button>
+      <div class="hrow">
+        <button class="btn">Ladder</button>
+        <button class="btn">Settings</button>
+      </div>
+    </div>
+  </div>
+
+</div></div>
+<div class="stclock"><span><b>620 ms · fall 240, sweep 120, stack 260</b></span><span><i>open study</i></span></div>
+<div class="sthead">
+  <div class="eyebrow">Open study · the start animation</div>
+  <h1>A8 · CROWN DROP</h1>
+  <p>The name is standing when the app takes the screen, and the mark falls onto it. It does not bounce — it stops, and the wordmark answers with one pass of light along the gradient it already has. The crown lands on the name.</p>
+</div>
+<div class="note"><b>It is the only card that inverts the order.</b> Everywhere else the mark leads and the type follows it up. 14e's word for what L5 does is CROWNING — the mark sits ON the type rather than beside or inside it — and a drop is that sentence said as motion. If the hero's whole justification is the relationship between two objects, the animation should be about the relationship, not about either object arriving.
+  <b>The impact belongs to the type, not the mark.</b> A crown that rebounds is a ball, so the mark stops dead; what proves contact is the wordmark's reaction — one sweep of light travelling its gradient, left to right, once. That is the primary CTA's glint borrowed for a single frame, so the reaction introduces no new vocabulary and a player has already been trained to read it as "this thing is live".
+  <b>Order costs time.</b> Type, then mark, then impact, then stack is four beats where every other card has two or three, and the PLAY button is the last thing to arrive at 620ms. This is the card most likely to be cut for feeling slow, and the reason it feels slow is the same reason it means something.
+  <b>Reduced motion loses the whole idea.</b> A falling object is precisely what that setting refuses, and there is no quieter drop — so on that setting this card is a plain fade with no sweep, and the crowning is never stated.
+  <b>Watch it against A2.</b> Both are about arrival; A2 says the mark you tapped is the mark you landed on, and A8 says the mark belongs on the name. They are not compatible — a mark that flew up from the launch frame cannot also fall from above — so the family has to pick one story.</div>

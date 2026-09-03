@@ -1,0 +1,116 @@
+<!-- meta name="A3 — Cant and settle" group="1d · The start animation" subtitle="The launcher mark carries a clockwise tilt; it arrives over-turned and unwinds into its resting cant, so the object that was a static tile becomes a die that was just thrown" width=412 height=1313 sizes="md" links="iOS launch, Home" -->
+<style>
+  /* Family scaffold and its reasoning: see A1 (15a). Every card drives the
+     shipped tokens; nothing here redraws the mark. */
+  .scr{align-items:center}
+  .hero{margin-top:34px}
+  .stscr{position:relative;min-height:560px;overflow:hidden}
+  .stlaunch{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:#05060e;z-index:3;will-change:opacity}
+  .stlaunch .appicon-mark{width:99px;height:99px;display:block}
+  .sthome{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;
+    width:100%;flex:1 1 auto}
+  .stmark{display:block;line-height:0;margin-bottom:4px;
+    filter:drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22));
+    will-change:transform}
+  .stmark .appicon-mark{display:block}
+
+  /* ── A3 · CANT AND SETTLE ──────────────────────────────────────────────────
+     The one thing this mark already does that no other logo in the app does is
+     TILT. tools/appicon.mjs bakes a clockwise cant into the die, so the tile on
+     the springboard is a die caught mid-air rather than a square badge. That
+     tilt is a shipped fact and it is doing nothing at boot.
+
+     So: arrive over-turned — a few degrees past the resting cant, in the same
+     direction the mark already leans — and unwind. It reads as a die that was
+     thrown and is coming to rest, which is the only story this app's hero has
+     any business telling. Rotation is the whole animation: no scale, no fade
+     on the mark, nothing that could be mistaken for a loading state.
+
+     The number is small ON PURPOSE. 9deg past rest is a settle; 30deg is a
+     spin, and a spinning logo at boot is a loading spinner whether or not
+     anything is loading. Card 35 already rejected exactly that mistake once. */
+  .sa3 .stmark{transform-origin:50% 58%}
+
+  .sa3 .stlaunch,.sa3 .stmark,.sa3 .sttype,.sa3 .homestack{
+    animation-duration:5200ms;animation-iteration-count:infinite;animation-fill-mode:both}
+  .sa3 .stlaunch{animation-name:a3launch}
+  .sa3 .stmark{animation-name:a3cant}
+  .sa3 .sttype,.sa3 .homestack{animation-name:a3home}
+  @keyframes a3launch{
+    0%{opacity:1}
+    17.3%{opacity:1;animation-timing-function:steps(1,end)}
+    17.4%{opacity:0}
+    92%{opacity:0;animation-timing-function:steps(1,end)}
+    92.1%{opacity:1}
+    100%{opacity:1}}
+  /* over-turned, then one unwind with a soft overshoot the eye reads as weight */
+  @keyframes a3cant{
+    0%,17.4%{opacity:0;transform:rotate(9deg) scale(.985);animation-timing-function:cubic-bezier(.16,1,.3,1)}
+    19%{opacity:1;transform:rotate(9deg) scale(.985);animation-timing-function:cubic-bezier(.34,1.3,.42,1)}
+    32%{transform:rotate(-1.2deg) scale(1);animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    38%{transform:rotate(0deg) scale(1)}
+    92%{opacity:1;transform:rotate(0deg) scale(1);animation-timing-function:steps(1,end)}
+    92.1%,100%{opacity:0;transform:rotate(9deg) scale(.985)}}
+  /* the type does NOT turn — only the die was thrown */
+  @keyframes a3home{
+    0%,22%{opacity:0;animation-timing-function:cubic-bezier(.16,1,.3,1)}
+    36%{opacity:1}
+    92%{opacity:1;animation-timing-function:steps(1,end)}
+    92.1%,100%{opacity:0}}
+
+  @media (prefers-reduced-motion:reduce){
+    /* a rotation has nothing to degrade to: drop it and keep the settled mark */
+    .sa3 .stmark{animation:none;opacity:1;transform:none}
+    .sa3 .sttype,.sa3 .homestack{animation:none;opacity:1}
+    .sa3 .stlaunch{animation:none;opacity:0}}
+
+  .stclock{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:var(--w-col);
+    margin:12px auto 0;font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+  .stclock b{color:var(--gold);font-weight:800}
+  .stclock i{font-style:normal;color:#c6d3ee}
+  .sthead{width:100%;max-width:var(--w-col);margin:4px auto 0;text-align:left}
+  .sthead .eyebrow{font-size:9px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+  .sthead h1{font-size:18px;text-align:left;margin:4px 0 7px}
+  .sthead p{font-size:10px;line-height:1.55;letter-spacing:.1em;color:var(--dim);margin:0}
+</style>
+<div class="stage sa3"><div class="bgfx"></div><div class="scr stscr">
+
+  <div class="stlaunch">{{splashmark:99}}</div>
+
+  <div class="sthome">
+    <div class="hero">
+      <i class="stmark">{{appicon:96}}</i>
+      <div class="sttype">
+        <div class="eyebrow">Neon Edition</div>
+        <h1>KNUCKLEBONES</h1>
+        <div class="sub2">Ranked dice duels</div>
+      </div>
+    </div>
+    <div class="homestack">
+      <button class="pplate dice-static">
+        <span class="ringwrap mini" style="--p:.489"><i class="lring"></i><span class="pav">{{die:5:p1:18}}</span></span>
+        <span class="nm2">FrostLynx303</span>
+        <span class="meta2"><span class="mrow"><b>2,494</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #4</span></span>
+        <span class="chev">›</span>
+      </button>
+      <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">{{ico:play:25}}</span><span class="btn-label">Play ranked match</span></button>
+      <div class="hrow">
+        <button class="btn">Ladder</button>
+        <button class="btn">Settings</button>
+      </div>
+    </div>
+  </div>
+
+</div></div>
+<div class="stclock"><span><b>420 ms · 9° unwind, −1.2° overshoot</b></span><span><i>open study</i></span></div>
+<div class="sthead">
+  <div class="eyebrow">Open study · the start animation</div>
+  <h1>A3 · CANT AND SETTLE</h1>
+  <p>The mark already leans — the launcher generator bakes a clockwise cant into the die so the tile reads as a throw, not a badge. Here it arrives nine degrees past that rest and unwinds into it, overshooting once. The die was thrown; this is it landing.</p>
+</div>
+<div class="note"><b>It animates something the mark already claims.</b> The cant is shipped, in tools/appicon.mjs, and until now it has been a static pose. Turning it into the END of a movement costs no new design vocabulary: the resting angle does not change, so the tile the player tapped and the hero they land on are the same picture — this card only says how it got there.
+  <b>Why nine degrees and not thirty.</b> A logo that turns far enough to read as rotation is a spinner, and a spinner at boot promises loading that is not happening. Card 35 already made this mistake once — its second beat used to wobble the launch die "waking into the loader" until someone noticed nothing draws a loader at boot — and the fix was to delete the motion, not to slow it. Nine degrees is under the threshold where the eye calls it a spin and over the one where it calls it nothing.
+  <b>The overshoot is the whole quality bar.</b> −1.2° past rest, then back, is what separates a die with weight from an image being transformed. Take it out and the card still works and stops being good.
+  <b>What it does not say.</b> Nothing about the seam, nothing about two owners, nothing about the split — it is a motion study of a shape, and a player who has never noticed the die is divided will not notice it here either. A1 says the opposite thing at the same moment.
+  <b>Reduced motion has no fallback.</b> A rotation degrades to no rotation; there is no quieter version, so on that setting this card IS the hard cut it was written to replace.</div>

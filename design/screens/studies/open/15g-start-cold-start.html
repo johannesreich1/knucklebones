@@ -1,0 +1,129 @@
+<!-- meta name="A7 — Cold start" group="1d · The start animation" subtitle="The mark and the wordmark come up cold — bone-grey, unlit — and take their colour together on one curve, so the neon is something the app switches on rather than something it was born with" width=412 height=1279 sizes="md" links="iOS launch, Home, Foundations" -->
+<style>
+  /* Family scaffold and its reasoning: see A1 (15a). */
+  .scr{align-items:center}
+  .hero{margin-top:34px}
+  .stscr{position:relative;min-height:560px;overflow:hidden}
+  .stlaunch{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:#05060e;z-index:3;will-change:opacity}
+  .stlaunch .appicon-mark{width:99px;height:99px;display:block}
+  .sthome{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;
+    width:100%;flex:1 1 auto}
+  .stmark{display:block;line-height:0;margin-bottom:4px;will-change:filter}
+  .stmark .appicon-mark{display:block}
+
+  /* ── A7 · COLD START ───────────────────────────────────────────────────────
+     A1 lights the seam and lets the colour spread from it. This card refuses
+     the sequence entirely: mark and wordmark come up TOGETHER, both cold, and
+     both take their colour on one curve. There is no first thing.
+
+     Why that is a different idea and not a smaller one: the app's whole visual
+     claim is neon over bone. Every screen is grey type and grey dice with light
+     put ON them — the plates, the ring, the CTA glint. If boot shows that
+     happening once, the player learns the rule of the interface in 500ms
+     without being told it. The die is not glowing because dice glow; it is
+     glowing because the app turned it on.
+
+     The mark uses a filter (the token is an image, so saturate() is the only
+     lever). The wordmark uses the type's OWN gradient, faded up over a bone
+     fallback — the h1 gradient is shared CSS, so nothing is restated here. */
+  .stcold h1{position:relative;color:#cfd6e6;-webkit-text-fill-color:#cfd6e6;
+    background:none;will-change:color}
+  /* the lit wordmark rides on top of the cold one, same glyphs, same metrics */
+  .stcold h1::after{content:"KNUCKLEBONES";position:absolute;inset:0;opacity:0;
+    background:linear-gradient(105deg,var(--p1) 0%,#fff 50%,var(--p2) 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    color:transparent;will-change:opacity}
+
+  .sa7 .stlaunch,.sa7 .stmark,.sa7 .sttype,.sa7 .homestack,.sa7 .stcold h1::after{
+    animation-duration:5200ms;animation-iteration-count:infinite;animation-fill-mode:both}
+  .sa7 .stlaunch{animation-name:a7launch}
+  .sa7 .stmark{animation-name:a7warm}
+  .sa7 .stcold h1::after{animation-name:a7type}
+  .sa7 .sttype,.sa7 .homestack{animation-name:a7home}
+  @keyframes a7launch{
+    0%{opacity:1}
+    17.3%{opacity:1;animation-timing-function:steps(1,end)}
+    17.4%{opacity:0}
+    92%{opacity:0;animation-timing-function:steps(1,end)}
+    92.1%{opacity:1}
+    100%{opacity:1}}
+  /* cold to lit. The glow arrives WITH the colour, not before it: an unlit die
+     with a coloured halo is the one frame that would look broken. */
+  @keyframes a7warm{
+    0%,19%{filter:grayscale(1) brightness(.62) drop-shadow(0 0 0 rgba(var(--p1-rgb),0));
+      animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    40%{filter:grayscale(0) brightness(1)
+      drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))}
+    92%{animation-timing-function:steps(1,end)}
+    92.1%,100%{filter:grayscale(1) brightness(.62) drop-shadow(0 0 0 rgba(var(--p1-rgb),0))}}
+  /* the type warms on the SAME curve and the same window — together is the point */
+  @keyframes a7type{
+    0%,19%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    40%{opacity:1}
+    92%{opacity:1;animation-timing-function:steps(1,end)}
+    92.1%,100%{opacity:0}}
+  @keyframes a7home{
+    0%,17.4%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    26%{opacity:1}
+    92%{opacity:1;animation-timing-function:steps(1,end)}
+    92.1%,100%{opacity:0}}
+
+  @media (prefers-reduced-motion:reduce){
+    /* a colour change is not vestibular motion, but it is still an effect the
+       setting is entitled to refuse: land on the lit state and hold it */
+    .sa7 .stmark{animation:none;filter:
+      drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))}
+    .sa7 .stcold h1::after{animation:none;opacity:1}
+    .sa7 .sttype,.sa7 .homestack{animation:none;opacity:1}
+    .sa7 .stlaunch{animation:none;opacity:0}}
+
+  .stclock{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:var(--w-col);
+    margin:12px auto 0;font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+  .stclock b{color:var(--gold);font-weight:800}
+  .stclock i{font-style:normal;color:#c6d3ee}
+  .sthead{width:100%;max-width:var(--w-col);margin:4px auto 0;text-align:left}
+  .sthead .eyebrow{font-size:9px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+  .sthead h1{font-size:18px;text-align:left;margin:4px 0 7px}
+  .sthead p{font-size:10px;line-height:1.55;letter-spacing:.1em;color:var(--dim);margin:0}
+</style>
+<div class="stage sa7"><div class="bgfx"></div><div class="scr stscr">
+
+  <div class="stlaunch">{{splashmark:99}}</div>
+
+  <div class="sthome stcold">
+    <div class="hero">
+      <i class="stmark">{{appicon:96}}</i>
+      <div class="sttype">
+        <div class="eyebrow">Neon Edition</div>
+        <h1>KNUCKLEBONES</h1>
+        <div class="sub2">Ranked dice duels</div>
+      </div>
+    </div>
+    <div class="homestack">
+      <button class="pplate dice-static">
+        <span class="ringwrap mini" style="--p:.489"><i class="lring"></i><span class="pav">{{die:5:p1:18}}</span></span>
+        <span class="nm2">FrostLynx303</span>
+        <span class="meta2"><span class="mrow"><b>2,494</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #4</span></span>
+        <span class="chev">›</span>
+      </button>
+      <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">{{ico:play:25}}</span><span class="btn-label">Play ranked match</span></button>
+      <div class="hrow">
+        <button class="btn">Ladder</button>
+        <button class="btn">Settings</button>
+      </div>
+    </div>
+  </div>
+
+</div></div>
+<div class="stclock"><span><b>500 ms · one curve, mark and type together</b></span><span><i>open study</i></span></div>
+<div class="sthead">
+  <div class="eyebrow">Open study · the start animation</div>
+  <h1>A7 · COLD START</h1>
+  <p>Everything comes up bone — the die grey, the wordmark unlit — and the colour arrives on one curve across both at once. The neon is not what the app is made of; it is what the app switches on.</p>
+</div>
+<div class="note"><b>It teaches the interface's rule in one beat.</b> This app is bone with light put on it: grey dice that take a plate, grey type that takes a gradient, a CTA that takes a glint. Showing that happen once at boot means a player has already seen the grammar before they read a word — and every lit thing they meet afterwards is the same idea repeating.
+  <b>Refusing a sequence is the design decision.</b> A1 lights the seam first and lets colour spread from it, which puts the mark ahead of the type and makes the seam the hero. Here there is no first thing: mark and wordmark share one window and one curve. That is either a cleaner claim or a duller one, and it is the axis these two cards exist to test against each other.
+  <b>How the type warms.</b> The h1's lit state is the app's own shared gradient, faded up over a bone fallback with a ::after that repeats the glyphs — same font, same metrics, no restated type CSS. The mark can only use a filter, because the token is an image and saturate() is the only lever an image gives you.
+  <b>The frame that must never render.</b> An unlit grey die with a coloured halo already around it looks broken, so the glow and the colour are on the same keyframes, arriving together. Split them for "polish" and the first thing a new player sees is a bug.
+  <b>Cheapest in the family, and it shows.</b> No transform, no travel, no second copy of the mark — one filter and one opacity. It is also the least memorable: nobody describes a colour fade to a friend.</div>

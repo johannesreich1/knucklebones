@@ -1,0 +1,133 @@
+<!-- meta name="A2 — Land and settle" group="1d · The start animation" subtitle="One object, two sizes: the mark the OS painted at 99px shrinks to its 96px crown as the type and the stack rise under it — which only works if the launch frame stops being a different die" width=412 height=1368 sizes="md" links="iOS launch, Home" -->
+<style>
+  /* Family scaffold and its reasoning: see A1 (15a). In short — boot is a hard
+     cut today, L5 makes the launcher's split die the Home hero, and these eight
+     cards are eight ways to spend the beat between. Every card drives the
+     shipped tokens; nothing here redraws the mark. */
+  .scr{align-items:center}
+  .hero{margin-top:34px}
+  .stscr{position:relative;min-height:560px;overflow:hidden}
+  .stlaunch{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:#05060e;z-index:3;will-change:opacity}
+  .stlaunch .appicon-mark{width:99px;height:99px;display:block}
+  .sthome{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;
+    width:100%;flex:1 1 auto}
+  /* the mark, at 14e's numbers and for 14e's reasons */
+  .stmark{display:block;line-height:0;margin-bottom:4px;
+    filter:drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22));
+    will-change:transform}
+  .stmark .appicon-mark{display:block}
+
+  /* ── A2 · LAND AND SETTLE ──────────────────────────────────────────────────
+     THE PROPOSAL THIS CARD MAKES IS NOT THE MOTION. It is that the OS frame and
+     the hero should be the SAME OBJECT. Today they are not: tools/splash.mjs
+     renders a single cyan five (card 35) and tools/appicon.mjs renders the
+     split die, so boot shows a player two different marks half a second apart
+     and asks them to believe it is one app. Every other card in this family
+     works around that; this one deletes it — the launch storyboard renders the
+     split die too, and then the ONLY thing that changes at boot is scale.
+
+     99px on the storyboard, 96px in the hero. Three pixels. That is what makes
+     this the quietest card here: the object does not travel, does not turn,
+     does not light up. It simply stops being the whole screen and becomes the
+     top of a page, and everything else rises to meet it. */
+  .stland{position:absolute;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .stland .appicon-mark{width:99px;height:99px;display:block}
+  .stland i{display:block;line-height:0;will-change:transform,opacity;
+    filter:drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))}
+
+  /* THE LOOP · 5200ms, holds at both ends. A real boot plays it once. */
+  .sa2 .stlaunch,.sa2 .stland i,.sa2 .sttype,.sa2 .homestack,.sa2 .stmark{
+    animation-duration:5200ms;animation-iteration-count:infinite;animation-fill-mode:both}
+  .sa2 .stlaunch{animation-name:a2launch}
+  .sa2 .stland i{animation-name:a2fly}
+  .sa2 .stmark{animation-name:a2seat}
+  .sa2 .sttype,.sa2 .homestack{animation-name:a2home}
+  @keyframes a2launch{
+    0%{opacity:1}
+    17.3%{opacity:1;animation-timing-function:steps(1,end)}
+    17.4%{opacity:0}
+    92%{opacity:0;animation-timing-function:steps(1,end)}
+    92.1%{opacity:1}
+    100%{opacity:1}}
+  /* the travelling copy: centred at launch scale, then up to the hero's seat.
+     -158px is the distance from the stage's middle to the hero's mark at this
+     card's height; it is measured, not chosen, and it moves if the hero does. */
+  @keyframes a2fly{
+    0%,17.4%{opacity:1;transform:translateY(0) scale(1);animation-timing-function:cubic-bezier(.16,1,.3,1)}
+    30%{opacity:1;transform:translateY(-158px) scale(.97);animation-timing-function:steps(1,end)}
+    30.1%{opacity:0;transform:translateY(-158px) scale(.97)}
+    92%,100%{opacity:0;transform:translateY(0) scale(1)}}
+  /* the real hero mark takes over the instant the flying copy is hidden, so
+     nothing cross-fades and the object is never doubled on screen */
+  @keyframes a2seat{
+    0%,30%{opacity:0;animation-timing-function:steps(1,end)}
+    30.1%{opacity:1}
+    92%{opacity:1;animation-timing-function:steps(1,end)}
+    92.1%,100%{opacity:0}}
+  /* type and stack rise to meet a mark that is already in place */
+  @keyframes a2home{
+    0%,26%{opacity:0;transform:translateY(10px);animation-timing-function:cubic-bezier(.16,1,.3,1)}
+    38%{opacity:1;transform:translateY(0)}
+    92%{opacity:1;transform:translateY(0);animation-timing-function:steps(1,end)}
+    92.1%,100%{opacity:0;transform:translateY(10px)}}
+
+  @media (prefers-reduced-motion:reduce){
+    /* the travel is the animation; without it the card is simply Home */
+    .sa2 .stland i{animation:none;opacity:0}
+    .sa2 .stmark{animation:none;opacity:1}
+    .sa2 .sttype,.sa2 .homestack{animation:none;opacity:1;transform:none}
+    .sa2 .stlaunch{animation:none;opacity:0}}
+
+  .stclock{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:var(--w-col);
+    margin:12px auto 0;font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+  .stclock b{color:var(--gold);font-weight:800}
+  .stclock i{font-style:normal;color:#c6d3ee}
+  .sthead{width:100%;max-width:var(--w-col);margin:4px auto 0;text-align:left}
+  .sthead .eyebrow{font-size:9px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+  .sthead h1{font-size:18px;text-align:left;margin:4px 0 7px}
+  .sthead p{font-size:10px;line-height:1.55;letter-spacing:.1em;color:var(--dim);margin:0}
+</style>
+<div class="stage sa2"><div class="bgfx"></div><div class="scr stscr">
+
+  <!-- the OS frame, drawn here with the SPLIT die rather than the splash five,
+       because that substitution is exactly what this card is proposing -->
+  <div class="stlaunch">{{appicon:99}}</div>
+  <div class="stland"><i>{{appicon:99}}</i></div>
+
+  <div class="sthome">
+    <div class="hero">
+      <i class="stmark">{{appicon:96}}</i>
+      <div class="sttype">
+        <div class="eyebrow">Neon Edition</div>
+        <h1>KNUCKLEBONES</h1>
+        <div class="sub2">Ranked dice duels</div>
+      </div>
+    </div>
+    <div class="homestack">
+      <button class="pplate dice-static">
+        <span class="ringwrap mini" style="--p:.489"><i class="lring"></i><span class="pav">{{die:5:p1:18}}</span></span>
+        <span class="nm2">FrostLynx303</span>
+        <span class="meta2"><span class="mrow"><b>2,494</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #4</span></span>
+        <span class="chev">›</span>
+      </button>
+      <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">{{ico:play:25}}</span><span class="btn-label">Play ranked match</span></button>
+      <div class="hrow">
+        <button class="btn">Ladder</button>
+        <button class="btn">Settings</button>
+      </div>
+    </div>
+  </div>
+
+</div></div>
+<div class="stclock"><span><b>660 ms · mark 340, stack 320</b></span><span><i>open study</i></span></div>
+<div class="sthead">
+  <div class="eyebrow">Open study · the start animation</div>
+  <h1>A2 · LAND AND SETTLE</h1>
+  <p>The mark the OS already painted does not disappear and get replaced — it moves. It rises from the centre of the launch frame to the top of the page and settles at hero size, and the type and the stack rise to meet it. Nothing appears; something arrives.</p>
+</div>
+<div class="note"><b>The real proposal is the substitution, not the motion.</b> This card only works if the launch storyboard renders the SPLIT die instead of the splash five. Today tools/splash.mjs draws a single cyan five and tools/appicon.mjs draws the split die, so boot already shows two different marks in half a second — a continuity break nobody animated their way out of. Make them one object and the whole beat becomes a 3px change of scale, which is why this is the quietest card in the family.
+  <b>What it buys.</b> Continuity is the only thing a start animation can honestly sell. A player who taps a split-die tile, sees a split die on the frame, and lands on a split-die hero has been shown one app three times. Every other card here decorates the seam between two marks; this one removes the seam.
+  <b>What it costs.</b> A change to a shipped generator and to every native rendition it writes, plus a new launch storyboard — and the splash five is not nothing: it is the app's oldest mark and the only place the single cyan die still appears at size. Card 35 argues the launch frame should carry no text because text reads as slow; this argues it should carry the same die for the same reason.
+  <b>The measured distance is a liability.</b> The flying copy travels −158px, which is the gap between the stage's centre and the hero's seat AT THIS CARD'S HEIGHT. In the app that distance is a function of the device, the safe area and the stack, so it cannot be a constant — it has to be read from layout at boot, on the frame with the least budget, or the mark lands in the wrong place on a tall phone.
+  <b>Against the hard cut.</b> 660ms is the longest beat in this family, and it delays the PLAY button by all of it.</div>

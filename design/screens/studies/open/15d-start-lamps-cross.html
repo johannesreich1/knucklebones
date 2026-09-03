@@ -1,0 +1,140 @@
+<!-- meta name="A4 — Lamps cross" group="1d · The start animation" subtitle="The mark arrives dark; two lamps sweep in from opposite edges, meet on the seam and stay as the hero's own glow — the only part of the mark that already follows a repointed duel pair" width=412 height=1331 sizes="md" links="iOS launch, Home, Settings" -->
+<style>
+  /* Family scaffold and its reasoning: see A1 (15a). */
+  .scr{align-items:center}
+  .hero{margin-top:34px}
+  .stscr{position:relative;min-height:560px;overflow:hidden}
+  .stlaunch{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:#05060e;z-index:3;will-change:opacity}
+  .stlaunch .appicon-mark{width:99px;height:99px;display:block}
+  .sthome{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;
+    width:100%;flex:1 1 auto}
+
+  /* ── A4 · LAMPS CROSS ──────────────────────────────────────────────────────
+     THE ONE PART OF THE HERO THAT IS NOT A PICTURE. 14e records the blocker
+     that stops L5 shipping: splitDieIconSVG writes --p1:var(--cy);--p2:var(--mg)
+     onto its own SVG root, so the mark is cyan-and-magenta no matter what the
+     player chose. Its re-light glow is NOT — that is two CSS drop-shadows on
+     this side of the image, reading live --p1-rgb/--p2-rgb.
+
+     So this card animates the only honest half. The mark arrives with its glow
+     at zero. Two lamps travel in from the left and right edges of the hero, in
+     the player's own two hues, and cross at the seam; where they cross they
+     hand off to the shadows that stay. A player who repointed their pair sees
+     THEIR colours arrive — which is either the best argument in this family or
+     a cruel one, because the die they land on is still cyan and magenta.
+     Row 2 of 14e is that failure; this card is the same evidence in motion. */
+  .stlamp{position:relative;display:block;line-height:0;margin-bottom:4px;isolation:isolate}
+  .stlamp .appicon-mark{display:block}
+  /* the settled glow: 14e's two shadows, faded up at the crossing */
+  .stlamp .stglow{position:absolute;inset:0;z-index:-1;opacity:0;will-change:opacity;
+    filter:drop-shadow(0 0 26px rgba(var(--p1-rgb),.5)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.5))}
+  .stlamp .stglow .appicon-mark{display:block}
+  /* the two travelling lamps — soft radial light, not an object */
+  .stlamp i{position:absolute;top:50%;width:78px;height:78px;margin-top:-39px;border-radius:50%;
+    z-index:2;pointer-events:none;opacity:0;mix-blend-mode:screen;will-change:transform,opacity}
+  .stlamp .stl1{left:50%;margin-left:-39px;
+    background:radial-gradient(circle,rgba(var(--p1-rgb),.55) 0%,rgba(var(--p1-rgb),.16) 42%,transparent 68%)}
+  .stlamp .stl2{left:50%;margin-left:-39px;
+    background:radial-gradient(circle,rgba(var(--p2-rgb),.55) 0%,rgba(var(--p2-rgb),.16) 42%,transparent 68%)}
+
+  .sa4 .stlaunch,.sa4 .stl1,.sa4 .stl2,.sa4 .stglow,.sa4 .sttype,.sa4 .homestack{
+    animation-duration:5200ms;animation-iteration-count:infinite;animation-fill-mode:both}
+  .sa4 .stlaunch{animation-name:a4launch}
+  .sa4 .stl1{animation-name:a4lampL}
+  .sa4 .stl2{animation-name:a4lampR}
+  .sa4 .stglow{animation-name:a4glow}
+  .sa4 .sttype,.sa4 .homestack{animation-name:a4home}
+  @keyframes a4launch{
+    0%{opacity:1}
+    17.3%{opacity:1;animation-timing-function:steps(1,end)}
+    17.4%{opacity:0}
+    92%{opacity:0;animation-timing-function:steps(1,end)}
+    92.1%{opacity:1}
+    100%{opacity:1}}
+  /* mine comes from my side of the board — left — and stops ON the seam */
+  @keyframes a4lampL{
+    0%,18%{opacity:0;transform:translateX(-104px);animation-timing-function:cubic-bezier(.16,1,.3,1)}
+    21%{opacity:.9;transform:translateX(-92px);animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    34%{opacity:.9;transform:translateX(0);animation-timing-function:linear}
+    41%{opacity:0;transform:translateX(0)}
+    92%,100%{opacity:0;transform:translateX(-104px)}}
+  @keyframes a4lampR{
+    0%,18%{opacity:0;transform:translateX(104px);animation-timing-function:cubic-bezier(.16,1,.3,1)}
+    21%{opacity:.9;transform:translateX(92px);animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    34%{opacity:.9;transform:translateX(0);animation-timing-function:linear}
+    41%{opacity:0;transform:translateX(0)}
+    92%,100%{opacity:0;transform:translateX(104px)}}
+  /* the crossing hands off to the glow that stays */
+  @keyframes a4glow{
+    0%,30%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    38%{opacity:1;animation-timing-function:linear}
+    46%{opacity:.44}
+    92%{opacity:.44;animation-timing-function:steps(1,end)}
+    92.1%,100%{opacity:0}}
+  @keyframes a4home{
+    0%,24%{opacity:0;animation-timing-function:cubic-bezier(.16,1,.3,1)}
+    40%{opacity:1}
+    92%{opacity:1;animation-timing-function:steps(1,end)}
+    92.1%,100%{opacity:0}}
+
+  @media (prefers-reduced-motion:reduce){
+    /* the lamps are travel; the glow is state. Keep the state, drop the travel. */
+    .sa4 .stl1,.sa4 .stl2{animation:none;opacity:0}
+    .sa4 .stglow{animation:none;opacity:.44}
+    .sa4 .sttype,.sa4 .homestack{animation:none;opacity:1}
+    .sa4 .stlaunch{animation:none;opacity:0}}
+
+  .stclock{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:var(--w-col);
+    margin:12px auto 0;font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+  .stclock b{color:var(--gold);font-weight:800}
+  .stclock i{font-style:normal;color:#c6d3ee}
+  .sthead{width:100%;max-width:var(--w-col);margin:4px auto 0;text-align:left}
+  .sthead .eyebrow{font-size:9px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+  .sthead h1{font-size:18px;text-align:left;margin:4px 0 7px}
+  .sthead p{font-size:10px;line-height:1.55;letter-spacing:.1em;color:var(--dim);margin:0}
+</style>
+<div class="stage sa4"><div class="bgfx"></div><div class="scr stscr">
+
+  <div class="stlaunch">{{splashmark:99}}</div>
+
+  <div class="sthome">
+    <div class="hero">
+      <i class="stlamp">
+        <span class="stglow">{{appicon:96}}</span>
+        {{appicon:96}}
+        <i class="stl1"></i><i class="stl2"></i>
+      </i>
+      <div class="sttype">
+        <div class="eyebrow">Neon Edition</div>
+        <h1>KNUCKLEBONES</h1>
+        <div class="sub2">Ranked dice duels</div>
+      </div>
+    </div>
+    <div class="homestack">
+      <button class="pplate dice-static">
+        <span class="ringwrap mini" style="--p:.489"><i class="lring"></i><span class="pav">{{die:5:p1:18}}</span></span>
+        <span class="nm2">FrostLynx303</span>
+        <span class="meta2"><span class="mrow"><b>2,494</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #4</span></span>
+        <span class="chev">›</span>
+      </button>
+      <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">{{ico:play:25}}</span><span class="btn-label">Play ranked match</span></button>
+      <div class="hrow">
+        <button class="btn">Ladder</button>
+        <button class="btn">Settings</button>
+      </div>
+    </div>
+  </div>
+
+</div></div>
+<div class="stclock"><span><b>560 ms · lamps 340, handoff 220</b></span><span><i>open study</i></span></div>
+<div class="sthead">
+  <div class="eyebrow">Open study · the start animation</div>
+  <h1>A4 · LAMPS CROSS</h1>
+  <p>The mark arrives with no light on it. Two lamps travel in from opposite edges in the player's own two hues, meet on the seam, and hand off to the glow that stays. The duel arrives before the game does — from my side and from theirs.</p>
+</div>
+<div class="note"><b>It animates the only part of the hero that is not a picture.</b> 14e's blocker is that splitDieIconSVG writes its own cyan and magenta onto the SVG root, so the die cannot follow a repointed pair. The re-light glow can: it is two CSS drop-shadows outside the image, reading live --p1-rgb and --p2-rgb. Everything that moves in this card is on that side of the line, so this is the one start animation that is correct for every player today.
+  <b>And that is also the cruelty.</b> A player who repointed to violet-and-green watches THEIR two lamps sweep in and light a die that is still cyan and magenta. The animation makes the mismatch worse by drawing attention to exactly the thing that is wrong — 14e's strip row 2 is that failure standing still; this is it in motion. Ship this only after the split leaves tools/appicon.mjs and becomes live DOM, and then it is the strongest card here.
+  <b>The direction carries meaning.</b> Mine comes from the left and theirs from the right, which is the board's own geometry (player index is identity — 1 is cyan and mine, 0 is magenta and theirs). Reverse it and the animation is still pretty and now says something false.
+  <b>mix-blend-mode: screen is the risk.</b> Two blended layers over the aurora at boot is the most expensive thing in this family, on the frame with the least budget. If it stutters the lamps read as a dropped frame rather than a sweep. Measure on the slowest device before defending the effect.
+  <b>Reduced motion degrades honestly here</b> — the travel goes, the settled glow stays, and the mark still ends lit in the player's colours.</div>

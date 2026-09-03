@@ -1,0 +1,130 @@
+<!-- meta name="A5 — Develop" group="1d · The start animation" subtitle="Nothing moves: the ground's aurora rises first and the mark resolves out of it, out of focus and into focus, the way the app's own background already breathes" width=412 height=1279 sizes="md" links="iOS launch, Home, Foundations" -->
+<style>
+  /* Family scaffold and its reasoning: see A1 (15a). */
+  .scr{align-items:center}
+  .hero{margin-top:34px}
+  .stscr{position:relative;min-height:560px;overflow:hidden}
+  .stlaunch{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:#05060e;z-index:3;will-change:opacity}
+  .stlaunch .appicon-mark{width:99px;height:99px;display:block}
+  .sthome{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;
+    width:100%;flex:1 1 auto}
+  .stmark{display:block;line-height:0;margin-bottom:4px;
+    filter:drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22));
+    will-change:filter,opacity}
+  .stmark .appicon-mark{display:block}
+
+  /* ── A5 · DEVELOP ──────────────────────────────────────────────────────────
+     THE ONLY CARD HERE WITH NO TRANSFORM. Nothing travels, turns or scales.
+     The launch frame's flat #05060e gives way to the app's own aurora — the
+     .bgfx layer every screen already carries — and the mark resolves out of
+     that light: blurred and dim, then sharp. A photograph developing, not an
+     object arriving.
+
+     The argument is that boot should not look like an EVENT. Card 35's whole
+     position is that the launch frame carries no text because text reads as
+     slow; movement reads as slow for the same reason. A screen that simply
+     comes into focus never claims anything is loading, because nothing is
+     going anywhere. It is the cheapest beat in the family to defend and the
+     easiest to lose an argument about, because "did anything happen?" is a
+     fair question to ask of it. */
+  .stbg{position:absolute;inset:0;z-index:0;will-change:opacity;
+    background:radial-gradient(120% 80% at 50% -10%,#17123a 0%,transparent 60%),
+               radial-gradient(110% 70% at 50% 110%,#04263a 0%,transparent 60%)}
+
+  .sa5 .stlaunch,.sa5 .stbg,.sa5 .stmark,.sa5 .sttype,.sa5 .homestack{
+    animation-duration:5200ms;animation-iteration-count:infinite;animation-fill-mode:both}
+  .sa5 .stlaunch{animation-name:a5launch}
+  .sa5 .stbg{animation-name:a5ground}
+  .sa5 .stmark{animation-name:a5focus}
+  .sa5 .sttype,.sa5 .homestack{animation-name:a5home}
+  @keyframes a5launch{
+    0%{opacity:1}
+    17.3%{opacity:1;animation-timing-function:steps(1,end)}
+    17.4%{opacity:0}
+    92%{opacity:0;animation-timing-function:steps(1,end)}
+    92.1%{opacity:1}
+    100%{opacity:1}}
+  /* the ground arrives BEFORE its contents — the room, then what is in it */
+  @keyframes a5ground{
+    0%,17.4%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    27%{opacity:1}
+    92%{opacity:1;animation-timing-function:steps(1,end)}
+    92.1%,100%{opacity:0}}
+  /* out of focus into focus. 7px is chosen against the die's own pip spacing:
+     enough that the face is not a six, not so much that the object is a smear */
+  @keyframes a5focus{
+    0%,19%{opacity:0;filter:blur(7px) saturate(.5)
+      drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22));
+      animation-timing-function:cubic-bezier(.22,.9,.28,1)}
+    40%{opacity:1;filter:blur(0) saturate(1)
+      drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))}
+    92%{opacity:1;animation-timing-function:steps(1,end)}
+    92.1%,100%{opacity:0;filter:blur(7px) saturate(.5)
+      drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))}}
+  /* the type develops a beat behind the mark, never ahead of it */
+  @keyframes a5home{
+    0%,26%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}
+    44%{opacity:1}
+    92%{opacity:1;animation-timing-function:steps(1,end)}
+    92.1%,100%{opacity:0}}
+
+  @media (prefers-reduced-motion:reduce){
+    /* a focus pull is not motion in the vestibular sense, but a blur that
+       resolves still reads as instability; the honest reduction is a plain fade */
+    .sa5 .stmark{animation:none;opacity:1;filter:
+      drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))}
+    .sa5 .stbg{animation:none;opacity:1}
+    .sa5 .sttype,.sa5 .homestack{animation:none;opacity:1}
+    .sa5 .stlaunch{animation:none;opacity:0}}
+
+  .stclock{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:var(--w-col);
+    margin:12px auto 0;font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+  .stclock b{color:var(--gold);font-weight:800}
+  .stclock i{font-style:normal;color:#c6d3ee}
+  .sthead{width:100%;max-width:var(--w-col);margin:4px auto 0;text-align:left}
+  .sthead .eyebrow{font-size:9px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+  .sthead h1{font-size:18px;text-align:left;margin:4px 0 7px}
+  .sthead p{font-size:10px;line-height:1.55;letter-spacing:.1em;color:var(--dim);margin:0}
+</style>
+<div class="stage sa5"><div class="bgfx"></div><div class="scr stscr">
+
+  <div class="stbg"></div>
+  <div class="stlaunch">{{splashmark:99}}</div>
+
+  <div class="sthome">
+    <div class="hero">
+      <i class="stmark">{{appicon:96}}</i>
+      <div class="sttype">
+        <div class="eyebrow">Neon Edition</div>
+        <h1>KNUCKLEBONES</h1>
+        <div class="sub2">Ranked dice duels</div>
+      </div>
+    </div>
+    <div class="homestack">
+      <button class="pplate dice-static">
+        <span class="ringwrap mini" style="--p:.489"><i class="lring"></i><span class="pav">{{die:5:p1:18}}</span></span>
+        <span class="nm2">FrostLynx303</span>
+        <span class="meta2"><span class="mrow"><b>2,494</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #4</span></span>
+        <span class="chev">›</span>
+      </button>
+      <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">{{ico:play:25}}</span><span class="btn-label">Play ranked match</span></button>
+      <div class="hrow">
+        <button class="btn">Ladder</button>
+        <button class="btn">Settings</button>
+      </div>
+    </div>
+  </div>
+
+</div></div>
+<div class="stclock"><span><b>740 ms · ground 200, focus 380, type 220</b></span><span><i>open study</i></span></div>
+<div class="sthead">
+  <div class="eyebrow">Open study · the start animation</div>
+  <h1>A5 · DEVELOP</h1>
+  <p>Nothing travels. The launch frame's flat night gives way to the app's own aurora, and the mark comes into focus out of it — blurred and desaturated, then sharp and lit. The room arrives, then what is in it.</p>
+</div>
+<div class="note"><b>The only card here with no transform.</b> Nothing moves, so nothing can read as a thing being fetched. That is the argument: card 35 refuses text on the launch frame because text reads as slow, and travel reads as slow for the same reason. A screen that comes into focus is not making a promise it has to keep.
+  <b>It uses the ground the app already has.</b> The aurora is .bgfx, on every screen in the product, so this beat introduces no new visual vocabulary at all — it simply turns on the thing that is always there. That is why it is the cheapest to defend in review and the hardest to get credit for.
+  <b>The blur is the whole cost.</b> A 7px blur on a 96px image is a filter pass on the first painted frame of the app, and it is the one number here that has to be measured rather than argued: too little and nothing happened, too much and the die stops being a six before it resolves. 7px was set against the pip spacing — the face must be unreadable but the object must still be a die.
+  <b>Fair objection: did anything happen?</b> Held next to A3's unwind or A4's lamps this looks like a fade, and a fade is what boot does today when a webview paints. If the answer to "what did the animation say" is "the app is here", A5 said it and nothing else. Some reviewers will call that restraint and some will call it nothing; both readings are correct.
+  <b>Reduced motion is a plain fade</b> — a resolving blur still reads as instability, so it degrades to the state change alone.</div>
