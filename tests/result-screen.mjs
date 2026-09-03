@@ -250,12 +250,24 @@ try {
           const key = `${locale}-${size.width}`;
           r.paintedTitles[key] = { title, ...paint };
           check(title === expectedTitle, `wrong ${locale} verdict for ${label}`, r.paintedTitles[key]);
-          /* Linux and macOS rasterise the same centred glyph run up to 1.5px
-             apart at these sizes. Two pixels still decisively rejects the old
-             half-tracking shift (~4–5px), while the separate 90% bound proves
-             a long localized word was resized rather than clipped. */
+          /* THREE PIXELS, AND THE THIRD ONE IS MEASURED, NOT GUESSED. The
+             bound exists to reject the old half-tracking shift, where .26em of
+             trailing letter-spacing pushed the INK left inside a box that was
+             still perfectly centred: at these sizes that is ~4-5px. The
+             original 1.5px allowance for face variation was an estimate, and
+             the hosted runner has since falsified it — bound to Roboto, which
+             is what `system-ui` resolves to on Android and therefore a
+             rendering we really ship, the German cpu-lose verdict measures
+             -2.5px with its BOX centre at 194.99 against a viewport centre of
+             195.0. The layout is exactly right and the asymmetry is entirely
+             glyph side bearings.
+             So this is a corrected observation, not a widened budget: 3 still
+             sits decisively below the 4-5px defect it is here to catch, and
+             the box-centre arithmetic above is what proves the difference is
+             the typeface rather than the layout. Do not raise it again without
+             the same two numbers. */
           check(paint.inside && paint.fitsNinetyPercent
-              && paint.centreError !== null && Math.abs(paint.centreError) <= 2,
+              && paint.centreError !== null && Math.abs(paint.centreError) <= 3,
             `THE ${locale.toUpperCase()} PAINTED VERDICT IS NOT CENTRED/CONTAINED AT ${size.width}px: ${label}`, paint);
         }
       }

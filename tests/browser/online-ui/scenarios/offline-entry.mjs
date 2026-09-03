@@ -56,6 +56,17 @@ const readOutcome = (page, routes) => page.evaluate((signupCalls) => {
     painted: !!rect && rect.width > 0 && rect.height > 0
       && Number(getComputedStyle(dialog).opacity) > 0,
     centreHit: !!hit && !!ask?.contains(hit),
+    /* A BOOLEAN CANNOT SAY WHAT COVERED THE CARD, and this one has been false
+       on every hosted run since the gate started building a bundle with a
+       gateway URL — with the right title, the right body and a painted rect,
+       so only the hit-test disagrees. Name the element the point actually
+       landed on, and where the card was, so the next reader is not left
+       guessing at the one fact the assertion turns on. */
+    hitOn: hit ? (hit.id || hit.className || hit.tagName) : null,
+    dialogRect: rect
+      ? [Math.round(rect.x), Math.round(rect.y), Math.round(rect.width), Math.round(rect.height)]
+      : null,
+    viewport: [innerWidth, innerHeight],
     modal: dialog?.getAttribute('aria-modal') ?? null,
     title: askVisible ? document.getElementById('askHead')?.textContent?.trim() : null,
     body: askVisible ? document.getElementById('askBody')?.textContent?.trim() : null,
