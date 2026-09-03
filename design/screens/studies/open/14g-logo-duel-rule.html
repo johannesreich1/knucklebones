@@ -1,0 +1,216 @@
+<!-- meta name="L7 — Duel rule" group="1c · The home logo" subtitle="The two 74px dice leave: the wordmark goes plain white and the duel becomes a 2px two-hue rule under it, meeting at one white node. Costs the hero's only picture and 100px of illustration; hands 73px back to the action stack, adds no motion and no translated string" width=412 height=1642 sizes="md" links="Matchmaking, Ladder, Settings" -->
+<style>
+  /* L7 — THE PICTURE BECOMES A LINE.
+     Today's hero spends 100px of its 172 on illustration: .duel is 20px of top
+     margin, a 74px die and 6px under it, and what those two dice say is "two
+     players, two colours, dice". A 2px rule that runs the width of the word,
+     cyan on the left, magenta on the right, touching at a single white node,
+     says the first two of those in 2px — and the third is said by the word
+     KNUCKLEBONES, by the launcher icon the player just tapped, and by every
+     other screen in the product. So the dice go, the hues move out of the
+     letters and into the rule, and the stack gets the pixels. */
+
+  /* preview glue only, copied from the baseline Home card (10-home-signed-in) */
+  .scr{align-items:center}
+  .hero{margin-top:34px}
+  .viewfoot{margin-top:auto;padding-top:20px}
+
+  /* ── THE LOCK ────────────────────────────────────────────────────────────
+     One box owns the wordmark AND the rule, so the rule is width:100% and the
+     two can never be handed different numbers by a later edit. --lg7-fs is the
+     ONLY size in the lockup: the word, its tracking, the rule's margins and the
+     node all derive from it. That is what makes the compression readings below
+     the same object at three scales rather than three redrawings of it. */
+  .lg7-lock{--lg7-fs:30px;
+    /* the node is the one part that cannot scale linearly: below ~130px of
+       rule a 6px dot is wider than the white middle of the gradient and reads
+       as a bead ON the line instead of the seam IN it. .2em holds 6px at the
+       hero's 30px and floors at 4px from a 170px rule down — still 2× the
+       rule's own height, so the seam never thins to a hairline. */
+    --lg7-node:clamp(4px,calc(var(--lg7-fs) * .2),6px);
+    font-size:var(--lg7-fs);display:flex;flex-direction:column;align-items:center;
+    width:max-content}
+
+  /* THE WORDMARK GOES WHITE — and the card must undo the shared chrome to do
+     it: .scr h1 (build.mjs) clips a --p1→#fff→--p2 gradient to the text and
+     sets color:transparent, so background:none alone leaves an invisible word.
+     WHY WHITE: over a 236px box that gradient puts cyan on the K, magenta on
+     the S and pure white across KLEB — the entire middle of the brand name is
+     colourless, and the two hues read as a smear at the ends rather than as
+     two players. Moved into the rule, the same two hues are a picture: they
+     travel, they meet, and the meeting has a place. 30px at .08em also buys
+     back the tracking today's 23px/.24em spends on air. */
+  .lg7-lock .lg7-word{font-size:1em;letter-spacing:.08em;
+    /* cancel the trailing letter-space so the optical right edge is the S and
+       not empty air. Load-bearing: the rule is measured off this box. */
+    margin-right:-.08em;
+    background:none;-webkit-background-clip:border-box;background-clip:border-box;
+    color:var(--txt);-webkit-text-fill-color:var(--txt);
+    /* the dark shadow seats the word on the aurora; the wide white one is the
+       only thing replacing the gradient's drop-shadow, and it is NEUTRAL on
+       purpose — a hued bloom here would compete with the rule 10px below it */
+    text-shadow:0 1px 0 rgba(0,0,0,.6),0 0 28px rgba(255,255,255,.11)}
+
+  /* ── THE RULE ─────────────────────────────────────────────────────────────
+     Player-facing ink, so --p1/--p2 (the duel pair Settings can repoint), never
+     the raw cyan/magenta. The stops meet at 47/50/53% so the white middle is a
+     ~3%-wide seam rather than a fade: at 255px that is 8px of white, enough to
+     seat the node and not enough to look like a gap in the line. */
+  .lg7-rule{position:relative;width:100%;height:2px;border-radius:1px;
+    margin:.34em 0 .40em;          /* 10px over, 12px under, at the hero's 30px */
+    /* the ends fade over the last 4% (~10px at the hero size). A rule with two
+       blunt ends and a bead in the middle is a slider track; a rule that grows
+       out of the air and dies back into it is drawn, not filled — the cheapest
+       available answer to the progress-bar misreading, and it still reaches
+       the word's optical edges. */
+    background:linear-gradient(90deg,rgba(var(--p1-rgb),0) 0,var(--p1) 4% 47%,
+      #fff 50%,var(--p2) 53% 96%,rgba(var(--p2-rgb),0) 100%)}
+  /* the bloom is the SAME gradient, blurred: background:inherit means the hue
+     under any point of the line and the hue of its glow cannot drift apart the
+     way two hand-written box-shadows would. */
+  .lg7-rule::before{content:"";position:absolute;inset:-1px -3px;border-radius:4px;
+    background:inherit;filter:blur(6px);opacity:.75;z-index:-1}
+  /* THE NODE — the gold VS reduced to the one thing it was actually saying:
+     the point where the two sides meet. White core, one hue leaning in from
+     each side, so the dot belongs to both players and to neither. */
+  .lg7-rule::after{content:"";position:absolute;left:50%;top:50%;
+    width:var(--lg7-node);height:var(--lg7-node);translate:-50% -50%;
+    border-radius:50%;background:#fff;
+    box-shadow:-1px 0 6px rgba(var(--p1-rgb),.9),1px 0 6px rgba(var(--p2-rgb),.9)}
+  /* IT MUST NEVER ANIMATE. A 2px glowing rule spanning a title, on the first
+     screen after launch, is the exact shape of a progress bar; any sweep,
+     pulse or grow makes the loading misreading certain rather than possible.
+     Nothing in this card animates the rule, and nothing in the app may. */
+
+  /* ── THE SMALL PAIR ───────────────────────────────────────────────────────
+     Eyebrow and tagline are today 9px/.34em and 10px/.28em — two near-misses
+     that survived only because a picture sat between them. With the picture
+     gone they are the only small type on the screen and are re-set as one
+     system. The negative right margin trims each one's trailing letter-space
+     so all three lines share a true optical centre with the trimmed rule. */
+  .lg7-pair .eyebrow,.lg7-pair .sub2{font-size:9px;letter-spacing:.30em;
+    margin-right:-.30em;color:var(--dim);text-transform:uppercase}
+  .lg7-pair .sub2{margin-bottom:12px}
+
+  /* ── COMPRESSION STRIP ────────────────────────────────────────────────────
+     Three readings of the same lock. The 292px floor frame cannot share a row
+     with the other two inside a 400px column, so it wraps to its own line. */
+  .lg7-strip{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;
+    gap:14px 26px;width:100%;max-width:var(--w-col)}
+  .lg7-read{display:flex;flex-direction:column;align-items:center;gap:9px}
+  .lg7-read .cap2{font-size:8.5px;letter-spacing:.16em}
+  .lg7-floor{flex-basis:100%}
+  /* CARD ANNOTATION, not app furniture: the air the deleted illustration used
+     to occupy, drawn where it now falls — at the top of the stack's free space.
+     Nothing like this ships. */
+  .lg7-gain{width:100%;max-width:var(--w-col);height:73px;margin-top:20px;
+    box-sizing:border-box;display:grid;place-items:center;
+    border-top:1px dashed rgba(255,255,255,.16);border-bottom:1px dashed rgba(255,255,255,.16);
+    font-size:8.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim)}
+  /* 320px is the supported floor; --pad-x is 14px a side, so the lane is 292. */
+  .lg7-frame{width:292px;box-sizing:border-box;padding:13px 0 1px;
+    border:1px dashed rgba(255,255,255,.22);border-radius:12px;
+    display:flex;flex-direction:column;align-items:center;gap:4px}
+</style>
+<div class="stage lg7"><div class="bgfx"></div><div class="scr">
+  <div class="hero lg7-pair">
+    <div class="eyebrow">Neon Edition</div>
+    <!-- the lockup: word and rule in one box, no .duel, no .vs -->
+    <div class="lg7-lock">
+      <h1 class="lg7-word">KNUCKLEBONES</h1>
+      <div class="lg7-rule" aria-hidden="true"></div>
+    </div>
+    <div class="sub2">Ranked dice duels</div>
+  </div>
+
+  <div class="homestack">
+    <!-- unchanged from 10-home-signed-in: the plate IS the account door (13d) -->
+    <button class="pplate dice-static">
+      <span class="ringwrap mini" style="--p:.489"><i class="lring"></i><span class="pav">{{die:5:p1:18}}</span></span>
+      <span class="nm2">FrostLynx303</span>
+      <span class="meta2"><span class="mrow"><b>2,494</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #4</span></span>
+      <span class="chev">›</span>
+    </button>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">{{ico:play:25}}</span><span class="btn-label">Play ranked match</span></button>
+    <div class="hrow">
+      <button class="btn">Ladder</button>
+      <button class="btn">Settings</button>
+    </div>
+  </div>
+
+  <div class="quiet">
+    <div class="cap">Practice offline</div>
+    <div class="hrow">
+      <button class="btn">VS AI</button>
+      <button class="btn">2 players</button>
+      <button class="btn">How to play</button>
+    </div>
+  </div>
+
+  <!-- annotation: the 73px the hero no longer spends -->
+  <div class="lg7-gain">73 px returned to the stack</div>
+
+  <div class="viewfoot">
+    <button class="linkbtn">Impressum</button>
+    <button class="linkbtn">Privacy</button>
+  </div>
+</div></div>
+
+<div class="cap2">Compression — one lock, three widths</div>
+<div class="lg7-strip">
+  <div class="lg7-read">
+    <div class="lg7-lock" style="--lg7-fs:17px">
+      <h1 class="lg7-word">KNUCKLEBONES</h1>
+      <div class="lg7-rule" aria-hidden="true"></div>
+    </div>
+    <div class="cap2">144 · node 6 → 4</div>
+  </div>
+  <div class="lg7-read">
+    <div class="lg7-lock" style="--lg7-fs:11px">
+      <h1 class="lg7-word">KNUCKLEBONES</h1>
+      <div class="lg7-rule" aria-hidden="true"></div>
+    </div>
+    <div class="cap2">93 · node at its floor</div>
+  </div>
+  <div class="lg7-read lg7-floor">
+    <div class="lg7-frame lg7-pair">
+      <div class="eyebrow">Neon Edition</div>
+      <div class="lg7-lock">
+        <h1 class="lg7-word">KNUCKLEBONES</h1>
+        <div class="lg7-rule" aria-hidden="true"></div>
+      </div>
+      <div class="sub2">Ranked dice duels</div>
+    </div>
+    <div class="cap2">320 floor · 255 of 292</div>
+  </div>
+</div>
+
+<div class="note"><b>The picture becomes a line, and the hero gives back 73 pixels.</b>
+  The two 74px dice and the gold VS are deleted. The wordmark goes to plain white at
+  30px/.08em — the shared gradient put cyan on the K, magenta on the S and plain white
+  across the eight letters between them — and the duel is carried by a 2px rule the exact
+  width of the word: the player's hue running in from the left, the opponent's from the
+  right, meeting at one white node where the VS used to shout. Measured, not estimated: the hero
+  goes 172px → 99px (10 eyebrow + 4 + [35 word + 10 + 2 rule + 12] + 4 + 10 tagline + 12),
+  so 73px come back to the stack's budget on the app's own centred axis. The brand gets
+  BIGGER while the hero gets shorter: 236px painted today, 258px here, 255px trimmed. <b>Zero
+  motion</b>, and that is a rule, not an omission: a glowing 2px bar spanning a title on
+  the first screen after launch is the shape of a progress bar, and any sweep or pulse
+  turns a possible misreading into a certain one. Zero localisation cost — the rule is
+  sized off the wordmark, which never translates, and the eyebrow and tagline (re-set
+  as one 9px/.30em pair) sit outside it. The node is the only part that cannot scale
+  linearly — .2em floored at 4px, so 6px at the hero and 4px from a 170px rule down,
+  still twice the line's own height.
+  <br><br>
+  Risks, honestly. <b>One:</b> Home loses its only picture. Two glowing dice say "dice
+  game" before a word is read; a hairline does not, and this is the first screen a new
+  player sees and the frame most store screenshots use. <b>Two: the precedent.</b>
+  Launcher study 56n took the die out of the mark and lost, which is evidence the owner
+  wants the object present rather than abstracted. This is not that argument: 56n asked
+  an abstraction to carry the whole brand alone at 29px, where nothing else is on
+  screen; here the die is still the launcher, the avatar, the loader and every board in
+  the product, and the hero is a title, not a tile. If that distinction does not hold,
+  this direction should lose for the same reason 56n did. <b>Three:</b> "it is static so
+  it is not mistaken for something else" is a thin reason for an element to exist — the
+  rule has to earn its 2px by reading as a duel, and if it only reads as a divider, the
+  honest version of this card is the wordmark alone.</div>

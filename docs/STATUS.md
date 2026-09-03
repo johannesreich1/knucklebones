@@ -153,6 +153,15 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 - Resolve the product name after a real trademark review. The current app id
   is `com.appavaria.knucklebones`; `tests/iosship.test.ts` consistency-gates
   the platform copies if a rename changes it.
+- The Home logo lockup is an open study (owner: Johannes). Eight alternatives
+  to today's hero — the eyebrow, gradient wordmark, 74px duel pair and tagline
+  above the action stack — are proposed in `1c · The home logo`
+  (`design/screens/studies/open/14a`–`14h`), spanning a re-inked wordmark, a
+  non-neon bone voice, an interlocked pair, a single unowned die, the launcher
+  mark promoted to Home, a horizontal band, a rule instead of a picture, and a
+  two-line wordmark. Nothing ships from them: today's hero in
+  `design/screens/product/10-home-signed-in.html` remains the product until one
+  is chosen, and each card names the vertical space it costs or returns.
 - The shared legal system now contains draft provider, privacy, support, and
   deletion documents in all eleven supported languages, plus a deterministic
   44-page static generator and isolated service-worker routes. Publication is

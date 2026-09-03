@@ -1,0 +1,185 @@
+<!-- meta name="L1 — Seam wordmark" group="1c · The home logo" subtitle="The wordmark drops the three-stop gradient and takes the launcher's logic instead: KNUCKLE is mine, BONES is theirs, cut on one lit seam at the word's own morpheme joint — bigger type, tighter tracking, +5px of hero" width=412 height=1356 sizes="md" links="Matchmaking, Ladder, Settings" -->
+<style>
+  /* preview glue, same three lines as the Home baseline (10-home-signed-in) */
+  .scr{align-items:center}
+  .hero{margin-top:34px}
+  .viewfoot{margin-top:auto;padding-top:20px}
+
+  /* ── the change ───────────────────────────────────────────────────────────
+     Today the name is ONE object painted with a decorative three-stop gradient
+     (--p1 → white → --p2, clipped to the glyphs). The launcher mark that
+     shipped 2026-09-02 says something different about the same brand: one
+     object, two owners, a single lit cut. This card makes the name obey the
+     mark. KNUCKLE is mine, BONES is theirs, and the cut lands on the word's
+     own morpheme joint — that is why it can be hard rather than blended.
+
+     WHY 28px / .10em. Today's 23px / .24em puts 5.5px between letters — wider
+     than the stems themselves — so at arm's length the word disintegrates into
+     twelve separate glyphs and reads as a texture. At 28/.10 the letter gap is
+     2.8px: the word coheres as one shape, which is the precondition for a cut
+     MEANING anything (you cannot cut a texture). Measured in this card, not
+     estimated: the lockup paints 252.4px against today's 236.2. Nothing
+     shrinks, and 252 still clears the 292px lane of a 320px phone by 40px and
+     this stage's own 352px lane by 100 — see the 320-floor reading below. */
+  .lka .hero h1{font-size:28px;--tr:.10em;letter-spacing:var(--tr);
+    display:flex;align-items:center;justify-content:center;
+    /* the builder's .scr h1 chrome (and the app's .ov h1) clip a gradient to
+       the text and set color:transparent. Both must be undone EXPLICITLY or
+       the two halves inherit transparency and the hero paints nothing. */
+    background:none;-webkit-background-clip:border-box;background-clip:border-box;
+    color:var(--txt);-webkit-text-fill-color:currentColor}
+  /* player-facing ink reads the DUEL PAIR, never the raw cyan/magenta: a
+     player who repointed the pair in Settings must see their own hues here. */
+  .lka .lakn{color:var(--p1);text-shadow:0 0 18px rgba(var(--p1-rgb),.45)}
+  .lka .labo{color:var(--p2);text-shadow:0 0 18px rgba(var(--p2-rgb),.45)}
+  /* letter-spacing paints AFTER the last glyph too, so KNUCKLE ends with 2.8px
+     of dead tracking and the seam lands 4.8px from the E but only 2px from the
+     B — visibly hung on the wrong letter. Cancel the trailing space and the cut
+     is centred in its own column by construction. One rule, every size: each
+     lockup declares its tracking as --tr and the cancel reads it back. */
+  .lakn{margin-right:calc(-1 * var(--tr))}
+  /* no drop-shadow filter on the h1: each half now carries its own glow in its
+     own hue, so one filter over both would re-mix what the cut just separated. */
+
+  /* THE SEAM. This is 56b's recipe verbatim (.ia2seam::before) — a 2px white
+     core with each owner's hue glowing off its own side — so the icon and the
+     wordmark are demonstrably one family rather than two things that rhyme.
+     --sh is cap height: 28px Roboto Black caps measure 28 × .711 = 19.9 ≈ 20,
+     so the cut runs exactly the height of the letters it separates and stops
+     — it is a cut through the word, not a rule between two words. It sits in
+     its own 8px column (2px core + 2×3px margin) at the E|B joint. 3px is not
+     a round number, it is the word's own tracking (2.8px) plus a rounding: the
+     E and the B stand exactly as far from the cut as every other pair of
+     letters stands apart, so the seam is inserted INTO the name rather than
+     opening a gap in it. Tried at 2px and the core visually fuses with the E. */
+  .laseam{width:2px;height:var(--sh,20px);margin:0 3px;flex:0 0 auto;border-radius:1px;
+    background:linear-gradient(180deg,rgba(255,255,255,.55),#fff 10%,#fff 90%,rgba(255,255,255,.55));
+    box-shadow:-1px 0 6px rgba(var(--p1-rgb),.9),1px 0 6px rgba(var(--p2-rgb),.9),
+      0 0 2px rgba(255,255,255,.7)}
+
+  /* the two labels become ONE system. Today's eyebrow is 9px/.34em and the
+     tagline 10px/.28em: close enough to look like the same intention, different
+     enough to look unresolved. 9/.30 for both — the cut is the only event in
+     the lockup, and two labels arguing about tracking underneath it is noise. */
+  .lka .hero .eyebrow,.lka .sub2{font-size:9px;letter-spacing:.30em}
+
+  /* ── the compression strip ────────────────────────────────────────────────
+     four readings of the same lockup, in one wrapping row under the stage */
+  .lastrip{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;
+    gap:22px;width:100%;max-width:var(--w-col)}
+  .laitem{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .laitem .cap2{font-size:8.5px;letter-spacing:.18em}
+  /* the lockup out of the hero: same three children, same rules, size only */
+  .lalock{display:flex;align-items:center;font-weight:900;line-height:1;
+    letter-spacing:var(--tr);color:var(--txt);white-space:nowrap}
+  .lalock .lakn{color:var(--p1);text-shadow:0 0 12px rgba(var(--p1-rgb),.45)}
+  .lalock .labo{color:var(--p2);text-shadow:0 0 12px rgba(var(--p2-rgb),.45)}
+  .la13{font-size:13px;--tr:.30em;--sh:9px}   /* caps 13 × .711 = 9.2 */
+  .la11{font-size:11px;--tr:.24em;--sh:8px}   /* caps 11 × .711 = 7.8 */
+  /* below ~12px a 2px core is a quarter of the cap height and reads as a
+     third letterform. The fallback is a 1px hairline with the same two-sided
+     glow — the glow is what survives, not the core. */
+  .la11 .laseam{width:1px;margin:0 2px;
+    box-shadow:-1px 0 4px rgba(var(--p1-rgb),.85),1px 0 4px rgba(var(--p2-rgb),.85),
+      0 0 2px rgba(255,255,255,.7)}
+  .larow{display:flex;align-items:center;gap:12px}
+  .larow .appicon-mark{border-radius:22.4%;display:block;flex:0 0 auto;
+    box-shadow:0 6px 16px rgba(0,0,0,.5)}
+  /* 320px is the supported floor; 292 is what is left after the app's 14px
+     page padding on each side. The frame is a card-local ruler, not chrome. */
+  .lafloor{width:292px;box-sizing:border-box;display:flex;justify-content:center;
+    border:1px dashed rgba(255,255,255,.14);border-radius:10px;padding:8px 0}
+  /* THE ADJACENCY TEST. Settings can repoint the duel pair, and nothing stops
+     a player choosing two neighbours on the wheel. This wrapper is the same
+     lockup with the pair moved to cyan-vs-blue; it is here because it FAILS. */
+  .lanear{--p1:var(--cy);--p1-rgb:var(--cy-rgb);--p2:var(--blue);--p2-rgb:var(--blue-rgb)}
+  /* the adjacency reading is an A/B or it proves nothing: the shipped pair on
+     the left, two neighbours on the right, same size, one caption. */
+  .lapair{display:flex;align-items:center;gap:18px}
+</style>
+<div class="stage lka"><div class="bgfx"></div><div class="scr">
+  <div class="hero">
+    <div class="eyebrow">Neon Edition</div>
+    <!-- no whitespace between the three children: a text node between them
+         would add a word space on top of the tracking and open the cut. -->
+    <h1><span class="lakn">KNUCKLE</span><i class="laseam"></i><span class="labo">BONES</span></h1>
+    <div class="duel dice-static">
+      {{die:5:p1:74}}
+      <span class="vs">VS</span>
+      {{die:3:p2:74}}
+    </div>
+    <div class="sub2">Ranked dice duels</div>
+  </div>
+
+  <div class="homestack">
+    <!-- the plate IS the account door (design 13d): the profile's ring at chip
+         size, docked on the button that moves it -->
+    <button class="pplate dice-static">
+      <span class="ringwrap mini" style="--p:.489"><i class="lring"></i><span class="pav">{{die:5:p1:18}}</span></span>
+      <span class="nm2">FrostLynx303</span>
+      <span class="meta2"><span class="mrow"><b>2,494</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #4</span></span>
+      <span class="chev">›</span>
+    </button>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">{{ico:play:25}}</span><span class="btn-label">Play ranked match</span></button>
+    <div class="hrow">
+      <button class="btn">Ladder</button>
+      <button class="btn">Settings</button>
+    </div>
+  </div>
+
+  <div class="quiet">
+    <div class="cap">Practice offline</div>
+    <div class="hrow">
+      <button class="btn">VS AI</button>
+      <button class="btn">2 players</button>
+      <button class="btn">How to play</button>
+    </div>
+  </div>
+
+  <div class="viewfoot">
+    <button class="linkbtn">Impressum</button>
+    <button class="linkbtn">Privacy</button>
+    </div>
+</div></div>
+
+<div class="lastrip">
+  <div class="laitem">
+    <div class="larow">{{appicon:44}}<span class="lalock la13"><span class="lakn">KNUCKLE</span><i class="laseam"></i><span class="labo">BONES</span></span></div>
+    <span class="cap2">Family check · 44</span>
+  </div>
+  <div class="laitem">
+    <span class="lalock la11"><span class="lakn">KNUCKLE</span><i class="laseam"></i><span class="labo">BONES</span></span>
+    <span class="cap2">11px · seam → hairline</span>
+  </div>
+  <div class="laitem">
+    <div class="lafloor"><span class="lalock la13"><span class="lakn">KNUCKLE</span><i class="laseam"></i><span class="labo">BONES</span></span></div>
+    <span class="cap2">320 floor · 292 lane</span>
+  </div>
+  <div class="laitem">
+    <div class="lapair">
+      <span class="lalock la11"><span class="lakn">KNUCKLE</span><i class="laseam"></i><span class="labo">BONES</span></span>
+      <span class="lanear"><span class="lalock la11"><span class="lakn">KNUCKLE</span><i class="laseam"></i><span class="labo">BONES</span></span></span>
+    </div>
+    <span class="cap2">Shipped pair vs cyan-and-blue · Settings can do this</span>
+  </div>
+</div>
+
+<div class="note"><b>The name takes the launcher's logic: one object, two owners, one lit cut.</b>
+  KNUCKLE is mine, BONES is theirs, and the cut falls on the word's own morpheme joint, which is
+  why it can be hard instead of blended.
+  <b>Against today.</b> The decorative three-stop gradient goes; each half is flat duel-pair ink
+  with its own glow. The type grows 23 → 28px and the tracking closes .24 → .10em, because a cut
+  only means something across a word that already reads as one word. Eyebrow and tagline re-set
+  as one 9px / .30em system instead of 9/.34 over 10/.28. The dice row is untouched, so the card
+  isolates one variable.
+  <b>Cost.</b> Measured here: hero 172 → 177px (+5), the h1 line box 27 → 33, the lockup 236 →
+  252px wide. The stack below pays the 5px. Zero motion. Zero localisation cost — the brand name
+  never translates and the two labels that do are unchanged in length. The hero change is
+  six rules; everything else on this card is the argument for it, not the change.
+  <b>Risks, both real.</b> One: this is a knowing SECOND implementation of the seam. 56b's own
+  source says the single implementation belongs in tools/appicon.mjs, so shipping means
+  extracting a shared seam, not pasting this block. Two: the last strip reading. Settings can
+  repoint the duel pair to two neighbours, and a hard white cut between two shades of one colour
+  reads as damage rather than as a boundary — the halves stop being two owners. That needs a
+  measured minimum hue distance on the pair picker, or an explicit call that the wordmark keeps
+  the shipped pair while the board follows the player.</div>

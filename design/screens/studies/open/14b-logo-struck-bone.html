@@ -1,0 +1,287 @@
+<!-- meta name="L2 — Struck bone" group="1c · The home logo" subtitle="The hero goes literal: KNUCKLEBONES struck in ivory-to-bone metal between two hairlines, both dice repointed to bone glass, and the duel pair surviving only as two rakes of light from outside the box — every neon saved for the plate and the PLAY button. Costs +16px of hero and the hue-coding a new player learns from the two dice" width=412 height=1697 sizes="md" links="Matchmaking, Ladder, Settings" -->
+<style>
+  /* preview glue, copied verbatim from the Home baseline (10-home-signed-in)
+     so the only difference on this card is the hero itself */
+  .scr{align-items:center}
+  .hero{margin-top:34px}
+  .viewfoot{margin-top:auto;padding-top:20px}
+
+  /* ---------------------------------------------------------------------
+     THE WORDMARK, ONCE. Both places that paint it — the hero and the mud
+     test at the bottom — wear .lkb-mark, and the strip lives OUTSIDE .scr
+     where the builder's `.scr h1` chrome does not reach. So the whole recipe
+     sits here rather than half here and half inherited; one implementation,
+     two mounts.
+     --------------------------------------------------------------------- */
+  /* gap 7px is the ONLY air the rules add: the hero's own gap:4px already
+     separates the mark from the eyebrow above and the dice below, so the
+     bracket costs exactly 2x7 + 2x1 = 16px of hero and nothing more. Less
+     than 7 and a rule fouls the cap line; more and it stops belonging to the
+     word and starts reading as a divider between two other things. */
+  .lkb-mark{display:flex;flex-direction:column;align-items:center;gap:7px;
+    /* .30em, up from today's .24em. The extra tracking is the only reason the
+       size can stay at 23: it is what makes the word read as STRUCK into a
+       surface rather than typed onto one, and it buys the two rules something
+       to be as wide as. */
+    --lkb-ls:.30em;
+    /* the painted ink of KNUCKLEBONES at 23px/.30em in Roboto Black, measured
+       in this card's own render: 258.2px, taken up to 259. Inside the 292px
+       floor lane (320px phone less 2x --pad-x) with 33px spare, so nothing
+       here reflows at the supported floor. The rules take that number rather
+       than the h1's box, which is one trailing letter-space wider. */
+    --lkb-w:259px}
+  .lkb-mark .lkb-word{margin:0;font-weight:900;text-align:center;font-size:23px;
+    letter-spacing:var(--lkb-ls);
+    /* CSS adds a full letter-space AFTER the final S, so a centred tracked
+       word paints half a letter-space left of true centre. At today's .24em
+       nobody sees it; against two hairlines that ARE centred, 3.5px is a
+       visible mis-register. text-indent shifts a centred line by its whole
+       value, so half a letter-space is what is owed — measured back at
+       258.2px of ink centred on the rules' own centre to within 0.4px. */
+    text-indent:calc(var(--lkb-ls) / 2);
+    /* TOP-lit metal, not side-lit neon. The shipped title runs the duel pair
+       across the word at 100deg with a 22px cyan bloom; this one runs ivory to
+       bone straight down. 62% is where a struck edge turns over — above it the
+       face catches the light, below it the letter falls toward the ground
+       colour and gets weight. */
+    background-image:linear-gradient(180deg,var(--g-ivory),var(--g-bone) 62%,
+      color-mix(in srgb,var(--g-bone) 62%,#0b0d16));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    /* the die-strike, not a light: 1px of black directly under the letter.
+       There is deliberately no glow layer — a bone wordmark that glows is
+       just the neon one in a different hue. */
+    filter:drop-shadow(0 1px 0 rgba(0,0,0,.55))}
+
+  /* The two hairlines. Recipe is `.quiet .cap::before` from
+     src/styles/screens/home.css — a 1px rule fading out at both ends — bone
+     tinted through the token rather than its hex, so a palette change carries.
+     The alpha is .42 against the quiet strip's .16 because that rule sits on a
+     dark band with nothing above it and this one sits directly under a lit
+     title, which raises the local ground it has to beat. */
+  .lkb-rule{width:var(--lkb-w);height:1px;
+    background:linear-gradient(90deg,transparent,
+      color-mix(in srgb,var(--g-bone) 42%,transparent),transparent)}
+
+  /* ---------------------------------------------------------------------
+     THE DICE. Still the app's own .duel dice-static row with p1/p2 on the
+     faces, so the ±9° tilts and the whole duel shadow stack keep applying —
+     only the die colour is repointed. `.lkb .duel .die` is three classes and
+     therefore beats `.die.p1`'s two, which is why this needs no !important
+     and why no dice CSS is restated here. Sizes stay 74px.
+     --dc is the die's whole colour seam — border, pips and outer glow read it
+     — so it is the only thing that changes. It stays LIGHT. A drilled-pip
+     variant was tried first (--dc pointed at a bone shadow, so the pips would
+     ink dark into a pale body) and it fails on the app's own pip, which is a
+     lit sphere by construction: `radial-gradient(circle at 35% 30%,#fff,--dc)`
+     with a dark --dc renders a grey ball bearing, not a hole. Making it read
+     as a hole would mean restating dice CSS, which is the second
+     implementation this repo forbids. So the pips stay the bright element and
+     the body carries the bone.
+     --------------------------------------------------------------------- */
+  .lkb .duel .die{--dc:var(--g-ivory)}
+  /* And the halo comes down, through the app's own seam rather than a
+     restated box-shadow: home.css already exposes --duel-die-outer-glow for
+     exactly this. A neon die earns 34px of its own hue because the hue IS the
+     point; bone is not a light source, and at 34px the ivory halo swallowed
+     both rakes and turned the pair into one warm smear. */
+  .lkb .duel{--duel-die-outer-glow:0 0 18px color-mix(in srgb,var(--g-ivory) 14%,transparent)}
+
+  /* BONE GLASS, without one line of dice CSS restated. The app's die body is
+     translucent by construction — rgba white over rgba black — so what a die
+     appears to be MADE of is whatever lies behind it. Study 56b established
+     this when it gave each half of the launcher die its owner's plate; the
+     same move here fills the glass with ivory instead of the stage's
+     near-black, which is the difference between "a dark die with pale pips"
+     and "a bone die". Radius is board.css's own formula, not a guess, and
+     each plate carries its die's shipped tilt so the two stay registered. */
+  .lkb-bonewrap{position:relative;display:inline-flex;--cell:74px}
+  .lkb-bonewrap::before{content:"";position:absolute;inset:0;z-index:0;
+    border-radius:min(var(--r),calc(var(--cell)*.25 + 1.5px));
+    background:linear-gradient(158deg,
+      color-mix(in srgb,var(--g-ivory) 72%,transparent),
+      color-mix(in srgb,var(--g-bone) 50%,transparent) 50%,
+      color-mix(in srgb,var(--g-bone) 24%,transparent)),#0d0e18}
+  .lkb-l::before{transform:rotate(-9deg)}
+  .lkb-r::before{transform:rotate(9deg)}
+
+  /* THE RAKES. The hue-coding does not vanish, it moves off the object and
+     becomes two lamps: mine from the left, theirs from the right. They must
+     sit OUTSIDE the dice — each lamp's centre lands ~32px clear of its die,
+     from a box inset 44px past the row — or they read as a tint poured into
+     the glass rather than light falling on it, which is the whole difference
+     between "bone lit by two players" and "coloured dice". */
+  .lkb-duelwrap{position:relative;isolation:isolate;display:flex}
+  .lkb-rake{position:absolute;inset:-8px -44px;z-index:-1;pointer-events:none;
+    background:
+      radial-gradient(30% 64% at 4% 50%,rgba(var(--p1-rgb),.85),transparent 72%),
+      radial-gradient(30% 64% at 96% 50%,rgba(var(--p2-rgb),.85),transparent 72%);
+    filter:blur(14px)}
+  /* Each lamp is taller than it is wide (34% x 80%) so it rakes in from the
+     side rather than pooling under the pair, and the box is inset only 12px
+     vertically so neither lamp climbs into the wordmark's band — at -16px the
+     cyan one reached the bottom hairline and the bracket read as part of a
+     glow. .88 is not decoration: at .62 the ambience's own magenta lobe,
+     which covers exactly this corner of the stage, ate the cyan lamp and left
+     a violet smudge. The bone plates sit in front of the rake, so the lamps
+     light the air around the dice and never tint the glass — which is
+     precisely the signal loss reading 1 asks the owner to price. */
+
+  /* The gold VS stays exactly as it ships. In today's cyan/magenta hero it is
+     a third colour competing with two others; in a bone hero it is the only
+     bright note the family has, and deleting it by reflex would leave the
+     lockup with no accent at all. */
+
+  /* ---------------------------------------------------------------------
+     COMPRESSION STRIP
+     --------------------------------------------------------------------- */
+  .lkb-cx{display:flex;flex-direction:column;align-items:center;gap:9px;
+    width:100%;max-width:var(--w-col)}
+  .lkb-cxrow{display:flex;align-items:flex-start;justify-content:center;gap:14px;width:100%}
+  .lkb-cxcell{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;
+    padding:12px 6px 10px;border-radius:14px;
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)}
+  /* the pair at 40px is the same .duel row the hero uses, so the tilts, the
+     gap ratio and the gold VS are the shipped ones and only the scale differs;
+     the token's inline size beats `.duel .die`'s 74px without a rule here */
+  .lkb-pair{gap:10px;margin:0}
+  .lkb-pair .vs{font-size:12px;text-shadow:0 0 11px rgba(255,209,102,.6)}
+  /* reading 1's right-hand cell: the same repoint as the hero, one class
+     deeper so it survives outside .lkb */
+  .lkb-bone .duel .die{--dc:var(--g-ivory)}
+  .lkb-bone .duel{--duel-die-outer-glow:0 0 18px color-mix(in srgb,var(--g-ivory) 14%,transparent)}
+  .lkb-bone .lkb-bonewrap{--cell:40px}
+
+  /* THE MUD TEST. 292px is the 320px floor lane (less 2x --pad-x). The ground
+     is not an impression of the ambience, it is the ambience: the same two
+     lobes and the same blur(34px) as .stage .bgfx::before, re-aimed so the
+     word sits in the dense middle of the magenta one instead of catching its
+     edge the way it happens to on the stage above. Worst case, on purpose. */
+  .lkb-mud{position:relative;isolation:isolate;overflow:hidden;
+    width:292px;box-sizing:border-box;padding:17px 0 18px;border-radius:14px;
+    display:grid;place-items:center;border:1px solid rgba(255,255,255,.08);
+    background:var(--bg)}
+  .lkb-mud::before{content:"";position:absolute;inset:-40%;z-index:-1;
+    background:
+      radial-gradient(closest-side,rgba(255,47,160,.42),transparent 70%) 34% 46%/82% 104% no-repeat,
+      radial-gradient(closest-side,rgba(126,60,255,.30),transparent 70%) 78% 58%/64% 88% no-repeat;
+    filter:blur(34px)}
+</style>
+<div class="stage lkb"><div class="bgfx"></div><div class="scr">
+  <div class="hero">
+    <!-- the eyebrow keeps the shipped string. A bone wordmark under the words
+         "Neon Edition" is the contradiction this card exists to put in front
+         of the owner; quietly rewriting it here would decide a brand question
+         inside a type study. -->
+    <div class="eyebrow">Neon Edition</div>
+    <div class="lkb-mark">
+      <i class="lkb-rule"></i>
+      <h1 class="lkb-word">KNUCKLEBONES</h1>
+      <i class="lkb-rule"></i>
+    </div>
+    <div class="lkb-duelwrap">
+      <i class="lkb-rake"></i>
+      <div class="duel dice-static">
+        <i class="lkb-bonewrap lkb-l">{{die:5:p1:74}}</i>
+        <span class="vs">VS</span>
+        <i class="lkb-bonewrap lkb-r">{{die:3:p2:74}}</i>
+      </div>
+    </div>
+    <div class="sub2">Ranked dice duels</div>
+  </div>
+
+  <!-- everything below the hero keeps FULL neon, unchanged from the baseline:
+       the object is old, the competition is not -->
+  <div class="homestack">
+    <button class="pplate dice-static">
+      <span class="ringwrap mini" style="--p:.489"><i class="lring"></i><span class="pav">{{die:5:p1:18}}</span></span>
+      <span class="nm2">FrostLynx303</span>
+      <span class="meta2"><span class="mrow"><b>2,494</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #4</span></span>
+      <span class="chev">›</span>
+    </button>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">{{ico:play:25}}</span><span class="btn-label">Play ranked match</span></button>
+    <div class="hrow">
+      <button class="btn">Ladder</button>
+      <button class="btn">Settings</button>
+    </div>
+  </div>
+
+  <div class="quiet">
+    <div class="cap">Practice offline</div>
+    <div class="hrow">
+      <button class="btn">VS AI</button>
+      <button class="btn">2 players</button>
+      <button class="btn">How to play</button>
+    </div>
+  </div>
+
+  <div class="viewfoot">
+    <button class="linkbtn">Impressum</button>
+    <button class="linkbtn">Privacy</button>
+  </div>
+</div></div>
+
+<div class="lkb-cx">
+  <div class="lkb-cxrow">
+    <div class="lkb-cxcell">
+      <div class="duel dice-static lkb-pair">{{die:5:p1:40}}<span class="vs">VS</span>{{die:3:p2:40}}</div>
+      <span class="cap2">Today · hue-coded</span>
+    </div>
+    <div class="lkb-cxcell lkb-bone">
+      <div class="duel dice-static lkb-pair"><i class="lkb-bonewrap lkb-l">{{die:5:p1:40}}</i><span class="vs">VS</span><i class="lkb-bonewrap lkb-r">{{die:3:p2:40}}</i></div>
+      <span class="cap2">L2 · bone, tilt only</span>
+    </div>
+  </div>
+  <span class="cap2">1 · The hue-coding loss — what a new player has left to learn cyan=me from</span>
+
+  <div class="lkb-mud">
+    <div class="lkb-mark">
+      <i class="lkb-rule"></i>
+      <h1 class="lkb-word">KNUCKLEBONES</h1>
+      <i class="lkb-rule"></i>
+    </div>
+  </div>
+  <span class="cap2">2 · The mud test — ivory and a 1px bone rule on the ambience's worst magenta</span>
+</div>
+
+<div class="note">
+  <b>Take the neon out of the hero and give it back to the button.</b>
+  The name is answered literally: KNUCKLEBONES struck in ivory-to-bone metal,
+  lit from above instead of from the side, held between two hairlines the width
+  of the word. Both dice go to bone: still the app's own dice at 74px with their
+  shipped tilts and shadow stack, <b>--dc</b> moved to ivory over a bone plate
+  set behind the translucent glass the way study 56b built the launcher — no
+  dice CSS is restated anywhere on this card. The duel pair survives only as two
+  rakes of light entering from outside the box, the way study 56p put the two
+  players on the lamps rather than on the die. Everything from the identity
+  plate down keeps full neon, so the hero is the old object and the ladder
+  below it is the live competition.
+  <br><br>
+  <b>Cost.</b> Hero 172 → 188px, +16 for the two rules and their air: the one
+  direction on this slate that spends vertical space instead of returning it,
+  and the homestack pays for it. Zero motion added; the primary button's glint
+  is untouched. Zero localisation cost as drawn — the wordmark is the brand name
+  and never translates — but see the first risk.
+  <br><br>
+  <b>Risks, in order.</b> (1) It argues with the product's own name for its
+  build. Under a bone wordmark, "Neon Edition" reads as a leftover, so this is a
+  copy decision hiding inside a type decision; changing that eyebrow is eleven
+  strings and a brand call, not a CSS edit, and the card keeps the shipped
+  string so the contradiction is visible rather than quietly resolved.
+  (2) It deletes hue-coding from the one place a new player learns cyan=me /
+  magenta=them. Two rakes are a much weaker signal than two coloured dice, and
+  reading 1 is that argument put side by side rather than asserted.
+  (3) Ivory and bone are already spoken for: <b>--g-ivory</b> and
+  <b>--g-bone</b> are ladder-group hues (STONE, BONE, IVORY gate the mode
+  pool), so the wordmark borrows ink that means "rank tier" three rows further
+  down the same screen. Reading 2 answers the mud question — the ivory stays
+  ivory over the aurora's worst magenta and does not turn yellow-green — but it
+  cannot answer that one.
+  (4) A 1px hairline is exactly the detail that survives on the desk and
+  disappears on a phone at 30% brightness outdoors; .42 is the highest alpha
+  this rule can take before it stops being a hairline and starts being a box,
+  so there is no headroom left to buy that back with.
+  (5) A bone pair at this value is now the lightest object on Home. It does not
+  out-shout the PLAY gradient, which keeps all the saturation, but it does move
+  the eye to the hero first — the opposite of what the online-first Home was
+  arranged to do.
+</div>

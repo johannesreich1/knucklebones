@@ -1,0 +1,199 @@
+<!-- meta name="L8 — Two-line strike" group="1c · The home logo" subtitle="No mark and no dice: KNUCKLE over BONES at 36px, flush left to each other, lit by one gradient pass on the aurora's own 125° — 2.4× the ink for 60px less hero, paid for by deleting every die above the fold" width=412 height=1638 sizes="md" links="Matchmaking, Ladder, Settings" -->
+<style>
+  /* preview glue, the same three lines as the Home baseline (10-home-signed-in) */
+  .scr{align-items:center}
+  .scr .hero{margin-top:34px}
+  .viewfoot{margin-top:auto;padding-top:20px}
+
+  /* ── the change ───────────────────────────────────────────────────────────
+     Today Home spends its hero on a 23px word and two 74px dice: 172px, of
+     which the brand is 27. This card deletes the dice row and the VS and puts
+     everything back into the word — the word IS the logo, so it has to be big
+     enough to be one.
+
+     WHY THE WORD BREAKS. One line cannot get big. Measured against the
+     baseline card: KNUCKLEBONES at today's 23px/.24em paints 236.2px, so the
+     same string at 29px paints 298 — and 292px is all a 320px phone has left
+     after the app's 14px page padding. A one-line wordmark is therefore
+     capped at 28px and the brand can never even double. Broken at its own
+     morpheme joint the longest line is KNUCKLE, which at 36px/.22em measures
+     214px: inside the 292px floor lane with 78px to spare, and inside this
+     stage's 352px lane with 138. The break is not a style, it is the only
+     thing that buys the scale.
+
+     WHY FLUSH LEFT, NOT CENTRED. Two centred lines of different length hang a
+     ragged edge on BOTH sides and read as a text wrap that went wrong. Flush
+     left to each other, the ragged right edge becomes the shape of the lockup
+     and does the work a lockup normally needs a rule or a mark for. The BLOCK
+     is still centred on the screen — Home's centred axis is untouched; only
+     the alignment INSIDE the block changes.
+
+     width:max-content is what makes "flush left" and "centred" both true at
+     once: the hero box is exactly as wide as KNUCKLE, so the .scr's centring
+     centres the lockup while the lines inside share one left edge. This is
+     the app's own .hero — align-items and width are all that change, so the
+     eyebrow, the gap and the tagline keep their shipped rules. */
+  .lh .hero,.lh.hero{align-items:flex-start;width:max-content;text-align:left}
+  .lhstrip .hero{margin:0}
+
+  /* ONE gradient across BOTH lines. The chrome's .scr h1 (and the app's
+     .ov h1) already clip a gradient to the glyphs; this swaps the image only,
+     and the image is painted over the h1's whole two-line box rather than per
+     line, so the two lines are lit by a single pass instead of each repeating
+     the same sweep. 125deg is a quotation, not a preference: it is the angle
+     of --aurora's own linear layer in src/styles/foundations/tokens.css
+     (linear-gradient(125deg,transparent 34%,rgba(126,60,255,.07) 50%,
+     transparent 66%)), so the light crossing the title is the light crossing
+     the page. White at 52% rather than 50% puts the highlight just past the
+     joint of the two lines, on the K of BONES, instead of dead centre in the
+     gutter between them where it lights nothing.
+     The same block is reused by the compression strip below (.lhmark), so the
+     lockup has one implementation in this card, not one per reading. */
+  .lh .hero h1,.lhmark{font-size:36px;letter-spacing:.22em;margin:0;
+    font-weight:900;line-height:.98;text-align:left;
+    background-image:linear-gradient(125deg,var(--p1),#fff 52%,var(--p2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 22px rgba(var(--p1-rgb),.35))}
+  /* letter-spacing paints after the LAST glyph too, so every line carries
+     .22em (7.9px at 36px) of dead air on its right. Centred, that is
+     invisible; flush left it is not — it shifts each line's optical left edge
+     by a different amount and the shared edge stops being shared. Cancel it
+     per line and the two lines start on the same pixel by construction. */
+  .lh h1 span,.lhmark span{display:block;margin-right:-.22em}
+
+  /* both labels sit inside the block, flush to the wordmark's left edge.
+     Sizes are today's (9/.34em and 10/.28em) — this card changes the wordmark
+     and the alignment, and leaves the two localised strings alone so the
+     comparison has one variable. .sub2 centres and is re-pointed left here. */
+  .lh .sub2{text-align:left}
+
+  /* ── the compression strip ────────────────────────────────────────────────
+     three readings, worst case first */
+  .lhstrip{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;
+    gap:20px 26px;width:100%;max-width:var(--w-col)}
+  .lhitem{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .lhitem .cap2{font-size:8.5px;letter-spacing:.18em}
+  /* 320px is the supported floor; 292 is what is left after the app's 14px
+     page padding on each side. The frame is a card-local ruler, not chrome. */
+  .lhfloor{width:292px;box-sizing:border-box;display:flex;justify-content:center;
+    border:1px dashed rgba(255,255,255,.14);border-radius:10px;padding:10px 0}
+  /* THE LABEL BUDGET, which is this direction's quiet win. Centred lockups
+     make every label balance around a centre, so the tagline's usable width
+     is twice its distance from the middle. Flush left, the tagline starts at
+     the block's left edge and is free to run to the column edge — it does not
+     have to fit under the word, only inside the lane. */
+  .lhsub2 .sub2{margin-bottom:0}
+  /* THE SINGLE-LINE FALLBACK. Where two lines cannot hold — a 40px strip, a
+     share card, a header — the same ink and the same 125deg reduce to one
+     line at 16px/.30em. Wider tracking at the small size because the sweep
+     needs room to travel across the glyphs before the white stop lands. */
+  .lh16{font-size:16px;letter-spacing:.30em}
+  .lh16 span{display:inline;margin-right:-.30em}
+  .lhbar{height:40px;display:flex;align-items:center;padding:0 14px;box-sizing:border-box;
+    border:1px dashed rgba(255,255,255,.14);border-radius:10px}
+  /* THE LOW-CONTRAST TEST, and it is the reason this reading exists. A 125deg
+     gradient on text laid over a field whose own layer runs at 125deg can
+     align stop-for-stop, and where the field's violet band and the title's
+     white stop meet the letters can go flat. Settings repoints the duel pair,
+     so this has to be measured against the roster, not assumed for cyan and
+     magenta. Violet-and-blue is the hardest pair on it: both live inside the
+     aurora's own violet band. The wrapper repoints the pair, which moves the
+     ambience too — --aurora reads --p1-rgb/--p2-rgb — so field and title are
+     tested at the same hues, as a player would get them. */
+  .lhamb{width:292px;min-height:0;border-radius:14px;
+    --p1:var(--violet);--p1-rgb:var(--violet-rgb);
+    --p2:var(--blue);--p2-rgb:var(--blue-rgb)}
+  /* the card stage's bgfx paints its own blobs but not the app's --aurora;
+     layer the real token over it so the 125deg field under the 125deg title
+     is the shipped one rather than a lookalike drawn here. */
+  .lhamb .bgfx::after{content:"";position:absolute;inset:0;background:var(--aurora)}
+  .lhambin{position:relative;z-index:1;padding:16px 18px}
+</style>
+<div class="stage lh"><div class="bgfx"></div><div class="scr">
+  <div class="hero">
+    <div class="eyebrow">Neon Edition</div>
+    <h1><span>KNUCKLE</span><span>BONES</span></h1>
+    <div class="sub2">Ranked dice duels</div>
+  </div>
+
+  <div class="homestack">
+    <!-- the plate IS the account door (design 13d): the profile's ring at chip
+         size, docked on the button that moves it -->
+    <button class="pplate dice-static">
+      <span class="ringwrap mini" style="--p:.489"><i class="lring"></i><span class="pav">{{die:5:p1:18}}</span></span>
+      <span class="nm2">FrostLynx303</span>
+      <span class="meta2"><span class="mrow"><b>2,494</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #4</span></span>
+      <span class="chev">›</span>
+    </button>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">{{ico:play:25}}</span><span class="btn-label">Play ranked match</span></button>
+    <div class="hrow">
+      <button class="btn">Ladder</button>
+      <button class="btn">Settings</button>
+    </div>
+  </div>
+
+  <div class="quiet">
+    <div class="cap">Practice offline</div>
+    <div class="hrow">
+      <button class="btn">VS AI</button>
+      <button class="btn">2 players</button>
+      <button class="btn">How to play</button>
+    </div>
+  </div>
+
+  <div class="viewfoot">
+    <button class="linkbtn">Impressum</button>
+    <button class="linkbtn">Privacy</button>
+    </div>
+</div></div>
+
+<div class="lhstrip">
+  <div class="lhitem">
+    <div class="lhfloor">
+      <div class="hero lh lhsub2">
+        <div class="eyebrow">Neon Edition</div>
+        <div class="lhmark"><span>KNUCKLE</span><span>BONES</span></div>
+        <div class="sub2">Duelos clasificatorios de dados</div>
+      </div>
+    </div>
+    <span class="cap2">320 floor · 258px of Spanish, one line</span>
+  </div>
+  <div class="lhitem">
+    <div class="lhbar"><div class="lhmark lh16"><span>KNUCKLEBONES</span></div></div>
+    <span class="cap2">40px strip · one-line reduction, 175px</span>
+  </div>
+  <div class="lhitem">
+    <div class="stage lhamb"><div class="bgfx"></div><div class="lhambin">
+      <div class="hero lh lhsub2">
+        <div class="eyebrow">Neon Edition</div>
+        <div class="lhmark"><span>KNUCKLE</span><span>BONES</span></div>
+        <div class="sub2">Ranked dice duels</div>
+      </div>
+    </div></div>
+    <span class="cap2">Violet · blue — a 125° title on a 125° field</span>
+  </div>
+</div>
+
+<div class="note"><b>The word is the logo, and it is finally big enough to be one.</b>
+  KNUCKLE over BONES at 36px, flush left to each other inside a block that stays centred on the
+  screen, lit by one gradient pass at 125° — the aurora's own angle, so the light crossing the
+  title is the light crossing the page.
+  <b>Against today.</b> The dice row and the VS are deleted. Measured here: the title box goes
+  236 × 27px to 206 × 70 and each letter carries about 2.4× the ink (cap height 16.4 → 25.6px) —
+  not three times, 2.4, and the word has to break even for that. One line of KNUCKLEBONES is
+  236px at 23px and 298px at 29px, against the 292px a 320px phone leaves after page padding: a
+  single line is capped at 28px and can never double. Broken at its morpheme joint, KNUCKLE is
+  214px.
+  <b>Cost.</b> Hero 172 → 111.5px. Sixty pixels go back to the stack and this card spends none of
+  them; the extra air above the footer is what the change is worth. Zero motion. Zero
+  localisation cost on the wordmark, which never translates. The label budget is not more pixels
+  but no penalty for using them: the Spanish tagline paints 258px on one line inside the 292
+  lane, where centred it would overhang the 214px wordmark by 22px a side and the wordmark would
+  stop being the widest thing in its own lockup.
+  <b>Risks, three, and the second is the real one.</b> A compound word split across two lines can
+  read as two words or as a wrap bug, and at 36px nothing softens it — carved, or broken. With
+  the dice gone nothing above the fold says this is a dice game; a first-time player learns it
+  from three words of tagline or from the play button's icon. And a 125° title over a 125° field
+  can align stop-for-stop and flatten. Violet-and-blue — the closest pair Settings allows, both
+  inside the aurora's violet band — holds in the third reading, because the white stop lands on
+  BONES over the dark centre of the field. One pair measured, not the roster cleared.</div>

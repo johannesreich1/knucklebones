@@ -1,0 +1,212 @@
+<!-- meta name="L3 — Locked" group="1c · The home logo" subtitle="The two dice stop facing each other across a gap and interlock into one silhouette cut by the launcher's own white seam; the gold VS is deleted, the duel row narrows from 211px to 127 and the hero gives 10px back to the stack" width=412 height=1512 sizes="md" links="Matchmaking, Ladder, Settings" -->
+<style>
+  /* preview glue only, copied from the baseline Home card — the real overlay
+     top-anchors and pins for us. Everything else on this stage is the app's. */
+  .scr{align-items:center}
+  .hero{margin-top:34px}
+  .viewfoot{margin-top:auto;padding-top:20px}
+
+  /* ------------------------------------------------------------------ THE
+     OBJECT. One silhouette, two owners, meeting on the launcher's cut.
+     The row keeps `.duel dice-static`, so the app still supplies the die's
+     glass, its shadow stack and the ±9° attitude (.duel .die.p1/.p2 in
+     screens/home.css). This card adds a position, a cut and — because a cut
+     die cannot keep a glow that crosses the cut — one halo in place of the
+     per-die one. It restates nothing else the app already says about a die.
+
+     --d is the die box, --o how far along it the opponent's die starts.
+     .764 = 55/72: the overlap is 72 − 55 = 17px, 23.6% of a die, and the band
+     it can live in is narrow at both ends. Above 29.8% the cut walks left onto
+     the front face's right pip column and slices a pip. Below ~17% the two
+     tilted dice no longer share a full-height column at all (see the next
+     comment), so the cut lands outside one of them and the outlines meet at a
+     step instead of a point. 23.6% sits in the middle of that band. Every
+     other number below is derived from --d, so the mini copies in the
+     compression strip cannot drift from the hero. */
+  .lkc-pair{--d:72px;--o:calc(var(--d) * .764);
+    position:relative;gap:0;width:calc(var(--d) + var(--o));height:var(--d);
+    /* 12, not the shipped 20: two dice across a gap need air to stop reading
+       as clutter; one mass does not, and the block is what pays the stack. */
+    margin:12px 0 6px}
+  /* THE CUT LINE, once: the only column that is inside BOTH dice over the
+     whole height. The window is narrow — a ±9° tilt lifts each near corner by
+     d·.084, so the column has to sit between the back die's raised top-left
+     corner (.848d) and the front die's raised top-right one (.916d) — and its
+     centre, .882d, is the single x where the two outlines cross at exactly the
+     same height top and bottom. That is why the pair is joined at 23.6%: any
+     other overlap puts the cut where the two silhouettes meet at a step. */
+  .lkc-pair{--cut:calc((var(--d) + var(--o)) / 2)}
+
+  /* Each die is CUT at that column instead of merely overlapping it. This is
+     the difference between this card and launcher study 56a. The app's die has
+     no fill at all (background is transparent; the glass is an inset highlight
+     and a deep inner shadow), so an un-cut back die shows its own rounded left
+     border straight through the front die — two objects, one on top of the
+     other. Clipped, neither owner paints past the cut: the cyan outline runs
+     to the seam and the magenta outline starts from it, and the result has one
+     continuous silhouette. The clip overshoots 60px on the three free sides so
+     nothing but the cut edge is ever squared off; only the seam side is hard,
+     exactly as on the launcher. Verified against the die's real pip geometry:
+     at d=72 the front face's right pip column ends at x=61.3 and the back
+     face's left pip starts at 70.7, so the cut at 63.5 crosses no pip — and
+     the same holds at the 44px size the strip uses. */
+  .lkc-pair > i{position:absolute;top:0;line-height:0}
+  .lkc-a{left:0;z-index:2;                     /* mine, in front and to the left */
+    clip-path:polygon(-60px -60px,var(--cut) -60px,
+      var(--cut) calc(var(--d) + 60px),-60px calc(var(--d) + 60px))}
+  .lkc-b{left:var(--o);z-index:1;              /* theirs — see the risk in the note */
+    --cutb:calc(var(--cut) - var(--o));
+    clip-path:polygon(var(--cutb) -60px,calc(var(--d) + 60px) -60px,
+      calc(var(--d) + 60px) calc(var(--d) + 60px),var(--cutb) calc(var(--d) + 60px))}
+
+  /* ONE OBJECT, ONE LIGHT FIELD. A cut die cannot keep a glow that crosses the
+     cut: --duel-die-outer-glow is a 34px box-shadow, the clip above slices it,
+     and the two halves' haloes then meet along a hard vertical line that reads
+     as a lit rectangle sitting behind the mark. So the per-die glow is switched
+     off through the app's own variable — not overridden behind its back — and
+     the joined silhouette gets a single halo instead: two lobes on the owners'
+     hues, one over each half's centre (36 and 91 of 127, so 36.7% and 63.3% of
+     the inset box), crossing at the seam the way two lights in one room do.
+     Cost, stated in the note: this is the object's own glow, not the app's. */
+  .lkc-pair::before{content:"";position:absolute;inset:-40px;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(34% 46% at 36.7% 50%,rgba(var(--p1-rgb),.38),transparent 72%),
+      radial-gradient(34% 46% at 63.3% 50%,rgba(var(--p2-rgb),.38),transparent 72%)}
+  .lkc-pair .die{--duel-die-outer-glow:0 0 0 transparent}
+
+  /* THE SEAM — the light in the cut. Its length is measured off the joined
+     silhouette, not off the box: the two 14px-radius corners that meet here
+     are already into their arcs, so the mass in this column does not run the
+     full −.084d → 1.084d the sharp corners would give. Measured off the render
+     rather than off the arithmetic: −.036d → .936d. The seam runs exactly
+     that, so its transparent ends die ON the outline instead of in the air
+     past it. The fade is the whole trick — a line solid at both ends reads as a
+     wall between two objects; one that fades out into the dice's own corners
+     reads as a cut through one.
+     Core width and the two-sided hue glow are the launcher's seam on purpose:
+     same device, Home scale. It is a second implementation of it; see the
+     note. */
+  .lkc-seam{position:absolute;z-index:3;
+    left:calc(var(--cut) - 1px);width:2px;
+    top:calc(var(--d) * -.036);height:calc(var(--d) * .972);
+    background:linear-gradient(180deg,transparent,#fff 22%,#fff 78%,transparent);
+    box-shadow:-1px 0 8px rgba(var(--p1-rgb),.9),1px 0 8px rgba(var(--p2-rgb),.9)}
+
+  /* ----------------------------------------------------- COMPRESSION STRIP */
+  .lkc-strip{display:flex;flex-direction:column;align-items:center;gap:7px;
+    width:100%;max-width:var(--w-col)}
+  .lkc-row{display:flex;align-items:center;justify-content:center;gap:24px;
+    min-height:58px;margin-top:6px}
+  .lkc-mini{--d:44px;margin:0}
+  /* today's row at the SAME die size, so the width difference is seen rather
+     than claimed: .duel's 18px gap and the 19px VS both scale by 44/74. */
+  .lkc-today{gap:11px;margin:0}
+  .lkc-today .vs{font-size:11px}
+  .lkc-icon{display:block;flex:0 0 auto}
+  .lkc-icon .appicon-mark{display:block;border-radius:22.4%;
+    box-shadow:0 6px 16px rgba(0,0,0,.55)}
+  /* the adjacency test: the duel pair repointed the way Settings can repoint
+     it, to two neighbouring hues. With the VS gone the seam is the only thing
+     that separates the two owners, so it has to survive the worst pairing. */
+  .lkc-alt{--p1:var(--cy);--p1-rgb:var(--cy-rgb);--p2:var(--blue);--p2-rgb:var(--blue-rgb)}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="hero">
+    <div class="eyebrow">Neon Edition</div>
+    <h1>KNUCKLEBONES</h1>
+    <!-- no <span class="vs">: a cut does not need a referee, and the gold goes
+         back to belonging only to the ladder pill below -->
+    <div class="duel dice-static lkc-pair">
+      <i class="lkc-a">{{die:5:p1:72}}</i>
+      <i class="lkc-b">{{die:3:p2:72}}</i>
+      <i class="lkc-seam"></i>
+    </div>
+    <div class="sub2">Ranked dice duels</div>
+  </div>
+
+  <div class="homestack">
+    <button class="pplate dice-static">
+      <span class="ringwrap mini" style="--p:.489"><i class="lring"></i><span class="pav">{{die:5:p1:18}}</span></span>
+      <span class="nm2">FrostLynx303</span>
+      <span class="meta2"><span class="mrow"><b>2,494</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #4</span></span>
+      <span class="chev">›</span>
+    </button>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">{{ico:play:25}}</span><span class="btn-label">Play ranked match</span></button>
+    <div class="hrow">
+      <button class="btn">Ladder</button>
+      <button class="btn">Settings</button>
+    </div>
+  </div>
+
+  <div class="quiet">
+    <div class="cap">Practice offline</div>
+    <div class="hrow">
+      <button class="btn">VS AI</button>
+      <button class="btn">2 players</button>
+      <button class="btn">How to play</button>
+    </div>
+  </div>
+
+  <div class="viewfoot">
+    <button class="linkbtn">Impressum</button>
+    <button class="linkbtn">Privacy</button>
+  </div>
+</div></div>
+
+<div class="lkc-strip">
+  <div class="lkc-row">
+    <div class="duel dice-static lkc-pair lkc-mini">
+      <i class="lkc-a">{{die:5:p1:44}}</i>
+      <i class="lkc-b">{{die:3:p2:44}}</i>
+      <i class="lkc-seam"></i>
+    </div>
+    <div class="duel dice-static lkc-today">
+      {{die:5:p1:44}}<span class="vs">VS</span>{{die:3:p2:44}}
+    </div>
+  </div>
+  <div class="cap2">Same die size · locked 127 wide · today 211 · the row gives back 84px</div>
+
+  <div class="lkc-row">
+    <span class="lkc-icon">{{appicon:44}}</span>
+    <div class="duel dice-static lkc-pair lkc-mini">
+      <i class="lkc-a">{{die:5:p1:44}}</i>
+      <i class="lkc-b">{{die:3:p2:44}}</i>
+      <i class="lkc-seam"></i>
+    </div>
+    <div class="duel dice-static lkc-pair lkc-mini lkc-alt">
+      <i class="lkc-a">{{die:5:p1:44}}</i>
+      <i class="lkc-b">{{die:3:p2:44}}</i>
+      <i class="lkc-seam"></i>
+    </div>
+  </div>
+  <div class="cap2">One die cut in two · two joined on the same cut · the pair repointed to blue</div>
+</div>
+
+<div class="note"><b>One silhouette, two owners, meeting on the launcher's cut.</b>
+  The pair stops facing each other across an 18px gap with a gold VS in it and
+  interlocks by 17px — 23.6% of a die — where one white seam cuts both. Each die is
+  clipped at that column rather than laid over the other, so the cyan outline runs
+  into the seam and the magenta runs out of it: one continuous shape, folded on the
+  cut, with the light in the fold.
+  <br><br>
+  <b>Against today.</b> The VS is deleted, so the hero drops to two colours and gold
+  means only the ladder pill. The duel row narrows 211 → 127px, measured at the same
+  die size in the strip above. The die falls 74 → 72 and the row's top margin 20 → 12
+  — one mass needs less air round it than two separated objects — so the hero
+  measures 162 against 172 and hands 10px to the stack. The per-die 34px glow becomes
+  one halo behind the joined mass, because a glow that crosses a cut gets cut with
+  it. Zero motion, no new string: eyebrow and tagline are untouched and the wordmark
+  never translates.
+  <br><br>
+  <b>Risks.</b> (1) THE PRECEDENT: 56a was two dice, mine in front and theirs behind,
+  and it lost fifteen ways to 56b. But 56a lost at 29px, where an occluded back die
+  is a smudge and the mark carries the brand alone; this is 72px under the wordmark,
+  nothing is occluded — the cut is the pair's own mirror axis, so both owners lose
+  the same slice — and what is borrowed is 56b's cut, not 56a's stacking. Read it as
+  the rejected composition if you want to; the second strip row is where to decide.
+  (2) Neither die is whole. The faces read because no pip crosses the cut (2.2px
+  clear on the left face, 7.2px on the right), but that belongs to THESE faces at
+  THIS overlap: if a hero face ever stops being fixed, the cut is re-measured or it
+  slices a pip. (3) Two second implementations to retire first — the seam, which must
+  become one shared class with tools/appicon.mjs' cut, and the halo, which is this
+  object's own light rather than the app's --duel-die-outer-glow.</div>

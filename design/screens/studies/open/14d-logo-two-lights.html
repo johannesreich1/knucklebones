@@ -1,0 +1,224 @@
+<!-- meta name="L4 — Two lights" group="1c · The home logo" subtitle="The hero object is unowned: one bone-grey die between a --p1 lamp left and a --p2 lamp right, the two crossing once every 3s — the pair stops being the dice and becomes the light; +34px of hero (+22 at 84px) and one line of app CSS" width=412 height=1628 sizes="md" links="Matchmaking, Ladder, Settings" -->
+<style>
+  /* preview glue, copied verbatim from 10-home-signed-in: the runtime overlay
+     top-anchors and pins these for us, a card stage does not. */
+  .scr{align-items:center}
+  .hero{margin-top:34px}
+  .viewfoot{margin-top:auto;padding-top:20px}
+
+  /* ── THE LIT BOX ────────────────────────────────────────────────────────
+     Today the two players ARE the objects: two owned dice and a gold VS. Here
+     they are the LIGHT, and the object between them is owned by neither — which
+     is the state Home is actually in before a match exists. Everything below is
+     card-local (ld…) except the two app tokens the lamps read. */
+  .ldbox{position:relative;width:152px;height:110px;margin:16px 0 8px;
+    display:grid;place-items:center;isolation:isolate}
+  /* 110, not the 122 the sketch asked for: the lamps are absolutely positioned
+     and bleed past the box anyway, so every pixel of box taller than the die's
+     96 + a 7px tilt bite is vertical budget the identity plate pays for and
+     nobody sees. Home's budget is real (the foot already sits on auto margins). */
+  /* isolation:isolate gives the two z-index:-1 lamps their own stacking
+     context, so they sit above the .scr ground and under the die instead of
+     falling behind the stage's bgfx. */
+
+  /* THE NEUTRAL DIE. `ldbare` matches no rule in src/styles/game/dice.css, so
+     the die keeps the base rule's own `--dc:#9fb2d8` and renders bone-grey with
+     white pips. Relying on an UNMATCHED class is a silent contract — the day
+     someone ships `.ldbare` for something else this card changes meaning with
+     no error — so it is declared here, and shipping it is one line in
+     dice.css: `.die.bare{--dc:#9fb2d8}`, not a card-local accident.
+     (The token's class slot is [a-z0-9 ]+ in build.mjs, hence `ldbare` and not
+     `ld-bare`: a hyphen leaves the token unexpanded.) */
+  .ld .die.ldbare{--dc:#9fb2d8}
+  /* The die is NOT inside .duel, so it inherits neither the 74px sizing nor the
+     duel's shadow stack. It gets the duel's weight explicitly, and explicitly
+     WITHOUT an outer glow: the base .die rule carries
+     `0 0 14px color-mix(--dc 32%)`, a grey halo that would sit between the die
+     and both lamps and mud them. The lamps must be the only light in the box.
+     7deg is the shipped launcher's own attitude (56b), so Home and the
+     springboard agree about what the object is. */
+  .ld .ldbox .die{transform:rotate(7deg);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -6px 12px rgba(0,0,0,.35),
+      0 5px 14px rgba(0,0,0,.55)}
+
+  /* THE LAMPS — two separate layers so they can cross rather than dissolve into
+     one two-stop wash. Player-facing ink, so they read --p1-rgb/--p2-rgb: a
+     player who repoints the pair in Settings repoints the room's lighting.
+     The ORIGIN is load-bearing: a light whose centre falls inside the die's box
+     reads as a tint on the glass, while one centred outside reads as a lamp in
+     the room with the die standing in what it throws. */
+  .ld .ldl1,.ld .ldl2{position:absolute;inset:-14px -34px;z-index:-1;
+    filter:blur(9px);pointer-events:none}
+  .ld .ldl1{background:
+    radial-gradient(10% 34% at 30% 50%,rgba(var(--p1-rgb),1),rgba(var(--p1-rgb),.5) 60%,transparent 100%),
+    radial-gradient(96% 56% at -8% 50%,
+      rgba(var(--p1-rgb),.92),rgba(var(--p1-rgb),.48) 34%,rgba(var(--p1-rgb),.15) 62%,transparent 90%)}
+  .ld .ldl2{background:
+    radial-gradient(10% 34% at 70% 50%,rgba(var(--p2-rgb),1),rgba(var(--p2-rgb),.45) 60%,transparent 100%),
+    radial-gradient(96% 56% at 108% 50%,
+      rgba(var(--p2-rgb),.88),rgba(var(--p2-rgb),.44) 34%,rgba(var(--p2-rgb),.13) 62%,transparent 90%)}
+  /* Five things here were wrong in the first render, and they are the whole
+     difference between the idea working and not:
+     (1) REACH (96% wide, still carrying .13-.15 at 62%). A short lamp parks a blob BESIDE
+         the die and lights nothing; the die then reads as a dead grey slab
+         blocking two lights. The die's face is TRANSLUCENT — dice.css gives it
+         a white-to-black gradient over nothing — so a lamp behind it that still
+         carries alpha at the box centre shines THROUGH the glass, and the die's
+         left half goes p1 while its right half goes p2. That is the picture the
+         card is for. Origin stays OUTSIDE the box, at -8%/108%: with the core
+         off-stage the visible part of each lamp is its FALLOFF, so the brightest
+         thing on the screen stays the die's own pips rather than two saturated
+         patches beside it. The .13-.15 stop at 62% is a ceiling — push the
+         centre alpha higher and the glass goes uniformly mauve, which reads as
+         a die owned by a third player rather than by nobody.
+     (2) HEIGHT (56%, not 74%). The two lamps meet somewhere, and the meeting
+         must happen where the die masks it: a tall pair overlaps in clear air
+         above and below the die and mixes to mud. At 56% each lamp is a beam at
+         die height and the overlap hides behind 96px of glass.
+     (3) THE GRAZE — the first gradient of each pair. Without it the die sits IN
+         FRONT of two glows instead of being lit by them, which is a different
+         and much weaker sentence. Each lamp carries a small bright core parked
+         at 30% / 70% of the layer, exactly where the die's own edge falls (the
+         96px die spans 28-72% of the 220px-wide layer), so the die masks the
+         core and only its halo survives as a rim on that edge. It lives IN the lamp
+         layer, not in the die's box-shadow, precisely so it crosses with the
+         lamp: a rim that stayed lit while its lamp dimmed would be light with
+         no source.
+     (4) THE CYAN IS MIXED HOTTER than the magenta (.92/.48 against .88/.44).
+         Not a fudge — the stage's own ambience puts its magenta blob at 20% 16%,
+         over the p1 lamp, so equal alphas render an unequal pair on the actual
+         ground. Measured on the card, not guessed.
+     (5) BLEED. inset -14/-34 lets the 9px blur finish off-box; clipped at the
+         box edge a blurred layer ends in a straight seam that reads as a
+         rectangle nobody drew. */
+
+  /* THE ONE MOTION BEAT. The balance crosses the die once every 3s and the two
+     lamps never dim together, so the screen is never unlit and never symmetric
+     for long. The floor is .58, not the .42 this started at: rendered at .42 on
+     the stage's own magenta ground the cyan lamp did not dim, it VANISHED, and
+     for three seconds of every six the hero showed one player. A crossing is a
+     shift in balance; an extinction is a different design.
+     Frame 0 is the balanced, both-lit state — the study convention that
+     60-win-impact-stamp writes down: a card is read as a still, so every loop
+     rests in the finished look. */
+  @keyframes ldCross{0%,100%{opacity:1}50%{opacity:.58}}
+  .ld .ldl1{animation:ldCross 6s ease-in-out infinite}
+  .ld .ldl2{animation:ldCross 6s ease-in-out 3s infinite}
+  /* Nothing FILTERED animates: the two moving layers are unfiltered backgrounds
+     that only change opacity, so overlays.css:44's warning — never animate a
+     title that carries a drop-shadow filter — does not apply. The h1 above is
+     as static as it is today. */
+  /* This repo has NO global reduced-motion clamp; identity.css:207 and
+     overlays.css:161 each declare their own, so this declares its own too. */
+  #kbroot.reduce-motion .ldl1,#kbroot.reduce-motion .ldl2{animation:none;opacity:1}
+
+  /* ── COMPRESSION STRIP ──────────────────────────────────────────────────── */
+  .ldstrip{display:flex;flex-direction:column;align-items:center;gap:14px;
+    width:100%;max-width:var(--w-col)}
+  .ldread{display:flex;flex-direction:column;align-items:center;gap:7px;width:100%}
+  /* both readings are 292 wide so the strip is one column, not two ragged ones */
+  .ldpanel{width:292px;border-radius:16px;border:1px solid rgba(255,255,255,.08);
+    background:rgba(255,255,255,.02);display:flex;align-items:center;
+    justify-content:center;gap:34px;padding:16px 0}
+  .ldpair{display:flex;flex-direction:column;align-items:center;gap:7px}
+  .ldpair .ldt{font-size:8.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
+  /* READING 2 — the ambience test, a measurement rather than an assertion. The
+     colour and alpha are the build's own busiest blob (build.mjs .bgfx::before,
+     rgba(255,47,160,.42)), but it is parked at 76% — directly UNDER the p2 lamp
+     — instead of the 20% 16% corner it sits at on the real stage. That is the
+     worst case for this design specifically: magenta light on a magenta field.
+     Testing it at 30% would only have stressed the cyan lamp, which is the easy
+     half, and would have reported a pass the design has not earned. */
+  .ldamb{width:292px;height:150px;border-radius:16px;overflow:hidden;
+    display:grid;place-items:center;border:1px solid rgba(255,255,255,.08);
+    background:radial-gradient(closest-side,rgba(255,47,160,.42),transparent 70%) 76% 44%/130% 130% no-repeat,
+      var(--bg)}
+  .ldamb .ldbox{margin:0}
+</style>
+<div class="stage ld"><div class="bgfx"></div><div class="scr">
+  <div class="hero">
+    <div class="eyebrow">Neon Edition</div>
+    <h1>KNUCKLEBONES</h1>
+    <div class="ldbox dice-static">
+      <i class="ldl1"></i><i class="ldl2"></i>
+      {{die:5:ldbare:96}}
+    </div>
+    <div class="sub2">Ranked dice duels</div>
+  </div>
+
+  <div class="homestack">
+    <!-- everything below the hero is 10-home-signed-in, unchanged: the point of
+         the card is that only the object at the top moved -->
+    <button class="pplate dice-static">
+      <span class="ringwrap mini" style="--p:.489"><i class="lring"></i><span class="pav">{{die:5:p1:18}}</span></span>
+      <span class="nm2">FrostLynx303</span>
+      <span class="meta2"><span class="mrow"><b>2,494</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #4</span></span>
+      <span class="chev">›</span>
+    </button>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">{{ico:play:25}}</span><span class="btn-label">Play ranked match</span></button>
+    <div class="hrow">
+      <button class="btn">Ladder</button>
+      <button class="btn">Settings</button>
+    </div>
+  </div>
+
+  <div class="quiet">
+    <div class="cap">Practice offline</div>
+    <div class="hrow">
+      <button class="btn">VS AI</button>
+      <button class="btn">2 players</button>
+      <button class="btn">How to play</button>
+    </div>
+  </div>
+
+  <div class="viewfoot">
+    <button class="linkbtn">Impressum</button>
+    <button class="linkbtn">Privacy</button>
+  </div>
+</div></div>
+
+<div class="ldstrip ld">
+  <div class="ldread">
+    <div class="ldpanel dice-static">
+      <div class="ldpair">{{die:5:ldbare:40}}<span class="ldt">Unowned</span></div>
+      <div class="ldpair">{{die:5:p1:40}}<span class="ldt">Owned</span></div>
+    </div>
+    <span class="cap2">Unowned · owned · 40px</span>
+  </div>
+  <div class="ldread">
+    <div class="ldamb dice-static">
+      <div class="ldbox">
+        <i class="ldl1"></i><i class="ldl2"></i>
+        {{die:5:ldbare:96}}
+      </div>
+    </div>
+    <span class="cap2">P2 lamp on a magenta field — only the rim survives</span>
+  </div>
+</div>
+
+<div class="note"><b>The die belongs to neither player; the two of you are the light on it.</b>
+Today's hero says "duel" with objects — two owned dice and a gold VS. This says it with lighting:
+one unowned die in the app's own bone-grey (<b>--dc:#9fb2d8</b>, the value every die starts from)
+between a <b>--p1</b> lamp on the left and a <b>--p2</b> lamp on the right. Both lamps are centred
+outside the box so they read as a room rather than a tint on the glass, and each carries a bright
+core parked on the die's own edge, which the die masks down to a rim. The pair is still the first
+colour on the screen and still follows Settings — it has stopped being the objects and become the
+light. Type is untouched: eyebrow 9/.34, h1 23/.24 with its gradient, sub2 10/.28.
+<b>Cost, measured here rather than estimated.</b> Today's .hero is 172px; this is 206px at a 96px
+die in a 110px box (+34), or 194px at 84px in a 98px box (+22). The slate's "+14" was arithmetic on
+a box that cannot hold the die; +22 is the floor for something big enough to be lit from two sides.
+The card stage hides it (.scr has a 640px min-height and the foot's auto margin eats the
+difference) — on a phone the identity plate pays it. Motion: two composited opacity loops, 6s, one
+keyframe set, no new timing token, nothing filtered animating, and a card-local reduce-motion clamp
+because the repo has no global one. Localisation: zero.
+<b>Risk 1 — the precedent.</b> This is launcher study 56p, which lost. Not the same question: 56p
+asked a grey die to BE the brand at 29px inside a charcoal squircle, where two 4px lamps are mud.
+Here it is 96px on a black screen and the wordmark carries the brand, so the lamps have room to be
+lamps. The owner may still rule the idea answered.
+<b>Risk 2 — ambience, and reading 2 says it fails.</b> Over the ground's own magenta the p2 lamp
+does not separate: the field swallows it and only the rim on the die's right edge survives. Nothing
+goes black, but in that corner the hero is a grey die with one cyan light and half the pair gone.
+Reading 1 is the cheap half — at 40px the unowned die still reads as unowned beside an owned one,
+so grey is a state and not an absence. <b>To ship</b> needs one line of app CSS,
+<b>.die.bare{--dc:#9fb2d8}</b> in src/styles/game/dice.css, so the unowned die is declared instead
+of the unmatched class this card leans on.</div>

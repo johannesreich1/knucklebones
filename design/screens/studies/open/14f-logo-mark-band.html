@@ -1,0 +1,211 @@
+<!-- meta name="L6 — Mark band" group="1c · The home logo" subtitle="Stop treating Home as a poster: the launcher mark locks to the left of a three-line label block, the dice row goes, and the 172px hero column collapses into an 80px band that hands the stack 92 pixels" width=412 height=1618 sizes="md" links="Matchmaking, Ladder, Settings" -->
+<style>
+  /* preview glue, the same three lines as the Home baseline (10-home-signed-in) */
+  .scr{align-items:center}
+  .hero{margin-top:34px}
+  .viewfoot{margin-top:auto;padding-top:20px}
+
+  /* ── the change ───────────────────────────────────────────────────────────
+     Today the hero is a poster: eyebrow over a 23px wordmark over two 74px
+     dice over a tagline, 172px of column including its margins. This card
+     builds the same four things as a BRAND LOCKUP instead — the shipped
+     launcher mark locked to the left of a three-line label block, one row —
+     and deletes the dice row, because a lockup that carries the mark has
+     already said "dice" and the row is then decoration the stack pays for.
+
+     The band is a grid rather than a flex row for one reason: the long-locale
+     rule at the bottom has to move the tagline OUT of the right column and
+     across the whole band, and grid is the only layout where that is a change
+     of placement rather than a second copy of the markup. */
+  .lfband{display:grid;grid-template-columns:auto auto;justify-content:center;
+    align-items:center;column-gap:12px;row-gap:4px;width:100%;max-width:var(--w-col);
+    /* 34px is the BASELINE CARD'S preview glue, kept so this stage is
+       pixel-comparable to 10-home-signed-in.png. The shipped margin is
+       10px 0 14px (today: 6px 0 2px), which is what the −92px in the note is
+       computed from; the rise you SEE against the baseline card here is 96px,
+       because the app's own top margin grows 6 → 10 while the hero's content
+       shrinks 164 → 56. */
+    margin:34px 0 14px;
+    /* the band is its own query container, so the break-out rule below fires
+       from the LANE the band actually has rather than from the page. That
+       makes the 292px compression frames trip the real rule instead of posing
+       a hand-set copy of it: this stage's lane is 352px and does not trip it,
+       the frames' lane is 292px and does. */
+    container-type:inline-size;container-name:lfband}
+  /* the mark sits in row 1 of column 1 and never spans the label rows: a 56px
+     item spanning three auto rows makes grid distribute its surplus INTO those
+     rows, which prises the three label lines apart by 6px each. One row, both
+     items centred against each other, and the label block keeps its own 2px. */
+  .lfband .appicon-mark{grid-area:1/1;display:block;border-radius:22.4%;
+    box-shadow:0 6px 16px rgba(0,0,0,.5)}
+  .lfband .lftx{grid-area:1/2}
+  /* two nested blocks, not three loose lines: .lfhd is what stays beside the
+     mark when the tagline breaks out, so it has to be an addressable box. */
+  .lfband .lftx,.lfband .lfhd{display:grid;justify-items:start;row-gap:2px}
+
+  /* WHY 20px, and it is not taste — these are measured off this card, not
+     estimated. KNUCKLEBONES at 20px / .24em contributes 210.2px of column
+     once the trailing tracking is cancelled, so the row is 56 + 12 + 210.2 =
+     278.2 against the 292px lane of a 320px phone: 13.8px of slack. The same
+     word scales linearly with the size, so 22px is 231.2 and the row is
+     299.2 — over the lane — and today's 23px is 241.7 for a 309.7 row, over
+     by 18. 21px would fit at 288.7, by 3.3px, which is not a margin but a
+     coincidence. 20px is the largest size with slack you could defend. */
+  .lfband h1{grid-area:2/1;font-size:20px;letter-spacing:.24em;text-align:left;
+    /* keeps the .scr h1 gradient (which reads the DUEL PAIR, so a repointed
+       pair still paints the name); only the glow shrinks, 22 → 14px, because
+       a 20px title lit like a 23px one blooms into the eyebrow above it. */
+    filter:drop-shadow(0 0 14px rgba(var(--p1-rgb),.30));
+    /* letter-spacing paints after the last glyph too, so the h1 box carries
+       4.8px of dead tracking past the S. Left-aligned that is invisible, but
+       it is 4.8px of column width, and the whole band is centred as a group —
+       so the lockup would sit 2.4px left of centre. Cancel it and the group
+       centres on the ink. */
+    margin-right:-.24em}
+  .lfband .eyebrow{grid-area:1/1}
+  .lfband .sub2{grid-area:2/1;text-align:left;margin-bottom:0}
+
+  /* ── the long-locale rule, as the RULE and not the exception ──────────────
+     The tagline is the only label that can outgrow the lockup. Measured here:
+     "Duelos clasificatorios de dados" paints 257.7px at 10px / .28em against
+     a right column the wordmark fixes at 210.2px, so the row wants 56 + 12 +
+     257.7 = 325.7px. A 360px viewport leaves a 332px lane and 325.7 clears it
+     by 6; a 320px viewport leaves 292 and it does not. That is where the
+     360px step comes from, and it is written here as the 332px LANE it
+     actually means. It is scoped to the locales that need it: English paints
+     142.4px, fits the column with 68px to spare, and must not break out just
+     because the phone is small. In the app this ships as
+     @media (max-width:360px) on the five Latin locales whose tagline
+     clears 210px.
+
+     display:contents is what makes this ONE implementation: .lftx stops being
+     a box, its two children become grid items of the band, and the tagline is
+     re-placed across both columns. No second markup, no duplicated lockup. */
+  @container lfband (max-width:332px){
+    .lflong .lftx{display:contents}
+    .lflong .lfhd{grid-area:1/2}
+    .lflong .sub2{grid-area:2/1/3/3;justify-self:center;text-align:center}
+  }
+
+  /* ── the compression strip ────────────────────────────────────────────────
+     Two readings of the same band at the supported floor, side by side. The
+     frame is a ruler, not chrome: 294px box-sizing:border-box over a 1px
+     border leaves exactly the 292px lane a 320px phone has after the app's
+     14px page padding. .scr is worn so the h1 keeps the shared gradient
+     rather than this card restating it. */
+  .lfstrip{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;
+    gap:18px;width:100%;max-width:var(--w-col)}
+  .lfitem{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .lfitem .cap2{font-size:8.5px;letter-spacing:.16em}
+  .lffloor{width:294px;box-sizing:border-box;padding:10px 0;
+    border:1px dashed rgba(255,255,255,.14);border-radius:10px;
+    background:rgba(255,255,255,.02)}
+  /* the frames measure the band, not the hero's place in a screen */
+  .lffloor .lfband{margin:0}
+</style>
+<div class="stage lkf"><div class="bgfx"></div><div class="scr">
+  <div class="hero lfband">
+    {{appicon:56}}
+    <div class="lftx">
+      <div class="lfhd">
+        <div class="eyebrow">Neon Edition</div>
+        <h1>KNUCKLEBONES</h1>
+      </div>
+      <div class="sub2">Ranked dice duels</div>
+    </div>
+  </div>
+
+  <div class="homestack">
+    <!-- the plate IS the account door (design 13d): the profile's ring at chip
+         size, docked on the button that moves it -->
+    <button class="pplate dice-static">
+      <span class="ringwrap mini" style="--p:.489"><i class="lring"></i><span class="pav">{{die:5:p1:18}}</span></span>
+      <span class="nm2">FrostLynx303</span>
+      <span class="meta2"><span class="mrow"><b>2,494</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #4</span></span>
+      <span class="chev">›</span>
+    </button>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">{{ico:play:25}}</span><span class="btn-label">Play ranked match</span></button>
+    <div class="hrow">
+      <button class="btn">Ladder</button>
+      <button class="btn">Settings</button>
+    </div>
+  </div>
+
+  <div class="quiet">
+    <div class="cap">Practice offline</div>
+    <div class="hrow">
+      <button class="btn">VS AI</button>
+      <button class="btn">2 players</button>
+      <button class="btn">How to play</button>
+    </div>
+  </div>
+
+  <div class="viewfoot">
+    <button class="linkbtn">Impressum</button>
+    <button class="linkbtn">Privacy</button>
+    </div>
+</div></div>
+
+<div class="lfstrip">
+  <div class="lfitem">
+    <div class="lffloor scr">
+      <div class="hero lfband">
+        {{appicon:56}}
+        <div class="lftx">
+          <div class="lfhd">
+            <div class="eyebrow">Neon Edition</div>
+            <h1>KNUCKLEBONES</h1>
+          </div>
+          <div class="sub2">Ranked dice duels</div>
+        </div>
+      </div>
+    </div>
+    <span class="cap2">320 floor · EN · 278 of 292 · band 56</span>
+  </div>
+  <div class="lfitem">
+    <!-- same band, same rules, one class: .lflong marks a locale whose tagline
+         outgrows the column, and the container step above does the rest -->
+    <div class="lffloor scr">
+      <div class="hero lfband lflong">
+        {{appicon:56}}
+        <div class="lftx">
+          <div class="lfhd">
+            <div class="eyebrow">Edición Neón</div>
+            <h1>KNUCKLEBONES</h1>
+          </div>
+          <div class="sub2">Duelos clasificatorios de dados</div>
+        </div>
+      </div>
+    </div>
+    <span class="cap2">320 floor · ES · breaks out · band 71</span>
+  </div>
+</div>
+
+<div class="note"><b>The hero becomes a 56px band and the stack rises 92px.</b>
+  Mark, name, eyebrow and tagline stop being a stacked poster and become one left-locked lockup on
+  a single row.
+  <b>Against today.</b> The column becomes a row; the two 74px dice and the gold VS are deleted,
+  because the launcher mark has already said "dice" and that row was the most expensive thing on
+  the screen. The title drops 23 → 20px, which is not taste: measured here the row is
+  56 + 12 + 210.2 = 278 of the 292px lane a 320px phone has, and at 23px it is 310 and over. The
+  tagline stops being left to wrap and gets an explicit break-out.
+  <b>Cost.</b> Hero 172 → 80px including its margins — 92px, the largest structural saving on this
+  slate — and the plate moves from ~198px below the hero top to ~106px. Zero motion added; three
+  animated dice go away. Localisation: the lockup never translates; five Latin locales trip the
+  break-out below a 360px viewport; the two CJK taglines paint a 14px line where Latin paints 11,
+  and since the band is given no fixed height they simply set the label block while the 56px mark
+  still governs.
+  <b>What this render settles, and what it does not.</b> Settled: the 2px seam survives at 56px
+  over the aurora — the white core reads cleanly above. What it loses is the two-sided hue glow
+  that makes the cut read as light at launcher size; over a field already cyan left and magenta
+  right, the glow washes out and the seam is a plain white cut. Not settled, and visible above:
+  the 92px does not distribute itself. The foot pins with margin-top:auto, so the saving lands as
+  one void between the practice tier and the legal links, and is a gain only if the stack, a
+  weekly CTA or vertical centring claims it.
+  <b>Risks, and the first is the decision.</b> One: this makes Home read as a HEADER rather than a
+  title screen — right for a utility app, possibly wrong for a game whose entire pitch is a duel.
+  It is the only direction on this slate that changes what kind of app this looks like, and no
+  amount of execution settles that. Two: the player tapped this exact icon four seconds ago, and a
+  56px repeat of it sits nearer a favicon than a mark. Three: the appicon token bakes the default
+  pair into an SVG, so the mark cannot follow a repointed duel pair while the wordmark beside it
+  does — worse than neither following it.</div>

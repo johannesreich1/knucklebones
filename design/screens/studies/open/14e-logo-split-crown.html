@@ -1,0 +1,184 @@
+<!-- meta name="L5 — Split crown" group="1c · The home logo" subtitle="Stop drawing a second logo: the launcher mark itself crowns the type and the two-die row is deleted — measured dead neutral at 96px, but the token bakes cyan-and-magenta into its own SVG, so a repointed duel pair breaks the hero" width=412 height=1729 sizes="md" links="Matchmaking, Ladder, Settings" -->
+<style>
+  /* preview glue, same three lines as the Home baseline (10-home-signed-in) */
+  .scr{align-items:center}
+  .hero{margin-top:34px}
+  .viewfoot{margin-top:auto;padding-top:20px}
+
+  /* ── the change ───────────────────────────────────────────────────────────
+     Today the Home hero paints a SECOND logo: two 74px dice and a gold VS,
+     hand-composed here and nowhere else in the product. The launcher mark that
+     shipped 2026-09-02 already says the same sentence in one object — one die,
+     two owners, a single lit seam — and the player tapped it two seconds ago.
+     So the mark is the hero, on TOP, crowning the type; .duel and the gold .vs
+     are deleted outright. Nothing is redrawn: the hero is the appicon token
+     at 96 — the shipped generator's own output, so the tile and this screen cannot drift apart. */
+
+  /* THE MARK. Two mechanical facts decide everything below.
+     (1) The token's dark variant is rendered TRANSPARENT — design/build.mjs
+     asks splitDieIconSVG(512, SPLIT_ICON_PAD, 'dark', true) — so there is no
+     charcoal squircle and the die floats on the aurora. Do NOT put a tile back
+     under it: the tile is exactly what makes this read as a SCREENSHOT of an
+     app icon instead of as a mark.
+     (2) The die is 96 of a 120-unit canvas, so the token paints 0.8 × N. At
+     N=96 that is a 76.8px die — within 3px of today's 74px duel dice, so the
+     one object arrives at the weight the two used to share. */
+  .lke .lemark{display:block;line-height:0;
+    /* 4px, not the 12 the eye asks for, because the token carries 10% of
+       transparent margin on every side: at N=96 the die's ink stops 9.6px
+       above the box. 4 + the .hero flex gap of 4 + that 9.6 = 17.6px of
+       VISIBLE air over the eyebrow, and the hero measures 172px — today's
+       number exactly (see the note). Geometry and optics disagree here; the
+       optics win and the arithmetic is the reward. */
+    margin-bottom:4px;
+    /* RE-LIGHT IT FROM OUTSIDE. The die's own `0 0 34px` outer glow is drawn
+       INSIDE the SVG and then clipped by that same 10% margin, so the token
+       arrives with its light cut off at the box edge — a flat grey square with
+       a hairline. These two shadows put the glow back where the clip took it,
+       in the duel pair's hues, at the radius the .duel dice use. This one line
+       is the whole difference between a mark and a sticker; delete it and look
+       at the difference before arguing with the number. */
+    filter:drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))}
+  /* the token renders an <img>; inline it would sit on a baseline and hang a
+     descender gap under the mark even at line-height:0 in some engines */
+  .lemark .appicon-mark{display:block}
+
+  /* Type is TODAY'S, untouched: eyebrow 9/.34 --dim, h1 23/.24em with the
+     shared gradient, sub2 10/.28 --dim. This card changes exactly one thing,
+     so nothing else is allowed to move and claim the credit. */
+
+  /* ── the compression strip ────────────────────────────────────────────────
+     ROW 1 · SIZE. Small readings belong over the ground they will be small on,
+     so the row borrows the stage itself — the same .stage/.bgfx chrome, one
+     implementation, just short and wide instead of phone-shaped. */
+  .lestrip{display:flex;flex-direction:column;align-items:center;gap:16px;
+    width:100%;max-width:var(--w-col)}
+  .lepatch{width:100%;max-width:var(--w-col);border-radius:18px}
+  .lepatch .lerow{position:relative;z-index:1;display:flex;align-items:flex-end;
+    justify-content:center;gap:30px;padding:16px 0 11px}
+  .leitem{display:flex;flex-direction:column;align-items:center;gap:9px}
+  .leitem .cap2{font-size:8px;letter-spacing:.16em}
+  /* a caption that is a SENTENCE cannot wear .cap2's uppercase .26em tracking
+     without becoming a wall; same colour and size, set to be read */
+  .lesay{text-transform:none;letter-spacing:.02em;font-size:9.5px;line-height:1.55;
+    max-width:366px;text-align:center}
+  .leitem .appicon-mark{display:block}
+  /* the same re-light, scaled down with the mark: a glow radius that does not
+     follow the mark's size stops being light and becomes a halo sticker */
+  .le44 .appicon-mark{filter:drop-shadow(0 0 12px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 12px rgba(var(--p2-rgb),.22))}
+  .le28 .appicon-mark{filter:drop-shadow(0 0 8px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 8px rgba(var(--p2-rgb),.22))}
+  .le20 .appicon-mark{filter:drop-shadow(0 0 6px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 6px rgba(var(--p2-rgb),.22))}
+
+  /* ROW 2 · THE COLOUR-FREEZE — the decisive reading on this card, and the
+     reason it is not ready to ship. Same lockup twice: the shipped duel pair,
+     then the pair repointed to violet/green the way Settings can repoint it.
+     The wordmark follows (it is live DOM reading --p1/--p2); the mark cannot,
+     because splitDieIconSVG writes hueVars(DEFAULT_ICON_PAIR) — literally
+     `--p1:var(--cy);--p2:var(--mg)` — onto its OWN svg root, below anything a
+     page can set. It is a picture, and the picture is cyan and magenta. */
+  .lefreeze{display:flex;flex-direction:column;align-items:center;gap:13px;
+    width:100%;max-width:var(--w-col)}
+  .lelock{display:flex;align-items:center;gap:13px}
+  .lelock .appicon-mark{display:block;flex:0 0 auto;
+    /* the re-light DOES follow the pair — it is card CSS reading the tokens —
+       so in the repointed row the halo is violet-green around a cyan-magenta
+       die. That is not a bug in this card; it is the seam of the failure. */
+    filter:drop-shadow(0 0 15px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 15px rgba(var(--p2-rgb),.22))}
+  /* the wordmark is the app's own gradient title: a bare .scr wrapper outside
+     the stage picks up the builder's `.scr h1` chrome (which reads --p1/--p2)
+     and none of `.stage .scr`'s layout, so this is the real ink, not a copy */
+  /* .scr h1 is (class + element) and would out-specify a bare .lewm, so the
+     size override has to carry the element too or the strip silently paints
+     the hero's own 23px and the reading stops being a small one */
+  .scr h1.lewm{font-size:20px;letter-spacing:.24em;white-space:nowrap;line-height:1.15}
+  /* the repointed stage: exactly what Settings writes onto #kbroot */
+  .lealt{--p1:var(--violet);--p1-rgb:var(--violet-rgb);--p1-hi:var(--violet-hi);
+    --p2:var(--green);--p2-rgb:var(--green-rgb);--p2-hi:var(--green-hi)}
+</style>
+<div class="stage lke"><div class="bgfx"></div><div class="scr">
+  <div class="hero">
+    <!-- the mark on top, crowning the type, instead of a picture wedged into
+         the middle of it. The two-die row and the gold VS are gone. -->
+    <i class="lemark">{{appicon:96}}</i>
+    <div class="eyebrow">Neon Edition</div>
+    <h1>KNUCKLEBONES</h1>
+    <div class="sub2">Ranked dice duels</div>
+  </div>
+
+  <div class="homestack">
+    <!-- the plate IS the account door (design 13d): the profile's ring at chip
+         size, docked on the button that moves it -->
+    <button class="pplate dice-static">
+      <span class="ringwrap mini" style="--p:.489"><i class="lring"></i><span class="pav">{{die:5:p1:18}}</span></span>
+      <span class="nm2">FrostLynx303</span>
+      <span class="meta2"><span class="mrow"><b>2,494</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #4</span></span>
+      <span class="chev">›</span>
+    </button>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">{{ico:play:25}}</span><span class="btn-label">Play ranked match</span></button>
+    <div class="hrow">
+      <button class="btn">Ladder</button>
+      <button class="btn">Settings</button>
+    </div>
+  </div>
+
+  <div class="quiet">
+    <div class="cap">Practice offline</div>
+    <div class="hrow">
+      <button class="btn">VS AI</button>
+      <button class="btn">2 players</button>
+      <button class="btn">How to play</button>
+    </div>
+  </div>
+
+  <div class="viewfoot">
+    <button class="linkbtn">Impressum</button>
+    <button class="linkbtn">Privacy</button>
+    </div>
+</div></div>
+
+<div class="lestrip">
+  <!-- ROW 1 · SIZE, on the stage's own ground rather than the page's -->
+  <div class="stage lepatch"><div class="bgfx"></div><div class="lerow">
+    <div class="leitem le44">{{appicon:44}}<span class="cap2">44 · plate scale</span></div>
+    <div class="leitem le28">{{appicon:28}}<span class="cap2">28 · proven on a tile</span></div>
+    <div class="leitem le20">{{appicon:20}}<span class="cap2">20 · pips merge first</span></div>
+  </div></div>
+  <span class="cap2 lesay">Study 56b proved the seam holds as a line at 28 — on a charcoal tile, which is not this ground. Rendered here instead of assumed: over the aurora the seam is the LAST thing to go, still a lit line at 20. The die fails first: by 20 the three pips in each column have fused into two bars and the face stops being a six.</span>
+
+  <!-- ROW 2 · THE COLOUR-FREEZE -->
+  <div class="lefreeze">
+    <div class="scr"><div class="lelock">{{appicon:56}}<h1 class="lewm">KNUCKLEBONES</h1></div></div>
+    <span class="cap2">Shipped pair · mark and wordmark agree</span>
+    <div class="scr lealt"><div class="lelock">{{appicon:56}}<h1 class="lewm">KNUCKLEBONES</h1></div></div>
+    <span class="cap2">Repointed pair · the image cannot follow</span>
+  </div>
+</div>
+
+<div class="note"><b>The launcher mark IS the hero; the two-die row is deleted.</b>
+  The tile the player tapped two seconds ago and the screen they land on become one object, the
+  mark crowning the type instead of sitting wedged inside it. Nothing is drawn twice — the hero is
+  the appicon token at 96, the shipped generator's own output — and mark and wordmark run the same
+  direction: my column left, theirs right, the same gradient in the same order underneath.
+  <b>Against today.</b> Out: .duel, two 74px dice, the gold .vs, and the only place in the product
+  that hand-composes a logo. In: one 76.8px die. Type, spacing and the stack below are untouched,
+  so the card isolates one variable. One added rule does real work: the die's own 0 0 34px glow is
+  drawn inside the SVG and clipped by the token's 10% margin, so the hero re-lights it from
+  outside in the duel pair's hues. Delete that line and compare — it is the difference between a
+  mark and a sticker.
+  <b>Cost, measured here.</b> The hero paints 172px against today's 172 — dead neutral, and not by
+  luck: the token's 10% transparent margin turns 4px of CSS into ~18px of visible air, and the
+  96px box buys a 76.8px die for what a 74px die cost. At 88 the hero is 164 (−8), at 104 it is
+  180 (+8). Ship 96; the reason to shrink was to buy back space the design does not owe. Zero
+  motion, zero localisation cost.
+  <b>The blocker, and it is real.</b> splitDieIconSVG writes hueVars(DEFAULT_ICON_PAIR) — literally
+  --p1:var(--cy);--p2:var(--mg) — onto its own SVG root, under anything the page can set. The mark
+  is a picture and the picture is cyan and magenta, so a player who repointed the duel pair gets a
+  cyan-magenta hero over a violet-green title and PLAY button, on the one screen where that is
+  unmissable. Strip row 2 is the evidence; the re-light glow DOES follow the pair, so the failure
+  arrives as a violet-green halo around a magenta die. This ships only after the split CSS leaves
+  tools/appicon.mjs and becomes a live DOM class reading --p1/--p2.
+  <b>Two smaller risks.</b> The player tapped this exact tile seconds ago, so showing it again can
+  read as a loading state that never resolved; the eyebrow and title beneath are the only thing
+  saying otherwise. And the flat grey square the slate feared is not what rendered — each half
+  carries its owner's plate — but it is quieter: one object where two used to glow, and Home gives
+  up spectacle it may have been using to sell the duel.</div>
