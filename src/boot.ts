@@ -5,6 +5,7 @@ import { castArmed, configureSpellFlow, renderSpells } from './flow/spells.ts';
 import { configureInput } from './ui/input.ts';
 import { appRoot, setEmbed } from './ui/embed.ts';
 import { stampBuild, watchPagedScroll } from './ui/dom.ts';
+import { playBootHandoff } from './ui/boot-handoff.ts';
 import { repaintBagLocale } from './ui/bag.ts';
 import { buildBoards } from './ui/game/board.ts';
 import { repaintScoreLocale } from './ui/game/scores.ts';
@@ -54,6 +55,14 @@ export function boot(embed: boolean): void {
      nothing left to build — it takes its hues from the page like any other
      element. */
   refreshHomeChip();
+
+  /* The launch screen hands off to Home here (design 15b / A2). Not in the
+     widget: it has no launch screen to continue from, so there would be
+     nothing for the mark to arrive out of. */
+  if (!embed) {
+    const mark = root.querySelector('#homeMark .splitmark');
+    if (mark instanceof HTMLElement) playBootHandoff(root, mark);
+  }
 
   if (!embed) {
     /* The coloured launcher is an explicit device choice. While enabled, the

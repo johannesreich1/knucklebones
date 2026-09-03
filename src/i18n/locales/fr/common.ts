@@ -5,7 +5,7 @@ export const frCommon = {
   app: {
     name: 'KNUCKLEBONES',
     edition: 'Édition Néon',
-    tagline: 'Duels de dés classés',
+    tagline: 'Duels de dés',
     portraitOnly: 'MODE PORTRAIT',
     rotatePortrait: 'Tournez votre appareil en mode portrait pour continuer.',
   },

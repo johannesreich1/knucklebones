@@ -2,7 +2,18 @@
 :where(#kbroot) #ovEnd .sc em:empty{display:none}
 :where(#kbroot) .hero{display:flex;flex-direction:column;align-items:center;gap:4px;margin:6px 0 2px}
 :where(#kbroot) .hero .eyebrow{font-size:9px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
-:where(#kbroot) .hero h1{font-size:23px;letter-spacing:.24em}
+/* line-height 1 on an all-caps wordmark: KNUCKLEBONES has no descenders, so
+   the default 1.17 was 4px of air the line could not use, pushing the eyebrow
+   and the tagline away from the type they belong to. Owner call, 2026-09-03. */
+/* THE THREE LINES ALIGN ON INK, NOT ON BOXES. letter-spacing trails the last
+   glyph of every line, so each box extends past its own last letter by exactly
+   its tracking — 5.52px on the 23px wordmark, 2.52px on the 9px tagline. Align
+   the boxes and the tagline juts 3px past the S above it, which is what
+   "seems too far right" was. Each line pulls its own trailing space back out
+   with a negative margin equal to its own tracking, so every right edge is the
+   edge of the last painted glyph. The eyebrow needs none: tracking does not
+   lead, so its first glyph already sits on the left edge. */
+:where(#kbroot) .hero h1{font-size:23px;letter-spacing:.24em;line-height:1;margin-right:-.24em}
 /* THE HERO MARK. Two numbers here and both are measured, not chosen.
    4px of margin, not the 12 the eye asks for, because the 120-unit arrangement
    carries 12 units of transparent margin on every side: at a 96px frame the
@@ -15,6 +26,118 @@
    put it back from outside, in the duel pair's live hues, at the radius the
    old duel dice used. Delete them and compare before arguing with the number:
    it is the whole difference between a mark and a sticker. */
+/* HOME LETS THE REAL BACKDROP THROUGH (owner call, 2026-09-03).
+   Every overlay paints an opaque film — background:var(--aurora) over #04050c
+   (components/overlays.css) — because a page has to hide the live table behind
+   it. Home has nothing to hide: it IS the first screen, and that film was
+   covering #bg, the app's own aurora with its two hue clouds. The design board
+   has shown Home over that richer ground since the beginning; the product was
+   the flatter one, and the difference is what got reported.
+
+   Nothing is copied to achieve it. #bg already paints the gradient AND already
+   reads --p1/--p2, so dropping Home's film is one declaration and the glow
+   follows a repointed pair for free — where the card's .bgfx hardcodes cyan
+   and magenta and cannot. The grid stays hidden and the drift stays paused:
+   backdrop.css keys both off :has(.ov.on), and Home is always .ov.on.
+   MAIN VIEW ONLY. Every other overlay keeps its film, or it would show the
+   table through a menu opened mid-match. */
+:where(#kbroot) .ov.on#ovStart{background:var(--table-ground);background-color:var(--bg);
+  isolation:isolate}
+/* the hue clouds, Home's own copy of the layer #bg::before draws for the table.
+   inset:-30% so the blur has room to decay past every edge; z-index:-1 puts it
+   under Home's content but over Home's own background, inside the stacking
+   context isolation:isolate creates — so it cannot escape upward into the app.
+   No animation: backdrop.css pauses the table's drift whenever an overlay is
+   up, and Home is always up, so a drifting copy here would be the only moving
+   blur in the product.
+
+   IT IS ::after, AND THAT IS NOT ARBITRARY. #ovStart::before is already taken:
+   overlays.css uses it as the flex spacer whose margin-top:auto centres Home's
+   column against .viewfoot's own auto margin ("ONE spacer, not two"). Painting
+   the clouds there overrode it and dropped the whole column to the top of the
+   screen — caught in a render, not in review. */
+:where(#kbroot) #ovStart::after{content:"";position:absolute;inset:-30%;z-index:-1;
+  pointer-events:none;background:var(--duel-clouds);filter:blur(34px)}
+
+/* ── THE BOOT HANDOFF ──────────────────────────────────────────────────────
+   Design study 15b / A2, chosen 2026-09-03. src/ui/boot-handoff.ts measures the
+   offset and drives the two classes; everything visual is here.
+
+   These name #kbroot directly rather than wrapping it in :where(). That is the
+   repo's form for a ROOT STATE class — the same one #kbroot.shortv uses — and
+   tests/cssgraph.test.ts enforces it: :where(#kbroot) must be followed by
+   whitespace, because it exists to scope descendants without adding
+   specificity, while a state class on the root itself is meant to carry its
+   ID weight and win.
+
+   The exclusion is #homeMark, the WRAPPER — not .splitmark, the mark itself.
+   The hero's direct child is that span, so :not(.splitmark) matched it and hid
+   the mark inside the very rule meant to keep it on screen. The whole travel
+   played invisibly; scrubbing the transition is what found it.
+
+   .booting is the LAUNCH SCREEN, reproduced by the webview: the mark centred at
+   the storyboard's size and colourless, because the launch image is greyscale
+   so one image can serve 42 pairs. It is the first frame the app paints, which
+   is why it must be indistinguishable from the frame the OS just showed.
+   .boot-run is the arrival: 340ms for the mark, the stack 180ms behind it.
+
+   The filter lists are the same length in both states ON PURPOSE. grayscale and
+   opacity are identity at the end, and the two drop-shadows are transparent at
+   the start, so the whole list interpolates — swap in a shorter list and the
+   colour snaps instead of arriving, which is the one thing this beat is for.
+
+   opacity(.62), NOT brightness(.62): it is the value tools/splash.mjs paints
+   the launch mark at, and it is the only one that works here. The die's halves
+   are translucent, so DARKENING them against a dark ground made the mark
+   disappear — the whole large-scale half of the travel played invisibly and
+   the mark seemed to pop into existence at 255ms. Caught by scrubbing the
+   transition, not by reading it. */
+#kbroot.booting .hero .splitmark{
+  transform:translate(var(--boot-dx,0px),var(--boot-dy,0px)) scale(var(--boot-scale,1));
+  filter:grayscale(1) opacity(.62)
+    drop-shadow(0 0 0 rgba(var(--p1-rgb),0)) drop-shadow(0 0 0 rgba(var(--p2-rgb),0))}
+#kbroot.booting .hero>:not(#homeMark),
+#kbroot.booting #ovStart>:not(.hero){opacity:0;transform:translateY(10px)}
+/* .45,.6,.25,1 covers 15/43/75/93% at the tenth, quarter, 40% and 60% marks —
+   it starts, it moves, it settles. The study's first curve put 49% of the
+   travel into the first 10% and read as a teleport followed by a drift. */
+#kbroot.boot-run .hero .splitmark{
+  transition:transform 340ms cubic-bezier(.45,.6,.25,1),filter 340ms cubic-bezier(.4,0,.2,1);
+  transform:none;
+  filter:grayscale(0) opacity(1)
+    drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))}
+#kbroot.boot-run .hero>:not(#homeMark),
+#kbroot.boot-run #ovStart>:not(.hero){
+  transition:opacity 320ms cubic-bezier(.32,.72,.28,1) 180ms,
+             transform 320ms cubic-bezier(.32,.72,.28,1) 180ms;
+  opacity:1;transform:none}
+/* reduced motion never reaches here — boot-handoff.ts declines and Home simply
+   paints settled — but a stale class must not be able to strand the screen. */
+@media (prefers-reduced-motion:reduce){
+  #kbroot.booting .hero .splitmark,
+  #kbroot.booting .hero>:not(#homeMark),
+  #kbroot.booting #ovStart>:not(.hero){transform:none;filter:none;opacity:1}
+}
+
+/* THE HERO IS STAGGERED, NOT STACKED (owner call, 2026-09-03). The eyebrow
+   runs to the left edge of the wordmark and the tagline to the right, with
+   KNUCKLEBONES centred between them — the three lines read as one composition
+   rather than three centred captions. .hero is a shrink-to-fit flex column, so
+   its width IS the wordmark's; stretching the two small lines to it is what
+   makes "left" and "right" mean the wordmark's own edges.
+
+   No tracking compensation is needed on either line, and the first draft of
+   this was wrong to add one. letter-spacing does append a space after the last
+   glyph, but the browser does not carry it into the right edge of a
+   text-align:right line — measured, the glyphs already end flush, and a
+   -.28em pull made them overhang by exactly 2.8px. Both lines are left at
+   their natural edges. */
+:where(#kbroot) .hero .eyebrow{align-self:stretch;text-align:left}
+/* the tagline drops to the eyebrow's 9px (owner call): the two small lines
+   bracket the wordmark, so they read as a pair only if they are the same size.
+   Tracking stays each line's own — .34em up top, .28em below — because the
+   tagline is the longer string and would break the column at .34em. */
+:where(#kbroot) .hero .sub2{align-self:stretch;text-align:right;font-size:9px;margin-right:-.28em}
 :where(#kbroot) .hero .splitmark{margin-bottom:4px;
   filter:drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))}
 :where(#kbroot) .sub2{font-size:10px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase;

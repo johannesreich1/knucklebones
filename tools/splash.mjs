@@ -26,7 +26,7 @@ import {
   hueVars,
   splitDieIconSVG,
 } from './appicon.mjs';
-import { DEFAULT_ICON_PAIR } from '../src/app-icon-registry.ts';
+import { DEFAULT_ICON_PAIR, SPLASH_MARK_FRACTION } from '../src/app-icon-registry.ts';
 import { inlineCssGraph } from './css-graph.mjs';
 
 const HERE_DIR = dirname(fileURLToPath(import.meta.url));
@@ -79,7 +79,7 @@ const xmlText = (value) => value
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 export function splashSVG(S = SIZE, pair = DEFAULT_ICON_PAIR) {
-  const dieScale = SPLASH_ICON_SCALE * (1 - APP_ICON_PAD * 2);
+  const dieScale = SPLASH_MARK_FRACTION;
   const fullCanvasPad = (1 - dieScale) / 2;
   /* Only the shared die mark is embedded. Its transparent full-size canvas
      lets the ground continue around the glass while leaving the glow unclipped. */

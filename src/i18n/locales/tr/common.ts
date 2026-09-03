@@ -5,7 +5,7 @@ export const trCommon = {
   app: {
     name: 'KNUCKLEBONES',
     edition: 'Neon Sürümü',
-    tagline: 'Dereceli zar düelloları',
+    tagline: 'Zar düelloları',
     portraitOnly: 'YALNIZCA DİKEY',
     rotatePortrait: 'Oynamaya devam etmek için cihazını dik konuma getir.',
   },

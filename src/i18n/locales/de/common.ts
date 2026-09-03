@@ -5,7 +5,7 @@ export const deCommon = {
   app: {
     name: 'KNUCKLEBONES',
     edition: 'Neon-Edition',
-    tagline: 'Ranglisten-Würfelduelle',
+    tagline: 'Würfelduelle',
     portraitOnly: 'NUR HOCHFORMAT',
     rotatePortrait: 'Drehe dein Gerät ins Hochformat, um weiterzuspielen.',
   },

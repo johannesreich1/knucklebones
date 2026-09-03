@@ -5,7 +5,7 @@ export const koCommon = {
   app: {
     name: 'KNUCKLEBONES',
     edition: '네온 에디션',
-    tagline: '랭크 주사위 대결',
+    tagline: '주사위 대결',
     portraitOnly: '세로 화면 전용',
     rotatePortrait: '계속하려면 기기를 세로로 돌리세요.',
   },

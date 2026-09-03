@@ -17,6 +17,14 @@ export interface IconPair {
   readonly p2: DuelHue;
 }
 
+/** The launch mark's ink, as a fraction of the storyboard's square canvas.
+ *  tools/splash.mjs RENDERS to this and src/ui/boot-handoff.ts ANIMATES from
+ *  it, so the webview's first frame can reproduce the frame the OS just showed.
+ *  Two copies of this number would drift silently — the mark would start the
+ *  boot handoff at the wrong size and nothing would fail, it would just look
+ *  slightly wrong. 0.24 of the canvas, less the icon's 15% pad on both sides. */
+export const SPLASH_MARK_FRACTION = 0.24 * (1 - 0.15 * 2);
+
 /** The compiled primary icon: cyan for you, magenta for them. */
 export const DEFAULT_ICON_PAIR: IconPair = Object.freeze({ p1: 'cy', p2: 'mg' });
 

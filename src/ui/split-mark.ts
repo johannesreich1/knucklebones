@@ -49,7 +49,7 @@ export function splitMarkMarkup(size: number = HOME_MARK_SIZE): string {
   });
   return `<i class="splitmark" style="--split-size:${size}px" aria-hidden="true">`
     + '<span class="split">'
-    + '<i class="plate"></i>'
+    + '<i class="sdplate"></i>'
     + `<i class="half left">${half('p1')}</i>`
     + `<i class="half right">${half('p2')}</i>`
     + '<i class="seam"></i>'

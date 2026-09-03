@@ -130,7 +130,7 @@ export function splitDieIconSVG(
     `<style>${xmlText(HOME_DIE_CSS)}</style>` +
     `<div class="appicon-canvas${light ? ' light' : ''}" style="${hueVars(pair)}--split-tilt:${APP_ICON_TILT_DEG}deg;width:${S}px;height:${S}px;position:relative;overflow:hidden;background:${ground}">` +
     `<div class="split" style="transform:translate(${offset}px,${offset}px) scale(${scale})">` +
-    `<i class="plate"></i>` +
+    `<i class="sdplate"></i>` +
     `<i class="half left">${die('p1')}</i>` +
     `<i class="half right">${die('p2')}</i>` +
     `<i class="seam"></i>` +

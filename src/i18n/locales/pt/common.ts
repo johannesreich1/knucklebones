@@ -5,7 +5,7 @@ export const ptCommon = {
   app: {
     name: 'KNUCKLEBONES',
     edition: 'Edição Neon',
-    tagline: 'Duelos de dados ranqueados',
+    tagline: 'Duelos de dados',
     portraitOnly: 'SOMENTE RETRATO',
     rotatePortrait: 'Gire o dispositivo para a posição vertical para continuar jogando.',
   },

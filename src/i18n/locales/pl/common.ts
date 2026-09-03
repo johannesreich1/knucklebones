@@ -5,7 +5,7 @@ export const plCommon = {
   app: {
     name: 'KNUCKLEBONES',
     edition: 'Edycja Neon',
-    tagline: 'Rankingowe pojedynki w kości',
+    tagline: 'Pojedynki w kości',
     portraitOnly: 'TYLKO PIONOWO',
     rotatePortrait: 'Obróć urządzenie do pionu, aby grać dalej.',
   },

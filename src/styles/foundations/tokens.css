@@ -41,6 +41,26 @@
      only: the game
      table keeps its original backdrop (user call) — the topmost open
      overlay paints this over its opaque film. */
+  /* THE TABLE'S GROUND. #bg paints it behind the live board; Home paints the
+     same one as its OWN opaque film. Tokenised rather than copied because the
+     two must not drift — and Home must paint it rather than go transparent:
+     the board markup sits underneath every overlay, and a see-through Home
+     showed its grid, its score zeros and "YOU" straight through the hero. */
+  --table-ground:
+    radial-gradient(120% 80% at 50% -10%,#17123a 0%,transparent 60%),
+    radial-gradient(110% 70% at 50% 110%,#04263a 0%,transparent 60%);
+  /* THE TWO OWNERS, and nothing else: theirs above, yours below. Home wears
+     exactly this (owner call, 2026-09-03) — the duel is the only thing its
+     ground has to say, and a third colour in the middle says something else.
+     The live table adds a violet cloud between them, because the board there
+     is a third object competing with both seats. One list composes the other,
+     so the two hues can never drift apart between the two screens. */
+  --duel-clouds:
+    radial-gradient(closest-side,rgba(var(--p2-rgb),.42),transparent 70%) 20% 16%/64% 48% no-repeat,
+    radial-gradient(closest-side,rgba(var(--p1-rgb),.36),transparent 70%) 80% 86%/66% 50% no-repeat;
+  --table-clouds:
+    var(--duel-clouds),
+    radial-gradient(closest-side,rgba(126,60,255,.30),transparent 70%) 62% 42%/52% 40% no-repeat;
   --aurora:
     radial-gradient(106% 95% at -8% -8%,rgba(var(--p2-rgb),.12),transparent 66%),
     radial-gradient(106% 95% at 108% 108%,rgba(var(--p1-rgb),.12),transparent 66%),

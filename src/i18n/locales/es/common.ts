@@ -5,7 +5,7 @@ export const esCommon = {
   app: {
     name: 'KNUCKLEBONES',
     edition: 'Edición Neón',
-    tagline: 'Duelos clasificatorios de dados',
+    tagline: 'Duelos de dados',
     portraitOnly: 'SOLO VERTICAL',
     rotatePortrait: 'Gira el dispositivo a la posición vertical para seguir jugando.',
   },

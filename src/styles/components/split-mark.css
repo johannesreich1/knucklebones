@@ -32,7 +32,7 @@
   transform-origin:0 0;overflow:hidden}
 :where(#kbroot) .split .half,
 :where(#kbroot) .split .seam,
-:where(#kbroot) .split .plate{position:absolute;left:12px;top:12px;width:96px;height:96px;
+:where(#kbroot) .split .sdplate{position:absolute;left:12px;top:12px;width:96px;height:96px;
   display:block;line-height:0;transform-origin:50% 50%;
   transform:rotate(var(--split-tilt,7deg));
   border-radius:min(var(--r),calc(96px*.25 + 1.5px))}
@@ -46,10 +46,16 @@
   background:linear-gradient(168deg,rgba(var(--p2-rgb),.42),rgba(var(--p2-rgb),.28) 60%,rgba(var(--p2-rgb),.38))}
 :where(#kbroot) .split .seam{pointer-events:none}
 /* on a light ground the translucent glass would read pastel: the light
-   rendition stands the die on an opaque charcoal plate with a soft shadow */
-:where(#kbroot) .split .plate{display:none;background:linear-gradient(160deg,#1e1f25,#0d0e12);
+   rendition stands the die on an opaque charcoal plate with a soft shadow.
+   IT IS .sdplate, NOT .plate. The generator could call it .plate because its
+   stylesheet was isolated; in the app ".plate" is the HUD's player plate with
+   61 rules behind it, one of them specific enough to beat .split .plate and
+   turn display:none back on. That painted a dark charcoal rectangle behind the
+   Home mark, offset by the HUD plate's own flex padding — visible on device
+   and reported. Generic names do not survive a move into a global cascade. */
+:where(#kbroot) .split .sdplate{display:none;background:linear-gradient(160deg,#1e1f25,#0d0e12);
   box-shadow:0 10px 26px rgba(0,0,0,.28),0 0 0 1px rgba(0,0,0,.06)}
-:where(#kbroot) .appicon-canvas.light .split .plate{display:block}
+:where(#kbroot) .appicon-canvas.light .split .sdplate{display:block}
 :where(#kbroot) .appicon-canvas.light .split .left{background:linear-gradient(168deg,rgba(var(--p1-rgb),.44),rgba(var(--p1-rgb),.30) 60%,rgba(var(--p1-rgb),.40))}
 :where(#kbroot) .appicon-canvas.light .split .right{background:linear-gradient(168deg,rgba(var(--p2-rgb),.46),rgba(var(--p2-rgb),.30) 60%,rgba(var(--p2-rgb),.42))}
 :where(#kbroot) .split .seam::after{content:"";position:absolute;left:0;right:0;top:1px;bottom:1px;
@@ -68,4 +74,14 @@
 :where(#kbroot) .splitmark{position:relative;display:block;line-height:0;
   width:var(--split-size,96px);height:var(--split-size,96px)}
 :where(#kbroot) .splitmark .split{
-  transform:scale(calc(var(--split-size,96px) / 120px))}
+  transform:scale(calc(var(--split-size,96px) / 120px));
+  /* THE APP DOES NOT CLIP THE MARK'S OWN LIGHT. .split carries overflow:hidden
+     for the icon, where the tile wants its glow contained; on the open page
+     that same clip cuts the die's 0 0 34px shadow into a hard-edged square
+     around it — 12 units of margin is nowhere near enough room for a 34-unit
+     blur, and on a bright pair (cyan and gold) the cut is unmissable. The
+     override is scoped to .splitmark, which only the app renders, so the icon
+     canvas keeps clipping exactly as before and its PNGs are untouched. The
+     glow spills outside the 96px layout box, which is what a glow should do:
+     .hero is a flex column and visual overflow moves nothing. */
+  overflow:visible}

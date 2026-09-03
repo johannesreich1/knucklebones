@@ -32,7 +32,7 @@ export const MARKUP = `${BOARD_MARKUP}
     <span id="homeMark">${splitMarkMarkup()}</span>
     <div class="eyebrow" data-i18n="common:app.edition">Neon Edition</div>
     <h1>KNUCKLEBONES</h1>
-    <div class="sub2" data-i18n="common:app.tagline">Ranked dice duels</div>
+    <div class="sub2" data-i18n="common:app.tagline">Dice duels</div>
   </div>
   <div class="homestack">
     <!-- the plate IS the account: ring, avatar, name and points, docked on the

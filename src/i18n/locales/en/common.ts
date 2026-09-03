@@ -2,7 +2,7 @@ export const enCommon = {
   app: {
     name: 'KNUCKLEBONES',
     edition: 'Neon Edition',
-    tagline: 'Ranked dice duels',
+    tagline: 'Dice duels',
     portraitOnly: 'PORTRAIT ONLY',
     rotatePortrait: 'Rotate your device upright to keep playing.',
   },

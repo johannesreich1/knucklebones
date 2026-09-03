@@ -3,15 +3,10 @@
    call: the table keeps its original stage). Overlays are opaque, so
    everything from here to the vignette paints ONLY the live table — the
    pages wear the --aurora token instead. */
-:where(#kbroot) #bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:
-  radial-gradient(120% 80% at 50% -10%, #17123a 0%, transparent 60%),
-  radial-gradient(110% 70% at 50% 110%, #04263a 0%, transparent 60%),
-  var(--bg);}
+:where(#kbroot) #bg{position:fixed;inset:0;z-index:0;overflow:hidden;
+  background:var(--table-ground),var(--bg);}
 :where(#kbroot) #bg::before{content:"";position:absolute;inset:-30%;
-  background:
-    radial-gradient(closest-side,rgba(var(--p2-rgb),.42),transparent 70%) 20% 16%/64% 48% no-repeat,
-    radial-gradient(closest-side,rgba(var(--p1-rgb),.36),transparent 70%) 80% 86%/66% 50% no-repeat,
-    radial-gradient(closest-side,rgba(126,60,255,.30),transparent 70%) 62% 42%/52% 40% no-repeat;
+  background:var(--table-clouds);
   filter:blur(34px);animation:drift 18s ease-in-out infinite alternate;}
 :where(#kbroot) #bg::after{content:"";position:absolute;inset:0;
   background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),

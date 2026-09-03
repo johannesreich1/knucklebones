@@ -172,8 +172,17 @@ body{display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px
    so the chrome provides the same look for bare card headings — reading the
    DUEL PAIR, not the raw hues: .ov h1 tracks --p1/--p2, so a chrome pinned to
    cyan-and-magenta would render every card's title in a palette the player
-   may have moved away from in Settings. */
-.scr h1,.scr h2{margin:0;font-size:23px;font-weight:900;text-align:center;letter-spacing:.22em;
+   may have moved away from in Settings.
+
+   :where() IS LOAD-BEARING. Written as .scr h1 (no :where) this had specificity (0,1,1)
+   — exactly the app's own :where(#kbroot) .hero h1 — and the chrome is
+   appended last, so it WON. Every card showing the Home wordmark rendered it
+   at .22em while the product shipped .24em, and the design library quietly
+   disagreed with the app it exists to picture. Reported 2026-09-03 as "font
+   sizes not updated" against a build whose fonts were correct.
+   At (0,0,1) this is what it was always meant to be: a fallback for headings
+   no product rule claims, which any product rule outranks. */
+:where(.scr) h1,:where(.scr) h2{margin:0;font-size:23px;font-weight:900;text-align:center;letter-spacing:.22em;
   background:linear-gradient(100deg,var(--p1),#fff 50%,var(--p2));
   -webkit-background-clip:text;background-clip:text;color:transparent}
 

@@ -5,7 +5,7 @@ export const idCommon = {
   app: {
     name: 'KNUCKLEBONES',
     edition: 'Edisi Neon',
-    tagline: 'Duel dadu berperingkat',
+    tagline: 'Duel dadu',
     portraitOnly: 'MODE POTRET SAJA',
     rotatePortrait: 'Putar perangkat ke posisi tegak untuk melanjutkan permainan.',
   },

@@ -5,7 +5,7 @@ export const jaCommon = {
   app: {
     name: 'KNUCKLEBONES',
     edition: 'ネオンエディション',
-    tagline: 'ランク戦ダイス対決',
+    tagline: 'ダイス対決',
     portraitOnly: '縦向き専用',
     rotatePortrait: '続けるには、端末を縦向きにしてください。',
   },
