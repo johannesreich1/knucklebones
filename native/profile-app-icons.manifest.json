@@ -213,8 +213,8 @@
     },
     {
       "path": "tools/appicon.mjs",
-      "bytes": 19407,
-      "sha256": "472ca1b90eef0cb07797a5b714b589ac953b6450439400fe01604bf40d03f629"
+      "bytes": 19414,
+      "sha256": "982d4f7736b514225e1a1952f8e61e0e1b9d51deb60017b122b6a2959a3d6553"
     },
     {
       "path": "tools/profile-app-icons.mjs",
