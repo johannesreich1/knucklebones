@@ -109,16 +109,22 @@ export function settingsAvatarHue(): AvatarHue {
   return (S.colorblind ? 'cy' : S.p1Hue) as AvatarHue;
 }
 
+/** What one alignment attempt did, so the caller can repaint on success and
+ * re-attempt a write the network refused. */
+export type AvatarHueAlignment = 'aligned' | 'unchanged' | 'failed' | 'skipped';
+
 /** Keep the persisted avatar's hue equal to Settings' "your colour", so
  * opponents see the colour this player plays in. No-op signed out, when the
- * hue already matches, or when the cached row is not this device's. */
-export async function alignAvatarHue(): Promise<void> {
+ * hue already matches, or when the cached row is not this device's. The face
+ * the player chose is carried through untouched. */
+export async function alignAvatarHue(): Promise<AvatarHueAlignment> {
   const cached = readProfileCache();
-  if (!cached?.accountId || !isProfileAvatar(cached.avatar)) return;
+  if (!cached?.accountId || !isProfileAvatar(cached.avatar)) return 'skipped';
   const { face, hue } = parseAvatar(cached.avatar);
   const wanted = settingsAvatarHue();
-  if (hue === wanted) return;
-  await setAvatar(cached.accountId, profileAvatar(face, wanted));
+  if (hue === wanted) return 'unchanged';
+  const result = await setAvatar(cached.accountId, profileAvatar(face, wanted));
+  return result.ok ? 'aligned' : 'failed';
 }
 
 /* The avatar is a die face and a hue — "die:5:cy". 42 identities, no storage

@@ -55,6 +55,9 @@ import { runRuneTrialRailScenarios } from './scenarios/rune-trial-rail.mjs';
 import { runRuneRewardRaceScenarios } from './scenarios/rune-reward-races.mjs';
 import { runAwayForfeitScenarios } from './scenarios/away-forfeit.mjs';
 import { runSeatColourScenarios } from './scenarios/seat-colours.mjs';
+import {
+  runSettingsColourAvatarScenarios,
+} from './scenarios/settings-colour-avatar.mjs';
 import { runEquippedSeatScenarios } from './scenarios/equipped-seat.mjs';
 import { runEquippedSeatInterlockScenarios } from './scenarios/equipped-seat-interlocks.mjs';
 import { runTrialMoveLatencyScenarios } from './scenarios/trial-move-latency.mjs';
@@ -108,6 +111,7 @@ const SCENARIOS = Object.freeze([
   { id: 'rune-trial-rail', run: runRuneTrialRailScenarios },
   { id: 'away-forfeit', run: runAwayForfeitScenarios },
   { id: 'seat-colours', run: runSeatColourScenarios },
+  { id: 'settings-colour-avatar', run: runSettingsColourAvatarScenarios },
   { id: 'equipped-seat', run: runEquippedSeatScenarios },
   { id: 'equipped-seat-interlocks', run: runEquippedSeatInterlockScenarios },
   { id: 'trial-move-latency', run: runTrialMoveLatencyScenarios },
@@ -143,6 +147,7 @@ const SHARDS = Object.freeze({
   ]),
   account: Object.freeze([
     'account-lifecycle', 'account-mutation-ownership', 'account-access',
+    'settings-colour-avatar',
     'account-game-center', 'account-game-center-blocked', 'account-error-sheet',
     'profile-rune-sheet', 'first-rune-profile-recovery', 'account-achievements-weekly',
     'rune-trial', 'rune-trial-rail',

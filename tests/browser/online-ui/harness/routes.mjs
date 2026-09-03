@@ -177,6 +177,7 @@ export async function installOnlineRoutes(
   let claimed = named;
   let profileNickname = null;
   let currentAvatar = 'die:5:cy';
+  let failNextAvatarWrite = false;
   let currentEquippedRune = equippedRune;
   let currentRandomRuneMode = randomRuneMode;
   await page.route('**/rest/v1/rpc/set_rune_equipment*', async (r) => {
@@ -216,7 +217,16 @@ export async function installOnlineRoutes(
     if (r.request().method() === 'PATCH') {
       const body = r.request().postDataJSON() ?? {};
       if (Object.hasOwn(body, 'nickname')) claimed = true;
-      if (typeof body.avatar === 'string') currentAvatar = body.avatar;
+      if (typeof body.avatar === 'string') {
+        /* A device with no connection: the row is untouched and the client is
+           told so, which is what arms the deferred retry. */
+        if (failNextAvatarWrite) {
+          failNextAvatarWrite = false;
+          return r.fulfill({ status: 503, contentType: 'application/json',
+            body: JSON.stringify({ message: 'avatar write unavailable' }) });
+        }
+        currentAvatar = body.avatar;
+      }
       return r.fulfill({ status: 204, body: '' });
     }
     /* FOUR different reads hit this one table, and they are told apart by the
@@ -408,6 +418,7 @@ export async function installOnlineRoutes(
     equippedProfileCalls: () => equippedProfileCalls,
     randomModeProfileCalls: () => randomModeProfileCalls,
     failNextEquipmentWrite: () => { failNextEquipmentWrite = true; },
+    failNextAvatarWrite: () => { failNextAvatarWrite = true; },
     deferNextEquipmentWrite: () => { deferNextEquipmentWrite = true; },
     equipmentWriteStarted,
     releaseEquipmentWrite: () => releaseEquipmentWrite(),

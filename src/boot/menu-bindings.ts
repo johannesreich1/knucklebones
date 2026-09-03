@@ -60,8 +60,8 @@ import { bindLearnPageBack } from '../ui/learn-page.ts';
 import { tap } from '../ui/tap.ts';
 import { isEmbed } from '../ui/embed.ts';
 import { hueLabel } from '../ui/hue.ts';
-import { readProfileCache } from '../profile-cache.ts';
-import { setAppIconColoursEnabled, syncAppIconColours } from '../native/app-icon.ts';
+import { followSettingsColours } from './settings-colours.ts';
+import { setAppIconColoursEnabled } from '../native/app-icon.ts';
 import { bindOnlineDoors } from './online-door.ts';
 import { bindPickerRow, eventButton } from './picker-row.ts';
 
@@ -85,18 +85,6 @@ function bindSegment(selector: string, key: string, apply: (value: string) => vo
     Sfx.unlock();
     Sfx.tap();
   });
-}
-
-/* Two things wear "your colour" beyond the table: the device's launcher icon
-   (when opted in) and the profile avatar other players see. The avatar write
-   needs the online chunk, so it is only asked for when a profile is cached —
-   a signed-out device has no avatar to keep true. */
-function followSettingsColours(): void {
-  void syncAppIconColours(S);
-  if (!readProfileCache()?.accountId) return;
-  void import('../online/identity/profile.ts')
-    .then(({ alignAvatarHue }) => alignAvatarHue())
-    .catch(() => undefined);
 }
 
 function huePicker(selector: string, write: (hue: string) => void): void {
