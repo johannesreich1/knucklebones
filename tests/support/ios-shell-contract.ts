@@ -10,6 +10,7 @@ import { LOCALE_REGISTRY } from '../../src/i18n/locale.ts';
 import {
   verifyIosAppIconContract,
 } from './ios-app-icon-contract.ts';
+import { verifyLaunchMarkContract } from './launch-mark-contract.ts';
 import { sameBytes } from './ios-artifacts.ts';
 import {
   colorBounds,
@@ -340,17 +341,15 @@ export function verifyIosShellContract(check: Check): {
     }
   }
   const splashPixels = readPngPixels(nativeAssets[3].path);
-  const splashTop = pixelAt(splashPixels, .04, .04);
-  const splashBottom = pixelAt(splashPixels, .04, .96);
-  check(rgbDistance(splashTop, splashBottom) <= 3
-    && rgbDistance(splashTop, { red: 5, green: 6, blue: 14, alpha: 255 }) <= 3,
-  'the iOS loading screen must preserve the app\'s #05060e first-frame continuity');
-  const splashInkBounds = colorBounds(splashPixels);
-  const splashInkWidth = splashInkBounds
-    ? (splashInkBounds.right - splashInkBounds.left + 1) / splashPixels.width
-    : 0;
-  check(splashInkBounds !== null && splashInkWidth >= .179 && splashInkWidth <= .182,
-    `the larger iOS loading-screen neon die should occupy about 18% of the canvas, found ${splashInkWidth}`);
+  /* Ground, ink size and the mark's own argument are shared with Android and
+     live in launch-mark-contract.ts; what stays here is the glow scan, which
+     is shaped by this canvas. */
+  verifyLaunchMarkContract(splashPixels, {
+    platform: 'iOS',
+    inkSpan: { min: .179, max: .185, by: 'width', label: '18.2%' },
+    markSamples: [[.4720, .4720], [.4660, .5450], [.5520, .4770], [.5410, .5540]],
+    groundCeiling: 24,
+  }, check);
   /* The launch mark used to enlarge a CSS shadow until Chromium truncated its
      blur into a visible square. Scan the clear air outside the die instead of
      pinning one historical coordinate: a continuous full-canvas glow cannot
@@ -388,26 +387,6 @@ export function verifyIosShellContract(check: Check): {
     check(jump <= 8,
       `the iOS loading-screen glow is visibly clipped at its ${edge} edge (RGB jump ${jump})`);
   }
-  /* The launch mark became the SPLIT die on 2026-09-03, so the five cyan pips
-     this used to pin no longer exist. What replaces them is stronger than a
-     coordinate list: the mark's whole argument is one die, two owners, one
-     seam, and these read that argument back off the rendered pixels. A splash
-     that regressed to a single-hue die fails the ownership checks; one that
-     lost its seam fails the last. */
-  for (const [x, y] of [[.4720, .4720], [.4660, .5450]] as const) {
-    const pip = pixelAt(splashPixels, x, y);
-    check(pip.blue >= 230 && pip.green >= 210 && pip.red <= 190,
-      `the iOS loading-screen pip at ${x},${y} must be lit in P1's cyan (left column)`);
-  }
-  for (const [x, y] of [[.5520, .4770], [.5410, .5540]] as const) {
-    const pip = pixelAt(splashPixels, x, y);
-    check(pip.red >= 240 && pip.blue >= 140 && pip.green <= 130,
-      `the iOS loading-screen pip at ${x},${y} must be lit in P2's magenta (right column)`);
-  }
-  const splashSeam = pixelAt(splashPixels, .5, .5);
-  check(splashSeam.red >= 220 && splashSeam.green >= 220 && splashSeam.blue >= 220
-    && colorSpread(splashSeam) <= 24,
-  'the iOS loading screen must cut the two owners apart on a lit white seam');
   const launchScreen = readFileSync(LAUNCH_SCREEN, 'utf8');
   check(/image="Splash"/.test(launchScreen) && /contentMode="scaleAspectFill"/.test(launchScreen)
     && /<image name="Splash" width="2732" height="2732"\/>/.test(launchScreen),

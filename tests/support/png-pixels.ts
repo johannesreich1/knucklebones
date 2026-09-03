@@ -3,7 +3,7 @@ import { inflateSync } from 'node:zlib';
 
 export type RgbaPixel = Readonly<{ red: number; green: number; blue: number; alpha: number }>;
 
-type DecodedPng = Readonly<{
+export type DecodedPng = Readonly<{
   width: number;
   height: number;
   colorType: number;

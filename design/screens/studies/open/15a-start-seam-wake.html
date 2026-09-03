@@ -23,8 +23,22 @@
 
   .stscr{position:relative;min-height:560px;overflow:hidden}
   /* LAYER 1 · the frame the OS paints before any code runs */
+  /* THE FRAME THE OS ACTUALLY PAINTS, not an approximation of it. Both halves
+     come from the shipped generator rather than from this card: the mark is
+     the splashmark token, already desaturated there, and the ground is the
+     app's own --aurora with the same saturate(0) tools/splash.mjs applies.
+     Nothing here restates either — a card that hand-mixed a grey would drift
+     from the artwork the moment the token changed.
+     The ground rides a SQUARE child because the storyboard renders one 2732
+     square under scaleAspectFill: on a taller-than-wide screen that square
+     covers by height and is cropped left and right, which a square sized by
+     height reproduces and percentages on the phone box would not. */
   .stlaunch{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-    background:#05060e;z-index:3;will-change:opacity}
+    background:#04050c;z-index:3;overflow:hidden;will-change:opacity}
+  .stlaunch::before{content:"";position:absolute;top:0;bottom:0;left:50%;translate:-50% 0;
+    aspect-ratio:1;min-width:100%;pointer-events:none;
+    background:var(--aurora);filter:grayscale(1)}
+  .stlaunch .appicon-mark{position:relative;z-index:1}
   .stlaunch .appicon-mark{width:99px;height:99px;display:block}
   /* LAYER 2 · Home, the app's own hero and stack */
   .sthome{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;

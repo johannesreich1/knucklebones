@@ -1,4 +1,4 @@
-<!-- meta name="A2 — Land and settle" group="1d · The start animation" subtitle="One object, two sizes: the mark the OS painted at 99px rises to its 96px crown as the type and the stack come up under it — the quietest card here, and the only one whose premise landed in the product on the day it was drawn" width=412 height=1387 sizes="md" links="iOS launch, Home" -->
+<!-- meta name="A2 — Land and settle (CHOSEN)" group="1d · The start animation" subtitle="One object, two sizes: the mark the OS painted at 99px rises to its 96px crown as the type and the stack come up under it — the quietest card here, and the only one whose premise landed in the product on the day it was drawn" width=412 height=1544 sizes="md" links="iOS launch, Home" -->
 <style>
   /* Family scaffold and its reasoning: see A1 (15a). In short — boot is a hard
      cut today, L5 makes the launcher's split die the Home hero, and these eight
@@ -7,8 +7,22 @@
   .scr{align-items:center}
   .hero{margin-top:34px}
   .stscr{position:relative;min-height:560px;overflow:hidden}
+  /* THE FRAME THE OS ACTUALLY PAINTS, not an approximation of it. Both halves
+     come from the shipped generator rather than from this card: the mark is
+     the splashmark token, already desaturated there, and the ground is the
+     app's own --aurora with the same saturate(0) tools/splash.mjs applies.
+     Nothing here restates either — a card that hand-mixed a grey would drift
+     from the artwork the moment the token changed.
+     The ground rides a SQUARE child because the storyboard renders one 2732
+     square under scaleAspectFill: on a taller-than-wide screen that square
+     covers by height and is cropped left and right, which a square sized by
+     height reproduces and percentages on the phone box would not. */
   .stlaunch{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-    background:#05060e;z-index:3;will-change:opacity}
+    background:#04050c;z-index:3;overflow:hidden;will-change:opacity}
+  .stlaunch::before{content:"";position:absolute;top:0;bottom:0;left:50%;translate:-50% 0;
+    aspect-ratio:1;min-width:100%;pointer-events:none;
+    background:var(--aurora);filter:grayscale(1)}
+  .stlaunch .appicon-mark{position:relative;z-index:1}
   .stlaunch .appicon-mark{width:99px;height:99px;display:block}
   .sthome{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;
     width:100%;flex:1 1 auto}
@@ -54,23 +68,36 @@
     46%{opacity:1;animation-timing-function:steps(1,end)}
     56%{opacity:0}
     100%{opacity:0}}
-  /* 224px is measured, not chosen: stage centre to the mark's seat at this
+  /* IT PLAYS AT ITS REAL SPEED. The window is 340ms for the mark and 320ms for
+     the stack — 6.54% and 6.15% of the 5200ms loop — not a stretched version of
+     them. A study that animates over 1.2s and prints "660 ms" under itself is
+     inviting a judgement about a motion nobody watched; the other motion cards
+     in this repo (57*) show their real durations inside a long loop, and so
+     does this.
+
+     224px is measured, not chosen: stage centre to the mark's seat at this
      card's height. The scale is 99 -> 96, the only real difference between the
-     storyboard's mark and the hero's, which is the whole point of the card. */
+     storyboard's mark and the hero's, which is the whole point of the card.
+
+     THE CURVE HAS WEIGHT NOW. cubic-bezier(.16,1,.3,1) put 49% of the travel
+     into the first 10% of the window and crawled the remaining half — which
+     reads as the die teleporting and then drifting, and was the single thing
+     that made this card look wrong. .45,.6,.25,1 covers 15/43/75/93% at the
+     tenth, quarter, 40% and 60% marks: it starts, it moves, it settles. */
   @keyframes a2land{
     0%{opacity:1;transform:translateY(0) scale(1)}
     46%{opacity:1;transform:translateY(0) scale(1);animation-timing-function:steps(1,end)}
     50%{opacity:1;transform:translateY(224px) scale(1.031)}
-    56%{opacity:1;transform:translateY(224px) scale(1.031);animation-timing-function:cubic-bezier(.16,1,.3,1)}
-    80%{transform:translateY(0) scale(1)}
+    56%{opacity:1;transform:translateY(224px) scale(1.031);animation-timing-function:cubic-bezier(.45,.6,.25,1)}
+    62.54%{transform:translateY(0) scale(1)}
     100%{opacity:1;transform:translateY(0) scale(1)}}
   /* type and stack rise to meet a mark that has already arrived */
   @keyframes a2home{
     0%{opacity:1;transform:translateY(0)}
     46%{opacity:1;transform:translateY(0);animation-timing-function:steps(1,end)}
     50%{opacity:0;transform:translateY(10px)}
-    70%{opacity:0;transform:translateY(10px);animation-timing-function:cubic-bezier(.16,1,.3,1)}
-    86%{opacity:1;transform:translateY(0)}
+    62.54%{opacity:0;transform:translateY(10px);animation-timing-function:cubic-bezier(.32,.72,.28,1)}
+    68.69%{opacity:1;transform:translateY(0)}
     100%{opacity:1;transform:translateY(0)}}
 
   @media (prefers-reduced-motion:reduce){
@@ -90,9 +117,12 @@
 </style>
 <div class="stage sa2"><div class="bgfx"></div><div class="scr stscr">
 
-  <!-- the OS frame, drawn here with the SPLIT die rather than the splash five,
-       because that substitution is exactly what this card is proposing -->
-  <div class="stlaunch">{{appicon:99}}</div>
+  <!-- the OS frame, from the splashmark token like every card in this family:
+       the substitution this card argued for is in the product now, and what
+       ships is the split die DESATURATED, so the frame claims no hue. Using
+       {{appicon}} here would picture a coloured launch screen that no player
+       ever sees. -->
+  <div class="stlaunch">{{splashmark:99}}</div>
 
   <div class="sthome">
     <div class="hero">
@@ -119,13 +149,14 @@
   </div>
 
 </div></div>
-<div class="stclock"><span><b>660 ms · mark 340, stack 320</b></span><span><i>open study</i></span></div>
+<div class="stclock"><span><b>660 ms · mark 340, stack 320 · shown at real speed</b></span><span><i>open study</i></span></div>
 <div class="sthead">
   <div class="eyebrow">Open study · the start animation</div>
   <h1>A2 · LAND AND SETTLE</h1>
   <p>The mark the OS already painted does not disappear and get replaced — it moves. It rises from the centre of the launch frame to the top of the page and settles at hero size, and the type and the stack rise to meet it. Nothing appears; something arrives.</p>
 </div>
-<div class="note"><b>Its premise went into the product on 2026-09-03, before the motion did.</b> The card was drawn to argue one thing — that the launch storyboard should carry the split die rather than the cyan five — and that argument was strong enough to act on by itself: tools/splash.mjs now renders splitDieIconSVG. Boot no longer shows two marks in half a second, and every other card in this family got the benefit for free, because the launch frame they all picture comes from the same generator.
+<div class="note"><b>CHOSEN 2026-09-03.</b> Johannes picked this off the eight-card board. It is not built yet and this card stays an open study until it is: the hero it animates is L5 (card 14e), and L5 carries a blocker of its own — splitDieIconSVG writes --p1:var(--cy);--p2:var(--mg) onto its own SVG root, so the mark cannot follow a player who repointed their duel pair. The split has to leave tools/appicon.mjs and become live DOM reading --p1/--p2 before either L5 or this animation can reach a player. Only then does this move to product/ and take the shipped mark.
+  <b>Its premise went into the product on 2026-09-03, before the motion did.</b> The card was drawn to argue one thing — that the launch storyboard should carry the split die rather than the cyan five — and that argument was strong enough to act on by itself: tools/splash.mjs now renders splitDieIconSVG. Boot no longer shows two marks in half a second, and every other card in this family got the benefit for free, because the launch frame they all picture comes from the same generator.
   <b>What that bought.</b> Continuity is the only thing a start animation can honestly sell. A player who taps a split-die tile, sees a split die on the frame, and lands on a split-die hero has been shown one app three times. The other cards decorate the moment between frame and page; this one removed the reason the moment looked wrong.
   <b>What is left to decide is the motion, and it is thin.</b> Three pixels of scale and a rise. Held against A3's unwind or A6's closing halves this is nearly nothing, and that is the honest case for it: the mark has already done its work on the tile, and a hero that performs on arrival is a hero asking for attention it was just given.
   <b>The travel is a real liability.</b> 224px is the gap between the stage's centre and the mark's seat AT THIS CARD'S HEIGHT — measured here, and wrong everywhere else. In the app that distance is a function of the device, the safe area and the stack, so it cannot be a constant: it has to be read from layout at boot, on the frame with the least budget, or the mark lands somewhere it does not belong. The first draft of this card proved the point by hard-coding 158 and dropping the die on the wordmark.

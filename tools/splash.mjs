@@ -23,18 +23,31 @@ import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import {
   APP_ICON_PAD,
+  hueVars,
   splitDieIconSVG,
 } from './appicon.mjs';
+import { DEFAULT_ICON_PAIR } from '../src/app-icon-registry.ts';
+import { inlineCssGraph } from './css-graph.mjs';
 
+const HERE_DIR = dirname(fileURLToPath(import.meta.url));
+const ROOT_DIR = resolve(HERE_DIR, '..');
+/* The ground is the app's OWN page background, not a copy of it: --aurora is
+   read out of src/styles the same way tools/appicon.mjs reads the die's CSS,
+   so the launch frame and the first screen the webview paints cannot drift. */
+const APP_CSS = inlineCssGraph(['src/styles/main.css'], { rootDir: ROOT_DIR }).css;
+const PAGE_GROUND = '#04050c';
 const BG = '#05060e';
-/* The launch wash follows the MARK. While the splash was a single cyan five a
-   single cyan halo was the only honest light; the split die has two owners, so
-   a cyan-only wash lights one of them and leaves the other sitting in someone
-   else's glow. Two offset radials instead, each at half the old strength, so
-   the total light on the ground is unchanged and its two halves agree with the
-   die standing in front of them. Values are tokens.css --cy / --mg. */
-const GLOW_P1 = '#28e8ff';
-const GLOW_P2 = '#ff2fa0';
+/* THE LAUNCH FRAME IS GREYSCALE, AND THAT IS THE WHOLE POINT.
+   The launcher tile comes in 42 ordered hue pairs; the launch screen cannot.
+   iOS names one image in Info.plist and compiles it in — there is no
+   CFBundleAlternateLaunchImages to match CFBundleAlternateIcons, and Android's
+   cold-start window is fixed the same way. Shipping 42 renditions would add
+   ~860MB and the OS would still only ever show one of them.
+   So the frame claims no hue at all: desaturated, at reduced opacity, over the
+   app's own page ground. A player on violet-and-green is not contradicted by
+   it, because it says nothing about colour — and the colour arrives a moment
+   later, when the webview paints their actual pair. One image, 42 players. */
+const MARK_OPACITY = .62;
 const SIZE = 2732;
 export const SPLASH_ICON_SCALE = .24;
 /* The launcher's icon composition is 24% of the splash. Its restored 70% die
@@ -60,31 +73,35 @@ export const SPLASH_ICON_SCALE = .24;
    die to 22.7% of the canvas, which tests/support/ios-shell-contract.ts caught
    twice over — once on size, and again because the oversized die reached into
    the bands that scan the clear air for a clipped glow. */
-export function splashSVG(S = SIZE) {
+/* foreignObject content is XML: an unescaped & or < in the stylesheet ends the
+   document. Same guard tools/appicon.mjs uses on the same CSS. */
+const xmlText = (value) => value
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+export function splashSVG(S = SIZE, pair = DEFAULT_ICON_PAIR) {
   const dieScale = SPLASH_ICON_SCALE * (1 - APP_ICON_PAD * 2);
   const fullCanvasPad = (1 - dieScale) / 2;
   /* Only the shared die mark is embedded. Its transparent full-size canvas
-     lets #05060e continue around the glass while leaving the glow unclipped. */
-  const mark = splitDieIconSVG(S, fullCanvasPad, 'dark', true);
-  /* Each half of the wash leans under its own half of the die and carries half
-     the old opacity, so cyan + magenta together land on the ground at the one
-     intensity that was tuned here. The lean is only 3% either side of centre
-     and r is 54%, both for the same reason: two overlapping low-alpha gradients
-     quantise to 8 bits, and a wider, barely-offset pair keeps every
-     adjacent-pixel step under the 4/255 that ios-shell-contract reads as a
-     clipped glow. At 43/57 with r 50% the right and bottom bands stepped 4.7. */
-  const wash = (id, colour, cx) =>
-    `<radialGradient id="${id}" cx="${cx}%" cy="50%" r="54%">` +
-    `<stop offset="0" stop-color="${colour}" stop-opacity=".050"/>` +
-    `<stop offset=".32" stop-color="${colour}" stop-opacity=".0375"/>` +
-    `<stop offset=".72" stop-color="${colour}" stop-opacity=".0125"/>` +
-    `<stop offset="1" stop-color="${colour}" stop-opacity="0"/>` +
-    `</radialGradient>`;
+     lets the ground continue around the glass while leaving the glow unclipped. */
+  const mark = splitDieIconSVG(S, fullCanvasPad, 'dark', true, pair);
+  /* The pair still reaches the mark and the ground, and then saturate=0 takes
+     it straight back out. That is deliberate rather than wasteful: the geometry
+     and the light stay the shipped generator's, so a change to either follows
+     here, and only the hue is dropped. Rendering a hand-built grey die instead
+     would be a second mark, free to drift from the one on the tile. */
   return `<svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" xmlns="http://www.w3.org/2000/svg">` +
-    `<defs>${wash('launchGlowP1', GLOW_P1, 47)}${wash('launchGlowP2', GLOW_P2, 53)}</defs>` +
-    `<rect width="${S}" height="${S}" fill="${BG}"/>` +
-    `<rect width="${S}" height="${S}" fill="url(#launchGlowP1)"/>` +
-    `<rect width="${S}" height="${S}" fill="url(#launchGlowP2)"/>${mark}</svg>`;
+    `<defs><filter id="launchMono" color-interpolation-filters="sRGB">` +
+    `<feColorMatrix type="saturate" values="0"/></filter></defs>` +
+    `<rect width="${S}" height="${S}" fill="${PAGE_GROUND}"/>` +
+    `<g filter="url(#launchMono)">` +
+    `<foreignObject x="0" y="0" width="${S}" height="${S}">` +
+    `<div xmlns="http://www.w3.org/1999/xhtml" id="kbroot" style="width:${S}px;height:${S}px">` +
+    `<style>${xmlText(APP_CSS)}</style>` +
+    `<div style="${hueVars(pair)}width:${S}px;height:${S}px;` +
+    `background:var(--aurora);background-color:${PAGE_GROUND}"></div>` +
+    `</div></foreignObject>` +
+    `<g opacity="${MARK_OPACITY}">${mark}</g>` +
+    `</g></svg>`;
 }
 
 const SET = 'native/ios/App/App/Assets.xcassets/Splash.imageset';

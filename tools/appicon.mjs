@@ -124,7 +124,7 @@ const SPLIT_CSS = `
   background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.95) 10%,rgba(255,255,255,.95) 90%,rgba(255,255,255,.55));
   box-shadow:-1px 0 6px rgba(var(--p1-rgb),.9),1px 0 6px rgba(var(--p2-rgb),.9),0 0 2px rgba(255,255,255,.7)}
 `;
-const hueVars = (pair) => ['p1', 'p2'].map((slot, index) => {
+export const hueVars = (pair) => ['p1', 'p2'].map((slot, index) => {
   const hue = index === 0 ? pair.p1 : pair.p2;
   return `--${slot}:var(--${hue});--${slot}-rgb:var(--${hue}-rgb);--${slot}-hi:var(--${hue}-hi);`;
 }).join('');

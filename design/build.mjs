@@ -18,7 +18,8 @@
 //   {{appicon[:px][:light]}}     the shipped launcher mark (the split die), at its
 //                              launcher scale and clockwise tilt; `:light` is the
 //                              iOS light appearance with its own light ground
-//   {{splashmark[:px]}}          the launch screen's mark — the split die since 2026-09-03
+//   {{splashmark[:px]}}          the launch screen's mark — the split die, DESATURATED:
+//                              one image stands in for all 42 pairs
 //   {{mico:MODE[:px]}}          a mode icon — the APP's, imported below
 //   {{mhue:MODE}}               a mode's hue — likewise
 //   {{sico:SPELL[:px]}}         a rune icon — the APP's (ui/spellicons.ts)
@@ -270,16 +271,20 @@ function appIconMarkup(size, appearance) {
   return `<img class="appicon-mark" src="${source}" width="${size}" height="${size}" alt="">`;
 }
 
-/* The LAUNCH mark is the SAME split die as the launcher, since 2026-09-03:
-   tools/splash.mjs draws splitDieIconSVG so that tile, storyboard and hero are
-   one object. The token stays separate from {{appicon}} because the two are
-   still not interchangeable — the splash renders the mark WITHOUT the launcher
-   tile's ground and at its own scale — but a card picturing the launch screen
-   now correctly shows the split die, not the cyan five it showed before. */
+/* The LAUNCH mark is the launcher's split die DESATURATED, since 2026-09-03.
+   The geometry is the same object — tools/splash.mjs draws splitDieIconSVG, so
+   tile, storyboard and hero cannot drift — but the launch frame claims no hue.
+   It has to: iOS compiles one launch image into Info.plist and has no
+   alternate-launch-image API to match its alternate ICONS, so a coloured frame
+   would contradict all 41 players who did not keep the default pair. Grey
+   contradicts nobody, and the colour arrives when the webview paints.
+   The filter and opacity live here rather than in each card's CSS: a card that
+   dimmed its own copy would be a second answer to the same question. */
 function splashMarkMarkup(size) {
   const svg = splitDieIconSVG(512, SPLIT_ICON_PAD, 'dark', true);
   const source = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
-  return `<img class="appicon-mark" src="${source}" width="${size}" height="${size}" alt="">`;
+  return `<img class="appicon-mark launch-mark" src="${source}" width="${size}" height="${size}" alt=""`
+    + ` style="filter:grayscale(1);opacity:.62">`;
 }
 
 /* Device sizes: every screen ships at each of these. The stage is the phone

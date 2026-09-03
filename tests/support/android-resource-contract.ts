@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { verifyAndroidProfileIconResources } from './android-profile-icon-contract.ts';
+import { verifyLaunchMarkContract } from './launch-mark-contract.ts';
 import { filesUnder } from './ios-artifacts.ts';
 import {
   alphaBounds,
@@ -234,17 +235,14 @@ export function verifyAndroidResourceContract(
     === createHash('sha256').update(darkSplash).digest('hex'),
   'normal and dark Android loading screens must preserve the same dark branded continuity');
   const splashPixels = readPngPixels(normalSplashFile);
-  const splashTop = pixelAt(splashPixels, .04, .04);
-  const splashBottom = pixelAt(splashPixels, .04, .96);
-  check(rgbDistance(splashTop, splashBottom) <= 3
-    && rgbDistance(splashTop, { red: 5, green: 6, blue: 14, alpha: 255 }) <= 3,
-  'the Android loading screen must preserve the app\'s #05060e first-frame continuity');
-  const splashInkBounds = colorBounds(splashPixels);
-  const splashInkWidthByHeight = splashInkBounds
-    ? (splashInkBounds.right - splashInkBounds.left + 1) / splashPixels.height
-    : 0;
-  check(splashInkBounds !== null && splashInkWidthByHeight >= .182 && splashInkWidthByHeight <= .186,
-    `the larger Android loading-screen neon die should occupy about 18.3% of its source height, found ${splashInkWidthByHeight}`);
+  /* Coordinates are this rendition's (320x480); iOS passes its own. The claim
+     they share lives in launch-mark-contract.ts. */
+  verifyLaunchMarkContract(splashPixels, {
+    platform: 'Android',
+    inkSpan: { min: .180, max: .187, by: 'height', label: '18.3%' },
+    markSamples: [[.4600, .4688], [.4440, .5440], [.5664, .4792], [.5600, .5528]],
+    groundCeiling: 24,
+  }, check);
   for (const [file, xEdges, yEdges] of [
     [normalSplashFile, [.32, .68], [.38, .62]],
     [`${res}/drawable-land-mdpi/splash.png`, [.38, .62], [.32, .68]],
@@ -263,24 +261,6 @@ export function verifyAndroidResourceContract(
         `${file} has a clipped horizontal edge in its loading-screen glow at ${edge}`);
     }
   }
-  /* The launch mark became the SPLIT die on 2026-09-03, so the five cyan pips
-     this used to pin are gone. These read the mark's argument back off the
-     pixels instead — one die, two owners, one seam — which a regression to a
-     single-hue die cannot satisfy. Coordinates are this rendition's (320x480);
-     the iOS contract carries its own, because the two canvases differ. */
-  for (const [x, y] of [[.4600, .4688], [.4440, .5440]] as const) {
-    const pip = pixelAt(splashPixels, x, y);
-    check(pip.blue >= 230 && pip.green >= 210 && pip.red <= 190,
-      `the Android loading-screen pip at ${x},${y} must be lit in P1's cyan (left column)`);
-  }
-  for (const [x, y] of [[.5664, .4792], [.5600, .5528]] as const) {
-    const pip = pixelAt(splashPixels, x, y);
-    check(pip.red >= 240 && pip.blue >= 140 && pip.green <= 130,
-      `the Android loading-screen pip at ${x},${y} must be lit in P2's magenta (right column)`);
-  }
-  const androidSeam = pixelAt(splashPixels, .5, .5);
-  check(androidSeam.red >= 200 && androidSeam.green >= 200 && androidSeam.blue >= 200,
-    'the Android loading screen must cut the two owners apart on a lit white seam');
 
   return { splashRenditions: splashFiles.length };
 }
