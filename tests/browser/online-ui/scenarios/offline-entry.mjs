@@ -39,7 +39,30 @@ async function waitForOfflineOutcome(page) {
       || (!!online?.classList.contains('on')
         && !document.getElementById('onQueue')?.hidden);
   }, null, { timeout: 7000 }).catch(() => undefined);
-  await page.waitForTimeout(80);
+  /* `.on` goes on when the sheet STARTS travelling up, not when it lands, and
+     the fixed 80ms this replaces sampled it mid-flight on a slower runner: the
+     card measured y=1277 in a 932px viewport, so the centre this scenario
+     hit-tests fell outside the window, elementFromPoint returned null, and
+     five assertions reported a completely correct sheet — right title, right
+     body, painted rect — as a missing one (hosted CI, 2026-09-03).
+     Settle on the CARD, and on exactly the property the assertions depend on:
+     its centre inside the viewport, and no longer moving. A branch that shows
+     no ask at all (the auth sheet, the queue) leaves at once. */
+  await page.evaluate(async () => {
+    const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+    const deadline = performance.now() + 3000;
+    let previousTop = null;
+    let stillFor = 0;
+    while (performance.now() < deadline) {
+      const box = document.querySelector('#ovAsk [role="dialog"]')?.getBoundingClientRect();
+      if (!box) break;
+      const centre = box.y + box.height / 2;
+      stillFor = previousTop !== null && Math.abs(box.y - previousTop) < .5 ? stillFor + 1 : 0;
+      previousTop = box.y;
+      if (centre >= 0 && centre <= innerHeight && stillFor >= 2) break;
+      await frame();
+    }
+  });
 }
 
 const readOutcome = (page, routes) => page.evaluate((signupCalls) => {

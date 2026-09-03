@@ -1,5 +1,6 @@
 import { installOnlineRoutes } from './routes.mjs';
 import { installTrialMatchRoutes } from './trial-match.mjs';
+import { installEntryRecorder } from './entry-recorder.mjs';
 import { readOnlineView } from './read-view.mjs';
 import { guardRoutes } from './guard-routes.mjs';
 import { probeFaceoff } from '../scenarios/faceoff-probe.mjs';
@@ -217,29 +218,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
     const homeBeforeOnline = await homeSnapshot();
     const standingCallsBeforeOnline = routes.standingCalls();
     if (inspectLoading || inspectEntry) {
-      await page.evaluate(() => {
-        window.__onlineEntry = { frames: 0, emptyFrames: 0, first: null };
-        const sample = () => {
-          const overlay = document.getElementById('ovOnline');
-          let visiblePanels = [];
-          if (overlay?.classList.contains('on')) {
-            visiblePanels = [...overlay.querySelectorAll('.panel')]
-              .filter((panel) => !panel.hidden && panel.getBoundingClientRect().height > 0)
-              .map((panel) => panel.id);
-            const frame = {
-              title: document.getElementById('onTitle')?.textContent ?? '',
-              visiblePanels,
-            };
-            window.__onlineEntry.frames++;
-            if (!visiblePanels.length) window.__onlineEntry.emptyFrames++;
-            window.__onlineEntry.first ??= frame;
-          }
-          if (!visiblePanels.some((id) => id !== 'onLoading')) {
-            requestAnimationFrame(sample);
-          }
-        };
-        requestAnimationFrame(sample);
-      });
+      await installEntryRecorder(page);
     }
     await page.click(entry);
     await page.waitForSelector('#ovOnline', { state: 'attached', timeout: 15000 });
