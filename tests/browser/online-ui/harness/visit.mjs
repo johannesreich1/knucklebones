@@ -5,6 +5,7 @@ import { guardRoutes } from './guard-routes.mjs';
 import { probeFaceoff } from '../scenarios/faceoff-probe.mjs';
 import { probeAccountActions } from './account-probes.mjs';
 import { installNativeBridges } from './native-bridges.mjs';
+import { seedDevice } from './device-seed.mjs';
 import { waitForOverlayTransitions } from '../../support/overlay-transitions.mjs';
 /* One harness: open the app with Supabase answering however this case wants,
    tap Account, and report what the player is looking at. */
@@ -64,6 +65,12 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
     emptyStanding = false, failLadder = false, failCurveVersion = false,
     refuseStandingOnce = false,
     sessionRefresh = false,
+    /* Seed the stored session already past its expiry, so the very first read
+       must go to the token endpoint. Paired with `refuseSessionRefresh` this
+       is a phone that slept longer than an access token lives. */
+    expiredSession = false,
+    refuseSessionRefresh = false,
+    offlineTokenEndpoint = false,
     failStreak = false, failHistory = false, failRuneOnCall = null,
     member = false,
     named = false,
@@ -119,6 +126,12 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
        surface is what the probe reads, so waiting for a row here would time
        out on the very state under test. Mirrors expectMatchRejection. */
     expectBoardFailure = false,
+    /* The account door may legitimately end at a refusal rather than a panel,
+       or at nothing at all. Hand the settling to the probe: a scenario about
+       the WRONG surface must report the surface it found, and a scenario about
+       a door that never answers must report THAT, rather than both dying as an
+       indistinguishable 15s timeout here. */
+    expectEntryRefusal = false,
     /* Most in-match probes require both dealt rune cards. A standard match
        with two honest empty seats has no live rail, so its entry probe may
        disable this wait while retaining the authoritative-state wait below. */
@@ -162,7 +175,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
       standingPoints, reportedStandingPoints, standingPeak, historicalSilverReached,
       deferStanding, failStanding, emptyStanding,
       failLadder, failStreak, failHistory, failRuneOnCall, failCurveVersion,
-      refuseStandingOnce, sessionRefresh,
+      refuseStandingOnce, sessionRefresh, refuseSessionRefresh, offlineTokenEndpoint,
       SESSION: activeSession, GUEST_ID,
       progressionStatus,
     });
@@ -178,21 +191,9 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
       appleBridge, appleAuth, deferAppleNative, gameCenterBridge,
       proofRefusal, gameCenterPersistent,
     });
-    if (door === 'play' || door === 'match' || door === 'auth-play') {
-      /* Ranked newcomers stop at the once-only tutorial offer. This probe is
-         about the queue the returning player sees, so enter as a played device. */
-      await page.addInitScript(() => localStorage.setItem(
-        'knucklebones.v1', JSON.stringify({ played: true }),
-      ));
-    }
-
-    if (preauthenticated) {
-      await page.addInitScript(({ session }) => localStorage.setItem(
-        'sb-euzjcejbkxvqfrttgaxu-auth-token', JSON.stringify(session),
-      ), { session: activeSession });
-    }
-
-    if (initScript) await page.addInitScript(initScript);
+    await seedDevice(page, {
+      door, preauthenticated, expiredSession, session: activeSession, initScript,
+    });
     await page.goto(URL, { waitUntil: 'domcontentloaded' });
     // the home chip carrying the player's identity IS the door to the account view
     const entry = door === 'board' ? '#btnBoardHome'
@@ -305,7 +306,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
       if (!expectBoardFailure) {
         await page.waitForSelector('#ovOnline .lb .lrow', { timeout: 15000 });
       }
-    } else {
+    } else if (!expectEntryRefusal) {
       await page.waitForFunction(() => {
         const a = document.querySelector('#onAccount'), s = document.querySelector('#onAuth');
         return (a && !a.hidden) || (s && !s.hidden);
@@ -314,7 +315,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
     /* A board expected to fail never settles: its loading die spins until the
        screen answers, so waiting for quiet here would time out on the state
        under test. The probe reads the failure surface itself. */
-    if (!expectReward && !expectBoardFailure) {
+    if (!expectReward && !expectBoardFailure && !expectEntryRefusal) {
       /* Page motion made `hidden` an early, non-visual event: a hydrated panel
          is laid out under the pinned die and released only when the entry
          wipe lands (page-motion.ts holdHydration), and every .btn inside then

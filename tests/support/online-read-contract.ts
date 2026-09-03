@@ -46,4 +46,20 @@ export function runOnlineReadContractCases(check: Check): void {
     && ladderApiSource.includes('currentUserOrRecover')
     && profileSource.includes('currentUserOrRecover'),
   'an expired session no longer heals itself: a refused read is reported without one refresh');
+
+  /* THE READ THE WHOLE APP WAITS ON FIRST. getSession() is a network call
+     whenever the access token has expired, it accepts no abort signal, and
+     auth-js retries an unreachable endpoint on its own for as long as its
+     30s tick allows. So this one is bounded by RACING the deadline rather
+     than by signalling it — losing that race is what left ranked entry
+     turning its die with nothing to press (user report, 3 Sep 2026). Its
+     behaviour is pinned in browser scenario expired-session-door.mjs. */
+  check(/export async function readWithin[\s\S]{0,1600}?Promise\.race\(/u.test(clientSource),
+    'the shared deadline only signals now; a read that ignores the signal can hang forever');
+  const sessionReadSource = readFileSync('src/online/identity/session-read.ts', 'utf8');
+  check(/export function entryAuthSession[\s\S]{0,200}?readWithin</u.test(sessionReadSource),
+    'the door\'s session read is outside the shared deadline; ranked entry can hang again');
+  check(readFileSync('src/online/identity/session.ts', 'utf8')
+    .includes('await entryAuthSession()'),
+  'ranked entry reads the session around its deadline instead of through it');
 }

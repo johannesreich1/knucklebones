@@ -50,6 +50,8 @@ export async function installOnlineRoutes(
     failCurveVersion = false,
     refuseStandingOnce = false,
     sessionRefresh = false,
+    refuseSessionRefresh = false,
+    offlineTokenEndpoint = false,
     failStreak = false,
     failHistory = false, failRuneOnCall = null,
     unseenRunes = [],
@@ -136,6 +138,8 @@ export async function installOnlineRoutes(
   const identityRoutes = await installIdentityRoutes(page, {
     identity, gameCenter: gameCenterBridge, session, statusDelay: identityDelay,
     sessionRefresh,
+    refuseSessionRefresh,
+    offlineTokenEndpoint,
   });
   const appleRoutes = await installAppleAuthRoutes(page, {
     mode: appleAuth,

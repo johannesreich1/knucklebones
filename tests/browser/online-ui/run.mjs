@@ -22,6 +22,7 @@ import { runFreshAccountScenarios } from './scenarios/fresh-account.mjs';
 import { runLadderFaceoffScenarios } from './scenarios/ladder-faceoff.mjs';
 import { runLadderScrollScenarios } from './scenarios/ladder-scroll.mjs';
 import { runLadderRecoveryScenarios } from './scenarios/ladder-recovery.mjs';
+import { runExpiredSessionDoorScenarios } from './scenarios/expired-session-door.mjs';
 import { runHistoryCrawlScenarios } from './scenarios/history-crawl.mjs';
 import { runAccountLifecycleScenarios } from './scenarios/account-lifecycle.mjs';
 import {
@@ -91,6 +92,7 @@ const SCENARIOS = Object.freeze([
   { id: 'ladder-faceoff', run: runLadderFaceoffScenarios },
   { id: 'ladder-scroll', run: runLadderScrollScenarios },
   { id: 'ladder-recovery', run: runLadderRecoveryScenarios },
+  { id: 'expired-session-door', run: runExpiredSessionDoorScenarios },
   { id: 'history-crawl', run: runHistoryCrawlScenarios },
   { id: 'account-lifecycle', run: runAccountLifecycleScenarios },
   { id: 'account-mutation-ownership', run: runAccountMutationOwnershipScenarios },
@@ -164,6 +166,11 @@ const SHARDS = Object.freeze({
     'flying-die-colour', 'trial-cast-latency', 'bot-opening-beat', 'row-switch-opening',
     'group-transition', 'group-transition-demotion', 'group-transition-responsive',
     'group-transition-account-race',
+    /* Deliberately NOT in `entry`, which is already the longest shard: this one
+       spends 15s waiting out a read deadline, and lengthening the critical path
+       there realigns entry's heavy phase onto `account`, where
+       account-achievements-weekly is timing-fragile enough to fail on it. */
+    'expired-session-door',
   ]),
 });
 validateScenarioShards('online UI browser', SCENARIOS, SHARDS);

@@ -11,7 +11,9 @@ import {
 } from './identity.ts';
 import { gameCenterState, waitForGameCenter } from '../../native/game-center.ts';
 import { clearProfileCache, readProfileCache } from '../../profile-cache.ts';
-import { readAuthSession, refreshSessionOnce, type AuthSessionRead } from './session-read.ts';
+import {
+  entryAuthSession, readAuthSession, refreshSessionOnce, type AuthSessionRead,
+} from './session-read.ts';
 import { clearSessionSnapshots, reconcileSessionSnapshots } from './session-snapshots.ts';
 import { identityStatusLookupFor, type IdentityStatus,
   type IdentityStatusLookup } from './identity-status.ts';
@@ -237,7 +239,11 @@ export type IdentityEntry =
 const authenticated = (user: Me): IdentityEntry => ({ kind: 'authenticated', user });
 
 export async function ensureIdentity(): Promise<IdentityEntry> {
-  const sessionRead = await readAuthSession();
+  /* The door reads under the shared deadline. Everything past this point is
+     already answerable: a session that cannot be read in time is `unavailable`
+     and earns the retryable connection sheet, rather than an unbounded wait on
+     a token endpoint that is not going to answer. */
+  const sessionRead = await entryAuthSession();
   if (sessionRead.kind === 'unavailable') return { kind: 'unavailable' };
   const here = userFromSessionRead(sessionRead);
   if (here) {

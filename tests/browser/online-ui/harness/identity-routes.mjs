@@ -21,6 +21,16 @@ export async function installIdentityRoutes(page, {
      have that guest replaced mid-entry. Scenarios about session recovery opt
      in. */
   sessionRefresh = false,
+  /* Answer the token endpoint the way a DEAD refresh token is answered. The
+     library treats a 400 as final rather than retryable and, because the
+     access token has itself expired, deletes the stored session as it gives
+     up. That deletion is the whole point: it is what lets a second read tell
+     "signed out" from "could not tell". */
+  refuseSessionRefresh = false,
+  /* Lose the token request the way a bad line loses it. auth-js raises a
+     RETRYABLE error here and deliberately keeps the stored session, so the
+     device stays signed in and every read stays "unavailable". */
+  offlineTokenEndpoint = false,
 }) {
   const state = { ...identity };
   const modes = [];
@@ -74,9 +84,20 @@ export async function installIdentityRoutes(page, {
      resume, so code that recovers from an expired one cannot be tested at all
      unless the token endpoint answers. Game Center scenarios have always
      needed it; others ask for it explicitly. */
-  if (gameCenter || sessionRefresh) {
+  if (gameCenter || sessionRefresh || refuseSessionRefresh || offlineTokenEndpoint) {
     await page.route('**/auth/v1/token?grant_type=refresh_token', (r) => {
       refreshCalls++;
+      if (offlineTokenEndpoint) return r.abort('failed');
+      if (refuseSessionRefresh) {
+        return r.fulfill({
+          status: 400,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            error: 'invalid_grant',
+            error_description: 'Invalid Refresh Token: Refresh Token Not Found',
+          }),
+        });
+      }
       return answerSession(r, refreshAccountId);
     });
   }

@@ -4,7 +4,7 @@
 // stored, so callers must never translate it into "signed out".
 import type { Session } from '@supabase/supabase-js';
 import { SUPABASE_AUTH_STORAGE_KEY } from '../../config.ts';
-import { supa } from '../api/client.ts';
+import { readWithin, supa } from '../api/client.ts';
 
 export type AuthSessionRead =
   | { readonly kind: 'authenticated'; readonly session: Session }
@@ -74,6 +74,40 @@ export function refreshSessionOnce(): Promise<boolean> {
     }
   })().finally(() => { refreshInFlight = null; });
   return refreshInFlight;
+}
+
+/* THE FRONT DOOR NEEDS A DEADLINE MOST OF ALL.
+   getSession() is not a storage read whenever the access token has expired: it
+   goes to the token endpoint, and auth-js retries a connection it cannot reach
+   with exponential backoff for as long as its 30s auto-refresh tick allows —
+   longer still when the requests hang instead of failing, which is what a
+   captive portal or dead mobile data actually does. Nothing above this bounded
+   it, so ranked entry mounted its loading die and simply never came back
+   (Johannes, 3 Sep 2026: "it loading endlessly"). An unanswered read is
+   `unavailable` like any other: the door then has a connection sheet to show
+   and a Retry to offer, and the player's stored session is untouched. */
+/* THE DOOR'S READ, AND THE ONLY SESSION READ THAT CARRIES THE DEADLINE.
+   getSession() stops being a storage read the moment the access token has
+   expired: it goes to the token endpoint, and auth-js retries a connection it
+   cannot reach with exponential backoff for as long as its 30s tick allows —
+   longer when the requests hang instead of failing, which is what a captive
+   portal or dead mobile data actually does. Nothing above it was bounded, so
+   ranked entry mounted its loading die and never came back (Johannes, 3 Sep
+   2026: "it loading endlessly"). Unanswered is `unavailable` like any other
+   unreadable session, so the door has its connection sheet to show and its
+   Retry to offer, and the stored session is left exactly where it was.
+
+   Deliberately NOT applied to readAuthSession() itself. That one is also the
+   ownership guard behind account replacement and provider restore, which
+   resolve in the same turn as the writes they protect; putting a race between
+   them and their caller reorders those turns, and the native Apple restore
+   then finishes against a view it no longer owns and never repaints Profile.
+   The deadline belongs where a player is watching a die, which is here. */
+export function entryAuthSession(): Promise<AuthSessionRead> {
+  return readWithin<AuthSessionRead, AuthSessionRead>(
+    () => readAuthSession(),
+    () => ({ kind: 'unavailable' }),
+  );
 }
 
 export async function readAuthSession(): Promise<AuthSessionRead> {

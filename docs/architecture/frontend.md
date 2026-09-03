@@ -239,6 +239,23 @@ classes, so a navigation wakes it once, and `src/ui/page-surface.ts` answers
   derives 42 face/hue values from `HUE_IDS`; `die:5:cy` maps to the primary
   launcher and the other 41 map to canonical `die-<face>-<hue>` ids. Do not
   grow another avatar or launcher registry in a screen.
+- Every online read a player waits on shares one deadline, `READ_TIMEOUT_MS`
+  in `src/online/api/client.ts`. `readWithin()` both signals an abort and
+  RACES the budget, because `getSession()` accepts no abort signal and becomes
+  a network call whenever the access token has expired, which auth-js then
+  retries against an unreachable endpoint for as long as its 30s tick allows.
+  Ranked entry reads through `entryAuthSession()`, so an unanswered session is
+  `unavailable` and the door shows its retryable connection sheet instead of an
+  unbounded loading die. The deadline stops there on purpose: plain
+  `readAuthSession()` is also the ownership guard behind account replacement and
+  provider restore, and those resolve in the same turn as the writes they
+  protect, so racing them reorders those turns and a native Apple restore
+  finishes against a view it no longer owns. Keep the two identity answers
+  apart as well: `sessionless` is a device with no session and earns the
+  sign-in door, `unavailable` is a device that could not tell and earns the
+  sheet. Telling a player with a bad line that they have been signed out is the
+  worse failure, so a refresh that fails on the network deliberately leaves the
+  stored session in place.
 - `src/profile-cache.ts` scopes cached profile presentation to the Supabase
   account id. Its small eager record paints Home without importing Supabase
   and deliberately keeps the last confirmed rank; Home never fetches standing.

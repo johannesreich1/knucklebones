@@ -25,11 +25,27 @@ export async function readWithin<T, Timeout>(
   timedOut: () => Timeout,
 ): Promise<T | Timeout> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), READ_TIMEOUT_MS);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  /* RACE the deadline rather than only signalling it. A signal binds the reads
+     that accept one, but the session read cannot take a signal at all
+     (getSession has no such parameter) and retries a lost connection on its
+     own for as long as its tick allows. Cancelling what can be cancelled and
+     answering anyway is what makes this budget true for every caller. */
+  const deadline = new Promise<Timeout>((resolve) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      resolve(timedOut());
+    }, READ_TIMEOUT_MS);
+  });
+  const attempt = (async () => {
+    try {
+      return await run(controller.signal);
+    } catch {
+      return timedOut();
+    }
+  })();
   try {
-    return await run(controller.signal);
-  } catch {
-    return timedOut();
+    return await Promise.race([attempt, deadline]);
   } finally {
     clearTimeout(timer);
   }
