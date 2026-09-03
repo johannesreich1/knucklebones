@@ -3,9 +3,11 @@
 // auth.users row this device is, and how it proves it), this one owns what
 // hangs off the row once the ladder has answered. Loaded ONLY via dynamic
 // import, like session.ts: supabase-js rides along with it.
-import { supa } from '../api/client.ts';
+import { readWithin, supa } from '../api/client.ts';
 import { onlineMessage } from '../message-copy.ts';
-import { currentUser } from './session.ts';
+import { currentUser, currentUserOrRecover } from './session.ts';
+import { refreshSessionOnce } from './session-read.ts';
+import { isAuthRefusal } from '../api/postgrest-compat.ts';
 import {
   DEFAULT_AVATAR,
   isProfileAvatar,
@@ -33,12 +35,25 @@ export type ProfileMutationResult =
   | { readonly ok: false; readonly reason: 'account-mismatch' }
   | { readonly ok: false; readonly reason: 'error'; readonly message: string };
 
+/* One recovery for a row refused on credentials, and only that: an absent
+   row is an answer, and a server error is a server error. */
+async function readProfileRow(accountId: string) {
+  const select = () => readWithin(
+    (signal) => supa().from('profiles')
+      .select('id, nickname, rating, created_at, avatar, named_at')
+      .eq('id', accountId).abortSignal(signal)
+      .maybeSingle(),
+    () => ({ data: null, error: { code: 'KB_TIMEOUT', message: 'read timed out' } }),
+  );
+  const first = await select();
+  if (!isAuthRefusal(first.error) || !await refreshSessionOnce()) return first;
+  return select();
+}
+
 export async function myProfileLookup(): Promise<ProfileLookup> {
-  const requestedUser = await currentUser();
+  const requestedUser = await currentUserOrRecover();
   if (!requestedUser) return { ok: false, reason: 'unavailable' };
-  const { data, error } = await supa().from('profiles')
-    .select('id, nickname, rating, created_at, avatar, named_at')
-    .eq('id', requestedUser.id).maybeSingle();
+  const { data, error } = await readProfileRow(requestedUser.id);
   /* A sign-out/restore can replace Supabase's session while this row is in
      flight. Recheck even when the query itself failed: "unavailable" is safe
      stale-cache fallback only while the requester still owns the browser. */

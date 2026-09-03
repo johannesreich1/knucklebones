@@ -15,6 +15,12 @@ export async function installIdentityRoutes(page, {
   gameCenter,
   session,
   statusDelay = 0,
+  /* Answer token refreshes with this fixture. Off by default and deliberately
+     so: the answer is one CANNED session, which is the right one only where
+     the fixture IS the account. A scenario that signs up its own guest would
+     have that guest replaced mid-entry. Scenarios about session recovery opt
+     in. */
+  sessionRefresh = false,
 }) {
   const state = { ...identity };
   const modes = [];
@@ -27,7 +33,9 @@ export async function installIdentityRoutes(page, {
   let releaseAttach;
   const attachStarted = new Promise((resolve) => { markAttachStarted = resolve; });
   const attachRelease = new Promise((resolve) => { releaseAttach = resolve; });
+  let refreshCalls = 0;
   const readers = {
+    refreshCalls: () => refreshCalls,
     gameCenterModes: () => [...modes],
     identityState: () => ({ ...state }),
     identityStatusFailures: () => failedStatusResponses,
@@ -55,10 +63,6 @@ export async function installIdentityRoutes(page, {
       status: 200, contentType: 'application/json', body: JSON.stringify(state),
     });
   });
-  if (!gameCenter) return readers;
-  /* Reached only where Game Center can run: the launch sign-in exchanges its
-     verified token for a session, and a completed attach refreshes the JWT the
-     gateway just added an identity to. */
   const answerSession = (r, accountId = null) => r.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -66,9 +70,20 @@ export async function installIdentityRoutes(page, {
       ? { ...session, user: { ...session.user, id: accountId } }
       : session),
   });
+  /* A client renews its access token about once an hour and after every
+     resume, so code that recovers from an expired one cannot be tested at all
+     unless the token endpoint answers. Game Center scenarios have always
+     needed it; others ask for it explicitly. */
+  if (gameCenter || sessionRefresh) {
+    await page.route('**/auth/v1/token?grant_type=refresh_token', (r) => {
+      refreshCalls++;
+      return answerSession(r, refreshAccountId);
+    });
+  }
+  if (!gameCenter) return readers;
+  /* Reached only where Game Center can run: the launch sign-in exchanges its
+     verified token for a session. */
   await page.route('**/auth/v1/verify*', (r) => answerSession(r));
-  await page.route('**/auth/v1/token?grant_type=refresh_token',
-    (r) => answerSession(r, refreshAccountId));
   await page.route('**/v1/game-center', async (r) => {
     const mode = r.request().postDataJSON()?.mode ?? '';
     modes.push(mode);

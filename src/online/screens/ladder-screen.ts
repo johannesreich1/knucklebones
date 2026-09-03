@@ -28,6 +28,7 @@ import {
 import { myProfile } from '../identity/profile.ts';
 import { currentUser } from '../identity/session.ts';
 import { esc, pts, rank } from './format.ts';
+import { askToRetryConnection, detectedConnectionIssue } from './connection-sheet.ts';
 import { showFaceoff } from './faceoff.ts';
 import { isOnlinePanelCurrent, showOnlineLoading, showOnlinePanel } from './shell.ts';
 
@@ -60,6 +61,21 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
     if (panel && !panel.hidden) virtual?.repaint();
   });
 
+  /* One failure surface for the board, shared with ranked entry. The retry
+     re-enters through show(), which takes a fresh revision, so an answer that
+     arrives after the player has moved on cannot repaint a newer visit. */
+  async function refuseWithRetry(): Promise<void> {
+    /* Leave the loading surface first. A die that keeps spinning behind the
+       refusal is the very thing the player complained about, and it sits over
+       the card besides. The board reveals empty, the question sits on top of
+       it, and a retry mounts the die again. */
+    await showOnlinePanel('onLadder');
+    const retry = await askToRetryConnection(
+      detectedConnectionIssue(), byId('btnBoardHome'),
+    );
+    if (retry && isOnlinePanelCurrent('onLadder')) await show();
+  }
+
   async function show(): Promise<void> {
     const run = ++showRevision;
     showOnlineLoading('onLadder');
@@ -75,9 +91,18 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
     ]);
     const boundaryUser = await currentUser();
     if (run !== showRevision || !isOnlinePanelCurrent('onLadder')) return;
-    /* An unknown server curve cannot be mapped to a league at all; the panel
-       keeps its loading surface rather than labelling a rank from a guess. */
-    if (curveVersion === null) return;
+    /* An unknown server curve cannot be mapped to a league at all, so the board
+       still may not be labelled from a guess — but it may not be left spinning
+       either. `activeRankedCurveVersion()` answers null on ANY transient error,
+       and this panel used to return here with the shared loading die mounted:
+       no error, no retry, no timeout, and nothing but Back or an app restart to
+       escape it (user report, 3 Sep 2026: "it loading endlessly"). Ask the same
+       question the ranked door asks, in copy every locale already carries, and
+       re-run the whole read if the player says yes. */
+    if (curveVersion === null) {
+      await refuseWithRetry();
+      return;
+    }
     const accountId = profile?.id.toLowerCase() ?? null;
     const coherent = !!accountId && ladderResult.ok
       && ladderResult.accountId === accountId

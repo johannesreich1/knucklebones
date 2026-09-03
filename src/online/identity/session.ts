@@ -11,7 +11,7 @@ import {
 } from './identity.ts';
 import { gameCenterState, waitForGameCenter } from '../../native/game-center.ts';
 import { clearProfileCache, readProfileCache } from '../../profile-cache.ts';
-import { readAuthSession, type AuthSessionRead } from './session-read.ts';
+import { readAuthSession, refreshSessionOnce, type AuthSessionRead } from './session-read.ts';
 import { clearSessionSnapshots, reconcileSessionSnapshots } from './session-snapshots.ts';
 import { identityStatusLookupFor, type IdentityStatus,
   type IdentityStatusLookup } from './identity-status.ts';
@@ -158,6 +158,20 @@ function userFromSessionRead(read: AuthSessionRead): Me | null {
 
 export const currentUser = async (): Promise<Me | null> =>
   userFromSessionRead(await readAuthSession());
+
+/** `currentUser()`, plus one attempt to restore a session that could not be
+ * READ. `session-read.ts` keeps "no session stored" and "could not tell"
+ * apart precisely so this distinction survives: a sessionless device is
+ * signed out and must be offered sign-in, while an unreadable one may simply
+ * be holding an expired token whose refresh already failed. Only the second
+ * is worth a round trip, and only one: a genuinely dead session must still
+ * resolve promptly rather than loop. */
+export async function currentUserOrRecover(): Promise<Me | null> {
+  const read = await readAuthSession();
+  if (read.kind !== 'unavailable') return userFromSessionRead(read);
+  if (!await refreshSessionOnce()) return userFromSessionRead(read);
+  return userFromSessionRead(await readAuthSession());
+}
 
 export async function identityStatusLookup(): Promise<IdentityStatusLookup> {
   return identityStatusLookupFor(currentUser);

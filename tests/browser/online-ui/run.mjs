@@ -21,6 +21,7 @@ import { runMatchmakingScenarios } from './scenarios/matchmaking.mjs';
 import { runFreshAccountScenarios } from './scenarios/fresh-account.mjs';
 import { runLadderFaceoffScenarios } from './scenarios/ladder-faceoff.mjs';
 import { runLadderScrollScenarios } from './scenarios/ladder-scroll.mjs';
+import { runLadderRecoveryScenarios } from './scenarios/ladder-recovery.mjs';
 import { runHistoryCrawlScenarios } from './scenarios/history-crawl.mjs';
 import { runAccountLifecycleScenarios } from './scenarios/account-lifecycle.mjs';
 import {
@@ -89,6 +90,7 @@ const SCENARIOS = Object.freeze([
   { id: 'fresh-account', run: runFreshAccountScenarios },
   { id: 'ladder-faceoff', run: runLadderFaceoffScenarios },
   { id: 'ladder-scroll', run: runLadderScrollScenarios },
+  { id: 'ladder-recovery', run: runLadderRecoveryScenarios },
   { id: 'history-crawl', run: runHistoryCrawlScenarios },
   { id: 'account-lifecycle', run: runAccountLifecycleScenarios },
   { id: 'account-mutation-ownership', run: runAccountMutationOwnershipScenarios },
@@ -141,7 +143,8 @@ const SCENARIOS = Object.freeze([
    tree, with three shards' budget. */
 const SHARDS = Object.freeze({
   entry: Object.freeze([
-    'matchmaking', 'fresh-account', 'ladder-faceoff', 'ladder-scroll', 'history-crawl',
+    'matchmaking', 'fresh-account', 'ladder-faceoff', 'ladder-scroll', 'ladder-recovery',
+    'history-crawl',
     'explicit-guest-session', 'menu-press-feedback', 'loading-panels',
     'page-navigation-motion', 'page-navigation-performance', 'ranked-game-motion-exclusion',
     'entry-without-die',

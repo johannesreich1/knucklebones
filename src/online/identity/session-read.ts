@@ -47,6 +47,35 @@ export function forgetPersistedAuthAccount(accountId: string): boolean {
   }
 }
 
+/* One refresh, however many reads asked for it. A screen fires four reads at
+   once; if the session has gone stale they would otherwise queue four token
+   requests, and the library caches a refresh FAILURE for a minute, so the
+   later three would each answer from that cache without touching the network
+   anyway. Share the attempt and let them all act on its one answer. */
+let refreshInFlight: Promise<boolean> | null = null;
+
+/** Ask for a new access token once. True when a session came back.
+ *
+ * The library refreshes on its own — a 30s ticker, a foreground listener, and
+ * a lazy refresh inside getSession(). This exists for the case those cannot
+ * cover: when a refresh has already failed on an expired token the library
+ * DELETES the session and caches that failure, so every later read answers
+ * "unavailable" without asking the server again. Until something asks
+ * explicitly, the app stays signed out while still drawing a signed-in
+ * player, which is what stranded the Ladder and the Profile rank on
+ * 3 Sep 2026. */
+export function refreshSessionOnce(): Promise<boolean> {
+  refreshInFlight ??= (async () => {
+    try {
+      const { data, error } = await supa().auth.refreshSession();
+      return !error && !!data.session;
+    } catch {
+      return false;
+    }
+  })().finally(() => { refreshInFlight = null; });
+  return refreshInFlight;
+}
+
 export async function readAuthSession(): Promise<AuthSessionRead> {
   try {
     const { data, error } = await supa().auth.getSession();

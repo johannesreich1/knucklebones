@@ -17,6 +17,9 @@ export async function installProfileRoutes(page, {
   historicalSilverReached,
   deferStanding,
   failStanding,
+  /* One credential refusal, then an ordinary answer: the shape a player meets
+     when their access token expired while the app was suspended. */
+  refuseStandingOnce = false,
   emptyStanding,
   failLadder,
   failStreak,
@@ -72,11 +75,21 @@ export async function installProfileRoutes(page, {
   let standingCalls = 0;
   let standingDeferred = false;
   let standingUnavailable = failStanding;
+  let standingRefusalsLeft = refuseStandingOnce ? 1 : 0;
   const standingStarted = new Promise((resolve) => { markStandingStarted = resolve; });
   const standingRelease = new Promise((resolve) => { releaseStanding = resolve; });
   const standingFinished = new Promise((resolve) => { markStandingFinished = resolve; });
   await page.route('**/rest/v1/rpc/player_standing*', async (r) => {
     standingCalls++;
+    if (standingRefusalsLeft > 0) {
+      standingRefusalsLeft--;
+      await r.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: '{"code":"PGRST301","message":"JWT expired"}',
+      });
+      return;
+    }
     const deferred = deferStanding && !standingDeferred;
     if (deferred) {
       standingDeferred = true;

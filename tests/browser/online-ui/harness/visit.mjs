@@ -61,7 +61,9 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
     identity = { gameCenterLinked: false, appleLinked: false, appleRevocationReady: false },
     identityDelay = 0, inspectLoading = false, inspectEntry = false,
     deferStanding = false, failStanding = false,
-    emptyStanding = false, failLadder = false,
+    emptyStanding = false, failLadder = false, failCurveVersion = false,
+    refuseStandingOnce = false,
+    sessionRefresh = false,
     failStreak = false, failHistory = false, failRuneOnCall = null,
     member = false,
     named = false,
@@ -113,6 +115,10 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
        before the shared table is seated. These probes still enter through the
        real match door, but wait for that door to return Home instead. */
     expectMatchRejection = false,
+    /* A board door that is EXPECTED not to paint: the ladder's own failure
+       surface is what the probe reads, so waiting for a row here would time
+       out on the very state under test. Mirrors expectMatchRejection. */
+    expectBoardFailure = false,
     /* Most in-match probes require both dealt rune cards. A standard match
        with two honest empty seats has no live rail, so its entry probe may
        disable this wait while retaining the authoritative-state wait below. */
@@ -155,7 +161,8 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
       runes, unseenRunes, equippedRune, randomRuneMode,
       standingPoints, reportedStandingPoints, standingPeak, historicalSilverReached,
       deferStanding, failStanding, emptyStanding,
-      failLadder, failStreak, failHistory, failRuneOnCall,
+      failLadder, failStreak, failHistory, failRuneOnCall, failCurveVersion,
+      refuseStandingOnce, sessionRefresh,
       SESSION: activeSession, GUEST_ID,
       progressionStatus,
     });
@@ -295,14 +302,19 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
           null, { timeout: 15000 });
       }
     } else if (door === 'board') {
-      await page.waitForSelector('#ovOnline .lb .lrow', { timeout: 15000 });
+      if (!expectBoardFailure) {
+        await page.waitForSelector('#ovOnline .lb .lrow', { timeout: 15000 });
+      }
     } else {
       await page.waitForFunction(() => {
         const a = document.querySelector('#onAccount'), s = document.querySelector('#onAuth');
         return (a && !a.hidden) || (s && !s.hidden);
       }, null, { timeout: 15000 });
     }
-    if (!expectReward) {
+    /* A board expected to fail never settles: its loading die spins until the
+       screen answers, so waiting for quiet here would time out on the state
+       under test. The probe reads the failure surface itself. */
+    if (!expectReward && !expectBoardFailure) {
       /* Page motion made `hidden` an early, non-visual event: a hydrated panel
          is laid out under the pinned die and released only when the entry
          wipe lands (page-motion.ts holdHydration), and every .btn inside then

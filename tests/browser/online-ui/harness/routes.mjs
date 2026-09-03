@@ -44,6 +44,12 @@ export async function installOnlineRoutes(
     failStanding = false,
     emptyStanding = false,
     failLadder = false,
+    /* The scalar the Ladder cannot map a league without. Any transient error
+       makes activeRankedCurveVersion() answer null, which is the state that
+       used to strand the panel on its loading die. */
+    failCurveVersion = false,
+    refuseStandingOnce = false,
+    sessionRefresh = false,
     failStreak = false,
     failHistory = false, failRuneOnCall = null,
     unseenRunes = [],
@@ -129,6 +135,7 @@ export async function installOnlineRoutes(
   const nearBottomBoard = ladderBoardFixture(ladderBoard ?? ladderNearBottom);
   const identityRoutes = await installIdentityRoutes(page, {
     identity, gameCenter: gameCenterBridge, session, statusDelay: identityDelay,
+    sessionRefresh,
   });
   const appleRoutes = await installAppleAuthRoutes(page, {
     mode: appleAuth,
@@ -366,7 +373,7 @@ export async function installOnlineRoutes(
      leaderboard serves, never restated beside them. */
   const profileRoutes = await installProfileRoutes(page, {
     hold, nearBottomBoard, historyDepth, standingPoints, reportedStandingPoints, standingPeak,
-    historicalSilverReached, deferStanding, failStanding, emptyStanding,
+    historicalSilverReached, deferStanding, failStanding, emptyStanding, refuseStandingOnce,
     failLadder, failStreak, failHistory,
   });
   const ladder = await installLadderRoutes(page, { hold, nearBottomBoard, paginationRace });
@@ -390,11 +397,16 @@ export async function installOnlineRoutes(
     weekly: null,
   };
   let progressionStatusUnavailable = false;
-  await page.route('**/rest/v1/rpc/active_ranked_curve_version*', (r) => r.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify(rankedStatus.curve_version),
-  }));
+  let curveVersionUnavailable = failCurveVersion;
+  await page.route('**/rest/v1/rpc/active_ranked_curve_version*', (r) => r.fulfill(
+    curveVersionUnavailable
+      ? { status: 503, contentType: 'application/json', body: '{"message":"unavailable"}' }
+      : {
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(rankedStatus.curve_version),
+      },
+  ));
   await page.route('**/rest/v1/rpc/ranked_progression_status*', (r) => r.fulfill(
     progressionStatusUnavailable
       ? { status: 503, contentType: 'application/json', body: '{"message":"unavailable"}' }
@@ -429,6 +441,7 @@ export async function installOnlineRoutes(
     setJoinIncompatible: (value) => { joinIncompatible = value; },
     setProgressionStatus: (value) => { rankedStatus = value; },
     setProgressionStatusUnavailable: (value) => { progressionStatusUnavailable = value; },
+    setCurveVersionUnavailable: (value) => { curveVersionUnavailable = value; },
     runeCalls: () => runeCalls,
     acknowledgeCalls: () => acknowledgeCalls,
     deferNextRuneResponse: () => { deferNextRune = true; },

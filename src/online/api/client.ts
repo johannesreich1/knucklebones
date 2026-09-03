@@ -11,6 +11,30 @@ export function supa(): SupabaseClient {
   return client;
 }
 
+/** How long any single read may take before the screen stops waiting for it.
+ * The same budget Edge Function calls have always had. */
+export const READ_TIMEOUT_MS = 15_000;
+
+/* PostgREST reads carry no timeout of their own: a hung connection simply
+   never settles, and the screen waiting on it waits forever with no error to
+   show and no retry to offer. Give every read that a player is watching the
+   same deadline the function calls have, and let it fail like any other
+   refused read so the caller's existing failure path can run. */
+export async function readWithin<T, Timeout>(
+  run: (signal: AbortSignal) => PromiseLike<T>,
+  timedOut: () => Timeout,
+): Promise<T | Timeout> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), READ_TIMEOUT_MS);
+  try {
+    return await run(controller.signal);
+  } catch {
+    return timedOut();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export interface FunctionCallOptions {
   /** Refuse before fetch unless this exact account owns the captured bearer. */
   expectedAccountId?: string;

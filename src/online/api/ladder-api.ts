@@ -5,9 +5,10 @@ import {
   cacheConfirmedLadderCurveVersion,
   cachedLadderCurveVersion,
 } from '../../progression-status-cache.ts';
-import { isMissingPostgrestRpc } from './postgrest-compat.ts';
-import { supa } from './client.ts';
-import { currentUser } from '../identity/session.ts';
+import { isAuthRefusal, isMissingPostgrestRpc } from './postgrest-compat.ts';
+import { readWithin, supa } from './client.ts';
+import { currentUser, currentUserOrRecover } from '../identity/session.ts';
+import { refreshSessionOnce } from '../identity/session-read.ts';
 
 export function rankedCurveVersionFromRpc(
   data: unknown,
@@ -26,7 +27,10 @@ export function rankedCurveVersionFromRpc(
 /** Public rollout scalar. Null means the server's curve is currently unknown,
  * so callers keep points behind their loading/error surface. */
 export async function activeRankedCurveVersion(): Promise<LadderCurveVersion | null> {
-  const { data, error } = await supa().rpc('active_ranked_curve_version');
+  const { data, error } = await readWithin(
+    (signal) => supa().rpc('active_ranked_curve_version').abortSignal(signal),
+    () => TIMED_OUT,
+  );
   const value = rankedCurveVersionFromRpc(data, error, cachedLadderCurveVersion());
   if (value !== null) cacheConfirmedLadderCurveVersion(value);
   return value;
@@ -43,11 +47,28 @@ export type StandingLookup =
   | { readonly ok: true; readonly accountId: string; readonly standing: Standing | null }
   | { readonly ok: false; readonly reason: 'unavailable' | 'account-mismatch' };
 
+/* A read refused for credentials is worth exactly one recovery: refresh the
+   session and ask again. Anything else — a 500, an empty board, an RLS-empty
+   row — is an answer, and asking twice would only make the player wait twice
+   as long for it. */
+const TIMED_OUT = { data: null, error: { code: 'KB_TIMEOUT', message: 'read timed out' } };
+
+async function readStanding(accountId: string) {
+  const ask = () => readWithin(
+    (signal) => supa().rpc('player_standing', { p: accountId }).abortSignal(signal),
+    () => TIMED_OUT,
+  );
+  const first = await ask();
+  if (!isAuthRefusal(first.error) || !await refreshSessionOnce()) return first;
+  return ask();
+}
+
 /** Keep a genuine no-standing answer separate from an unavailable request. */
 export async function myStandingLookup(): Promise<StandingLookup> {
-  const requestedUser = await currentUser();
+  const requestedUser = await currentUserOrRecover();
   if (!requestedUser) return { ok: false, reason: 'unavailable' };
-  const { data, error } = await supa().rpc('player_standing', { p: requestedUser.id });
+  const read = await readStanding(requestedUser.id);
+  const { data, error } = read;
   /* Standing is deliberately allowed to resolve after the rest of Profile.
      Bind that late answer to the session that requested it, just as profile
      rows and rune ownership are bound at their eventual paint boundary. */
@@ -90,7 +111,7 @@ export type LadderLookup =
 export async function myLadderLookup(
   knownCurveVersion?: LadderCurveVersion,
 ): Promise<LadderLookup> {
-  const requestedUser = await currentUser();
+  const requestedUser = await currentUserOrRecover();
   if (!requestedUser) return { ok: false };
   const [{ data: season, error: seasonError }, curveVersion] = await Promise.all([
     supa().rpc('current_season'),
@@ -141,7 +162,7 @@ export type BestStreakLookup =
   | { readonly ok: false };
 
 export async function bestStreakLookup(): Promise<BestStreakLookup> {
-  const requestedUser = await currentUser();
+  const requestedUser = await currentUserOrRecover();
   if (!requestedUser) return { ok: false };
   const { data, error } = await supa().rpc('best_streak');
   const streak = Number(data ?? 0);
@@ -190,7 +211,7 @@ export async function matchHistoryLookup(
   limit = 40,
   before?: HistoryCursor,
 ): Promise<MatchHistoryLookup> {
-  const requestedUser = await currentUser();
+  const requestedUser = await currentUserOrRecover();
   if (!requestedUser) return { ok: false };
   /* Stable keyset ordering is `(finished_at, id)`. Passing only the timestamp
      can skip rows when several matches settle in the same database instant. */
