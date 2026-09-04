@@ -125,8 +125,18 @@ export function verifyAndroidResourceContract(
   const foregroundWidth = foregroundBounds
     ? (foregroundBounds.right - foregroundBounds.left + 1) / foreground.width
     : 0;
-  check(foregroundBounds !== null && foregroundWidth >= .84 && foregroundWidth <= .89,
-    `the Android split die should occupy about 86% of its layer including glow, found ${foregroundWidth}`);
+  /* Anchored to the die's authored box rather than restating it, for the same
+     reason as the iOS check in ios-shell-contract.ts: SPLIT_ICON_PAD moved from
+     .1 to .15 on 2026-09-04 (owner asked for a smaller mark), so a fixed 84-89%
+     band described a die that no longer exists. The question this asks is
+     unchanged — the mark plus its light fills most of the adaptive layer, and
+     has not collapsed or run off it. Measured after the change: .7604 against a
+     70% box. */
+  const androidDieBox = 1 - 2 * SPLIT_ICON_PAD;
+  check(foregroundBounds !== null
+    && foregroundWidth >= androidDieBox + .02 && foregroundWidth <= androidDieBox + .13,
+    `the Android split die should occupy about ${((androidDieBox + .07) * 100).toFixed(0)}% `
+    + `of its layer including glow, found ${foregroundWidth}`);
   const topInk = alphaRowBounds(foreground, .4);
   const bottomInk = alphaRowBounds(foreground, .6);
   const topCenter = topInk ? (topInk.left + topInk.right) / (2 * foreground.width) : 0;

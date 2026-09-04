@@ -1019,2493 +1019,2493 @@
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_launcher_monochrome.png",
-      "bytes": 2180,
-      "sha256": "2129c77b4433da2c5902db0c13eac6e3229164520e1bb14e5185d9552c39628b"
+      "bytes": 1794,
+      "sha256": "201aaa613a8570990fda5d23506f7a6f2b80a00e130dc8a884c15b8956fa8df1"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_blue_cy.png",
-      "bytes": 8737,
-      "sha256": "484aa2eb9dfe36f14eeeb2c026320777c74360898e384aa0dd909c6a9e1e352d"
+      "bytes": 8069,
+      "sha256": "68b1fbc5e1d9f6cbc5a6ce8489ce1591d0e8598911b3cab474e417342a80c5a2"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_blue_cy_foreground.png",
-      "bytes": 12538,
-      "sha256": "9a1287ab987a963c65f32f7ee5c0f452445a40d473d03a135f577c7a2608e3d7"
+      "bytes": 10696,
+      "sha256": "f9fd653a8da42b2eaca17e813f8e0c649201bdc34058537fc2fb57d276079161"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_blue_gold.png",
-      "bytes": 8697,
-      "sha256": "63f2f9e0e7a92c9fc58c34d382318478213b3e8abf96a2acd1d62253e8fd402e"
+      "bytes": 7995,
+      "sha256": "2c7486a3cf4db518c102f311a549b572b598489ed4b33a40e7fbf166e8252649"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_blue_gold_foreground.png",
-      "bytes": 12598,
-      "sha256": "604d206646a81de5c9f2b69b9b7546e790534b2830841926a59e4e2762ce45c1"
+      "bytes": 10770,
+      "sha256": "16eb823e4633b16bbd92e6d4e97e154c148b2b074784ff3d3a99e5ff2d242753"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_blue_green.png",
-      "bytes": 8687,
-      "sha256": "5db89e817661d8d980812f696a9231a36c0613ae0c33eb13afeea183d43ff045"
+      "bytes": 8028,
+      "sha256": "5a7f3dd707776c71c56570f69a71af311e59b4d45996a1c60d1603e3e67f0716"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_blue_green_foreground.png",
-      "bytes": 12650,
-      "sha256": "ff8074e54b91cf58dcebef8afd87b855e24039a9b7ddbb091823337fd3d89192"
+      "bytes": 10809,
+      "sha256": "bebed9124b1a167f4af6e13220198b7ca8c276b125037f601b1b26c94a8f1801"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_blue_mg.png",
-      "bytes": 8759,
-      "sha256": "63b9455ce7f4c13c5aa49e2d270565cdf73b1fbe5ee03bee1f08769df5692ab4"
+      "bytes": 8039,
+      "sha256": "7fb9003ceda8f320c11cb772b1f55830d068f3cafbf7d9b16f73c72ddaa3fb3f"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_blue_mg_foreground.png",
-      "bytes": 12601,
-      "sha256": "5048a0f3dcab407444cfff213022a7ec2eec7c114917bc1408c61745fee0fac9"
+      "bytes": 10723,
+      "sha256": "a23a17de7e99a3451b8ad1eae3ab2c36afb220d60fa08bb98af30b38db094614"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_blue_orange.png",
-      "bytes": 8701,
-      "sha256": "82391560deca16755048d0598de2c082eb9bc4d1e4150a81e7c473b177132a45"
+      "bytes": 8025,
+      "sha256": "5e8bf11fe39e11be4f46d37e16146b8beb6f521b7717e84f30a4a83ac6b8b242"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_blue_orange_foreground.png",
-      "bytes": 12577,
-      "sha256": "2d0afe629d1035ca2dd25d6e7463f3c0a5203f9bc7ef829c0dfd3b18a4f61a39"
+      "bytes": 10694,
+      "sha256": "c3f2f00eba47f412ec7c9cb3ec8e4b658e8fe77b23e49502f7dfc47f3cacc017"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_blue_violet.png",
-      "bytes": 8713,
-      "sha256": "a5c8eb3314e10c5942fde304751da1a1043c79307ff7b220fddd5d751dacb93a"
+      "bytes": 7987,
+      "sha256": "89a7829b00525cce23fa21257351ee85ad38f69b452a5a771bee465eca6bd272"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_blue_violet_foreground.png",
-      "bytes": 12602,
-      "sha256": "dd7259fe7cce55311be5b5758302ac6152cc0f856495ca3cafa8d815768e4552"
+      "bytes": 10763,
+      "sha256": "3a106c48655df80e89f8fb8ba9072ac99d001d082b1a73f0ba6eaffdf6f98cd7"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_cy_blue.png",
-      "bytes": 8805,
-      "sha256": "6b9b7dc3bda963e6e26688b2c8358a42c39cc6f63d434bf065f987d6948fcabc"
+      "bytes": 8059,
+      "sha256": "fd26e764670813a558642ac8079c5611b47d22599898a5b74562b50d1875f466"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_cy_blue_foreground.png",
-      "bytes": 12534,
-      "sha256": "1ad56d3b6a90d2f507cc3cf5962857656333e0eca440789b82298a2dfd796943"
+      "bytes": 10692,
+      "sha256": "fa7c6679ff8beeb88b29feb0b238a0843eec127702c4ad384e810694cb352c60"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_cy_gold.png",
-      "bytes": 8814,
-      "sha256": "27be082c9ce2bfb5ee51f0e0b80d139b3c06261ae96919ceb371309ff44eb879"
+      "bytes": 8099,
+      "sha256": "41f9b5cbeb448f535bee54ccb2ea24a2c481d0d520c37dbeba7a4156fe8fe10e"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_cy_gold_foreground.png",
-      "bytes": 12737,
-      "sha256": "cc6c6af0c25e7141bf22e5d4f66f5d047e69adbffd3fd6adc28e26882e2ca577"
+      "bytes": 10824,
+      "sha256": "d1601c0cce91c547be7f3b0c3b18681c8883ec0494874b6f169f9e95ac4aa6ba"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_cy_green.png",
-      "bytes": 8837,
-      "sha256": "877aa0891c0fc9579867fbd443aa108e7e08a58b5b42f5da6847149a76cb9cd6"
+      "bytes": 8044,
+      "sha256": "32ebed891a1cf566314d1c4152c6e41d06ca1d750df2a3811de65d40181ea530"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_cy_green_foreground.png",
-      "bytes": 12718,
-      "sha256": "f36fe2a9466aa085c83dad30230d760be9717a73ec46767255b755b1c60c0aac"
+      "bytes": 10807,
+      "sha256": "145a8d0678164f19fdb5b2dff13679cc98ed7c3a42210e9d950ae23cb127e678"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_cy_orange.png",
-      "bytes": 8802,
-      "sha256": "e6686eb886cb8ebbd852280584e2cc5f204bbc5591121b90ea8ba8388005c779"
+      "bytes": 8051,
+      "sha256": "2f7bf62ae7decd8e5cb84597fe6726aea2edebb6a850f404c220b250b114c367"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_cy_orange_foreground.png",
-      "bytes": 12723,
-      "sha256": "92b003ee3f2348ab60da58a9a25711b97e36034bc0af4cc39fa0342ade627539"
+      "bytes": 10759,
+      "sha256": "8d18e279e041e212aec31d597f6f9bd788d549d81143866914f11e12b9b3216f"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_cy_violet.png",
-      "bytes": 8824,
-      "sha256": "4702acbb4a73061a06ac7e6224d482b48cbd0f101a0daac76f4d4ad0b0c6723e"
+      "bytes": 8045,
+      "sha256": "708210ebb7293d310752b8b0c4a03099ffb155e7acc9b92785b7c944ba498ac0"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_cy_violet_foreground.png",
-      "bytes": 12685,
-      "sha256": "5ae7b0d3a2278b5e9a65d63f526b71d64411bdfc324589908f5b9b3ef47f73b0"
+      "bytes": 10796,
+      "sha256": "ad96998636093eabc0573bbe4464b1f531cdf635cca224346446adbaed6429ce"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_gold_blue.png",
-      "bytes": 8749,
-      "sha256": "eaceef27af7891b26914c4ab555d3a9721878004dcea4c27e2a5f9082d09946a"
+      "bytes": 8021,
+      "sha256": "0ab9286113096d2c6575770b61f08d47d0cb75a48e4baac994baab1079f4d13c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_gold_blue_foreground.png",
-      "bytes": 12643,
-      "sha256": "cbba28d6f32c88b161add4c381790cae58f2c3e72f8c2f692b004d83dcc87bca"
+      "bytes": 10782,
+      "sha256": "22c3329b9093bbca59f152977bcf3d5a4cf40139b0471001cf8f0e3a9ec0cb20"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_gold_cy.png",
-      "bytes": 8780,
-      "sha256": "c34ab52c3bc0288451dc216f5d0544074badee362ce86f226b3499cd9f6f1639"
+      "bytes": 8097,
+      "sha256": "d7105d3b4d1b7b38dddf2cad0cfe2651c9a669ff1384751f2b5ece17e4e5f439"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_gold_cy_foreground.png",
-      "bytes": 12693,
-      "sha256": "d88a09ae0d4ecce0795e41b81bad3493262fa1ed0c979665f18cb56eb7329506"
+      "bytes": 10835,
+      "sha256": "9d82082ab862faf00e02503bcaac349e0e3c4b782e03728722bd0a733451b1d5"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_gold_green.png",
-      "bytes": 8741,
-      "sha256": "7bd48b57038e604a005796cc79b9f24642728793dbaf46c942851725146de84c"
+      "bytes": 8014,
+      "sha256": "23d41af6b91efe8f9f726108d28589fc142f472db9c746340548e97ab9ba6910"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_gold_green_foreground.png",
-      "bytes": 12720,
-      "sha256": "fb7bc1be57f08ff46f72703d3a6c71c42867f9456f4f6684cf103fb62f1293da"
+      "bytes": 10862,
+      "sha256": "2fd4f634907295cf98fb96b1614813d71944b3da7c92f6cd2c7c2edd28b70c5a"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_gold_mg.png",
-      "bytes": 8782,
-      "sha256": "3c660f8c82b666ce42dc009e1cc319cb026d0c4d6c37f516380a62cb71970671"
+      "bytes": 8086,
+      "sha256": "91068c5d204bcb033df3172a57dc3c1a9c443311e6767dc1964a6c415470d933"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_gold_mg_foreground.png",
-      "bytes": 12654,
-      "sha256": "11306baed20e827ae495b9ef1d72adca55cefb907e22dbf6ce8470cce6cace35"
+      "bytes": 10764,
+      "sha256": "a451ba38cc899502c9da4a8200fdce2ab7cfbf484dcd1b73a2c1813263804c2a"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_gold_orange.png",
-      "bytes": 8762,
-      "sha256": "4e280ce0318f9eec26ad737422df712d18b38ca6dec88726d259a083eb253922"
+      "bytes": 8006,
+      "sha256": "7c28bc7d86a9918510ff090678fb67714007dff9eebbbf7a5311857685e96e13"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_gold_orange_foreground.png",
-      "bytes": 12588,
-      "sha256": "0d69de302a82fc2f578f3a6161240b6dc0bb0e7b4ff2936e2a8a154f497fa931"
+      "bytes": 10724,
+      "sha256": "f2210ca3000b7bb62cc4000cbb41887846bbb0381a8b5bc37fa04cfa34e538a5"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_gold_violet.png",
-      "bytes": 8759,
-      "sha256": "8d4e5d237e14e059faea54d14a4e993b931af5d4a7d4cd2a2960140d756e8190"
+      "bytes": 8009,
+      "sha256": "47dd3dd6978c454ad52adf065aa66cc6a72d2d76ecb211f43626f4a0a34faeb9"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_gold_violet_foreground.png",
-      "bytes": 12729,
-      "sha256": "b7c1e2ce10825a5835e429b19657608de55f44cc18b34bb77b502d560591bd2a"
+      "bytes": 10865,
+      "sha256": "2cea11eb19e04f4a9217b886cd937c95b421b9708117a94b5b99c98f42fd9ff8"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_green_blue.png",
-      "bytes": 8736,
-      "sha256": "c1a2f8d9fa8178693f359abaddd3013c317bbae2ea58369f041676eb5799d7ae"
+      "bytes": 8050,
+      "sha256": "280b9288b34ce11f4e8c976d0d814027e8936ade690658b4aaa6e230bb08efa8"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_green_blue_foreground.png",
-      "bytes": 12713,
-      "sha256": "b737ff529b0db86c3d2d9725eafb54339cbb3091d8c73a5d7598c9d019035c78"
+      "bytes": 10848,
+      "sha256": "1acbe048c596cd108f88032bfc263e810135fd33f7331873d805034eefe821fd"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_green_cy.png",
-      "bytes": 8816,
-      "sha256": "266e3fc4375569aad4dbdd7a8f30c828acb0545b89a3017daf79859d7c3321ac"
+      "bytes": 8093,
+      "sha256": "35b6c573c2b512aa59d2efa967fa0b2ae40f4610cd483101198447ec97a62380"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_green_cy_foreground.png",
-      "bytes": 12760,
-      "sha256": "3874016798c62283cc450d8409c6587199e8007d987c547b95ab4871db1ffa01"
+      "bytes": 10869,
+      "sha256": "3e5f5fb43ba3825a27aeebe5986aa3ab573755d747971c17df830f7cda4d9800"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_green_gold.png",
-      "bytes": 8760,
-      "sha256": "b67cd0fa89a6e7f1586465412aa6913fa343397aafebe0630df93d41dea57229"
+      "bytes": 8053,
+      "sha256": "a03c94c2f0d38f8bc8ccf4c73f7816670872662ab0a33ce9067194e029728b51"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_green_gold_foreground.png",
-      "bytes": 12732,
-      "sha256": "e4ec3ca6bb34732ebef104a8a1f1df7ee54d1466e031377f120185e1a5f58829"
+      "bytes": 10892,
+      "sha256": "07d8aae9eb8ae170aa2dcd31acf8adc9144ea224ae5727e8880414a7bdbfa041"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_green_mg.png",
-      "bytes": 8789,
-      "sha256": "159758a35d5555af18e11c24998b63dd0c9ef229320925f431a3bcc059795378"
+      "bytes": 8101,
+      "sha256": "c64face1aa36628a80a32f51495e97bd4f46955bc284576416e283e4bbbb50ee"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_green_mg_foreground.png",
-      "bytes": 12744,
-      "sha256": "7f75abe126bcc4ee6e25481e695edab750f47053516ad1818ce7c213dd19909b"
+      "bytes": 10843,
+      "sha256": "bab3f6e3259624111379b8fc9f7e2be8b6cdf4551e1d02914441ff921193822e"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_green_orange.png",
-      "bytes": 8763,
-      "sha256": "4ff29d714716e8f4d141c7580827de703270939d28e5767543387e5987fc735f"
+      "bytes": 8051,
+      "sha256": "e0ee0f4f960ef3ef28686b8132439f3587940a7ef4604a9f07c41d3cf6668c79"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_green_orange_foreground.png",
-      "bytes": 12746,
-      "sha256": "6c8727125db28dd668f9ffaa97cf0d582406d30ba9c23277da9e9f378af802bd"
+      "bytes": 10855,
+      "sha256": "e855ffcce2e0d2f0de6a789cb5137e323c4b300c775673177b8d11a8f527dc87"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_green_violet.png",
-      "bytes": 8747,
-      "sha256": "7421a5f794e390d43d14d8779d101c725c84ad1b8c946ca0bb1e3f9cfe8825cd"
+      "bytes": 7991,
+      "sha256": "252e09bc94f449967e6864747a04ca3199fd64d26f7dbd7de0c3009b2f8267ef"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_green_violet_foreground.png",
-      "bytes": 12792,
-      "sha256": "51057d66b440aadbd56aacae6cedff35f008017204c04c33b15db30fc567c2ac"
+      "bytes": 10954,
+      "sha256": "0cfa5fd74e8d061f2d9591f2a7b9db85a871d80718b8d6e8c3d73e90562cdbac"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_mg_blue.png",
-      "bytes": 8753,
-      "sha256": "fa7b7c1332d30fd9bb5807af38382d04d1671d66e20ef5652a07f76a4573d34b"
+      "bytes": 8072,
+      "sha256": "99d077d76fd6dc5c4ba8f99e1f0c3298ad667bf2fe3789498b42beb4c990538a"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_mg_blue_foreground.png",
-      "bytes": 12594,
-      "sha256": "624ebcd88ebce829d31401cf6d08fc59f921e1995a058e2c414e160a3c4de263"
+      "bytes": 10753,
+      "sha256": "3a257291fadc25635cc998a2950dcdacbdc6277bbd1a62ea62154e7ed19e926b"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_mg_cy.png",
-      "bytes": 8797,
-      "sha256": "ad9cdd5e518221befaf4c7cfdf77ba8292b07ced0aa466325f31fceea4afaa2a"
+      "bytes": 8149,
+      "sha256": "5b4c6684036748527cc309697afa7d68c5816010bdfe68c17d8f6591e5ed2ae5"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_mg_cy_foreground.png",
-      "bytes": 12719,
-      "sha256": "85f4f4e8c26112a0c5bae0dad9479dde6948e090c4ebfb12243a97d7ea5492a8"
+      "bytes": 10774,
+      "sha256": "0dbe82d9b731cd0cfb21f0fb5981a48a923c15fb02f25f12eae3ff75994b29d3"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_mg_gold.png",
-      "bytes": 8758,
-      "sha256": "bdc8ff1aa376acfd266ce5bed03163a221d03ee2c7ea2fc20fe040efb5a890ac"
+      "bytes": 8097,
+      "sha256": "d56ff62a7e59452145827a7ed81fc906eaa76f94e191250da7aaf51b3b106d82"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_mg_gold_foreground.png",
-      "bytes": 12614,
-      "sha256": "f3549767256d0aad3501d967996f677690235fad3830a419a75582a24e6c6cce"
+      "bytes": 10766,
+      "sha256": "8898bb10b02358a1322eb0fe4ec3c16d12b82246f0b16b3cc72b3032891322b3"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_mg_green.png",
-      "bytes": 8750,
-      "sha256": "75a76ef7a0ca5c495f1e86dd02cfb6c66c1d98b0b8d9c10c5be67bbf6195b836"
+      "bytes": 8063,
+      "sha256": "3a50f5487dc8339c22913341a276bb2ab1283de86508158f882cabe109332ecc"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_mg_green_foreground.png",
-      "bytes": 12687,
-      "sha256": "3e78ceaee012879b2c16687d965efea26ad19431ba25e0ee65a80aae892326ec"
+      "bytes": 10827,
+      "sha256": "1d45bf1bb65d4b9c6aa17d431cabad483a8550efc459b22a09af389fdddaecba"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_mg_orange.png",
-      "bytes": 8757,
-      "sha256": "5cdc5e548f383413f06acc3670f040bb28b9bc08fb338203c44f4de6021b743b"
+      "bytes": 8084,
+      "sha256": "ee8584a6a7563a1e440f9053116dc98d6c001e213f9e32c3c2cea18cfa46aedc"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_mg_orange_foreground.png",
-      "bytes": 12590,
-      "sha256": "f3c11030cffc0c54e567b51b0aa27abfd1f4cbda9ffbee8b5c4ae78a2b5b3cc1"
+      "bytes": 10690,
+      "sha256": "05ae63ebad3db17f927bd144b3b4e6c4977d8a818b2565c543ef27afa090bdc9"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_mg_violet.png",
-      "bytes": 8768,
-      "sha256": "e3221cb1da3ab7aabb40bc5fd92e045ed14eb7318ea7569257d788a29dba5efa"
+      "bytes": 8052,
+      "sha256": "8e9781153ba62216b91e1263f4b2ced8097a936bf099f5dfcac9a7c64b6fb911"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_mg_violet_foreground.png",
-      "bytes": 12673,
-      "sha256": "4936c87d1c48b8a15d5f6673192652442643dd1719e761dc93d3cee0b793d9c3"
+      "bytes": 10817,
+      "sha256": "eed6ec979dcd09b17989be6c53b65ac4b958649c2b65ac0258524c98217fade5"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_orange_blue.png",
-      "bytes": 8690,
-      "sha256": "45048969f5e1481395d87be0b20f3ff18dcd8ace56683012d7b870ccde1a924a"
+      "bytes": 8022,
+      "sha256": "4f2c29a3b757be47301e2b6556441267e0199abeb4c7e450296783ef4ff635b5"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_orange_blue_foreground.png",
-      "bytes": 12612,
-      "sha256": "96f0eec9a634fecf8c69f2f828285e216b859d73aa44644ec5aeca510b2ba3ec"
+      "bytes": 10718,
+      "sha256": "bde6397615974754043479aff6ba0eb60115e50d4bcf4314001778a3627d2e79"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_orange_cy.png",
-      "bytes": 8761,
-      "sha256": "310f6f20209cb3e7d29ae001c4f67d9889e03539b7f9694a63aab4d8ef3943b9"
+      "bytes": 8086,
+      "sha256": "2fff4dafb5241387e37dee9271969094d59c6d7d6366e21b952d9b8afc3b188a"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_orange_cy_foreground.png",
-      "bytes": 12684,
-      "sha256": "e2f520e7708e96f754aef28750ca917e634cb1e4cbac3fa284b66ce3d4a50ce0"
+      "bytes": 10794,
+      "sha256": "fbf8fdd3d9a3c2dfcdc55da364d19b3f7ed784853a782e6873b1cb039a0b81be"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_orange_gold.png",
-      "bytes": 8711,
-      "sha256": "37684e44bdbfa57b88a37bf603ae2fb29cf60e2114ee1277bbe8131d4b29437a"
+      "bytes": 8014,
+      "sha256": "bc080c0227ed0be3a57f8d204024d6e79be492ea174decf56b2727efe801f9b9"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_orange_gold_foreground.png",
-      "bytes": 12570,
-      "sha256": "d7b56a86daedd7bcdf86d3eefc09bc1bed8cf28f3e4eb568bd321b5d9df25b3a"
+      "bytes": 10718,
+      "sha256": "6ef9e081f9cc6e59219556f328d475767e3221dc8b80cfeb1dc687180b978d36"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_orange_green.png",
-      "bytes": 8692,
-      "sha256": "05cf0f12f6f1fcd85b4e0f642086b955544ccc1d8a343e1fefc9dc7a32e09083"
+      "bytes": 8004,
+      "sha256": "7744da253b326f640f95f669efd30977564f94d59f2c715d422dccbadd84a0cd"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_orange_green_foreground.png",
-      "bytes": 12663,
-      "sha256": "83bd024e7931b89f1bb9c2d3787c9b864f5a3d77683108a62bc18546c421cba1"
+      "bytes": 10827,
+      "sha256": "cefc2238059d30b76ad7fc0e63ad374c3a875b9712a4adf86cacfbd220494a07"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_orange_mg.png",
-      "bytes": 8739,
-      "sha256": "efa6e4c3174b26451c8e121c352ce26e3b2d82257f13442d01aa9f6b64de39cf"
+      "bytes": 8065,
+      "sha256": "8e52626f79714e4c24a97132820e1585f3750d5eb24a1f7582ef72e438236276"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_orange_mg_foreground.png",
-      "bytes": 12581,
-      "sha256": "1da737d6868cd9863ddc54c736479cad0f3b0b88c4286f5978c95afe22567aed"
+      "bytes": 10671,
+      "sha256": "7fd9b03ee1c6a1a588c8d1f537469d57a3311855c6c6db162dfec78e8ff6d0bf"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_orange_violet.png",
-      "bytes": 8711,
-      "sha256": "c4c3fc3154373823d3a7c59d9b021a21fafcec54390e4c2c1404b5d728099e23"
+      "bytes": 7981,
+      "sha256": "c712d5321a6f1dd21cbaee0540b113b0e861f37153c1fbe36c01f79ef613d6da"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_orange_violet_foreground.png",
-      "bytes": 12643,
-      "sha256": "7916ab929eb74ca93123d597098e59fd92fa773eda15e46efc3f3f6189185bd8"
+      "bytes": 10794,
+      "sha256": "39f69986c39517f5ae60e1a5a039cd46c2145e067bcb92b1dcc5db8090ba7164"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_violet_blue.png",
-      "bytes": 8701,
-      "sha256": "b2d9b880f73e600fad6605715a4e25a62f758993d6ab49910d9b89985012ab54"
+      "bytes": 7999,
+      "sha256": "96731ee5963ee4b31ae86cfa5324755f7f7560f2e645c4d6976f342c44cc789b"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_violet_blue_foreground.png",
-      "bytes": 12581,
-      "sha256": "2e62518d87a855f7e0092fe6f4c39372c460029ed46d176186f8aed21c40302d"
+      "bytes": 10736,
+      "sha256": "e5b93ed3886fac24dd93e5447150f29912ad0938e8bf7496a3aae8528002bdf9"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_violet_cy.png",
-      "bytes": 8733,
-      "sha256": "9e766b0db29ff8b02a2c353f1c05c8a7bf84a585c81af30d476540e1b0c699d3"
+      "bytes": 8076,
+      "sha256": "6eda7824fd55b44557d4d6915c2b025c2b45e7712e29ceb413b823f5b798fbd5"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_violet_cy_foreground.png",
-      "bytes": 12622,
-      "sha256": "51332e31f0df4ebb62505571f23dba6393c75cf8b7c68621a261f9f07fd5303f"
+      "bytes": 10852,
+      "sha256": "6e5aeba8634d562b4ba45dd70892c342ec604a9d06c1f96a6dcac40f9d17aa48"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_violet_gold.png",
-      "bytes": 8687,
-      "sha256": "027e77e08a9a69dbb9e664818974f4cfdc898f9599ab1bf0f00385a11b23a964"
+      "bytes": 7999,
+      "sha256": "036883db313c0f12f0d459d0771ebd6c72b8ecc7ba32ded2c4589d02094e8b46"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_violet_gold_foreground.png",
-      "bytes": 12660,
-      "sha256": "f0ecddfdb9b8f6e34565d1501697ef3cd09ee77cbbbf4cf290bf3dd8e0613512"
+      "bytes": 10843,
+      "sha256": "42673566f23129efafbd959886c9d17d08a579bd43d4172e75c2cc33df6166f2"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_violet_green.png",
-      "bytes": 8686,
-      "sha256": "cfd4ade292ecb476c121c6fc9ccc630e9b5e596698ee69ed4432e77be0814585"
+      "bytes": 8008,
+      "sha256": "4d8f24971b76aa54093cee4267b4d02843f96d94562a8b3efc0aacfd56abd061"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_violet_green_foreground.png",
-      "bytes": 12727,
-      "sha256": "2ff41b92d16b06abe6933667f258a7d066430f645abce89e1c6bd3b8b29b44d1"
+      "bytes": 10888,
+      "sha256": "f774d29d94e082869c924609467b7f2a6be2468999ab85882c77dccc2d06747b"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_violet_mg.png",
-      "bytes": 8777,
-      "sha256": "079f3122f2547fc75a717811235a4bfafcad36531a5bc5f6067c8bc758ca7c58"
+      "bytes": 8058,
+      "sha256": "4df4941571e2303d8f3f9e00391dbc0d71e0bce06227cd7bcf463991ee5d6cfc"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_violet_mg_foreground.png",
-      "bytes": 12659,
-      "sha256": "79955e8717b6d5618081916a5fb5bf8f8e27493443c9130889aeb293e1475644"
+      "bytes": 10779,
+      "sha256": "4c20cc3ba9933c0b7b090d641cf2f0adbbd8630fe4403cc5e9274ba51ed45c97"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_violet_orange.png",
-      "bytes": 8713,
-      "sha256": "909fd562f174548ba864d312042edf436da02038b326483d2eb5ccdaac69146c"
+      "bytes": 8004,
+      "sha256": "c231c0b33645416775fd5ce934b1cd06712f20e574693389005731d2b0a75749"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-hdpi/ic_split_violet_orange_foreground.png",
-      "bytes": 12606,
-      "sha256": "13e55c4e97a05176c65bac5207deb729d0c6bfdccc899e33669bf07593e3d569"
+      "bytes": 10778,
+      "sha256": "d671345552bb7d16b4b9f6a4ab38f1545ecd6f3481ef006ccc7e092b4edd1b94"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_launcher_monochrome.png",
-      "bytes": 1031,
-      "sha256": "57fa1d566e99e82bfdef14bd47e04f6e19bb4c53b4e2769b9e9219472744063c"
+      "bytes": 932,
+      "sha256": "1b4cbf3fe97d742e995da7d0acadee6ac67fe2007ca0fd1f20b77668a93333e0"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_blue_cy.png",
-      "bytes": 2685,
-      "sha256": "4e96d4892436c9309ad0ac9eb4e433f68b3c18431aaf9cfdae834df990e3cb54"
+      "bytes": 2557,
+      "sha256": "eec0c2a7be6ce1e36651d8f2fbe7695554368bab0555904c6d4788fb0ff00952"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_blue_cy_foreground.png",
-      "bytes": 3748,
-      "sha256": "f2374d53de6f6aacbfbf9faaaab270417dcf277fc2e3e48f081ca0181f68b138"
+      "bytes": 3237,
+      "sha256": "110b57693acdceed256e137d2557c23b69d8ca7d4cfb65fab78f29ce434e89da"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_blue_gold.png",
-      "bytes": 2681,
-      "sha256": "78f41e3acade35349c3f0008f1b4e5704b18d83e9f8c8a66e67df0ddd839811b"
+      "bytes": 2541,
+      "sha256": "cc213f2e2faa07b98a24841866e95562c95849a55cbf08227fff3f14b441b142"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_blue_gold_foreground.png",
-      "bytes": 3783,
-      "sha256": "caba79a2dccc4d29cd141ac40636cc3f091f7707d05221f30e7adc87a42b430b"
+      "bytes": 3260,
+      "sha256": "f4103b513d0830ac17b9abfecfcb21f7bbe921879d003103516e39aa1f887463"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_blue_green.png",
-      "bytes": 2664,
-      "sha256": "a3a5bd077ad96bf10836b51bcbc418b6d92200a7f98fedb3177d64650f821e65"
+      "bytes": 2520,
+      "sha256": "765f8627bedaff2755e77da177a6777de22f071b180328c4435393def1251874"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_blue_green_foreground.png",
-      "bytes": 3779,
-      "sha256": "396b28bb3e84983920b191d6e2e8dc7e232fcdce3a15a7ab4bc09ce120721eb6"
+      "bytes": 3272,
+      "sha256": "1f34e885f6794e1138147485fe7885f2dc99b3e7522457a78e7ba8730f9b3592"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_blue_mg.png",
-      "bytes": 2699,
-      "sha256": "c970f1e73e49bf079a7f3f3ffd8c00384d76f02ee9793e40b51a64e0e74a4ee9"
+      "bytes": 2545,
+      "sha256": "a57a57773d7d6731ff6802c640c40080123275934a89693d747eec726f879de8"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_blue_mg_foreground.png",
-      "bytes": 3771,
-      "sha256": "2e0c462a7f23b0bca40bc05a0ed51cc4978c148428ee5b547cf96c7b5b0eb7f5"
+      "bytes": 3238,
+      "sha256": "8c3fcabeb6e3bf51e64bbf28a2ca5750e5ec4d1f9cada0c0a1937e1b329acb86"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_blue_orange.png",
-      "bytes": 2685,
-      "sha256": "30bcc9494d553e4a7fa680ecbcb6258c58af6a30cedbf135c1cb499c4b6e142f"
+      "bytes": 2543,
+      "sha256": "7ba1c253e1e7cf229a27fa9a3d55b4af82b39eba3c9168fed9e998f0c2e9638f"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_blue_orange_foreground.png",
-      "bytes": 3762,
-      "sha256": "d8c6663fca777882a201e009f064696a08142c8d9c600589530b71ea3f5809e6"
+      "bytes": 3241,
+      "sha256": "d4443004d8b4c62fa7b98da7d0be4e0790248da836095cab1a7cb47d4608c9ea"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_blue_violet.png",
-      "bytes": 2682,
-      "sha256": "907c5d514c0bf676d00d92d01caaf42dbb2049e106a90855b32e38f5a5f8d7cc"
+      "bytes": 2531,
+      "sha256": "9786532191f241c0b879e2d68127e8fc4aec5f788752a9e2f150233464002a7c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_blue_violet_foreground.png",
-      "bytes": 3757,
-      "sha256": "a479d6f0b396cbe768a4564ff040b52e27360492cd938d311c1e2d9090da6087"
+      "bytes": 3253,
+      "sha256": "d12dcc9a9b3eafcce2ac28832dd242f82b1d55089f3ad25817db26609175b3a3"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_cy_blue.png",
-      "bytes": 2689,
-      "sha256": "f73ee4184b613b4cc233e410a5ee5ef73756638677bcad9718ddc49877ee8a34"
+      "bytes": 2538,
+      "sha256": "7b31685d029d7d49c6ec3575af94f294c15dcfa666a76c427c8b9cffa98c05fa"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_cy_blue_foreground.png",
-      "bytes": 3746,
-      "sha256": "16544762c32a56eccf396dadbf9369bdcd2169f82b449d9a69097137e8b09877"
+      "bytes": 3233,
+      "sha256": "20326b33b2dbff16c6ba8fb7c5585a87cf441f7344c0b0f5366b0a736751a425"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_cy_gold.png",
-      "bytes": 2718,
-      "sha256": "e8b29e4479a01aca5c15dac61f5b17711aacec2b32279538aa04e2ce939a65e8"
+      "bytes": 2551,
+      "sha256": "1ff814fa83cc5f3a0c4523448f2cd0c8b635406a2899d939e6c60ff747887068"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_cy_gold_foreground.png",
-      "bytes": 3762,
-      "sha256": "e0bac6b44ffb87ed5cd5abb9ea44d86f65406f603101ba58b2111cbc78ab3c0e"
+      "bytes": 3252,
+      "sha256": "297e2d624312720e4f4c0d923d087c88174da43b8a37c9de691bea958ba9eb06"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_cy_green.png",
-      "bytes": 2688,
-      "sha256": "3cb244d3fbfe90e0419e60dcf797df9b7e2b827817e37a3176014144eaaf78de"
+      "bytes": 2538,
+      "sha256": "f5db1ac23a9630804cff81869e2793c9a483a8f09fe64abaab746b4e25180eaa"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_cy_green_foreground.png",
-      "bytes": 3766,
-      "sha256": "9a872f0ebbb449f073c68b1b0135076c967ad7d61aa5730c2908ad4dc87e377a"
+      "bytes": 3255,
+      "sha256": "db2f7df8ff6fbaad1d0aacb6d8d54abe8919298d4c361344fd34ab8315487836"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_cy_orange.png",
-      "bytes": 2709,
-      "sha256": "322a0b867830e11eb9138f98030d531952fcdc2a6ebb5b24ebbc65907d61b897"
+      "bytes": 2541,
+      "sha256": "9eb88ed45c973418d591c50d366c68b59e03f10d5d0c60e0b334956f5d07cf9c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_cy_orange_foreground.png",
-      "bytes": 3759,
-      "sha256": "fde7af745a3f285317615595085502521944042fd0af7c799a8564647ea9f9a8"
+      "bytes": 3237,
+      "sha256": "16c71ec21ef15642dfe362b111062eb17cc33b982c7cf6a52101763c2109e41b"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_cy_violet.png",
-      "bytes": 2712,
-      "sha256": "d8084b1b48dc49db001c578964a0d8bd1c36796fdfb2613d3d8112a0d81b3c4e"
+      "bytes": 2551,
+      "sha256": "ab5477d893925444af7a6777a0b2a26fd0bb6efe9d83d257137813762a3ef9fa"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_cy_violet_foreground.png",
-      "bytes": 3760,
-      "sha256": "8b128a34089c14fcc266d334f33b28448606e52f4e9582c656787dfd56a0cea3"
+      "bytes": 3256,
+      "sha256": "a02627af14a5b9317da18d9dbc6492dbc05f1aad113c982f6c1486d9fba4a4a8"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_gold_blue.png",
-      "bytes": 2679,
-      "sha256": "34fd389b8265a055b9a50bfb9ba3f6a53eb4fef41bee2ea6e0ce26c99e269a09"
+      "bytes": 2543,
+      "sha256": "9b4570b5720a9028b5accbbb89d08c24c2bc8766a7dd60d8d202eb43d29ccaaa"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_gold_blue_foreground.png",
-      "bytes": 3781,
-      "sha256": "0a8638c78859b84c59592904708fe70e619730597abc08d0c611ff59b2b93741"
+      "bytes": 3276,
+      "sha256": "4274b365b1a1371e1600f0f748abc5fd080666a815338268e921df92c1d95a6e"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_gold_cy.png",
-      "bytes": 2712,
-      "sha256": "83fd9de1a110dab68bdad116137078ea5ed3bbfb2decdc7833f1a7f990a97536"
+      "bytes": 2566,
+      "sha256": "9c308e7cb114143dcb9722bdac44758948ef4ef6860e5795d3c74514513473c4"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_gold_cy_foreground.png",
-      "bytes": 3768,
-      "sha256": "4c9c123922305442a217f3785d57cd1871497532f69c72f8560d5c9c94918c68"
+      "bytes": 3268,
+      "sha256": "076f646338521eabc725dac06358ddb2a989d20f43953bb4098e7c47638ebe97"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_gold_green.png",
-      "bytes": 2676,
-      "sha256": "d7cd660b6b92e0ae73a5f07c95383b317a4ce9cd36ca6ebbd72fede2a954781b"
+      "bytes": 2536,
+      "sha256": "1b3a2fe21861846dd7445ec61ae4043d8c4a90d6b621a8add458ff5281b599eb"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_gold_green_foreground.png",
-      "bytes": 3784,
-      "sha256": "1b54f70ee1403e8725f06bf43f767e5944b9f5bc7cb0f7a0c9b7f8379d1da147"
+      "bytes": 3286,
+      "sha256": "d8890e534418dd0edbece729b6681254d4fd00d13dd43b83fd6b038f523c171d"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_gold_mg.png",
-      "bytes": 2699,
-      "sha256": "dd76f383bca77eb9e40c0bac2f613f8c026c13c21d9677143bfba119d1611423"
+      "bytes": 2553,
+      "sha256": "3b117905ec47c0eb1a897d8fbc0550723cb9818aa656470191849c09733b54ce"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_gold_mg_foreground.png",
-      "bytes": 3768,
-      "sha256": "b8e67b6b6bccee836df457d633f190637156be9e1d443394683bbf008a0be5b9"
+      "bytes": 3266,
+      "sha256": "49f2edb1d85f16e5e184eaffaa36a0b4e1199cb535b2d845c89e37dd3e827ba1"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_gold_orange.png",
-      "bytes": 2681,
-      "sha256": "061d365d057cf36293c9ae24fd97d36e79fa2f74d0810876c8bccb688e172e13"
+      "bytes": 2537,
+      "sha256": "46dfb589eadb74830118c7a8fd296456ee52259227685fc8c2f11c2f84a38f29"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_gold_orange_foreground.png",
-      "bytes": 3747,
-      "sha256": "bbfbe90802f3c7580e4e22c402ae07060258f0e7d53b8b3dcaad3ae04ea3edd6"
+      "bytes": 3253,
+      "sha256": "5265ef62ea8bec94c7efa08a7c05225667359a0060dfa356c08f1b33fe3807e9"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_gold_violet.png",
-      "bytes": 2685,
-      "sha256": "5bf3e44dd0f260f21852576876b1658dd2dbc9fe838a6ec63848d13e6d47fd1d"
+      "bytes": 2535,
+      "sha256": "7b31aadea2e9ecff41a02c32b3e9c534e25c143608bdbb53d1901f92d7a4e6be"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_gold_violet_foreground.png",
-      "bytes": 3783,
-      "sha256": "f35506fe1acc0842b3f46b0a07e8fcdd00b1b1165d9982a634e6b9bfc90e1473"
+      "bytes": 3292,
+      "sha256": "0a70aa5ac3a165919654f96816eb18a7633c867518b69c5b85d90f778bf822c2"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_green_blue.png",
-      "bytes": 2672,
-      "sha256": "557741c0af68a42cb9c2336601685b310742c3f8a57fe9b3768e6e85b0312990"
+      "bytes": 2546,
+      "sha256": "7893fcfda06d4fd7f42062df405795d84b0eec8033cb5c46ccf3c86adfb94988"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_green_blue_foreground.png",
-      "bytes": 3786,
-      "sha256": "772af851456db7cfca404704f38519f0093676b8bdc4d8940ac8d6f8f1fa8e31"
+      "bytes": 3273,
+      "sha256": "977c6256f3bced82e670d47904d78046d832f364ea33821d262aafd3770d83d3"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_green_cy.png",
-      "bytes": 2697,
-      "sha256": "d863f2a959b19e30f21d3def8fbc9910c1056b2305f161ac14e787df7ebfaf82"
+      "bytes": 2551,
+      "sha256": "8572d2c046011a91926723e47450d44da77ff34c4607c74c3bbbea58d8e90fb0"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_green_cy_foreground.png",
-      "bytes": 3768,
-      "sha256": "25fe99ca9a2c43102cff120510664637764d83933167dcd04d93c7b40e662a74"
+      "bytes": 3267,
+      "sha256": "93a8ad5b46f036486807f7b5f1d73c18529c1ca2d6121f867d1ceb429deb978a"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_green_gold.png",
-      "bytes": 2680,
-      "sha256": "e88adbb64ceeabb289f70d611ceecee553afc415543cee4ae89da45d0e197adb"
+      "bytes": 2543,
+      "sha256": "6833f2d1935f171945211e09f9f1f24867f42680f2b8cd477ed7fe45ae8286f1"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_green_gold_foreground.png",
-      "bytes": 3771,
-      "sha256": "d5771f3887b219734d04055720e2ec92d966f4a894740901ff39346656105463"
+      "bytes": 3281,
+      "sha256": "2a08e0eb7964478444ba68682486eef4dc896735f3d4954b470147e9e19f56db"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_green_mg.png",
-      "bytes": 2697,
-      "sha256": "5bccdbc792b84039de16da16b5cb6f6273a6e00ccfa5f6949feb1f557cac33d2"
+      "bytes": 2535,
+      "sha256": "df303205b5e949ac2a9989d631a6e0e8d4178824c3ed652ff38510f90f90af2a"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_green_mg_foreground.png",
-      "bytes": 3783,
-      "sha256": "84925296cd2df6a0e219bc25f4114edcf8f9da0ec2f372f6e9b5a18a4c5e11e3"
+      "bytes": 3264,
+      "sha256": "b86d688782a6ab0269743e15d60d203345a21710f7016edb3b14ee3698c67ea5"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_green_orange.png",
-      "bytes": 2679,
-      "sha256": "94b0a2931a3a88d7635cdde6901053527f33aa5d0df949a41de84d87bc13e9cb"
+      "bytes": 2536,
+      "sha256": "a9a771fdebd28ee157028fa68925b72fafa9a6ef265c44c8e5bac3e1cce340fc"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_green_orange_foreground.png",
-      "bytes": 3781,
-      "sha256": "8ef5b2150eee6eb4e67f3b36fdc05a8c2c00fc748ad5bbc97b38dcd5be609217"
+      "bytes": 3271,
+      "sha256": "17ca6a687890bb64c63c74e3b2b608c877c13f476368aac48307a71e0a6e29cb"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_green_violet.png",
-      "bytes": 2677,
-      "sha256": "9bd3c654c5f5f63160a14d8b5fb5c9cfc29aeeb807764e1cfdeb3e4a52fb3c69"
+      "bytes": 2526,
+      "sha256": "ea94dacfe61b2f5307a0195251b10ee8045467710be8f57c7f6ffc140fa30ada"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_green_violet_foreground.png",
-      "bytes": 3789,
-      "sha256": "272596abaa72d40f63f2a16741b650b51a62407b9ae50981d6664d82bcf59102"
+      "bytes": 3292,
+      "sha256": "88663e4400722a85a98e4037af8f65c52131c7a3a8f25bb0f7ded590c62096c9"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_mg_blue.png",
-      "bytes": 2687,
-      "sha256": "e99986b862e50c7fbeaf45a2a2c5529d976cb3f414ff644f8f842142749fb85b"
+      "bytes": 2559,
+      "sha256": "8b88d45ef21993d23ed479a64811507b4a61c74b5b9e72d0aec573deeec99f0b"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_mg_blue_foreground.png",
-      "bytes": 3773,
-      "sha256": "37e7201f8f632dcdedaac99fd876344a1b1975f1d15a1a532034dc6ca10860a4"
+      "bytes": 3262,
+      "sha256": "0ebacbd54c01780118e8792e82a3bb845aca52b04160409fa7193294aca4ab79"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_mg_cy.png",
-      "bytes": 2710,
-      "sha256": "278d5ffa40ef4529d3e181bd897e38e5247703a82f91de59aa0fe0b43a2dcf56"
+      "bytes": 2571,
+      "sha256": "553566faef327b3dfd68710ced999e330306d50ebc6b6cf5a3f5e244e51cb38f"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_mg_cy_foreground.png",
-      "bytes": 3761,
-      "sha256": "1c9bc3ad5257e4577b2e62305e52579c1dba9a10bca9ece54dbbd2c9b80bfbe8"
+      "bytes": 3250,
+      "sha256": "bdd282a784f5f820e8cc1fe55bc7d8585346b73391e36f542e8aded5cd5b2b8e"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_mg_gold.png",
-      "bytes": 2698,
-      "sha256": "a87e73a60f87db036c474bbd66a5f858d77f4ad5c9045fbf5de3edd5a8e85215"
+      "bytes": 2557,
+      "sha256": "ae1fc308897b8d5636367016bab732f45b1a3667e5fb7bdd2d7259f867adaeda"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_mg_gold_foreground.png",
-      "bytes": 3773,
-      "sha256": "f716c778224c2373e22b6bad691789f7657ebd4a9a16b1f4c517c95fd99debe9"
+      "bytes": 3259,
+      "sha256": "dfa5ddf99e8f0fa1fdc5dc0981fa89adb0e45e71ed858aeb01087ec32d03a13b"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_mg_green.png",
-      "bytes": 2689,
-      "sha256": "1292c62578918e51ba7984e3e4c86dfe06350608df71918e026eaba4e6cbd5e5"
+      "bytes": 2551,
+      "sha256": "bcc7d1a5144e0deb51f6ff8c6170415fa6b83722ba29e61d1e049360bebf05d0"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_mg_green_foreground.png",
-      "bytes": 3782,
-      "sha256": "801d374545de8e26c79f3de26dddb798bc00b0a1adaa6fa6b100aa32c1fd4df3"
+      "bytes": 3267,
+      "sha256": "8f53456e4b8744b0a0d3b5555390823f714306455b3860497bcac7c53ac98a28"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_mg_orange.png",
-      "bytes": 2695,
-      "sha256": "cf57163db8ef42e2b4c8f516e1175f5a33913777979c0c989d7dbee570e1d940"
+      "bytes": 2564,
+      "sha256": "bf39bfb920e9e7cc5c19995495b038e2eb93f916d2eaf43aac2f2785a494fccc"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_mg_orange_foreground.png",
-      "bytes": 3755,
-      "sha256": "0c2bdf2fee9e1d1543a1ecb01e9f9ee3d93748b28a72692c23a9e7b9af7bf7a3"
+      "bytes": 3235,
+      "sha256": "ca293224d3970c601250a1c22abb8e7294f5225e8eb47f2a3b742ac704503402"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_mg_violet.png",
-      "bytes": 2700,
-      "sha256": "58b2634829019696e1970a82c359671c6a3632f7d1ceaef3e2e6901a797c086e"
+      "bytes": 2556,
+      "sha256": "72bdae29e7dfdbd364deb638f567d48506936e1ad804cf2e9e0bbddbfcd90e57"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_mg_violet_foreground.png",
-      "bytes": 3774,
-      "sha256": "0ec8cca51ea2307695f02f916bf2145d4f250b8365f79aceb72d06cdf794e9c9"
+      "bytes": 3264,
+      "sha256": "a856ab61689c4e4c5fe5faaf59b8cd434b7fb8ea3c647cd3b0fb25cbfe11320a"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_orange_blue.png",
-      "bytes": 2677,
-      "sha256": "8bb6e497ae24b8281b64c35bec675d08804fdcd8bc71377dc4ce118d5edae6fd"
+      "bytes": 2539,
+      "sha256": "9b662c359fab8c9fcf4c8aa773327b9db772f075b80da5a9b1e885c76a4ad3f3"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_orange_blue_foreground.png",
-      "bytes": 3785,
-      "sha256": "965eb364ecf208d8b25cedadfc6c666637999d96e6c953604065cb81170ee956"
+      "bytes": 3262,
+      "sha256": "c187e4e8322eeefb6ff4a359d87306618546210f883243e99501e6750a15cc14"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_orange_cy.png",
-      "bytes": 2699,
-      "sha256": "7c7821b1394fd5970e5a54244ad1e4dbd798473b7a1f32b2fa7594089fd936ad"
+      "bytes": 2561,
+      "sha256": "98838d19501d0017be3eb53aea773f31ca02e12c0c295d6145b8522c77119146"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_orange_cy_foreground.png",
-      "bytes": 3761,
-      "sha256": "5b59c5cb3a87220f2cabc99e178f4a1635f5342c16523d8cdf1d31e379063368"
+      "bytes": 3273,
+      "sha256": "fb74fb9134f554cf00fc7be3ad349776a75660ef7a805e7ae08daa49941fb755"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_orange_gold.png",
-      "bytes": 2689,
-      "sha256": "ebe581576cef5cd1c9522cd416074683832f4d6fb6d2647e0cd93b841d2d380c"
+      "bytes": 2535,
+      "sha256": "415438191632f3512fccb02ed0bcd8fd7457ea6aa377aff20ef26e80cdc0caf6"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_orange_gold_foreground.png",
-      "bytes": 3772,
-      "sha256": "d15f934b0e7ca6c371bd2f91d16a4e186e55bb97b35d401247cfd0a3ef3e68eb"
+      "bytes": 3281,
+      "sha256": "1da6830c40f83f7b859cc1f53bb5dbcd20197876efeaa53896719801eb76b5a5"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_orange_green.png",
-      "bytes": 2674,
-      "sha256": "391ad6a4f73aae8f50591587d3bd71ea0d1068823c2ea540d49aefa604dd492f"
+      "bytes": 2531,
+      "sha256": "ec5cd62c102dfbc6119a7d162a01349b5a711f270211f984ca1e3ddf3ab0b3d0"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_orange_green_foreground.png",
-      "bytes": 3782,
-      "sha256": "8a2897d9a06d41961f5065d5c02cecce573e485496ac5248c69893516e291a31"
+      "bytes": 3281,
+      "sha256": "0127440e4dfca612e3f79f8c2dcf607b251bb2d23b3f4b5ade9a639655b6e10b"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_orange_mg.png",
-      "bytes": 2689,
-      "sha256": "c6dbc86970ff521e49a17906f6a54b61d83b301b2db9f10b26f3438b7ab43a6a"
+      "bytes": 2537,
+      "sha256": "f8f3accf238b58451c98d89e54f0f482f02cce031569d3c60e7077b195167b5c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_orange_mg_foreground.png",
-      "bytes": 3765,
-      "sha256": "2b7554dbc894bff26819cf9c0d51d531edb5df397b43483643f998a3030eb23c"
+      "bytes": 3251,
+      "sha256": "2ea438f5816c49d109c6e4be7936336a19242e6369f16b299b22588b58764550"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_orange_violet.png",
-      "bytes": 2677,
-      "sha256": "faea1419d03f8e52fc667759b33a101a39d4e38a9fa326271f8e272fd817e9cc"
+      "bytes": 2529,
+      "sha256": "e501e1c14cef9fe36db43099ea96f7340736b766b00a4fae055390e68b08be7d"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_orange_violet_foreground.png",
-      "bytes": 3782,
-      "sha256": "153a4a38bbc55a8ad208b15bdf1445bb92f66e8ed9feb4e6f34fd3a9d0f78d93"
+      "bytes": 3268,
+      "sha256": "1264e1c62bcad413f15f56a78d704b976ff47484134c9737b39f2b62e9f75f3c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_violet_blue.png",
-      "bytes": 2678,
-      "sha256": "c616a1067120425ed953c22f4557ecb34aff1bbcbbc2588ef65877ef2f690cc9"
+      "bytes": 2532,
+      "sha256": "d05f5c99784adb4dfbdc20a3ec2cc422d45f47e92d64b4a9103aa8a0c96def72"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_violet_blue_foreground.png",
-      "bytes": 3755,
-      "sha256": "29d56b1ad59a444bf5a4d1d32916fdc79342ddf6e53b2d2c53c58f93200b5cd8"
+      "bytes": 3261,
+      "sha256": "7564eaa0e1ac335de495c9bf89d06d921dde5da32d87ca0defe68f4c1d141379"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_violet_cy.png",
-      "bytes": 2714,
-      "sha256": "517d50f034fc2c8cf715b45ee65c9a301f4cb41f54dbe2b801644354d93b0c91"
+      "bytes": 2568,
+      "sha256": "7e6dae38f44b27e8c40c59fa3526dd4412f8e89dd10f9f8d1120521732f10770"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_violet_cy_foreground.png",
-      "bytes": 3758,
-      "sha256": "0e7353327f6ea2a01d900f2acb5212cd3279fc39537a6706acf814e36a4d435c"
+      "bytes": 3268,
+      "sha256": "a080e18df936dccc0a70228dd026c0c18a17bf0c13ff1639cf7e9c07a2ae780d"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_violet_gold.png",
-      "bytes": 2692,
-      "sha256": "8719583af38fb124b87fa4699b72d4162e4819aed2b8095085b1ae1caf15956e"
+      "bytes": 2546,
+      "sha256": "c162c76e45c17842c283f55aa5c9a6be6cf8251c3683313d87a1cc106f8fcdc1"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_violet_gold_foreground.png",
-      "bytes": 3783,
-      "sha256": "ead482c27a995de6271178d65f4149d0689903f944a0b48448a48bea6e32f925"
+      "bytes": 3288,
+      "sha256": "87658ff3ea06696e4ecc10e55186da0cf5d40f90b97ba430dd1ca6fca062c713"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_violet_green.png",
-      "bytes": 2678,
-      "sha256": "308afe78e97712d887b09e5f34082526d73764f0e62a317fcf5d6b760c309a2b"
+      "bytes": 2542,
+      "sha256": "1bb5e17a026ee7ab83ab5be2bad05bafbe4d1937b2fcfc2ebfa5e2cc96cad415"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_violet_green_foreground.png",
-      "bytes": 3782,
-      "sha256": "1a614c4057f0555c1e4e00f63b438ed7df74673eda48ac352135916620ca0405"
+      "bytes": 3285,
+      "sha256": "f21227fd52de17f9f8db1d2a225cdc8cdc772276b62afdcfbfde22292e931927"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_violet_mg.png",
-      "bytes": 2701,
-      "sha256": "0f19edc9ddd8347bea7109e4587a221590c4a63337100dce3c02c9d970c2c80c"
+      "bytes": 2562,
+      "sha256": "53abd59349d4507e14ec6a5b12c540ff0068625d2394a266c985a8254c293119"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_violet_mg_foreground.png",
-      "bytes": 3766,
-      "sha256": "1f4f633cbb94e98dbd641b0d9d592a9b984ab4639d16548913d7b777ed207987"
+      "bytes": 3260,
+      "sha256": "bc4ff5397327fcf3e2e8c726a45bf0fe3fde0d2b76be0edda9aac6452585e956"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_violet_orange.png",
-      "bytes": 2692,
-      "sha256": "8928383b371319fc10602a480abe1446bf4db6b8e2f6a3479e6a0fd7d9952b3e"
+      "bytes": 2536,
+      "sha256": "84a60c23aa993a83ee195175909060b2e0cdea8f4145779eae4c4685bbbfb14c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-ldpi/ic_split_violet_orange_foreground.png",
-      "bytes": 3764,
-      "sha256": "cfe0e05fe6a7076fd6ca2ddbb8f226f67349fcd21cc340dc5ccfe9849f2120c7"
+      "bytes": 3264,
+      "sha256": "b11e02c8884b24bf0bb06adc7b36854a8bbd614b96d73fc8febb359c29dbd772"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_launcher_monochrome.png",
-      "bytes": 1441,
-      "sha256": "e6286243416c77b7d2097ca24a33f14bbee20f686a24338db171f2ad209e7d15"
+      "bytes": 1133,
+      "sha256": "d3220b2b4ca1220114f153e5a83d4ba0a13d44914fe541a268d0bfe800a40bd6"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_blue_cy.png",
-      "bytes": 4380,
-      "sha256": "a7e92131361b4cd23090b65c13654493c87f1217d12a0d0345331894d2cc3c92"
+      "bytes": 4074,
+      "sha256": "ee01aa91957dce4deb8d372774ab90e1a5d2210f7af1998067ba4737bb0180af"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_blue_cy_foreground.png",
-      "bytes": 6135,
-      "sha256": "0882c7a0b153606d65bbe6df9f6574c6fb0641d0cda81d34e362b743b193bbfd"
+      "bytes": 5333,
+      "sha256": "d999b2ba51593df359e82cbe028bdade198fb51a9be42e1c21dc308d7001d430"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_blue_gold.png",
-      "bytes": 4362,
-      "sha256": "f686d4acb18af3d3cbf76e2520e32fb2bdd18e25efd1ca8fca7c0f015d2b6580"
+      "bytes": 4092,
+      "sha256": "fa540968ed25d30bc17f00bc503a9b960532cef415b2e61c8453f3e69c40152c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_blue_gold_foreground.png",
-      "bytes": 6195,
-      "sha256": "fa4dd6fa194ec21dbf7a179ebef32d21f8408ff3d373c5ef773023c39276662a"
+      "bytes": 5397,
+      "sha256": "15bd9da4ccb8939f7102858fbba3b3c62b01150583db0b7e4c59ac755cc440ac"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_blue_green.png",
-      "bytes": 4329,
-      "sha256": "6f3688ca1eb22282c0c0ac51183e40379bfb6d1a8be62df437f4933d79432570"
+      "bytes": 4046,
+      "sha256": "fbacd356de9b7aafc2b1de4650cf24d624b01465fe7fd6bc9afa618166068c2b"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_blue_green_foreground.png",
-      "bytes": 6215,
-      "sha256": "8fed67684b58a3969e26787e8cf6466e62bfc6f21517de14be28c55c594c9294"
+      "bytes": 5387,
+      "sha256": "405dc9bb26f00965b5876b4cc972bc4b7e0778508758e717ca6477653ce89ee1"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_blue_mg.png",
-      "bytes": 4366,
-      "sha256": "0cb7b50c271038fb582c5ee8689ee99f20f67381d6f849dd4d0f086344030ad7"
+      "bytes": 4113,
+      "sha256": "279e6be5b2d90f735ec49d60492c053a9cea48a824c42b20f2674affd37af478"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_blue_mg_foreground.png",
-      "bytes": 6160,
-      "sha256": "3da1f4793b28aefc77d0fd9520eb4aa4e212440de843404e0a08426807a781cb"
+      "bytes": 5359,
+      "sha256": "5138cba44daf4974618c96864035490b0969809ee7f071e216e204a4baec6278"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_blue_orange.png",
-      "bytes": 4342,
-      "sha256": "4f4bfa35647ba476807d9d7251a1028b9365abadf7caad3aa13cf9e3e03b9304"
+      "bytes": 4076,
+      "sha256": "eb6df6c8425f5b5a4b3d3890d4caf89ff8fde72539b4d403c772edfbd5462e48"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_blue_orange_foreground.png",
-      "bytes": 6175,
-      "sha256": "28ecc308268192a2547468a0da98774e86ced254ddad72da04089db1ad2ae93e"
+      "bytes": 5354,
+      "sha256": "7827e278ed0aeca4eeb3afc1543fcbf1b66cf843a4f26dccbe6e49bc0b715861"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_blue_violet.png",
-      "bytes": 4341,
-      "sha256": "fc0af131c41052c5efa88e4e30c0c27f521e08931a1b9de952c7db10b4949fc8"
+      "bytes": 4074,
+      "sha256": "ea3218e65d193bdcb398d8a6ea320840ef487fd5ebeccd3223bdcca80b64839c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_blue_violet_foreground.png",
-      "bytes": 6170,
-      "sha256": "c57d02400e52395182d87d9160ecddf039f989a50694e96b1988be353742429d"
+      "bytes": 5359,
+      "sha256": "46d98b41a17a628e15c4e11a28ee87887e64fe58fb8271571ad5cdd10c8da083"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_cy_blue.png",
-      "bytes": 4344,
-      "sha256": "992a63a6a83fae9b39832661f58b37631c16286e59aee21f059b6503d82d40d9"
+      "bytes": 4078,
+      "sha256": "630fdd47b2b3da2456586bf5f04511a382a741302277d62bcea6873e69651a5c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_cy_blue_foreground.png",
-      "bytes": 6151,
-      "sha256": "2721b547e3c432335aa83e4624ab3f42a78856958c9947b3a13974f2f4fc174f"
+      "bytes": 5338,
+      "sha256": "ec3f9b6eccc90bc9a9abc53a9ef9d97e4698bf5b463904f172bffc393dc9bfea"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_cy_gold.png",
-      "bytes": 4388,
-      "sha256": "8ddb35d5ccfc7be83ed5aa63fb11edad385d50b41ccfb4ffb3188817a3ea7571"
+      "bytes": 4098,
+      "sha256": "3a2b13a87f1fff29f20cf7660e60e44b9fab64bb11570d7a7e1984ea5fa0ea0c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_cy_gold_foreground.png",
-      "bytes": 6184,
-      "sha256": "bc77eeeefde8ad29b063e6a4e229321a64e27a3d9c0998f53ca085edededf4ef"
+      "bytes": 5406,
+      "sha256": "05b359d34384c0e6fe8f67a010f96064809839fa3a5d9703e83dbf1fa10347df"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_cy_green.png",
-      "bytes": 4376,
-      "sha256": "bd1ebecc8206517ef65c1c0b8166940c12b3a94e1e8894fab752eff3bf236110"
+      "bytes": 4048,
+      "sha256": "870c1042900164af1f46b743c585a16c7e1358a776035d16329794f411f0d866"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_cy_green_foreground.png",
-      "bytes": 6232,
-      "sha256": "b0ec7cacc401e1c7eebc115fb09403f83980049ae3342ce40a816edb865cc147"
+      "bytes": 5382,
+      "sha256": "690020c89cca7e655d9adcc67c7879df244d667433fb61908404304f9a88be84"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_cy_orange.png",
-      "bytes": 4371,
-      "sha256": "e922e8e0203f49d970962b54f43dd4994529753a4b0fa92df1702333633a989d"
+      "bytes": 4087,
+      "sha256": "a26a69d97bd40b6ffdc3f955f28a1936325e311dab1cf86a23ccea308f72322a"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_cy_orange_foreground.png",
-      "bytes": 6174,
-      "sha256": "a5d8fa03278dfebadd4f882e676378ba66419908b579faa87793355a6ac6cf10"
+      "bytes": 5352,
+      "sha256": "60f9765036d564dde0d4167780224ec74ad4aab2b357c66f143bc54c1456336c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_cy_violet.png",
-      "bytes": 4369,
-      "sha256": "378938964ecd976271606c4d41342732a1c62bb858a22ee5673c0c499b0c45ba"
+      "bytes": 4090,
+      "sha256": "2402c522aa1595dbe78e4bcde43301904a5b63655a53c1a9be1778cddc8dfff9"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_cy_violet_foreground.png",
-      "bytes": 6204,
-      "sha256": "a4943e602e64e7c0c362e5e78de42209b9338a86ed97625c756d987f214d5cd2"
+      "bytes": 5395,
+      "sha256": "50866c79a973b25f0bd149dd14d94ecf4a91262798d70d79f4feda421eb38af6"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_gold_blue.png",
-      "bytes": 4363,
-      "sha256": "b65162f9047220792fa86077796a81ab810750006ae03cc55649389d68c1d1c0"
+      "bytes": 4084,
+      "sha256": "5d463b34d2580d19b9656b989f7ef6bd781e7479327290d4bbc4ed1f1d42d9d4"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_gold_blue_foreground.png",
-      "bytes": 6195,
-      "sha256": "dbab368cdc707422b347ea3a8b5fd86353895994cfde1256655f2d45b189ad9f"
+      "bytes": 5391,
+      "sha256": "84afd287af6c876768caee33cadc044ccdec85f9967198ce5049d0811bc93538"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_gold_cy.png",
-      "bytes": 4379,
-      "sha256": "19c233a359e7cfca284f2da4cd610389cef37b02fa582b5a75f32662285d2ac5"
+      "bytes": 4101,
+      "sha256": "759e58ca978f6c0897ac8c02d35ebdb672f0ed961e55ef8c859ac3b5831ba441"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_gold_cy_foreground.png",
-      "bytes": 6184,
-      "sha256": "ffe0bbddbdef732ffe13ee67ec0bdb131dd07a7ff568da633d14d440a52a570f"
+      "bytes": 5421,
+      "sha256": "c41b1289a005ced144abaf316d54e8e40155c252e2cc89ee6e9a0a4e6c277a0e"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_gold_green.png",
-      "bytes": 4369,
-      "sha256": "65a46f6d34eef92f53afd01a1ce3bae7e6cacb05201f4f03288aebff78fae364"
+      "bytes": 4049,
+      "sha256": "a1fbb2a4d65807abc1b81558602882da3a14c1805ca1c68a89b7cc0489e6bd6f"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_gold_green_foreground.png",
-      "bytes": 6248,
-      "sha256": "1a65b086361b02932e84f8ffbd439280a87038ac13d1433dc162e432725cbc98"
+      "bytes": 5414,
+      "sha256": "a52feda48aafbd4c2f20d0016fd8b107a4119cf755b9f03f95c8e54dbcf46b29"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_gold_mg.png",
-      "bytes": 4391,
-      "sha256": "7039219cb5d1b19406a9d7c1bde1108f51383ec2908d9f7a132be380b6ad30de"
+      "bytes": 4093,
+      "sha256": "08ae1ad9dc772f8aa33839d6fbdf2a03663677e13c5c94859962f77033d62dc0"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_gold_mg_foreground.png",
-      "bytes": 6193,
-      "sha256": "966688ea70e349fa1787d52d464ed348e59f521a74d09198a1c4f74b4ecfb7d0"
+      "bytes": 5399,
+      "sha256": "38bb33053dd172cd12cce7bfe7f4cfbf73792841a9c2ac967091c6dc5936adf2"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_gold_orange.png",
-      "bytes": 4351,
-      "sha256": "3444ffc91d7fe98a4c32939b43cd64ac66c020db80b6681ffeb31026b441cdd4"
+      "bytes": 4071,
+      "sha256": "e2efa38231801b740417de953b6ebd514de8c00599af2ec85fdca977bd98af48"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_gold_orange_foreground.png",
-      "bytes": 6180,
-      "sha256": "7f382fa90ef9c5a8b719db8780b6f135884f779e23f4d1bc897dc7e430344cbc"
+      "bytes": 5392,
+      "sha256": "e2bcc63d7fd95aaccdf6f6c8f47e76a015b8a4affadcdfd62fe96e81f9938861"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_gold_violet.png",
-      "bytes": 4361,
-      "sha256": "eb072a56799c67e8da2784e44863b3b2803c0439ad6b997826427b1aae4f61e8"
+      "bytes": 4062,
+      "sha256": "cb07a19d12d57f6ac82febff8b1d61cd4809c2dce1c9b57ee77fa0281b3ca54c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_gold_violet_foreground.png",
-      "bytes": 6219,
-      "sha256": "ecb826695aff6cee16369da467ec766bd05592d84e184bbed311c8b8d446b12a"
+      "bytes": 5429,
+      "sha256": "b3bdec656dfdcda80854a24525d6f063fe36614a596bcb2eeb68b4f8338aaeb9"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_green_blue.png",
-      "bytes": 4349,
-      "sha256": "79313fb9ca608e8f679292305b99b34c61acdd04d6a18d5e0378a7f7d90fab65"
+      "bytes": 4082,
+      "sha256": "0492a1d98f51c0cc61130c608cec94420435808ccaf3ab033ad70fa4eb701d30"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_green_blue_foreground.png",
-      "bytes": 6226,
-      "sha256": "3a215bba7d85075245c3478aa02df225c539523e3da9b705fdeb6e131a30afb8"
+      "bytes": 5412,
+      "sha256": "3046e1f1cd8340a1cc9970c34e6a0d82322eb390d1028ff1e8e79d5a9526c646"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_green_cy.png",
-      "bytes": 4389,
-      "sha256": "6639ba41a3158f8a2be9c3184c30f46cd8474050d6d85e91f35123858e3bfebf"
+      "bytes": 4081,
+      "sha256": "191f73eda42d280d92bd292d77416e4ca8fc560c32dc4b9a4b6346e3ed536575"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_green_cy_foreground.png",
-      "bytes": 6205,
-      "sha256": "5f31fccbff55d14ebd21e24910d84713f657a928a48114e5c91e4a9473c8a977"
+      "bytes": 5403,
+      "sha256": "d220154e3b0c90dc4255175ff5b3644276a88b79260741f943ec1c28e58fdbe2"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_green_gold.png",
-      "bytes": 4357,
-      "sha256": "e929d4b88ccb6ff79283c8a4004ae633f2aa942e0cd9c6609b61929dc78e187f"
+      "bytes": 4070,
+      "sha256": "f4fc70f145fe64ae7824aa746172a811d2f581b742d1089c57c468393b9d7530"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_green_gold_foreground.png",
-      "bytes": 6236,
-      "sha256": "4af89d1b58a2c04505ffb91f22e07761f4c7df92a6c70ac583157beee1e5d1d7"
+      "bytes": 5431,
+      "sha256": "2f8de6d9507476b52036eeb7d7380ffd46b6e68487ef1b4ca88d747199b7bda6"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_green_mg.png",
-      "bytes": 4372,
-      "sha256": "f2a5247824fdb06e322d57a70cae717e3f1a5e3d16cdbe129ed299e8c6d5da18"
+      "bytes": 4073,
+      "sha256": "112727e42bfaf70b35a26fc00cb172a6a684e5867af0a8e472d06a93733477ab"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_green_mg_foreground.png",
-      "bytes": 6231,
-      "sha256": "76df327c8b8a688ddd3c1459ab3aacf5e1895671d9eaee93d0403c30bef46d69"
+      "bytes": 5399,
+      "sha256": "0f210c0f8027d22e8e2c603d107acf037c00f3b481c90c93f75abe9b5de233f6"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_green_orange.png",
-      "bytes": 4369,
-      "sha256": "9ee8806b6db18b0d80667122ba19bce73c688d085b6bd6a8be2fc722351487a5"
+      "bytes": 4073,
+      "sha256": "3aef622369199167640e5b99322fd30999b07fc21e7e23ef71b1a7469ba096c2"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_green_orange_foreground.png",
-      "bytes": 6235,
-      "sha256": "bb9144f6d339b4efaf737d03e0e923d6c6923d85d0694dc45d5de279f10fde9f"
+      "bytes": 5398,
+      "sha256": "362895c70969f83fe0ad08242c2ea3ed4e751857a77cd537d95e687f00439d75"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_green_violet.png",
-      "bytes": 4350,
-      "sha256": "e88a3f9dd31cabc9d306da03d7e665ce003f25454530107c9e9c9b876be9c540"
+      "bytes": 4051,
+      "sha256": "05bc581706cd07b4f5aed1788d1e12835d48c389ec0fe19f4ffc8741a096f41d"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_green_violet_foreground.png",
-      "bytes": 6262,
-      "sha256": "d7dc850c4a4a69d7d0348331685415cd955a42c9e784763f9282911bafba35c4"
+      "bytes": 5427,
+      "sha256": "d091d29792ca7c93ca4dc2379a92f2af13c6d5bb90a1dccdb7e9cd0744fde279"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_mg_blue.png",
-      "bytes": 4352,
-      "sha256": "4281d84376dd51fc072fe96570ae9885c66e95e4eb3470f49fbd55304ea67d69"
+      "bytes": 4111,
+      "sha256": "32a97974182a83d9eab4346e1faf72ff86ceb4bdf723fb429b282c6a4286ff99"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_mg_blue_foreground.png",
-      "bytes": 6202,
-      "sha256": "46ece8181bd515476f3646f96f9575076bfd80ce531dd889c6d5c2fdcbc96e3a"
+      "bytes": 5375,
+      "sha256": "c391f26e8a9d7c898f81a41e9a5204905983f68715957f95b1d21b08f5ba5d3d"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_mg_cy.png",
-      "bytes": 4412,
-      "sha256": "68b77f827805b675000e08d58157aa3d66b2f8a44dc4f4ed6a0663e066aaac55"
+      "bytes": 4103,
+      "sha256": "089d5b839ebc565d0f4ebdf0a4223458fe00ee0a5f9aab58a9054f723014e356"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_mg_cy_foreground.png",
-      "bytes": 6190,
-      "sha256": "410c7a91e91bd42837587d6a03934bae4e76fcc296572fccbf64d1578a0eee30"
+      "bytes": 5393,
+      "sha256": "fb3a228b8701594f9b35eb1cf761b32ae6db93e360edcd7e795259ea72a895f5"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_mg_gold.png",
-      "bytes": 4378,
-      "sha256": "4601a8b9975d9142f9c53919490895ac1a174074a33438157891af721678640a"
+      "bytes": 4109,
+      "sha256": "6ec2332c71d7e882e3166685dffc26be40570b6e8e88769421c403cc43c539e3"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_mg_gold_foreground.png",
-      "bytes": 6190,
-      "sha256": "7a4875da289e05c72d83dfa9284163280e3d474ef3a8ba5694f7f9090f0e5478"
+      "bytes": 5406,
+      "sha256": "7dbdf76ee53dde2700b264c245f270828e61a13aa747362437d50537496eb021"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_mg_green.png",
-      "bytes": 4365,
-      "sha256": "23c9288bd90a996dc2ed9cf822c77cd5236d81badf3ed0b0131648c78c6b6ec4"
+      "bytes": 4063,
+      "sha256": "f0dc0ae60fc8f479fe8a5825fd5834f9bcabe0132c47e2b1590620475369f7b7"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_mg_green_foreground.png",
-      "bytes": 6248,
-      "sha256": "fc73dce72fc4b7b64398040690bf3480bad0a24d5516876f76acabbc3e2a745a"
+      "bytes": 5395,
+      "sha256": "86921f549fc78e9eb59309f7658aa19fa3784bb34d2b7b599210e894294a7a64"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_mg_orange.png",
-      "bytes": 4363,
-      "sha256": "9ae7fc0950366a1b41f06ce0ea2edbc83c91472e60570696f3f3d6fd20fc68dd"
+      "bytes": 4098,
+      "sha256": "7f57bda36162b3adcd859706cc1171968799fd0a0cd9b183650e89298032df5f"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_mg_orange_foreground.png",
-      "bytes": 6179,
-      "sha256": "748917f0bfae1491fc0c18f9bbcdd937b20971b8f64884078b67b224f716b08d"
+      "bytes": 5346,
+      "sha256": "98bf04b1ede5b673f8c41d8803128b2ff7557736fbd4056fee65f8098b942b95"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_mg_violet.png",
-      "bytes": 4374,
-      "sha256": "2eda66126a09325c96eb82f8e67f09661c9308a2f22d760153296acf89d043a1"
+      "bytes": 4099,
+      "sha256": "3a12844bb0a5e783be6015bf6fdabca3160b9d54c8360314665933d21fef9e7e"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_mg_violet_foreground.png",
-      "bytes": 6224,
-      "sha256": "f6c54faa202fb60eb68c198b089e232b78b83c64ae7666c0d2c1a951f361c1a3"
+      "bytes": 5396,
+      "sha256": "e72e168d6123ab0e696d13fe9bb0257b1a39ba341dcaae1e78177b23f6e937d5"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_orange_blue.png",
-      "bytes": 4329,
-      "sha256": "3fa181a231b99f5e8f12dfe4fa24cdbd727a7597f1f5933fd75192836dbc1c1c"
+      "bytes": 4077,
+      "sha256": "6ba1f84d4428405cb368cfcca1ba11e31ee57cbef769bc6ab3b84ad61a34b421"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_orange_blue_foreground.png",
-      "bytes": 6210,
-      "sha256": "7174a4149f6f1e741074e169e0c9baa597686dad4bf48c9291c1f40f6cc818eb"
+      "bytes": 5374,
+      "sha256": "6204b30a4f239de024f132f8ff5d105401d5095c6cf021491c0de8bfc6c8fd2a"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_orange_cy.png",
-      "bytes": 4390,
-      "sha256": "c0383bc32f2a981c7a14f6a59e45fa495df97bf490e13e35843fca1a2313a915"
+      "bytes": 4095,
+      "sha256": "6da73aeb22e8289828170f31723969dd456813c0c7bea80642b1add3523411c7"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_orange_cy_foreground.png",
-      "bytes": 6183,
-      "sha256": "355d83264199055df1c2ac6b5796c0b6366e7a668d5a022187f456c67724bbe5"
+      "bytes": 5382,
+      "sha256": "36b0a9930215ec02911a9c12084f7d2d35e13e26dab8c3ee6d104378f7fba468"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_orange_gold.png",
-      "bytes": 4364,
-      "sha256": "795e42af9535fa06465afcb62dd8b835098bdfc09bd54f11b6d33beafdfe2332"
+      "bytes": 4092,
+      "sha256": "a4881ad0f42e1c6c4b4e76356ac752fa9c6b6fc04884178db81aa5bfa35e2770"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_orange_gold_foreground.png",
-      "bytes": 6190,
-      "sha256": "0e22e66263cceac2b25033fa645f4100968f06323c85ecb1b79b708e6e19179b"
+      "bytes": 5383,
+      "sha256": "e69c1fc0a4e5b5d6cc672c0e339176f128aec89d302e4ebded79a6dcb37a1294"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_orange_green.png",
-      "bytes": 4362,
-      "sha256": "37ff9ee5d94cf0d404380600cf023f87c940cb275ada5edc5011693f75fcf534"
+      "bytes": 4028,
+      "sha256": "bbed90429a2ebe942baa5e120f9ac1fef456c00ecb593b589b6e26131ea388a3"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_orange_green_foreground.png",
-      "bytes": 6231,
-      "sha256": "bd0eada4f1d7e7eeb191705356832a471d3e08574b216db55c58337bf5751b21"
+      "bytes": 5385,
+      "sha256": "1abd569d4ff76d79be46a8c876cc1a757eaced243abf97bed10f28d6a1ad9ed0"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_orange_mg.png",
-      "bytes": 4368,
-      "sha256": "1181cf8c8460e65a5d89a93d03ec336e4316f94552d90622930d20972dca9577"
+      "bytes": 4074,
+      "sha256": "ef7dd50526da06c510bb37f72bf754ddfbec81bcb29fb2af357eb05871cd5f21"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_orange_mg_foreground.png",
-      "bytes": 6176,
-      "sha256": "ee48d7f72980002c0a0c3a2627b1555d5b638bec7e1c2dc334ed3595ecb752b8"
+      "bytes": 5356,
+      "sha256": "885aa098ba64fe5f624df0e2b7015fad897ca7cdc4a141afd3f3f9159ff5154a"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_orange_violet.png",
-      "bytes": 4356,
-      "sha256": "262c56201208aaec4d5b5a47f8e0c79aa3259828ae0517073347158a8c9e39d5"
+      "bytes": 4084,
+      "sha256": "54b58de6603a88fb73f03f2b28d98f4cc5c74600aaa5f4a1a2a14753780a2e7e"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_orange_violet_foreground.png",
-      "bytes": 6207,
-      "sha256": "84bebf11225f7b3e6a41ef8b68fdca7f23685cb2685767092657ca1050c70892"
+      "bytes": 5402,
+      "sha256": "e774967794f730a4be07c93fcbd8f60e5d5c73c0b111e032175d7bcb20b79fc3"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_violet_blue.png",
-      "bytes": 4327,
-      "sha256": "e0991f258b38fada5d2d714f01550e87f95376199ed114688812e06365b9aa39"
+      "bytes": 4093,
+      "sha256": "f038aa6ba3e879fdc49f1ba9650129c4e34aca8a2ccd561dddf562d1e45bb538"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_violet_blue_foreground.png",
-      "bytes": 6162,
-      "sha256": "81db922b01b2628324ffc3e5b8c1f4587b1618e2e0be46df3b9518792027f318"
+      "bytes": 5361,
+      "sha256": "e90e394077d409ada753a4bed2aa0dd2ba97263c1ab93a65dec2db60a0df3451"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_violet_cy.png",
-      "bytes": 4389,
-      "sha256": "ad2177ea6e89767686bea92247654f9972f70a18afd5896d0fabd0df96018079"
+      "bytes": 4092,
+      "sha256": "8e7f04bc2bc967e22c3c999fef7d7e773be2018d00f39e52fe78dc173c74ba9f"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_violet_cy_foreground.png",
-      "bytes": 6143,
-      "sha256": "3b26c01c3d3096bed28c932597e369a117472a27a9de4e684c225b7f6b1aea8c"
+      "bytes": 5381,
+      "sha256": "b0400074d6e25fb58ba6ebdb80186628bafb2f7858764d52f31196588a4778a3"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_violet_gold.png",
-      "bytes": 4350,
-      "sha256": "6fd6895ab427a3bba5d9b43ee3ca9306aa9a2389d23b767246623f88d151be50"
+      "bytes": 4107,
+      "sha256": "9d54eba9e698ef49140397757892aef0fad08813eeb594960f05e89c01c99aa6"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_violet_gold_foreground.png",
-      "bytes": 6184,
-      "sha256": "6054e50bd6512127870caaa5658968ca985b277e94f8ab8c711caaf01ad602d6"
+      "bytes": 5427,
+      "sha256": "981701a95513a2b5284f02be9fbcc22ea35e37e03f5b57d4f4f0b5258220de36"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_violet_green.png",
-      "bytes": 4341,
-      "sha256": "bd9f682f2373b47a1f83844459aa75514a23fcfafcd4134d58064f0235475737"
+      "bytes": 4057,
+      "sha256": "fff9e15a26c74f3fedff093c2943341f2f865521390403ecabede5211c95cc7f"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_violet_green_foreground.png",
-      "bytes": 6227,
-      "sha256": "bb0bf8ffc0169b9a6f4ea074c320f7478faaca27615b7ecb401d6d855462018d"
+      "bytes": 5416,
+      "sha256": "f92de8bf3be488e8ebc5fb83baf3e3cc9ae45502db90f278470b94b715dfc9ca"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_violet_mg.png",
-      "bytes": 4358,
-      "sha256": "533573087caca9c46cc5d6194c0b7b358ba5b3bc3d909730361213110cd726e5"
+      "bytes": 4115,
+      "sha256": "1ffd57122c540f4861e607280a865cc25e3fa1d6908c4879b2739f7a0dba7605"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_violet_mg_foreground.png",
-      "bytes": 6147,
-      "sha256": "1772617f6481dedea33e650b2b5bc71bdce2dfe8ee8c18f731b7c7607038bdb7"
+      "bytes": 5387,
+      "sha256": "f4dddb56b4f01bc7722434aa1196befe23fdee0b5ae32058b7d67cddb146640b"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_violet_orange.png",
-      "bytes": 4350,
-      "sha256": "20d9df26727af11dbad844d3a1cd5280cf2e7aa244473d5ddf7d00d81144c4fd"
+      "bytes": 4079,
+      "sha256": "c78f90574ab217d376f0b697bb7e51e3488f2d6379293f6b5c49dcf79621428e"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-mdpi/ic_split_violet_orange_foreground.png",
-      "bytes": 6181,
-      "sha256": "149971f00f2f542079ee9d1da4df35f6c49cd98b3f93ebe7f51fd49a870a49b6"
+      "bytes": 5365,
+      "sha256": "83a8aa993f6b8c09e8df957ac3c8e487c9be02e1f1d353731f16aa08e3841f43"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_launcher_monochrome.png",
-      "bytes": 2803,
-      "sha256": "361e042a312a6bd01cc64e144a76ce79441e86494fe5c9ccaf6d5ddf580f716e"
+      "bytes": 2336,
+      "sha256": "8e30aa97372e8dcebf05837eb024c5d04094fa7747a2ccd705f7eba95fb0c682"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_blue_cy.png",
-      "bytes": 14355,
-      "sha256": "04f4f735c983813de3a385c057e256bd7faa2ecb92d96522b7358d3956e25b5f"
+      "bytes": 13039,
+      "sha256": "6e9b4ea1843ddf1f6a8ee1d788646e6f1969c54f4a7e7249f337ec0026fe0ffb"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_blue_cy_foreground.png",
-      "bytes": 20560,
-      "sha256": "1ac59c21808ba18e8f1eab1af036ac3ec67aaa27277e7e339b723da14ed6d16c"
+      "bytes": 17189,
+      "sha256": "b97591103841cc508dd3934bcc43594a2b1bdd8d743268e2e2451896105faac0"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_blue_gold.png",
-      "bytes": 14313,
-      "sha256": "dcacb2ff5f40eef5f247b97f0fa208c98813907e7f4d15e992a5aa4e4e2d8716"
+      "bytes": 13026,
+      "sha256": "aa00ad2d496cefa03ccf4176d593c7c651684f54c7172b0376d3c7199e9d7b16"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_blue_gold_foreground.png",
-      "bytes": 20792,
-      "sha256": "a2b8befff8b3fc35490b5d93e65faded8bcc1611e245389e141c5649f55ec455"
+      "bytes": 17277,
+      "sha256": "80770c1dde7cae96fb1b468519f8ed780821c33dc137b95f148a1e748f9eadf2"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_blue_green.png",
-      "bytes": 14303,
-      "sha256": "b8efa961b7e71c708aa088aef2e4e3cc1f9e34e260a3be3bf47d6869f5a75d9f"
+      "bytes": 13049,
+      "sha256": "c24b994ad2eb56b040ea6a3243f61b9281bb785ab229a2efc826faf8baf3cf33"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_blue_green_foreground.png",
-      "bytes": 20859,
-      "sha256": "9ce59a309ce6602bcb0dbd9e7377f80ac69295952991b501281f5cd8bbd56a9f"
+      "bytes": 17375,
+      "sha256": "27751c0000d6962358041bfc0cb94b48e86c44fdf5a0e544a0db031452a7fb5e"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_blue_mg.png",
-      "bytes": 14339,
-      "sha256": "887f3041e578b3ea9d97e892de803eaaf433e117b637ec907263bc5b87aec867"
+      "bytes": 13038,
+      "sha256": "b082efa145d66dfddafbcf7005fb645c39410fef63653d4bd2576b525bb488ad"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_blue_mg_foreground.png",
-      "bytes": 20580,
-      "sha256": "f851e8f9bb7ed1c96c5adba0e6e48334d9a466947ded6164243c70f4e74ab2f5"
+      "bytes": 17220,
+      "sha256": "3775ea59d502469897b4834e8011f097ceefd576f18dda35104d74d28e67c5c6"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_blue_orange.png",
-      "bytes": 14309,
-      "sha256": "fb7703408cc5197c0801ffd4430cc175985928407ede4571ff2ebed011c381f7"
+      "bytes": 13046,
+      "sha256": "4eab4613f5051e54d8b97ab20fa9fc4404b0367ec15401935dadff21b4241df4"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_blue_orange_foreground.png",
-      "bytes": 20645,
-      "sha256": "f50328258b8c4f065461f3824bf718f51b65c21e7aebb910df0672cd0d44d745"
+      "bytes": 17228,
+      "sha256": "b671cf33d7457178c72e94b1513936273f05d9737aba67995d8f94436dad5ab8"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_blue_violet.png",
-      "bytes": 14252,
-      "sha256": "db1f903baaa43a9679c48e4792780a775e9374166680f52d7e56ac615ba76284"
+      "bytes": 12936,
+      "sha256": "ebd8157932170554a066eb7723e1c79f6d9f0db6c67b364d8771c963093a8880"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_blue_violet_foreground.png",
-      "bytes": 20715,
-      "sha256": "42b7b9fdd47fe76dedcce383c886a5294a623cc1d868250076891f6383ead7c5"
+      "bytes": 17262,
+      "sha256": "3453272cce39d38628635a5468e6f23bf5a4c72b49ac115a1aeab5cea1c420bc"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_cy_blue.png",
-      "bytes": 14464,
-      "sha256": "30fd990323e2bf22f44c7391c211f698b93c714607b1b8a351547a453a1c7269"
+      "bytes": 13111,
+      "sha256": "579372e0b6feebffe8b4dce9d8ce52cf8ffadb2bbf4c196b3a631013d0af9ef5"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_cy_blue_foreground.png",
-      "bytes": 20509,
-      "sha256": "b0228497cf7da3fd7f1c1b32a074915d0adcb826c9052332f2e30f3ed910fe2c"
+      "bytes": 17143,
+      "sha256": "1ce074efc5d689db05d696ad416505ba2a59f44eb02b080af17f8de6b0664671"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_cy_gold.png",
-      "bytes": 14480,
-      "sha256": "d8cce8838aa1c85384481866a662268248c72946feec3a0689a0962ef5206120"
+      "bytes": 13124,
+      "sha256": "7c03e37677f8ca0c8b816a357af08c23f79a2706e3cd491a7b4eda6af5cc0620"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_cy_gold_foreground.png",
-      "bytes": 20764,
-      "sha256": "217901e682fed3e03c1437fa66191dc0d93bcf476535268c4152446b89e8c03d"
+      "bytes": 17367,
+      "sha256": "e45ba000172cd1e0a1f1cd2cc109593a64dc43b4c639cc4a0127d5512952b9fe"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_cy_green.png",
-      "bytes": 14454,
-      "sha256": "9b3cc0e6d4a2811f863306c0f3f905b6b48cfc5864043440f8b26b4ea4214c87"
+      "bytes": 13132,
+      "sha256": "a10708fcc876d74af83505c91832340d7c0f219e3dad914fdc45bf4786425054"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_cy_green_foreground.png",
-      "bytes": 20897,
-      "sha256": "290c7d8e4a5f7c5967a06237b5a305afee13dd0889e15fa3fb57f64ef61f164a"
+      "bytes": 17422,
+      "sha256": "e27bb8c1a828a7ac211202e02ad1b80c73f83192a442c5d42aad2f25a4279ead"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_cy_orange.png",
-      "bytes": 14446,
-      "sha256": "d2cf2a8de0755d3afb96954a9da9ca2464f1410d88acbcc99dc21b0279b502d3"
+      "bytes": 13065,
+      "sha256": "832e32a0f6ce27cef9c420dc41953f37eecfcca26ded48d88f7fa85bc0658df5"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_cy_orange_foreground.png",
-      "bytes": 20686,
-      "sha256": "800c67f3d6fc2a190c77cd62bac5d21675b3acf55d07fe50b6403bef7b4e8b87"
+      "bytes": 17368,
+      "sha256": "15ac72f5b95f2021584c9eef7ae550c1ef5e2ec498a7195ad4c3c4b67b4d3d25"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_cy_violet.png",
-      "bytes": 14397,
-      "sha256": "24bd48f98a435649dc1e2c95ad302ed2150ebdeadaeffc5efbb1dd3c3fac4d33"
+      "bytes": 13028,
+      "sha256": "5b08a4e370c9db5d6fcae5eb4ac91cab35453e0099b47479b13e8e2b4dd67869"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_cy_violet_foreground.png",
-      "bytes": 20765,
-      "sha256": "8acff9b08228d3e25c32bbe0be95f29e82937b7f927f894fe88c78fbfa044120"
+      "bytes": 17300,
+      "sha256": "b3a4c568fc8aaf5fb3a02d77e9c02408579d59e92a169e84bd96fa74940c49cd"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_gold_blue.png",
-      "bytes": 14370,
-      "sha256": "6ce350dbba32c457e2407dc9ba0685370bba54d67137ee0cb83b5b9ba99a4a3b"
+      "bytes": 13065,
+      "sha256": "dc8ba8f56d1a8833572ada72652ffebdf37c2f67178ade5270cc38fbdf085cc0"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_gold_blue_foreground.png",
-      "bytes": 20715,
-      "sha256": "a5b72ddb33af3c1fcb21f6ef86cf91959d00fb78eb0eb0e4cd9f962ebe4370f4"
+      "bytes": 17324,
+      "sha256": "dcc58da95a0c71eaa5c11001f8a3f61217232d018f8414767d092805a4697fe4"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_gold_cy.png",
-      "bytes": 14451,
-      "sha256": "5791713ccd437d9df69afd8b489d608eb33565a71e060c4762170b53ae9f35ab"
+      "bytes": 13106,
+      "sha256": "92799e61936ac1dc7ef3779c24b5d653f8b5e9364a0b97e93dce50a1a25a54f0"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_gold_cy_foreground.png",
-      "bytes": 20837,
-      "sha256": "c656e7dce07c75013e630cd9627057b459cb9bf62e35779568575294a533fb35"
+      "bytes": 17348,
+      "sha256": "73ad68c30224fa5fa23953b73e54746e919f941fdae104fb7dd5ba64bfa783da"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_gold_green.png",
-      "bytes": 14345,
-      "sha256": "20846f8eebb9bc52c37e914bb1e2585f87b9938ea6c9df9c679b4bdf07835dd1"
+      "bytes": 13021,
+      "sha256": "5036086cbbfffe2b0a065718f01a4a5ca5866ede283c7ba444d09a09ad4c13b8"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_gold_green_foreground.png",
-      "bytes": 20974,
-      "sha256": "468955a2f7983c75b017cda4b99daf4691e43838101ea56fc8ece2105080f6c1"
+      "bytes": 17441,
+      "sha256": "61c3d9d75e30d899a42a771ca36511521752c3f80f38b555c25a79242f646be9"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_gold_mg.png",
-      "bytes": 14408,
-      "sha256": "1077c5db866aaf08d618ffc16e08ab9df8b16dd4c08283682961a8064a714a71"
+      "bytes": 13107,
+      "sha256": "6d038518bc4e468b54d0a6b65395faab4779e4caac463d3fafb1cc826924b0ff"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_gold_mg_foreground.png",
-      "bytes": 20650,
-      "sha256": "ec5428ecb004be2a08395e6e81702e29d8dca4cdc7b07037bdf979cace2783dc"
+      "bytes": 17249,
+      "sha256": "c9a15675c685f85756d8e15b67d3cdef07ae54ea57a3df2dcda8b63ac7ee1ecf"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_gold_orange.png",
-      "bytes": 14327,
-      "sha256": "6e5d5fa71027b74995e41393b53ee97079ca3eb5f34d62d613fdef7f9463bd0d"
+      "bytes": 13030,
+      "sha256": "6f1de5838ac5b86ad2ff2b5429a3e67e5fa3381fa246d63e0b9ac9716cf59cb8"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_gold_orange_foreground.png",
-      "bytes": 20600,
-      "sha256": "200bad710eb930c491e3f3a9aa597f3020b8b6aad73ca3f8f0f6d8c02739794f"
+      "bytes": 17198,
+      "sha256": "1d033c28792c3e3954a21163e5d63c6542c756f1c0720884a9227687f99e6143"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_gold_violet.png",
-      "bytes": 14273,
-      "sha256": "6530871f3b1628d4fb9e3f8b83425776c09cfa154c7b06d5dc109af506db1d16"
+      "bytes": 12996,
+      "sha256": "feb590a35be3a8c83916df84aa2d6599babd64374e7866c7f83fea15f323704a"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_gold_violet_foreground.png",
-      "bytes": 20847,
-      "sha256": "18b2c706a6bd27d93f97f7135b1d0ee4bdd9f92af119338a9e54b857b55f2dc0"
+      "bytes": 17393,
+      "sha256": "a969264363c8ace4d5136e5c0a2a4daaf9a4b106ce517ec8e2d880ed8de16404"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_green_blue.png",
-      "bytes": 14423,
-      "sha256": "d0ec313168c6ff9a552d1e7e82c0b14391c36a38c9221a0ae63463dfcdc8148a"
+      "bytes": 13072,
+      "sha256": "31e3c21ac97a17504b9bedc7c955b22e1820bf62f1ccfb179cb7a6449f68e7ec"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_green_blue_foreground.png",
-      "bytes": 20892,
-      "sha256": "a391856283fe616b929f301853d963c48b2d0206c01055e7a4d7b4dd0c211401"
+      "bytes": 17438,
+      "sha256": "8ac262885f88fb1240de2c816e4a8f016ccaa0b854992eb70d1e9ed777dc5414"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_green_cy.png",
-      "bytes": 14488,
-      "sha256": "a7123cd568425a461c1775a79aca30fb76e076c0a073d40f4315a96a5e02a7ed"
+      "bytes": 13073,
+      "sha256": "28f66baeaf6011827793eb5339cc4efb1ef67294cdb7bd032e620db0575fd91b"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_green_cy_foreground.png",
-      "bytes": 20990,
-      "sha256": "0cc245f8261885e684e5e2c569c7955594718816b4f47c75e4dcb36697f722cd"
+      "bytes": 17474,
+      "sha256": "7c80f0c7b1d375a1c43fa215aebbc876ea40e9ac7f05c223d5e661f130fa1a78"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_green_gold.png",
-      "bytes": 14379,
-      "sha256": "3b590d3a3f9f185d9fc8e33662f817b73f61a2b00277a60bd434d3e3dd2aedef"
+      "bytes": 13044,
+      "sha256": "241b0cd4a0a234df3cfdd905ebf4821350d4cc4475f8e26a8597a8bd8936e930"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_green_gold_foreground.png",
-      "bytes": 21049,
-      "sha256": "2694027d0c5ec08a11c40520b07e8fd1c1d96b4326523e7978b194253216afca"
+      "bytes": 17533,
+      "sha256": "5554eb1bcf9ad458e0708d681ae5c3342e8b7c879e0a31321c03ee9c7b385056"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_green_mg.png",
-      "bytes": 14442,
-      "sha256": "8947b0a533417b656fe9ea5db46dfe2dbe6a3bc2ddbec10d05dc476525f99932"
+      "bytes": 13062,
+      "sha256": "1a5feb8ee3a46225c35d63cb2d5123cee34a13501edda88bcd93901dfd44873e"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_green_mg_foreground.png",
-      "bytes": 20997,
-      "sha256": "e23c4abea9502a7f1992685729ce7e4d2c16e04d223ff981cccd16f8df6e168c"
+      "bytes": 17436,
+      "sha256": "9fae63477c1ee68ddb1316e21ab4f71e66bf1e258a91d8a7bdb80c949790c28a"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_green_orange.png",
-      "bytes": 14469,
-      "sha256": "c9549ce24a894119d6fb070a9e59d929290a0cdc449e3f7a05b290caff34bb88"
+      "bytes": 13068,
+      "sha256": "4950fdc4624764cb81fc13ca3b6b3ad4a95071925859877321cb6de8e5a51a5d"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_green_orange_foreground.png",
-      "bytes": 20980,
-      "sha256": "38eb99b3b151dd0748a9df80c2d9e727e3eee971ea13ddc082766ac9bd89b397"
+      "bytes": 17431,
+      "sha256": "012746df31403ad2e5558bb8f944ecabeebb287c43d8223f262536fa1c0e7a58"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_green_violet.png",
-      "bytes": 14357,
-      "sha256": "9b2678b87397956813615dea3a7f9e1bd6edf3cc00463478649343a3639e6750"
+      "bytes": 12961,
+      "sha256": "04e7303c659cf4a5172f960604881ff294fdd48429c76c9b68cd5743e930ee91"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_green_violet_foreground.png",
-      "bytes": 21081,
-      "sha256": "2d119ab90207f60839271d6b2eb47504ba09e1cc53872da9a5f29208744f959c"
+      "bytes": 17561,
+      "sha256": "d16843d850842f7477e8f6d8d77401d1c5c2133d34e203edf7a232194e9b3bde"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_mg_blue.png",
-      "bytes": 14360,
-      "sha256": "4bb425c5b72ab24ef54e29ee69a205e450652b5403add6d27e7e66a652bf8958"
+      "bytes": 13109,
+      "sha256": "53b2f7fbe1ee6cb3eb0198598db664ae048ba56d4ffd026d11a55b861c6587b3"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_mg_blue_foreground.png",
-      "bytes": 20656,
-      "sha256": "643e199e0bad105833d2493f2514e69d52aded27f18e18ddc712cae11ea51040"
+      "bytes": 17273,
+      "sha256": "fba683076611859f1d07cdf55be55fba728b6b43d8c8ce075c64ecd78feae2d7"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_mg_cy.png",
-      "bytes": 14512,
-      "sha256": "ed60b6fd8bf218e151a676aa117acbb1b111518f7f9a6b29ed13b7b9e7cc225e"
+      "bytes": 13145,
+      "sha256": "5298c7e9d265409cf44c359436ff5bae5390712ccb04a6c9774d96bed57b2063"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_mg_cy_foreground.png",
-      "bytes": 20748,
-      "sha256": "b9c1d12b2b65a6053a5e5ecea71c828c4fac533c47df5e8ac42b26735414413c"
+      "bytes": 17361,
+      "sha256": "695309bfd7a1cb8a35c27e0b57b3e0628faccf9b0031b1a9d7d26fcf63f7b59f"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_mg_gold.png",
-      "bytes": 14433,
-      "sha256": "39fc5e233e17724958bcba8a66af04e0b6ab337abec59530d53a6386fe63a98e"
+      "bytes": 13113,
+      "sha256": "145e2391331e335f12ac3fdda7bc338ae01489ac88d08094626222674d2ff2cc"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_mg_gold_foreground.png",
-      "bytes": 20692,
-      "sha256": "d5eb73f7743231986dc9ef61b832f73ee620486ce357d79a5cd888776b815a2b"
+      "bytes": 17268,
+      "sha256": "8458885c03f1df63fe18e809ae072387341c2f1b1e11d644a865a89ed3370fbc"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_mg_green.png",
-      "bytes": 14415,
-      "sha256": "73e81d24e3bd1f2b24323e3fab511713b07a84373fc753e133a2774fc8df3b34"
+      "bytes": 13115,
+      "sha256": "0df886ec2b2981796b96f7c50096d3fcc0ac349338b9245d2b110e04cb6f41a5"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_mg_green_foreground.png",
-      "bytes": 20955,
-      "sha256": "54f59b3516542f9cdf04ed69a00f584c7f09f4df5c1a05d29471a59d9b2d92dc"
+      "bytes": 17353,
+      "sha256": "2e2500185eb44ae6b3f4d8fe27d7b4aebd7c3b561b92eb74dafc9f9e8c5efb9f"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_mg_orange.png",
-      "bytes": 14397,
-      "sha256": "fa46ae3eac6eb756d1cc339804bf8cdd712fe3e03001a5accf9f2c7d00eefdc8"
+      "bytes": 13091,
+      "sha256": "382ab7d16be329b206780d1970784da3f8551d613045f79ff1729c9d0bb945b9"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_mg_orange_foreground.png",
-      "bytes": 20538,
-      "sha256": "f5c43339d0a09a0dfb8a5dab87e58c1541860726fff48536e66c3caa0e44af04"
+      "bytes": 17111,
+      "sha256": "10ce285634dbdeb1c06c4d34597446d18e58dbd2e138b4a8cda36e264ed20fea"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_mg_violet.png",
-      "bytes": 14330,
-      "sha256": "ec860d605161c6fa7af4ce51d8d4449c16270fdb2486f466484d18c077e85bf8"
+      "bytes": 13056,
+      "sha256": "9f86ccf406704619a32b43cdf162f3a651b32434d7b34909f83ef6cde72e1de0"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_mg_violet_foreground.png",
-      "bytes": 20752,
-      "sha256": "bc42c27449a6033f953a9153e60c8cfe28ce64582a68e6871b7a452ae3864a3c"
+      "bytes": 17315,
+      "sha256": "c1c2034a1f14f1856a11928d16a4948030055ac97fe00c5b8adba3349c55b728"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_orange_blue.png",
-      "bytes": 14330,
-      "sha256": "4259057f3322d6ed5ee924b38a469850380b4cf9a13cefa53bbf5b482219cf1b"
+      "bytes": 13064,
+      "sha256": "593a79d400d5c6c156c2ac218bda731032acf6aca3b348f85240466fe6f75e98"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_orange_blue_foreground.png",
-      "bytes": 20616,
-      "sha256": "941605687eb049571cd6144fb6bc7930f9b8fe5b8270e12a1fccaee8dfc0c1cd"
+      "bytes": 17266,
+      "sha256": "8ffd706e719405ef89cc30a10cde69bd35414931840c50da07716f6af4e0c93f"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_orange_cy.png",
-      "bytes": 14463,
-      "sha256": "e1eb1c74b5429c5d6c4b38b1032a9c4be6d2251d662ccad85e486796f0291031"
+      "bytes": 13089,
+      "sha256": "fc7f19957de6f156005e98dc2d1e1c53ab740abcc9da64aef4d96d9bb0727937"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_orange_cy_foreground.png",
-      "bytes": 20782,
-      "sha256": "0a5dad90b9d4219075d8464dd272413979f27ba57e04eaf6964b760a58bd235d"
+      "bytes": 17381,
+      "sha256": "a62ab096b09cc4c15b6321b0874bb56d324728913fb91e1d84410a738cfd40fa"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_orange_gold.png",
-      "bytes": 14297,
-      "sha256": "a4ae01de3b51b3ffeb585cc710e7d60c899ce441addffaef1982dd838e47c672"
+      "bytes": 13007,
+      "sha256": "2e46b200f3b1b79fd1e1665eddb39930a4bae6fd094b4afd738a0b1008a9c290"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_orange_gold_foreground.png",
-      "bytes": 20645,
-      "sha256": "18e9d51c2696ef2ea34914ae2f9809bcdf99ab59e1f4f6ab68f454aab3174e47"
+      "bytes": 17188,
+      "sha256": "7400de28543324d34e5e3597e97e3e61b4f118d84a9845bcd1f6d0abd3ed6a3a"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_orange_green.png",
-      "bytes": 14350,
-      "sha256": "6abab51879eef52d1b335906c1eab0eac0901712830d84c84e8d50edcc93ee30"
+      "bytes": 13054,
+      "sha256": "9fa346e8b01b4f65112e135c1e041a856b18372e1a5aa91583fa863ab1858e14"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_orange_green_foreground.png",
-      "bytes": 20897,
-      "sha256": "4c9a90a796ee219c853b79a9e3bb8d13d1446cbca9e17abc026277ce73ae4ee8"
+      "bytes": 17366,
+      "sha256": "62327e70edadc5f57bfa750f8e3350405e8a4e805fd43849c9488552073cfa33"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_orange_mg.png",
-      "bytes": 14360,
-      "sha256": "2d18ba804224c23c8d74947da000f1abb9ca10a42a3eabc72ab71d254a6bd676"
+      "bytes": 13074,
+      "sha256": "74354483854697ef695f924df34fb88ed254ae3722ffd53485a0d315d36b94d8"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_orange_mg_foreground.png",
-      "bytes": 20489,
-      "sha256": "303e3300313f36d54055c5314150c24c20f8ac33e92e33f5969c76a47441f9de"
+      "bytes": 17144,
+      "sha256": "788fe3fca9029cf69885b5833d04e7a7832e94d302e4163676b33cc725b582ce"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_orange_violet.png",
-      "bytes": 14244,
-      "sha256": "d07afde8f742187cad219c6cbf6c1acb332d0c7ddc76f0d00ffee83eb18e3a0d"
+      "bytes": 12974,
+      "sha256": "f96edc1b222c2adea7a134abbae0088c94f5c3891902613e91dd5f5429bd3b61"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_orange_violet_foreground.png",
-      "bytes": 20721,
-      "sha256": "d00eb0269aa69d9dde4232de0f94b120e87d67a10626067cb738eae4798d85d5"
+      "bytes": 17275,
+      "sha256": "d5ffd34f9c3e2db870da41be28ecb42f9725f56de8dfeb8677d4e5a2248be0ee"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_violet_blue.png",
-      "bytes": 14335,
-      "sha256": "a79d3f03409e77de91803bc3380473ceff85f06d5c81884d11e407179d931c4b"
+      "bytes": 13007,
+      "sha256": "28ffcbcf19f94338abdc43d582ddd318233552ab62e6e7b9c87cf9e0d1d844f8"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_violet_blue_foreground.png",
-      "bytes": 20672,
-      "sha256": "9615d94b3d8e0140f24ae5bc3a15c917d46f1e6ffd55e9697a12085be1b72bb7"
+      "bytes": 17240,
+      "sha256": "f35dc0de2d19ae97100f84d6cf1ce22bae9116720df41b054115b06fb8e5af12"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_violet_cy.png",
-      "bytes": 14400,
-      "sha256": "82587aa7da573a8124387dd8d1c8cc9ca52f43886084626a1ac48c2d18a0b8bf"
+      "bytes": 13063,
+      "sha256": "75acc4b6bb1a1ad0c1f818d9f647417cdf4fbc8f9264334e5ab12d14315f85ff"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_violet_cy_foreground.png",
-      "bytes": 20795,
-      "sha256": "e60881816f1576b69691d61a91c3d6f709bfcb508b4e83c98c88c7f2e3d3371f"
+      "bytes": 17352,
+      "sha256": "bdb12799709deeffe32303cf2a0bf4ddedc7d29c14d9b8f7b2c8a9894ffbacfa"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_violet_gold.png",
-      "bytes": 14282,
-      "sha256": "7807f7ee91cf1693be16d08e9cd1d188a531d8c3a2220df4f7b5326eb04027ca"
+      "bytes": 12996,
+      "sha256": "516d2e766c5d21a2641697b3074adabb59436e05e5ae61fec307911cbdd087fc"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_violet_gold_foreground.png",
-      "bytes": 20868,
-      "sha256": "b638bfdb72a7193ed84385d978bd4fc6b0f7312f8b482c73e2435ce83ff05938"
+      "bytes": 17395,
+      "sha256": "1759d7b84291886ec7ed84698a21ec43c027f80b08089edf02e305ae2c821a9c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_violet_green.png",
-      "bytes": 14291,
-      "sha256": "2dffc3c166a10f78f5cd866c9aa2cb41a12c45ec7580d528116c7c0ab44b28f3"
+      "bytes": 13023,
+      "sha256": "a4ef83788782d1ad83c9a77ee7a0db3837932cb5f5ec4072278660c8483d14b6"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_violet_green_foreground.png",
-      "bytes": 21020,
-      "sha256": "7857c54ccb8a37a0928cc0604a0949ef9c385e33b3841d34e2ba3442ab8174bf"
+      "bytes": 17494,
+      "sha256": "ca0c07e75c9a194c550e270fe29b9f1b7c4f4ce27f454b914324f13372724f85"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_violet_mg.png",
-      "bytes": 14364,
-      "sha256": "87d6b4be4d28b98c6c32562cc88c053646c21ea8d52dab3ad788dd75b6ed6934"
+      "bytes": 13083,
+      "sha256": "c8dc6cebdfb7218d9038b61fdcc56d29957213331fc13cd0803b315318440cee"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_violet_mg_foreground.png",
-      "bytes": 20714,
-      "sha256": "0fafc90b30f56eaafbfbde1ec8b104e4aa2311c084ba28715d479c4ddafb1d91"
+      "bytes": 17301,
+      "sha256": "c29365ba714075070d90c5f964d682351f082b3206833f85af425965bb4f88ee"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_violet_orange.png",
-      "bytes": 14267,
-      "sha256": "1acb89b1f7692c011ff07f258743a409510c31a9c4fdc8fae46ba0816775f777"
+      "bytes": 12972,
+      "sha256": "df3fd3167f518b5289ecb742dbb349a9f5dea57a0a6030f164c9942f465ab4cb"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xhdpi/ic_split_violet_orange_foreground.png",
-      "bytes": 20763,
-      "sha256": "bd638eacfffb76946d8c49ac29183407363b3a6619b571d5b27e433d7c73e48f"
+      "bytes": 17283,
+      "sha256": "ab4566015d82708cd0a655e534f382353a30dbe1b79c59297858d098f1324fde"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_monochrome.png",
-      "bytes": 4353,
-      "sha256": "897041e72d502e4ab1bb36c9f6f1fdb0dd128372b0ba2f2676a648c5f0b94d2d"
+      "bytes": 3724,
+      "sha256": "e5893f24d8e2c28650b4a62e07e681388f4dec0dd9256ece32bbf1f0b66dd458"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_blue_cy.png",
-      "bytes": 28664,
-      "sha256": "856cdc8e97a74b886ddbe653344410578158653b29e7b6b994eae28d53fd7556"
+      "bytes": 26106,
+      "sha256": "edb4bdbfb483e0d798bf1f8e5c8b780a994b5abb633ceb2babdf5f222ed2fc9c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_blue_cy_foreground.png",
-      "bytes": 40704,
-      "sha256": "fa436b9e1b7e00c22671a01484645852b6aad98a5eb807d28225c577ef2910fb"
+      "bytes": 34220,
+      "sha256": "dcc64d1c1d6001e162bcbf3670ce4f68f1af7cd6f30e570ee642f73585edc883"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_blue_gold.png",
-      "bytes": 28721,
-      "sha256": "24607b8a4c1a03d2458e0f9b87696a4db9347137ea9ca370d43b355770573c45"
+      "bytes": 26174,
+      "sha256": "249d48fc84084fd469b8cba35a4fc08dba1ef8e46544c63293321f1664b057d1"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_blue_gold_foreground.png",
-      "bytes": 41167,
-      "sha256": "5f7f28c3b78c47735194d0bac33724fbc854530495c799dffb17c4325cd343f4"
+      "bytes": 34636,
+      "sha256": "08aae9ef0efe2ff8b7a9c49320e75c70a9f35390229775a4066476a8338cb5d3"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_blue_green.png",
-      "bytes": 28781,
-      "sha256": "1922f5c20ccf5a73275c0d1e8d70dcf17bf9bc6a2fccf3e3a8125bbac9bec819"
+      "bytes": 26144,
+      "sha256": "f30e7ef649fd3bdb7e71891db36a9c2ce82c5df07fd35460c7ae8c0653ce8c73"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_blue_green_foreground.png",
-      "bytes": 41477,
-      "sha256": "936acd0fc2f56dcc1ba05693452821025bfe48001e9be8354ff9186fe5a4c0cd"
+      "bytes": 34781,
+      "sha256": "ac26b3142a22a1726f0e7abedf942b7bc1a7050f56781f788f8fd550f79c0624"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_blue_mg.png",
-      "bytes": 28732,
-      "sha256": "8969b10c1e4c4a4b5472d2542984234cff00cdd8b6ff32a0f97fe3852b349a6e"
+      "bytes": 26074,
+      "sha256": "c860782d111d7ee6d58f05865c13e36aba451a8bcab23f28e8503bb35bae159b"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_blue_mg_foreground.png",
-      "bytes": 40875,
-      "sha256": "dceb75a8fc25a00449e06c064155b13c5489c61b28d57e883fc3e8d0992f226c"
+      "bytes": 34293,
+      "sha256": "faea41784378ba390023f533baf961d01a06f68d6ce0de3b0b894fcf3a30bae7"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_blue_orange.png",
-      "bytes": 28671,
-      "sha256": "ba029c354285c1fae2da49b4017466ae03f03c3b039dbc19118c66c9fa3ccc70"
+      "bytes": 26176,
+      "sha256": "bc5e60dec2fa196b89ad93e33efe5b05f478160a852e2393d8cd2bc109a483ab"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_blue_orange_foreground.png",
-      "bytes": 40832,
-      "sha256": "7a9a5028d6c08e1b2652e9ce0d19550251aeff1f4d81144e30ec958f750aca34"
+      "bytes": 34243,
+      "sha256": "26668a30d8aa956633f8f525575b3de574dca380a48c833c076e6e00d0758b1e"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_blue_violet.png",
-      "bytes": 28632,
-      "sha256": "cf273763a7a3b6af54d0b8d2b302f0192e707c408cbbf905a34c3d38fdfd5267"
+      "bytes": 26045,
+      "sha256": "de269faaca11400f7e37fee7d0757b1653db1ca2f22a6f4c6a88028221d0ecf3"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_blue_violet_foreground.png",
-      "bytes": 40853,
-      "sha256": "aa3f89899ca6840ec1fccfb9a28b4e81c9ba6e7056e983c7104d13a632976f2c"
+      "bytes": 34396,
+      "sha256": "d408c9c93996be6044d507f99ebecf778c5db379adfe0974fc286e666371b834"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_cy_blue.png",
-      "bytes": 28754,
-      "sha256": "931af137422e13d60aa05e73215addb383187a6797fe4fff2cae2f57f434ee96"
+      "bytes": 26169,
+      "sha256": "5a0c441eabcb2e7170a5a8d5238cabd18c1a7dc6248693cb07c5e83ac98767e4"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_cy_blue_foreground.png",
-      "bytes": 40697,
-      "sha256": "9042ec35a0ddd53bd8be01f510c70ff51a5ec4c4d92f61f3768b219f321a7664"
+      "bytes": 34112,
+      "sha256": "0d4a8b8630a61c3ecfaabdd29c2a8541d8f784231c0c13adfbccd142108f4d4a"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_cy_gold.png",
-      "bytes": 28910,
-      "sha256": "b29446382436baa465986c28239cb79a433696cb10bb3fa25f03e95663c7ead6"
+      "bytes": 26305,
+      "sha256": "97a2ec201ace717b66121c758f9c8d07a0b55170c2e77aadd196c1c4764ef156"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_cy_gold_foreground.png",
-      "bytes": 41158,
-      "sha256": "7f90b4acfed95df90a20baddb0527ae11118c43680a341c6af0b11a885475549"
+      "bytes": 34666,
+      "sha256": "1beb39db5b97f4a9511d88cc1ccac4493b8f84f0ecf152300c5ff4c1c1c9fe99"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_cy_green.png",
-      "bytes": 28963,
-      "sha256": "e7e84555b31b7b518488850049ad8fafeef7816abf73caa11829c2a3b313bd1e"
+      "bytes": 26268,
+      "sha256": "dc79647e3619d7e17daa6ef93f03ba1477e98c67b31b06c6a62d0cee23bb1d7c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_cy_green_foreground.png",
-      "bytes": 41458,
-      "sha256": "444e213562285a6986f6530208422be6029332bc41c61f4011f8ef07cd6f15fe"
+      "bytes": 34834,
+      "sha256": "d1e3abb3fe4a96c55a387be4d914a04f13e159acdaf8e398b08bec11d1f5ea40"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_cy_orange.png",
-      "bytes": 28832,
-      "sha256": "067a841e940fbb02316e67d451aaba56267404f138b0127e367ff6cf56ea483b"
+      "bytes": 26317,
+      "sha256": "3c5809ed701e84dcea7d520853a1ad46eab02a32cf4b57b2b34cb424100f2ac6"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_cy_orange_foreground.png",
-      "bytes": 40956,
-      "sha256": "e0136a064edbf31103d6c21c26e90c15123fad5c34af4f055dd9abe341eeabfb"
+      "bytes": 34360,
+      "sha256": "f31c9dae75fbed19991ec2a888e8e3a2b59f94a059a668412af8f47554101ef3"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_cy_violet.png",
-      "bytes": 28781,
-      "sha256": "a73266c65ad2b6520894e0073cc06d7bda4bff560efb9dbe7d853d0cc438079d"
+      "bytes": 26190,
+      "sha256": "e41bd1059616762501d941d4dc257ffffa02b05b2e4f530e65c3d44a3671d387"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_cy_violet_foreground.png",
-      "bytes": 40972,
-      "sha256": "2ee4873d3822f939849fc439b56073ff86949b6edeca1dba472da976aa047ec9"
+      "bytes": 34557,
+      "sha256": "23b0773375d7468e619922a84bfd3df3afe7822a5e6d44b9dc98fad597aeb5ad"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_gold_blue.png",
-      "bytes": 28646,
-      "sha256": "f1d2b355b4349e60b938317038c0fd89455d88694cea507878a1c48c52729def"
+      "bytes": 26167,
+      "sha256": "049a5c347644058fd2fcce929d98034de04fad92d6e32d05367dae585cbe33df"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_gold_blue_foreground.png",
-      "bytes": 41049,
-      "sha256": "73fea95aaf1ad480b3a0bb53aa7ed90efb0df63f2f850a9664a2191e6f6499fb"
+      "bytes": 34607,
+      "sha256": "a5c5e1bf2faef8c4f7518de54f39bcd26f433958af5e04231db978c59d8d0fbd"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_gold_cy.png",
-      "bytes": 28784,
-      "sha256": "3bbf3e97e5e0f1fdedca2d91acbe036cc8253c9ecbd11c57cba73485f5a26369"
+      "bytes": 26157,
+      "sha256": "0557a7965ab79f7260ee998ffd73350e3b7aaee857c82072ba4a45fefd9cad3f"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_gold_cy_foreground.png",
-      "bytes": 41112,
-      "sha256": "fc51e2cf82e08992c3bcdb315629fd31716fc7f0fb4e662310388bba1a577f38"
+      "bytes": 34753,
+      "sha256": "141e3fcf9367ba33fb43430d0104b1848a7c0680cef7de015606746465f0ed50"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_gold_green.png",
-      "bytes": 28805,
-      "sha256": "1ed306179f425717e481b4ff01919e40a402953dc0c0fd3d45eeab206288a240"
+      "bytes": 26156,
+      "sha256": "abeca2e2ae12e6c98e240a107863f00ddd137b8eaa8dd66380b8b1e2c46e5603"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_gold_green_foreground.png",
-      "bytes": 41576,
-      "sha256": "0c127f03ace5c3e5a97a17488c40e4d8187e7d9b23ce085bd1261b87dcff32d9"
+      "bytes": 34930,
+      "sha256": "378028515d55c69eea2bb4c5da69eb1c9e4b3953bc37f60f4aadaae94c6a7f87"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_gold_mg.png",
-      "bytes": 28805,
-      "sha256": "d79803a95795b3600c2bc66ecaa05c5dd37b91567ecdfc94e6c05cb9a7343142"
+      "bytes": 26143,
+      "sha256": "34e199da1a08ee46483630e398aaa26e7c94b922d5cfb017dd4e702442128b80"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_gold_mg_foreground.png",
-      "bytes": 40996,
-      "sha256": "e043dfdc46a4299f1fe82ac72959aa29f9600ebeb0f2165b79adbfc51e4bc5e4"
+      "bytes": 34537,
+      "sha256": "58a81d3527d29f202247f23dd163b583552319de4b3a6430a4b1c860be190cff"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_gold_orange.png",
-      "bytes": 28593,
-      "sha256": "b04a0fc66bd3d5166393440f01cbda18163afe655bf9a514f30df23e66cc0373"
+      "bytes": 26136,
+      "sha256": "3aab8b74161586ab64a65dbe21f75c6c37da5ba7d7b2bd3315991d4d0fd08f33"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_gold_orange_foreground.png",
-      "bytes": 40815,
-      "sha256": "b7f7ffc25f3fe67e125e7f317e12d4420792f7c9eb7ebe4685df4e5e89d65310"
+      "bytes": 34331,
+      "sha256": "7f06e01f65c717bc6bb7db92f5192d22e222fe31440bb3aceee2d381c999e22e"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_gold_violet.png",
-      "bytes": 28634,
-      "sha256": "efa7c409efefdc5c24009e6db1fde74eb557641c6a793a4faf889d59cc90d86c"
+      "bytes": 26089,
+      "sha256": "e5afa9c98a6a0b8f7938f7ddeca5b4654d48940f3e6d8ccf7d9342383f4dbb64"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_gold_violet_foreground.png",
-      "bytes": 41258,
-      "sha256": "2fca806097713416b88105c4c91fdab6752ace3ae693e2d587ecbcc2df14d461"
+      "bytes": 34820,
+      "sha256": "5ff7bac27bf5cf79d0a2dfb8ee204b8523ea820709114e0e5f51d0b666bbd43e"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_green_blue.png",
-      "bytes": 28797,
-      "sha256": "fbcadbee19f775afcd0c772156de8b56ea02aac74017107d05c16c533a11c890"
+      "bytes": 26278,
+      "sha256": "b8aac1641404e26a525ab6ed75e8d8657be1a0afc09750f70c2142392b355558"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_green_blue_foreground.png",
-      "bytes": 41583,
-      "sha256": "307fe6ac76e0b95e9631577e99a8c421501bfde4449ffc53edd35d9bb755019c"
+      "bytes": 34898,
+      "sha256": "6046006c7d3e89f5fcc8a4662c178c38941afcca7fe98d9298aae9049a3c106c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_green_cy.png",
-      "bytes": 28891,
-      "sha256": "2aa370c481a8510775422c0edf8e395b0a4c85c437b814a4626adfaee94a9a10"
+      "bytes": 26199,
+      "sha256": "00c959bd2a3f02fbc3ae35f1c28cdb5b242180aba78eb2a36849dd99107b8060"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_green_cy_foreground.png",
-      "bytes": 41590,
-      "sha256": "64be5a2f8962e09e10978249021e555c3f281d726065c90944caf74e2dc4d7f1"
+      "bytes": 35065,
+      "sha256": "b55f9a345bca7058efa0a0b3799578cb66e6a70a89c1114e2f416a308a6aa50e"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_green_gold.png",
-      "bytes": 28920,
-      "sha256": "b47843ee2c8be94431f29bd12d48ea20fe36389f43264abeb71e3146161abb91"
+      "bytes": 26272,
+      "sha256": "4bd9fc3ad981559fc98b07da3b5e80242e7155403743f8e131426f5bfb4facb8"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_green_gold_foreground.png",
-      "bytes": 41742,
-      "sha256": "2e37302d5ff34e88f1a8382081a607f6fdec39fd05366f2245faabc62eee8f6d"
+      "bytes": 35171,
+      "sha256": "df7512d3b86ab8484b857e44b9326e204e9c37cbeab399765569414d0665e55c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_green_mg.png",
-      "bytes": 28940,
-      "sha256": "0afdb46a0b933fcfde39df5fcb0c0277bbbe3a1c886472ba4e47cd5903963544"
+      "bytes": 26245,
+      "sha256": "ecfe87113f7964db2d1930f16f4c827950997b32562bce7eb39af6dc81d59b50"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_green_mg_foreground.png",
-      "bytes": 41717,
-      "sha256": "d5e72eda5ef8af32b631eb8f9e1d5676a52a81e9abba6d648148e4ab28b07381"
+      "bytes": 34980,
+      "sha256": "bf6d56f0f5a9f71d42074ce2be3e80641c0c7b0e88f511df3b022b0402030fa7"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_green_orange.png",
-      "bytes": 28896,
-      "sha256": "c2f8765249d725061d29dacaf5b5a88ef35b9c1acd10d02aa2301507819747c2"
+      "bytes": 26257,
+      "sha256": "2b5200218cfa1c7fc555bae187c6c8d4a7fcf464b725b83181caa25f70dc41bc"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_green_orange_foreground.png",
-      "bytes": 41485,
-      "sha256": "074e914d9e5ad2535db90739472046c61095301220d1995015393af72511483e"
+      "bytes": 34853,
+      "sha256": "82a26d726f54529f79a55f6709b93fe3b6980c0774486a5d1462842ea81e0934"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_green_violet.png",
-      "bytes": 28905,
-      "sha256": "b9ee03a35422fcaac467ddff98229a4a9dbb0952203c0736eac5b8590111bff7"
+      "bytes": 26201,
+      "sha256": "a8e8c3f5796242631df68a84324c80d6d7ff1370d340b79ce338fd3b1f6009f7"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_green_violet_foreground.png",
-      "bytes": 41795,
-      "sha256": "6e5161b1f23b435d691f281df0436798aba3bd13963825522803a259587f1e81"
+      "bytes": 35190,
+      "sha256": "b94161aefc7c6e789df86fdabae9f040c8d0a5097c6728acff3c4b2302a595ae"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_mg_blue.png",
-      "bytes": 28764,
-      "sha256": "19b2d0faf718db89a66b3b1b22de36146ff892a43093a63f7706cf4f9adc8b53"
+      "bytes": 26299,
+      "sha256": "3798a228bbee2598d15760276e74e459b19f7507a156cf1fa29c2c30ae30f128"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_mg_blue_foreground.png",
-      "bytes": 40818,
-      "sha256": "d846412bb898bcd421bf747fa94e446838e67db32556defd87d510a188ab8960"
+      "bytes": 34353,
+      "sha256": "efc435806e9bee0e7c965cf562490c1ce4057725329df2f3feb2b3a2f2595c40"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_mg_cy.png",
-      "bytes": 28900,
-      "sha256": "1d4dac6665375d5be6d0b5804f5efdf4ac343d4870cdb8e27377a00a0247c8de"
+      "bytes": 26295,
+      "sha256": "5350a1177c3ed45735cd9236f15cd86a6d8eaa36903d4dc28935fb1321d11a5f"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_mg_cy_foreground.png",
-      "bytes": 41288,
-      "sha256": "dd327f2a05de85031e76a4051ec1c8c7d95b9682752fad5dbcf40260a749894f"
+      "bytes": 34773,
+      "sha256": "308d62f94568ce4e2a80b911aa2a9fdf0f1996cd3ac62812fa16aa4fbda7d98c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_mg_gold.png",
-      "bytes": 28861,
-      "sha256": "b72fcca60f6d8ce9b7de9bdc19b0cdf59914503ecb9884c1502e6d39598bcea2"
+      "bytes": 26273,
+      "sha256": "d5412a45ed1f7e9728128506fdebea2006b0c483c191f78fe33e8c5d98bbf14e"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_mg_gold_foreground.png",
-      "bytes": 40999,
-      "sha256": "0e3b9e833ad12da3f33f94af3041e13513e6efd532952ffee9c3d0002daf299e"
+      "bytes": 34561,
+      "sha256": "e58042803b118e4685d8da2514dbd353e16815fe11877a50379a699d1905ba36"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_mg_green.png",
-      "bytes": 28966,
-      "sha256": "b60c6fcbbad8f8ae02da6ef34c429b8cb7928baa64ffaa90970d94dc7e1bb72f"
+      "bytes": 26295,
+      "sha256": "81903b2f26e2ea165bb1b16b34a1441ed0988d80fa22b334437da6a4eb1c1317"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_mg_green_foreground.png",
-      "bytes": 41593,
-      "sha256": "a37cd27047180b6fd1acb36dfd8dd178eee3e6d9d252a6bdd1f07b95d013b5e7"
+      "bytes": 34893,
+      "sha256": "386b0b775a2122bbfb67d812e173796d22e325de464113d8699c8cdfca7bd3bd"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_mg_orange.png",
-      "bytes": 28698,
-      "sha256": "7b97e30e4bd87d962b0d3f80d990643f8b3d33876a9cf4b7c852c94ddc659789"
+      "bytes": 26268,
+      "sha256": "04bc66b75f78001bf92f91a6c7087e6cce2d4c7035fe8fa75128eabf7bf5ba76"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_mg_orange_foreground.png",
-      "bytes": 40635,
-      "sha256": "f25b1181861706b03de780c764e3640545857713e9e5faffc95ad8c0ad5634a6"
+      "bytes": 34179,
+      "sha256": "05912e18a2fa6567f4e975c738f9aac291acdbe3902eebd9fc7e49dedd86be35"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_mg_violet.png",
-      "bytes": 28805,
-      "sha256": "99299bd481e96e43f0ff063bc7855b1a261304c5abbb62e5c57af6ac8d89cbb9"
+      "bytes": 26281,
+      "sha256": "4510ee1b9f2cbcb1ef48773f6fdeed23d7e5986453a3cfa891f8da20853ff897"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_mg_violet_foreground.png",
-      "bytes": 41065,
-      "sha256": "68f19be76ea9283f60016d38d4e09696b216cddf0b3ce3ce801ef1ebecec1fb5"
+      "bytes": 34667,
+      "sha256": "3578dd94f52de2475d40efeaac3c38f3c4dc69b66ba0f789bff3e9c5d3d35d19"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_orange_blue.png",
-      "bytes": 28610,
-      "sha256": "da09af57715d22a831ec31cbc94ccfe9efa4252e43d91e2bffb6aeb460308721"
+      "bytes": 26229,
+      "sha256": "0feda7f2c48d2f2db4d6f9b71cfb42b9a958becd0987a9b2bec35f1d70305a28"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_orange_blue_foreground.png",
-      "bytes": 40898,
-      "sha256": "1c3a6a6d24b8914144cd13fb9fba771dbdf2cf56c9111c7ab65e3df7132bcc8c"
+      "bytes": 34341,
+      "sha256": "3195cd04eea9f150b1f088bcc52683f805f9fe922565a77785c536bfd365bc54"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_orange_cy.png",
-      "bytes": 28755,
-      "sha256": "c23810d7023c96fcd8953ef5be79949173076092afd0535fc80dc14f2afa5fc5"
+      "bytes": 26156,
+      "sha256": "951f9857212c884c3984e55daebbbe75967290fe70e39b9c472aa2083a49ebf9"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_orange_cy_foreground.png",
-      "bytes": 41313,
-      "sha256": "be167ae5cfa1cd82cba88251b6b89e390f4bd4a9de546272492ce87167bc5749"
+      "bytes": 34802,
+      "sha256": "ffec0773e799bb6422ff8e0b250ad83eb1e3c483f4facd48cbed37becd0aa391"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_orange_gold.png",
-      "bytes": 28642,
-      "sha256": "1cc33a06baf7c0cd6293f4c7d0dc5632afb56b8c37ca2041dfeaba6f785d89b6"
+      "bytes": 26128,
+      "sha256": "7bc30bf003a74892f204c3e410bf18a27f8a3812b4f42a2484392de803f8e871"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_orange_gold_foreground.png",
-      "bytes": 40840,
-      "sha256": "2e5b79b0865a26dfdbb24d3a4fa6c54e0e27ca4dfc40a339f6832b01786e4ba8"
+      "bytes": 34462,
+      "sha256": "253ff64ec1ec3f3c13b7a0de432fd92bc1a31e15e7b93b2d135a3560c03fbaf2"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_orange_green.png",
-      "bytes": 28780,
-      "sha256": "e0d6deff06c880e5f7337731d246338c30cc2e77dbbc51d068b49ec267fe6d21"
+      "bytes": 26250,
+      "sha256": "9f68c38a03a073516a22778812fbc568a5faa887ac9e1d475a38b5097a896e12"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_orange_green_foreground.png",
-      "bytes": 41513,
-      "sha256": "5651efa014053f9586b56eb0af32eacb461998b5a3336fbfeca426c777be030a"
+      "bytes": 34886,
+      "sha256": "5091993b9807036eb2e9dc18d65fa7d6ae46e274733c10ff07cac5423ec9685b"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_orange_mg.png",
-      "bytes": 28686,
-      "sha256": "c7bf07369348993a21f9cfbe93c32ac6e96eec2d0dcbf39bb0c39c16e721cb2d"
+      "bytes": 26143,
+      "sha256": "3cfa11501e9d9339e0ca1e814fc4a87b57516fb0810676efa1d6dba4ba53b038"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_orange_mg_foreground.png",
-      "bytes": 40719,
-      "sha256": "0ee0876d7a05c03304f5795d0f0aa14c8f3d119a6d5618a5145a6d07810fcf0f"
+      "bytes": 34197,
+      "sha256": "634aebc5bb0eddf18706c904af532491f9b825ce883809cc6b4b59ec17e3c791"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_orange_violet.png",
-      "bytes": 28551,
-      "sha256": "46c211beb4ab00681cb2d4b35451681ab25e16dae27ca84800a392fcabf85686"
+      "bytes": 26116,
+      "sha256": "b967eb95ff8fc18aa4210cc2e19e9f15e75ecbc85afe5795d396bd99c6b6b512"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_orange_violet_foreground.png",
-      "bytes": 41016,
-      "sha256": "e744248b91d173b2f10cf964853f11ade002bfda7d6aeab8df7a2b2c4bf431c0"
+      "bytes": 34509,
+      "sha256": "8a9506178d5e985c65419a606a6ec2231aa70d47c71f631e1aae7ca0e5451143"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_violet_blue.png",
-      "bytes": 28535,
-      "sha256": "3da84dccf62ca20a803f5c6e09f4a6bb3858ca05d41cc9832b45c97863f6423a"
+      "bytes": 26218,
+      "sha256": "9b4e52105bb4b6e2f3554286eb918f07395a48502911b08c867d61f5458fae3f"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_violet_blue_foreground.png",
-      "bytes": 40927,
-      "sha256": "1d5ba4ce2f3de1b613128d91c343a315d712d14cbabc87bb5379346853b50690"
+      "bytes": 34342,
+      "sha256": "f8eee64d069b84bf310f9ecaf2fab0902382f5f7eef06447789c9215948889a6"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_violet_cy.png",
-      "bytes": 28734,
-      "sha256": "9da18a535e9a3382d4662750b84049ee182ec44035b3ad64ef9237e333981798"
+      "bytes": 26187,
+      "sha256": "51e730688d02a5567d92130fcb8bd8438f155ef32f9fe03b27776b91f3f7d2a8"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_violet_cy_foreground.png",
-      "bytes": 41071,
-      "sha256": "7468b636fa0039dc285c817c336e4426e2e45f8dc3c4d85ab555ac928621559b"
+      "bytes": 34733,
+      "sha256": "583ae3f35983795717300de90d79b474b866519c0db7e7afba9cd340ec50ab07"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_violet_gold.png",
-      "bytes": 28675,
-      "sha256": "8069c8786615afecdfe534c0c92ac7b271276fe8635ff2f1913d1488979e6749"
+      "bytes": 26266,
+      "sha256": "b1bb5ac4ea78e250778b274a038ad58dca1f3b4e96b00a635f1dc8b8bac75ce0"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_violet_gold_foreground.png",
-      "bytes": 41236,
-      "sha256": "b0473bb5c3209621f636444d80dae9b53bb137a737454b04009b49b156d1c3bf"
+      "bytes": 34873,
+      "sha256": "23a261ea70a2bfe9073815a23af7180e78a42ecbfa7ea6c78f34db6fbe9d292f"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_violet_green.png",
-      "bytes": 28794,
-      "sha256": "36c77cbac2ac1079ad295ab39e6c3fcd29ba97f18e2a65d0c7138e8a4a2ad2ef"
+      "bytes": 26270,
+      "sha256": "55df688ca070fabf6e0c8b78d0db26e9b85ca3a880a575a3d2e0a797ed82151c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_violet_green_foreground.png",
-      "bytes": 41729,
-      "sha256": "c4419911bbbae9cbac91da3578c5671af5d6858f3896ff168de447fe858a1195"
+      "bytes": 35090,
+      "sha256": "10b76e139b703afdc6a4a8bda90285efc8581b7b9e5ccf4532b8445bf6208e78"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_violet_mg.png",
-      "bytes": 28840,
-      "sha256": "d953c13176b06dbbce7b9fadc891de4dd5866a1e25e2b73b39793329f0dfe899"
+      "bytes": 26269,
+      "sha256": "cd2ab5c2a8447edb49260c011f2cd5ff8e8cb251a1336dd48693b4415f488c42"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_violet_mg_foreground.png",
-      "bytes": 41109,
-      "sha256": "33e2381e01c777077f018e194ff31b95a65a7df1bcdd70e38e07f5a26b326111"
+      "bytes": 34559,
+      "sha256": "befa44b74c73ea2ec6253b0d91679428eb7c5b9c5ebd23f6e3aefcacbe2a0019"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_violet_orange.png",
-      "bytes": 28663,
-      "sha256": "6df6c64467a90cf69c194412acd6ecdb83b5aa8336eccd13f22ba4c583054326"
+      "bytes": 26224,
+      "sha256": "7ea31c7030eb93b3c3e947bd434b95f22d0350bcb010769d249df403c5debf94"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxhdpi/ic_split_violet_orange_foreground.png",
-      "bytes": 40952,
-      "sha256": "fef289fe3e53bda7359afd6a66d17586b39f6509db73503b07624273d2ffc9a8"
+      "bytes": 34434,
+      "sha256": "1a24c1067a8c0be99680c913a32489ebe083f64cb674a8685dcefe88036f8901"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_monochrome.png",
-      "bytes": 5799,
-      "sha256": "cd407f77163d9f39670af6f3bebb97b47fd750f2fb8ba90a8ca39a4df6b8a403"
+      "bytes": 5041,
+      "sha256": "1b5750451a466b7b796d703af31a5e83816171bf14b4227b0e8f3338114ae1b5"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_blue_cy.png",
-      "bytes": 46365,
-      "sha256": "6ccd5ddb85041cb9ef9d78a4edddd69440b63323207c74b96988cca4ad02dc72"
+      "bytes": 42250,
+      "sha256": "201ed371b8426c79eaed63acfec5e5906c6580ad0729c4f88de4966bef14e92b"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_blue_cy_foreground.png",
-      "bytes": 65285,
-      "sha256": "e67d706acdbbc9a015257058c74c3fa64da6414f40f60fdb10c16e3abc87c0ae"
+      "bytes": 54444,
+      "sha256": "717b210da79f6ba0b21effa6c29d7cd620e29fbbf47084325478e193675e794d"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_blue_gold.png",
-      "bytes": 46573,
-      "sha256": "3d04e94f7c4424c42429ff43060c7dbc23b36ecebb5a83c26d0d90b48b4c19bd"
+      "bytes": 42531,
+      "sha256": "48b50305dca9e1755ce0297261383ccfef34bd7e921e5bdb52bd8a8967f4282d"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_blue_gold_foreground.png",
-      "bytes": 65996,
-      "sha256": "b536f49d8ef2e0eee62a17ffa8b0452bf3c6f089ee0086a2c4a69e418571f4c4"
+      "bytes": 55066,
+      "sha256": "a7a5fae7747ffd9d668c662dba29801b4bd093355d58d54117c56117e176b85d"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_blue_green.png",
-      "bytes": 46786,
-      "sha256": "ff46dc9545acce137454293c98321c95a6231bda9ef4c1375687de9bbfdde44b"
+      "bytes": 42480,
+      "sha256": "bcddfa267f83e49d2cb7a1b61a5cf9208444c991d045e661a9aa86975c164f9c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_blue_green_foreground.png",
-      "bytes": 66656,
-      "sha256": "ede0b9781c9dc73480a9e858edc98d4f86a0e5fd64540a3678fd410a171d681c"
+      "bytes": 55447,
+      "sha256": "7abd86c299c1855c63ee5b3d2bccb13b4df7c984f5dfe6cba0b0f9941cec7c1f"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_blue_mg.png",
-      "bytes": 46290,
-      "sha256": "8bbc51f30b1c871560197e2379d0227dcf6eee7b2c2a52cd7c0ee6130b96c10f"
+      "bytes": 42282,
+      "sha256": "71c08c0b78e64704c916ec8e18450a4bd32e351986de6ba8da0762f0abd98bd3"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_blue_mg_foreground.png",
-      "bytes": 65458,
-      "sha256": "262551f0c2f9281b61d931397b65424dbdb61dd064b52e6dc27cbcddc3951ed6"
+      "bytes": 54558,
+      "sha256": "5a67b9bc70276009951ee0ca43dcb93f6601fac728881b29b78617ada000e09c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_blue_orange.png",
-      "bytes": 46439,
-      "sha256": "77a2574c17390f2a4e75d8e847ae106bb188afa753e6e4cb57e4f08302560cbf"
+      "bytes": 42503,
+      "sha256": "823cb99427508ae847052adb37154f4dd5d46d02d8d5f77aff8d715a8731f2a3"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_blue_orange_foreground.png",
-      "bytes": 65576,
-      "sha256": "f8f0db28436e74bfa16150261848195bab63ade7ebe2937ed141e494dc6c7520"
+      "bytes": 54566,
+      "sha256": "494c01d6cb95f041c80a388b58378f0801101dbfafb60d465c6ee6b02be30a1f"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_blue_violet.png",
-      "bytes": 46369,
-      "sha256": "5f5b059f6e94f3295f00004dca956f9ecdf4689414e5c88f4a3a8fcba1a9acbf"
+      "bytes": 42392,
+      "sha256": "43abb79efe7c5240d71aa5e97277000f1f64520f1a449002384f0977a8849d5f"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_blue_violet_foreground.png",
-      "bytes": 65629,
-      "sha256": "d02a3b9815d78ef91035b6cbb40677c863e1bc4b62e6e167f96dd91cac12ef41"
+      "bytes": 54693,
+      "sha256": "016e97596dd2f135a2580a010e72592117cb23b645439ec738ceeb0b915269a1"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_cy_blue.png",
-      "bytes": 46471,
-      "sha256": "911eb596395568aaf17e4adc6de533548db190c725760f06103f4d496a779f02"
+      "bytes": 42265,
+      "sha256": "a8bd7c682dac66403cd25cedf430f74162d753b9e489693d5e2d3132e35ff694"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_cy_blue_foreground.png",
-      "bytes": 65167,
-      "sha256": "e9eb0790846d39f27802b8d584b018d8190f3fce5103972146058e69764c2c43"
+      "bytes": 54418,
+      "sha256": "161d017720b941e170c6490763eaed8aa16947efcb42b476532da2de5daec5e0"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_cy_gold.png",
-      "bytes": 46709,
-      "sha256": "b18e164f0f188a97c23c28323f4d361c4159d3cc12c2f5c209d9c67d1729ad19"
+      "bytes": 42482,
+      "sha256": "e2b34586eddac73bf399cd07b425d0b1b2e07ef36da950e1fa0a6787ada8bfbc"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_cy_gold_foreground.png",
-      "bytes": 65831,
-      "sha256": "16ec65fef4ffdd0f422b4334d6158335e69275b23ac72c1170384989e9776431"
+      "bytes": 55016,
+      "sha256": "5845ee6b170fb38605895855cf1d25abcddf6dc6f8210e85261659af9a26bede"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_cy_green.png",
-      "bytes": 46882,
-      "sha256": "cbb19a229ae44b9d3d7a7035c90baee393a72062d01b1a3ce5dd51609c3e4401"
+      "bytes": 42547,
+      "sha256": "252239a7c12f8d8f71e186cddc4c1d126a9c1cca6754e4a6b7a562739d945fae"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_cy_green_foreground.png",
-      "bytes": 66749,
-      "sha256": "e3839518a32a9c5b13792bb3ee5f3be55b4eb8ce86402d1e42c51736d7f1570e"
+      "bytes": 55544,
+      "sha256": "e30de4da56dda5c67094fefacd0250baca91a5281ec772f0c9a3430dd76bdd7d"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_cy_orange.png",
-      "bytes": 46661,
-      "sha256": "c933fa68cd04dc53f87b1ae2867f23d03f3a0ed3e2f05d74b9d2f7d502e7242e"
+      "bytes": 42346,
+      "sha256": "fb1ad82b07fcea4844fabfd9a0a147fbe73eb7e18f6bedb82ffa286a58019da4"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_cy_orange_foreground.png",
-      "bytes": 65671,
-      "sha256": "16ad2668638620ca4db157404d174cd1fdb39e23faa0fd26550f5929c32684dd"
+      "bytes": 54781,
+      "sha256": "02e3b89d742ebaed696b2915cc431f8c5e5e0bcb3210db71f5b7ae61246e5938"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_cy_violet.png",
-      "bytes": 46595,
-      "sha256": "9b7c715cbb4649cc1d2d0295ad9ee9461ce39da5a862cfc42a4a7e4917f3381a"
+      "bytes": 42377,
+      "sha256": "cb33ec2ec7227b18d4448d8cb4b4c8ceb32ea08c805b8d15575eb666485dd1f6"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_cy_violet_foreground.png",
-      "bytes": 65717,
-      "sha256": "86e5d977144770424c59a405af75920d60c2d101fbc6b7f3764ac5a6054d9077"
+      "bytes": 55114,
+      "sha256": "4eab11b484971f9e870d9eca463d2f68a4443e875ca4fa3411b1d59621786be0"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_gold_blue.png",
-      "bytes": 46533,
-      "sha256": "a89f8a2b48e063026d5c124968beb4c072e927a695267fee31e378d312eee152"
+      "bytes": 42543,
+      "sha256": "ae76d314535a3eca8d39568a9a1dc97812df895add8b75f35a3d1f6fcf7031f5"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_gold_blue_foreground.png",
-      "bytes": 65759,
-      "sha256": "f3e563789652609a52b4b94a05226ab182ae2435b66c7af64bd026cb9909c311"
+      "bytes": 54962,
+      "sha256": "b68d1074fd38731eb041f3e01c185683fcdf0c45fd88d4a66ab36f77cb59b1d7"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_gold_cy.png",
-      "bytes": 46600,
-      "sha256": "44fa42b6fc95b7860bc5051c98d952565d84bcfd4eb69191f73728ab517a6fee"
+      "bytes": 42334,
+      "sha256": "61ff2b417f2a97e583473ec75c580a14263f7c825031894f73515f33fc89b8ca"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_gold_cy_foreground.png",
-      "bytes": 65857,
-      "sha256": "847e4ac3e55f738d915cf5b8e463cde257686fca576ec8e3049748a15ae8a4de"
+      "bytes": 54869,
+      "sha256": "80edd5c6bf9ddcbc7403d5c652e0b76dd7795286801ea4cb1c52de59a0e22b55"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_gold_green.png",
-      "bytes": 46674,
-      "sha256": "5d75aa75c9645b98fa09b466439ba1955efa0ed20dd279642999b323a75b2109"
+      "bytes": 42522,
+      "sha256": "e94638db1548111212198999baefa8063d347da7fe060d5162f62cd621f2e0cc"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_gold_green_foreground.png",
-      "bytes": 66667,
-      "sha256": "447a019d8843346af38fed8d7fdebabbd1e9f31d396d9774284223bbd9900cf8"
+      "bytes": 55499,
+      "sha256": "bf3d9b8d9cefd0caf37836a4431816b03e372fde4856026577a82cbfc8ee3686"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_gold_mg.png",
-      "bytes": 46419,
-      "sha256": "31be517e04123c6718a8ba7411535494901940521f3e6ed57c3c95b4e813f83b"
+      "bytes": 42275,
+      "sha256": "b491fc1bed700aaf124206a4a04212c6c5b3ea82f29b6227bb5ff6b0c250ed9c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_gold_mg_foreground.png",
-      "bytes": 65478,
-      "sha256": "90270ffe9bbf75a4d7c1245304f8062ef1702df5ad91f2aca7ccd92d42b07af8"
+      "bytes": 54735,
+      "sha256": "73db2353a075d5492777034b319f1d34e481d9c7f2f5af030fb75d400a94dc14"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_gold_orange.png",
-      "bytes": 46263,
-      "sha256": "4167150d9a92acb3716cde8c6da7f1909dbc41e906328b02f608dd267807d817"
+      "bytes": 42246,
+      "sha256": "d7ce203d101a6b7405ed279ce5cedb03133329fc7dbbc245b1f144062bc01983"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_gold_orange_foreground.png",
-      "bytes": 65211,
-      "sha256": "f8c28fe043af711f0489ab71045fb92d74db7487e799ff30d6ae15084bca7c70"
+      "bytes": 54508,
+      "sha256": "2897e19f0b5c8a8e3a969b21a38ab06a6c58a5d6209dafc05362da8f4fa1fe02"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_gold_violet.png",
-      "bytes": 46415,
-      "sha256": "6e75a96294c6d7eede95933c41ad827fc4aeea82e5801f10d171ef398cf4aeae"
+      "bytes": 42384,
+      "sha256": "631fa0cd31cb5536e80af3260e367f5bd95e895d1ee7f5ec246f501a086863ee"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_gold_violet_foreground.png",
-      "bytes": 65999,
-      "sha256": "24680eda8c95d3b348fc468bbd88dbe0715e2d1b2a6d4034480bd769b714bb5d"
+      "bytes": 55292,
+      "sha256": "29b7fea5fad6d22e5535c1f42da20d10c60fadb78bf993a59900c4b4bf1cbee5"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_green_blue.png",
-      "bytes": 46691,
-      "sha256": "22ae30e4ade36fa4225928dec1c6f8553abf0649a707577ac79a29389a995b2e"
+      "bytes": 42542,
+      "sha256": "c3696474869900ea3368da8a64627fc2e0f0819a1886c193187557d177f49123"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_green_blue_foreground.png",
-      "bytes": 66905,
-      "sha256": "b080b9a4b2b8a6964ca5076f9517b664f7e848dae4193869c2e35196cbda45cb"
+      "bytes": 55571,
+      "sha256": "afbff46819fdc25c14844de8f82fd79f3376e6ccd0ea02b85a18ae1312f08dc7"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_green_cy.png",
-      "bytes": 46718,
-      "sha256": "7d2580340dcc23078673f69404a5ebab63f766e696859d3c2fe2f060e8b2caa4"
+      "bytes": 42364,
+      "sha256": "be092b80805a6bfc80d005b9b553389dc8e0c143bbe955f4f1ac271b56a9f084"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_green_cy_foreground.png",
-      "bytes": 66743,
-      "sha256": "02161cf6755e1d4968c86919f06217ffb557fbce6db5c88c201d1bae3b90a2e7"
+      "bytes": 55785,
+      "sha256": "e165142462126ee8fbd0732a3d050b0dee63c6be6bd579d756c8d8c296224e0e"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_green_gold.png",
-      "bytes": 46739,
-      "sha256": "9631dde4757d39ba8b45932497d6d433e91d8089c0c9af815ac664da493a3d78"
+      "bytes": 42646,
+      "sha256": "194c8a191bfe79acbed1f92d58ab2afdf8112469df27f150f9cc1344f96aa5da"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_green_gold_foreground.png",
-      "bytes": 66885,
-      "sha256": "92c9e68cedfb3146617a95b0d8ef76e0296d07e522c925c3f4bfc87077ed97e4"
+      "bytes": 55849,
+      "sha256": "9a0c5800d100b6456de038bd66b179641b9edd3c75ae65567f9dcda0e4fc5a93"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_green_mg.png",
-      "bytes": 46778,
-      "sha256": "a94d9d596f4daaa7eec663ee39f50d18217c2dc975e16001154840dfb4f1c8d7"
+      "bytes": 42451,
+      "sha256": "430897d7b393c2d9c1b0afaf320514286e4ccf67ae783587cd5e69a99f4608a4"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_green_mg_foreground.png",
-      "bytes": 66745,
-      "sha256": "3915c29904de807629eec364b064b3fa2a959778a8d2a443e67bf7d7a7f7a0d6"
+      "bytes": 55790,
+      "sha256": "894ae2bccf6f681b896ca06ccf253996c8f40be4c61794187bb9d1e152a3106c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_green_orange.png",
-      "bytes": 46761,
-      "sha256": "2ef5743478c7baac1d8d1aa549bf0c84874e1d07fa5c59010906ac81070331a5"
+      "bytes": 42496,
+      "sha256": "71e9417ecdfc18ca22081481b5c3be4494677c11adfd52dabcc8c2f43886a6f9"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_green_orange_foreground.png",
-      "bytes": 66735,
-      "sha256": "b09c0c46dfb9afa87d616f71684f113f33585c59dc5acf917c5e68da7433fe78"
+      "bytes": 55587,
+      "sha256": "b30ea1878fc28875627cf15b336a5d5f793e62bf017479897845a757afba0567"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_green_violet.png",
-      "bytes": 46715,
-      "sha256": "9644f05b75d2ab87fedfc6f706a21122ee78dc623aef33b31e13b14cacfe3106"
+      "bytes": 42560,
+      "sha256": "9001abc473b1c7957fe58eed1930a29cbefb25857f50d4c3a786cac030777fa0"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_green_violet_foreground.png",
-      "bytes": 67163,
-      "sha256": "a1abaf5c5496cd43bb0edec66dbe765c2871ff977472f3cb5fb57175deba1c25"
+      "bytes": 56137,
+      "sha256": "4845ea6b2751d4648f1c04366000c021282e1f51c12241234144c750fbb57e3a"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_mg_blue.png",
-      "bytes": 46464,
-      "sha256": "48302f7ac5e7c22cff973908ec6a6296b53ee457f83b894aedf95e80c428bfa2"
+      "bytes": 42586,
+      "sha256": "8283499ebe738a664c86cb2e4131dd5192f1704294b979f7fa29d32137bc9253"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_mg_blue_foreground.png",
-      "bytes": 65495,
-      "sha256": "21c6f95ecbad557060a79c51513cf933a8ece21c6cfc3710ec8fafd22108ea86"
+      "bytes": 54336,
+      "sha256": "bd06859fb70f7610156dedd0ad75e7402f4ec962628bc4c048fb091cd3310dd3"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_mg_cy.png",
-      "bytes": 46569,
-      "sha256": "90b1f9968d54a428e71d35afacff2b2b9272f0a7e480d2637f18ade7d3e15b0c"
+      "bytes": 42415,
+      "sha256": "bf45f8c3a9f303a8077e13a3640c00d6d4e010eb67950ecb51aa0efaec9b577e"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_mg_cy_foreground.png",
-      "bytes": 65850,
-      "sha256": "a427ccdcb4d799b48959359b280a56727049d88fafc6dab7021067dbb1575934"
+      "bytes": 54854,
+      "sha256": "aa145bab8a1b61428655e890617b565d6758cd7dc5199b9ec2ef49f5b5371509"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_mg_gold.png",
-      "bytes": 46551,
-      "sha256": "2f4a7d8c47f1a33edc9d348f350df4c1016d658432e1e7067b0936c0c2e79525"
+      "bytes": 42545,
+      "sha256": "0aa57d66cbf6df4efcfea0a46a3a3ecc6a1bb46f8fb7ac372988c7ae19595664"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_mg_gold_foreground.png",
-      "bytes": 65409,
-      "sha256": "1736307cc25cbe34c9744c45b2d25ae02c55e38409338c1a1515dc5417f4d4c0"
+      "bytes": 54722,
+      "sha256": "b59e7370b3ca0c73900d3f3029472e09961d39fe643221c7c28641241859d15e"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_mg_green.png",
-      "bytes": 46794,
-      "sha256": "e0a0b34a966bc459b8ae8a871f1b2bdb345193f4ed2fd8df3a21d791cb962470"
+      "bytes": 42648,
+      "sha256": "af8979982e97d971c450af29c71488cd941ad558860dbf9c1a473c86508d3bd2"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_mg_green_foreground.png",
-      "bytes": 66755,
-      "sha256": "86add0d1bee402a8bf7ceb8d050c86182095eba7314f2cc4227578aeccc2f3b1"
+      "bytes": 55371,
+      "sha256": "eb6cc228062141fb7b0d118637e72134b9b0963998ba0c70a4a9d96a25e03d50"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_mg_orange.png",
-      "bytes": 46418,
-      "sha256": "5b3b75ef38856f6af4ea39d43845f6f9621988e8b608208cd453f5c5e12fd327"
+      "bytes": 42436,
+      "sha256": "3036ee45791b468d2f329c518eb9f90fedb87431bce25e545d743aaebb62479b"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_mg_orange_foreground.png",
-      "bytes": 65009,
-      "sha256": "ab298c6e71a63c8df99aa9d95d98b7287e1ddf7848333387825a1c584de95995"
+      "bytes": 54281,
+      "sha256": "b65e509789e244699210a8a6b1ee3aa8d36fdbe1c5bed2a239ea998c0090752c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_mg_violet.png",
-      "bytes": 46593,
-      "sha256": "c759b3ef7815616b0f73ea4aac9f2fe4ac7c46352ec5c1373712ed162eacafbb"
+      "bytes": 42584,
+      "sha256": "c99e09a6222684a3e107fbe63f03d062d5df4c03dabe6c8665529e0b1871fadf"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_mg_violet_foreground.png",
-      "bytes": 65893,
-      "sha256": "afa3209cbdc79ea3660e1c929f9ffd4d906f3aa79240705e1fe9b9ee6a5965e6"
+      "bytes": 54988,
+      "sha256": "55fb2fdf4981625b2c4c2cf463b702fbc0fb3fbe4d875bad557223f3cd4be1ce"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_orange_blue.png",
-      "bytes": 46439,
-      "sha256": "d2448489f0108886bd6feee2752c501b6013f9eaa31b54a7321804739292eb41"
+      "bytes": 42450,
+      "sha256": "e98f1065e61927291a7d2d20e181c1d19c57ad4ceb2f1a34427461b6907212b7"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_orange_blue_foreground.png",
-      "bytes": 65655,
-      "sha256": "c8dcd398c7387f8ca55c60559a8e342e7ceab7654b4dce0c8544c73a1314b3c2"
+      "bytes": 54484,
+      "sha256": "5aaf949b73bd46c5f2e70d41c7a6d4539d530040df86f03aeaf3306668d4ee60"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_orange_cy.png",
-      "bytes": 46432,
-      "sha256": "b3e0042f8d7f6773a7dae284d503fffd52657d0868337bcd0706ee69baa72bf4"
+      "bytes": 42326,
+      "sha256": "3ca06e87881f4719329570d317e38b5837987c043bda3258ebe9a4d123d9af1a"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_orange_cy_foreground.png",
-      "bytes": 65778,
-      "sha256": "43fe6c974fbf0e7c7dd182b79154144897a91a447f86fefa3263ac0a1c644967"
+      "bytes": 54911,
+      "sha256": "e4eb460970f4b34bc38b55b2ecf2a1a03752e13c6ea46b1f77eff364b79c860a"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_orange_gold.png",
-      "bytes": 46292,
-      "sha256": "1f72d6ff5a9cd895f12f24d2af418665b7217970a40d5206a106e897866b804d"
+      "bytes": 42340,
+      "sha256": "c46cd43df76fd3845bf3f275013e3dab399565efbde5025134df7b9745bec731"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_orange_gold_foreground.png",
-      "bytes": 65211,
-      "sha256": "857429679d3a91398d865694cb18ba71fd2ccc615bfad00b19512f45801d9147"
+      "bytes": 54456,
+      "sha256": "32dc767c87e958a4eac9c3371ea2090111e6345cffcac73c698280b0820b98cc"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_orange_green.png",
-      "bytes": 46738,
-      "sha256": "e278b22357507548ac07947c806bb84dcd20c381f04f4f93450f49f72199c500"
+      "bytes": 42463,
+      "sha256": "b3ba8fb9bb1bc8b668f6dd8a2368ce71e6615fe5256feacf04c38a28a06bad39"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_orange_green_foreground.png",
-      "bytes": 66458,
-      "sha256": "6b81af6a481f58604793e34ce127f6562e1f743b503180ed85ebe3cea5422131"
+      "bytes": 55366,
+      "sha256": "d17e8343a732588b8e28aad43c75fb4c3b413cd8d9d59b75298403cc372366f1"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_orange_mg.png",
-      "bytes": 46269,
-      "sha256": "2fd57df4e767f3f774385122f068671e57b7941e1127adf049b7a1038d1b9478"
+      "bytes": 42169,
+      "sha256": "3159a4715c82c5c3a3212b2dc6ccdb604f5ca1485a0a2d6976305db3d4d7b640"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_orange_mg_foreground.png",
-      "bytes": 65071,
-      "sha256": "58fc850f5724208dafb6f2b34db463002cc4a702197e56cea00892b372beb8fc"
+      "bytes": 54256,
+      "sha256": "c5518b9820de9d16e426d613b35cd93acb8be957144ecf7b090ca541f0534292"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_orange_violet.png",
-      "bytes": 46332,
-      "sha256": "2f981d47034295549c693137d05eb1967ce87c7fe874cc7f70fb824439d6ff5a"
+      "bytes": 42430,
+      "sha256": "9a278b5e69934c8d95009758bdb1b9dc22f947ad28d31c6783e35ea6e83683ea"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_orange_violet_foreground.png",
-      "bytes": 65832,
-      "sha256": "56fb07f0b6061fb11e0dbde34cda3a36c8fc3db0ec10014505006784a731eb0e"
+      "bytes": 54850,
+      "sha256": "9c269d3d8c9965ce5105a74b37fe197a778ac1758602add3bd6df0c7dce8b34d"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_violet_blue.png",
-      "bytes": 46287,
-      "sha256": "eef46f4e66ab746c1b0923eb85a5f9075bec5ccc00934a2a82dd0259671d334a"
+      "bytes": 42602,
+      "sha256": "46a3dd25edce89f98fb0f05b120fa2306b3bba24147f0aa1b2ab03ca84f5a4e6"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_violet_blue_foreground.png",
-      "bytes": 65432,
-      "sha256": "ee810f2d0ee893363a2b764e0a987b834fd59ed818d47e43dc1dee5b1cab54aa"
+      "bytes": 54648,
+      "sha256": "4b278fe295d1281d9cbfed4b6c9b3bbac6a348881563593f5a6c7e58e398d25e"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_violet_cy.png",
-      "bytes": 46326,
-      "sha256": "1491f64fe1075ec03ebfadfc9ff4da1930610522ddecac2d4ece19a83cc69a42"
+      "bytes": 42347,
+      "sha256": "d134684009025472de41d95c1747d9cf359ccdb71ef6661cabb695acf68c9187"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_violet_cy_foreground.png",
-      "bytes": 65563,
-      "sha256": "afb4255bb2cae6c9c54295c854eeb85d3791aabcf668d92d74827891cf8ccb3e"
+      "bytes": 55058,
+      "sha256": "4dcfe0a72b473377479ca717b42574873fe64766aa71f8aeadd41db04ae0169c"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_violet_gold.png",
-      "bytes": 46365,
-      "sha256": "a5634795a4db3df1752f02f6d5815609e9ed78772b46ffe6eeaf4d7b1794d13b"
+      "bytes": 42549,
+      "sha256": "b5809a5bbb4e1737b7af76ded30f0924ad4fa18a95892c9a5bf816464c5d67c3"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_violet_gold_foreground.png",
-      "bytes": 65954,
-      "sha256": "52951e51d52af0ab0368272d8b6cb9cc445fa5ceb0167bd0883dec0c3e8f2015"
+      "bytes": 55278,
+      "sha256": "bde8b9f60b8b980dae319fb819b206866647937753f4116dcec90de8bf727680"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_violet_green.png",
-      "bytes": 46652,
-      "sha256": "4bc9581d76c4517dc88ce4a5f82135cd7fe830d060f163411691c0d1bdf9f7aa"
+      "bytes": 42618,
+      "sha256": "aca201f6fa59fa0d6a81e1943f9bf6f9528e28fad07672eddb9f08463aa843e2"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_violet_green_foreground.png",
-      "bytes": 66690,
-      "sha256": "a8f20c987634c7f23834c7322b8ca04a886d8bfc750cadf2f9521f7d9a365d1f"
+      "bytes": 55823,
+      "sha256": "62d451fd9af5f92a8f02d2d261aed7cdf21e58451faeb681e332d29521501fdd"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_violet_mg.png",
-      "bytes": 46296,
-      "sha256": "717a21a54dc35c21b8b2ff8d3f6898865e164a9e0f1f7a436c8837659b673577"
+      "bytes": 42320,
+      "sha256": "32f3d96e36b8bbc7898b1e0811b2d6f04d7e29279a4c05e0f0f065a8c3a5e77f"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_violet_mg_foreground.png",
-      "bytes": 65833,
-      "sha256": "c8ac0459e15f42cab0b4e25a5bf3d9d73bfcd9fc3f32518180a711a8c189db28"
+      "bytes": 55084,
+      "sha256": "6a2f3f99ee119ef571100dc206b0f75631147654b642a47b4473cdc84ecc80eb"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_violet_orange.png",
-      "bytes": 46329,
-      "sha256": "319a88608b0101a4ece4e80867154b686f48a22f6c103f1ea7b1608728e7896c"
+      "bytes": 42405,
+      "sha256": "87f87b791f764a0b289a7ab5ce42e80e62cd1b59632d3f64cb1fa31b58dbe04e"
     },
     {
       "path": "native/android/app/src/main/res/mipmap-xxxhdpi/ic_split_violet_orange_foreground.png",
-      "bytes": 65592,
-      "sha256": "596e8ce9d75894dc9d5e40cdecd0d9894b501479dfaf716aaabef6080a4f0072"
+      "bytes": 54898,
+      "sha256": "9eca6c10052932f3a04c79ca6eb61e069e2495db48531f35936ef3efc17173da"
     },
     {
       "path": "native/assets/icon-background.png",
@@ -3514,18 +3514,18 @@
     },
     {
       "path": "native/assets/icon-foreground.png",
-      "bytes": 1037498,
-      "sha256": "4f18ef4c0021240410db0b477ba7437f558d7164af7b16c4364d634a72f44aaa"
+      "bytes": 851494,
+      "sha256": "d6842801a5071698326d690c1886dfe071e80344239de83f50d8662b6059181e"
     },
     {
       "path": "native/assets/icon-monochrome.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/assets/icon-only.png",
-      "bytes": 844857,
-      "sha256": "e7563c0638d34258f7224efed981df72b15020a2adfa9cef245ca40797492937"
+      "bytes": 736041,
+      "sha256": "30982851912b48192b414aee79a01b080883514eaea8c4c1091e9f9c6ed615a7"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png",
