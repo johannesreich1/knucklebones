@@ -33,7 +33,13 @@ export const SYSTEM_LIGHT_GRADIENT = Object.freeze({ top: '#ffffff', bottom: '#e
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
 const HOME_DIE_SIZE = 74;
-const HOME_DIE_CSS = inlineCssGraph(['src/styles/main.css'], { rootDir: ROOT }).css;
+/* The @font-face blocks come out. The mark is dice — no glyph, no text node —
+   so the faces are dead weight here, and their url()s are RELATIVE to
+   src/styles/foundations/, which resolves to nothing at all inside an SVG that
+   is about to be inlined as a data URI. Twelve dead references travelled into
+   every one of the 41 alternate icon catalogs before this line existed. */
+const HOME_DIE_CSS = inlineCssGraph(['src/styles/main.css'], { rootDir: ROOT }).css
+  .replace(/@font-face\s*\{[^}]*\}/gs, "");
 /* the 5 face: four corners and the centre, in a 0..1 square */
 const PIPS = [[.26, .26], [.74, .26], [.5, .5], [.26, .74], [.74, .74]];
 

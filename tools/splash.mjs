@@ -34,7 +34,13 @@ const ROOT_DIR = resolve(HERE_DIR, '..');
 /* The ground is the app's OWN page background, not a copy of it: --aurora is
    read out of src/styles the same way tools/appicon.mjs reads the die's CSS,
    so the launch frame and the first screen the webview paints cannot drift. */
-const APP_CSS = inlineCssGraph(['src/styles/main.css'], { rootDir: ROOT_DIR }).css;
+/* The @font-face blocks come out. The mark is dice — no glyph, no text node —
+   so the faces are dead weight here, and their url()s are RELATIVE to
+   src/styles/foundations/, which resolves to nothing at all inside an SVG that
+   is about to be inlined as a data URI. Twelve dead references travelled into
+   every one of the 41 alternate icon catalogs before this line existed. */
+const APP_CSS = inlineCssGraph(['src/styles/main.css'], { rootDir: ROOT_DIR }).css
+  .replace(/@font-face\s*\{[^}]*\}/gs, "");
 const PAGE_GROUND = '#04050c';
 const BG = '#05060e';
 /* THE LAUNCH FRAME IS GREYSCALE, AND THAT IS THE WHOLE POINT.
