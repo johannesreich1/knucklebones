@@ -1,7 +1,17 @@
 import { holdAndCancel } from '../../support/press-feedback.mjs';
 import { RESOURCES } from '../../../../src/i18n/catalogs.ts';
-import { LOCALE_REGISTRY } from '../../../../src/i18n/locale.ts';
+import { LOCALE_PICKER_ORDER, LOCALE_REGISTRY } from '../../../../src/i18n/locale.ts';
 import { waitForOverlayTransitions } from '../../support/overlay-transitions.mjs';
+
+/* One press of #languageNext from the boot locale, in the order the arrow
+   walks. This file read RESOURCES.pt because English was followed by
+   Português in the registry; the stepper is alphabetical now and English is
+   followed by Español. Which language it lands in was never the subject —
+   the subject is that a repaint keeps the icon, its geometry and its label —
+   so the copy is looked up for whatever locale the press reaches. */
+const AFTER_ENGLISH = LOCALE_PICKER_ORDER[
+  (LOCALE_PICKER_ORDER.indexOf('en') + 1) % LOCALE_PICKER_ORDER.length];
+const SWITCHED = RESOURCES[AFTER_ENGLISH];
 
 const near = (actual, expected) => Math.abs(actual - expected) <= .01;
 
@@ -219,7 +229,7 @@ export async function runPrimaryCtaGlintScenarios(suite) {
     && Math.abs(action.iconCentreError) <= .5 && action.fits;
   check(selectedIcon(homeAction, 'Play ranked match'),
     'the main-menu play label does not keep the selected canted die in front', homeAction);
-  check(selectedIcon(localizedHomeAction, RESOURCES.pt.game.home.playRanked),
+  check(selectedIcon(localizedHomeAction, SWITCHED.game.home.playRanked),
   'locale repaint erased or moved the main-menu play icon', { homeAction, localizedHomeAction });
   /* THE OFFLINE ACTION NOW CARRIES THE DIE TOO (owner call, 2026-09-04). This
      asserted the opposite — that the icon belonged to the main menu alone — and
@@ -230,10 +240,10 @@ export async function runPrimaryCtaGlintScenarios(suite) {
      pip path) and only changes WHETHER the icon is expected. The label halves
      stay exactly as they were — the icon must not have disturbed the copy, and
      a repaint in another locale must still leave both intact. */
-  check(selectedIcon(practiceAction, RESOURCES.pt.game.practice.playVersusAi)
-    && practiceAction.buttonText === RESOURCES.pt.game.practice.playVersusAi
-    && selectedIcon(duoPracticeAction, RESOURCES.pt.game.practice.playDuel)
-    && duoPracticeAction.buttonText === RESOURCES.pt.game.practice.playDuel,
+  check(selectedIcon(practiceAction, SWITCHED.game.practice.playVersusAi)
+    && practiceAction.buttonText === SWITCHED.game.practice.playVersusAi
+    && selectedIcon(duoPracticeAction, SWITCHED.game.practice.playDuel)
+    && duoPracticeAction.buttonText === SWITCHED.game.practice.playDuel,
   'the offline action lost the canted die, its geometry, or its label', {
     practiceAction, duoPracticeAction,
   });
@@ -254,16 +264,25 @@ export async function runPrimaryCtaGlintScenarios(suite) {
   await compactPage.goto(F);
   await compactPage.waitForTimeout(400);
   const compactLocales = [];
-  for (let index = 0; index < LOCALE_REGISTRY.length; index++) {
-    const locale = LOCALE_REGISTRY[index];
+  /* ONE LAP OF THE ARROW, FROM WHEREVER IT IS PARKED. The sequence is
+     LOCALE_PICKER_ORDER's, and the lap does not begin at that list's first
+     entry — the page boots in English, which led the registry but sits third
+     once the stepper is sorted by the name a player reads. Starting at index 0
+     regardless waited 30 seconds for a locale one press could not reach. */
+  const startLocale = await compactPage.$eval('html', (root) => root.dataset.locale);
+  const startIndex = Math.max(0, LOCALE_PICKER_ORDER.indexOf(startLocale));
+  const lap = LOCALE_PICKER_ORDER.map((_id, offset) =>
+    LOCALE_PICKER_ORDER[(startIndex + offset) % LOCALE_PICKER_ORDER.length]);
+  for (let index = 0; index < lap.length; index++) {
+    const locale = { id: lap[index] };
     compactLocales.push({ locale: locale.id, action: await readPlayAction(compactPage, '#btnOnline') });
-    if (index === LOCALE_REGISTRY.length - 1) break;
+    if (index === lap.length - 1) break;
     await compactPage.click('#btnSettingsHome');
     await compactPage.waitForTimeout(300);
     await waitForOverlayTransitions(compactPage, '.ov');
     await compactPage.click('#languageNext');
-    const next = LOCALE_REGISTRY[index + 1];
-    await compactPage.waitForFunction((id) => document.documentElement.dataset.locale === id, next.id);
+    const next = lap[index + 1];
+    await compactPage.waitForFunction((id) => document.documentElement.dataset.locale === id, next);
     await compactPage.click('#btnSettingsBack');
     /* Back runs the shared page wipe; the fixed grace ends inside its last
        frames, where a transformed Home reports 24.999996px icons. Measure the

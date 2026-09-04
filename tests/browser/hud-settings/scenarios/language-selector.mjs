@@ -1,10 +1,23 @@
-import { LOCALE_REGISTRY } from '../../../../src/i18n/locale.ts';
+/* THE ORDER THE ARROWS WALK, which is the picker's and no longer the
+   registry's. Every expectation below is "what does the next press land on",
+   so the sequence has to come from LOCALE_PICKER_ORDER — the alphabetical list
+   #languageNext steps (i18n/locale.ts) — while the registry keeps its own
+   order and stays the place a locale's name and tag are declared. They were
+   the same list until the stepper was sorted, and reading the registry then
+   predicted a locale the arrow never visits next. The properties this file
+   actually cares about are unchanged: one press moves off the effective locale
+   into an explicit override, a full lap visits every locale exactly once and
+   returns, and back goes back. */
+import { LOCALE_PICKER_ORDER, LOCALE_REGISTRY } from '../../../../src/i18n/locale.ts';
 
-const IDS = LOCALE_REGISTRY.map(({ id }) => id);
-const NAMES = LOCALE_REGISTRY.map(({ selfName }) => selfName);
+const SELF_NAMES = new Map(LOCALE_REGISTRY.map(({ id, selfName }) => [id, selfName]));
+const IDS = [...LOCALE_PICKER_ORDER];
+const NAMES = IDS.map((id) => SELF_NAMES.get(id));
 const LANGUAGE_TAGS = Object.fromEntries(
   LOCALE_REGISTRY.map(({ id, languageTag }) => [id, languageTag]),
 );
+/** One press past German, in the order the arrow walks. */
+const AFTER_GERMAN = IDS[(IDS.indexOf('de') + 1) % IDS.length];
 
 export async function runLanguageSelectorScenarios(suite) {
   const { page, ctx, F, out, check } = suite;
@@ -189,11 +202,17 @@ export async function runLanguageSelectorScenarios(suite) {
   });
   const geometryDelta = Object.keys(out.liveLocaleBefore.rect ?? {}).reduce((maximum, key) =>
     Math.max(maximum, Math.abs(out.liveLocaleBefore.rect[key] - out.liveLocaleAfter.rect[key])), 0);
-  check(out.liveLocaleAfter.locale === 'fr'
+  /* WHICHEVER LOCALE THE ARROW ACTUALLY REACHES from German. This read 'fr'
+     because German and French were neighbours in the registry; the picker is
+     alphabetical now and German is followed by English. The locale was never
+     the point — the point is that a live game repaints its copy without being
+     rebuilt — so the expectation follows the control instead of naming a
+     neighbour that moved. */
+  check(out.liveLocaleAfter.locale === AFTER_GERMAN
     && out.liveLocaleAfter.status !== out.liveLocaleBefore.status
     && out.liveLocaleAfter.stage !== out.liveLocaleBefore.stage
     && out.liveLocaleAfter.name !== out.liveLocaleBefore.name,
-  'live status, die aria, or player name stayed in German after switching to French',
+  `live status, die aria, or player name stayed in German after switching to ${AFTER_GERMAN}`,
   { before: out.liveLocaleBefore, after: out.liveLocaleAfter });
   check(out.liveLocaleAfter.sameColumn && out.liveLocaleAfter.sentinel === 'kept'
     && out.liveLocaleAfter.children === out.liveLocaleBefore.children && geometryDelta <= 0.5,

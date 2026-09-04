@@ -1,5 +1,5 @@
 import { RESOURCES } from '../../../../src/i18n/catalogs.ts';
-import { LOCALE_REGISTRY } from '../../../../src/i18n/locale.ts';
+import { LOCALE_PICKER_ORDER, LOCALE_REGISTRY } from '../../../../src/i18n/locale.ts';
 import { frame } from '../harness/layout-inspection.mjs';
 import { readWidgetLocaleOwnership } from '../harness/widget-locale-ownership.mjs';
 import { readRemoteLocaleSync } from '../harness/remote-locale-sync.mjs';
@@ -28,9 +28,10 @@ const DETECTION_CASES = [
   detectionCase('unsupported', ['nl-NL'], 'en'),
   detectionCase('mixed-order', ['nl-NL', 'fr-CA', 'de-DE'], 'fr'),
 ];
-const GERMAN_INDEX = LOCALE_REGISTRY.findIndex(({ id }) => id === 'de');
+/* stepping positions come from the picker's order, not the registry's */
+const GERMAN_INDEX = LOCALE_PICKER_ORDER.indexOf('de');
 const PREVIOUS_FROM_GERMAN = LOCALE_REGISTRY[
-  (GERMAN_INDEX + LOCALE_REGISTRY.length - 1) % LOCALE_REGISTRY.length
+  (GERMAN_INDEX + LOCALE_PICKER_ORDER.length - 1) % LOCALE_PICKER_ORDER.length
 ];
 
 export async function runLocaleBehaviorScenarios(suite) {

@@ -2,6 +2,7 @@ import {
   checkOfflineAskLayout,
   readOfflineAskShape,
 } from '../harness/offline-ask.mjs';
+import { LOCALE_PICKER_ORDER } from '../../../../src/i18n/locale.ts';
 
 const LIMITED = 6;
 const RANDOM_MODE = -1;
@@ -119,8 +120,10 @@ export async function runOfflineRestartScenarios(suite) {
       sameNodes: ids.every((id) => document.getElementById(id) === window.__askLocaleNodes[id]),
     };
   });
-  const englishIndex = LOCALE_REGISTRY.findIndex(({ id }) => id === 'en');
-  const nextLocale = LOCALE_REGISTRY[(englishIndex + 1) % LOCALE_REGISTRY.length].id;
+  /* what the ARROW lands on next, so the order is the picker's — LOCALE_REGISTRY
+     keeps its own and would name a locale the button never visits from here */
+  const englishIndex = LOCALE_PICKER_ORDER.indexOf('en');
+  const nextLocale = LOCALE_PICKER_ORDER[(englishIndex + 1) % LOCALE_PICKER_ORDER.length];
   const nextLeave = RESOURCES[nextLocale].game.leave;
   check(out.askLocaleRepaint.locale === nextLocale
     && out.askLocaleRepaint.head === nextLeave.quitTitle
