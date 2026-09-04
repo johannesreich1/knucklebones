@@ -101,17 +101,40 @@ function fitEndTitle(): void {
      shrink-wraps to its text; offsetWidth rounds that to a whole pixel, and a
      ratio taken from the rounded figure lands a long word up to a pixel past
      the 90% lane (measured: ZWYCIĘSTWO 288.86px in a 288px lane). */
-  const naturalWidth = parseFloat(getComputedStyle(title).width) || title.offsetWidth;
-  if (!(limit > 0 && naturalWidth > limit)) return;
+  /* offsetWidth, not the computed width: the BORDER box, which is what the lane
+     actually has to hold and what a screenshot measures. #endTitle carries a
+     padding-inline-start of .2em (~9px at this size, screens/result.css), and
+     the computed width leaves it out — so a verdict could clear the check on
+     its content and still paint past 90% of the phone by most of that padding.
+     ui-rounded was narrow enough to hide it; Chakra Petch is not, and Polish
+     ZWYCIĘSTWO painted 288.72 into a 288 lane on a 320px phone. offsetWidth is
+     also immune to the win entrance's opening scale(3.2), which is the hazard
+     the previous measure was chosen to dodge — an observer waking mid-animation
+     once read a 299px word as 958px and refit VICTORY to 20px. Its cost is
+     rounding to a whole pixel, and the target below absorbs that. */
+  const naturalWidth = title.offsetWidth;
+  /* Aim half a pixel inside the lane so offsetWidth's rounding cannot land the
+     painted word past it. */
+  const target = limit - .5;
+  if (!(limit > 0 && naturalWidth > target)) return;
   const naturalSize = parseFloat(getComputedStyle(title).fontSize);
-  let fitted = naturalSize * limit / naturalWidth;
+  let fitted = naturalSize * target / naturalWidth;
   title.style.setProperty('--fitted-verdict', `${fitted}px`);
   /* Glyph advances round per glyph at a fractional size, so the word can land
      a fraction of a pixel past the lane the ratio aimed at (measured: up to
-     0.7px over on a ten-glyph verdict). One measured correction converges. */
-  const fittedWidth = parseFloat(getComputedStyle(title).width);
-  if (fittedWidth > limit) {
-    fitted *= limit / fittedWidth;
+     0.7px over on a ten-glyph verdict). This used to apply ONE correction, on
+     the measurement that one was enough — true of the ui-rounded stack, and no
+     longer true once the app bundles its own faces: Chakra Petch rounds its
+     advances differently and Polish ZWYCIĘSTWO settled 0.72px past a 288px lane
+     with the single pass, which the gate reads as a verdict wider than 90% of a
+     320px phone. So it CONVERGES instead of assuming: each pass multiplies by
+     the ratio it still needs, and a word already inside costs nothing because
+     the loop never runs. The cap is a guard against a pathological face, not a
+     budget — three passes is far more than the one this has ever needed. */
+  for (let pass = 0; pass < 3; pass++) {
+    const fittedWidth = title.offsetWidth;
+    if (!(fittedWidth > target)) break;
+    fitted *= target / fittedWidth;
     title.style.setProperty('--fitted-verdict', `${fitted}px`);
   }
 }
