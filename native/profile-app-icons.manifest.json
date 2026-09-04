@@ -83,8 +83,8 @@
     },
     {
       "path": "src/styles/components/split-mark.css",
-      "bytes": 6100,
-      "sha256": "4a234b7c68f4e6fbb5fabfc5fb9314a21a3d063db6d4df421d94d72519b62d14"
+      "bytes": 7001,
+      "sha256": "182da56b9d773f4b61950203ddbeb550220ec1d40ec3a83835a3f0bf5e1d4359"
     },
     {
       "path": "src/styles/components/trial-select.css",
@@ -223,8 +223,8 @@
     },
     {
       "path": "tools/appicon.mjs",
-      "bytes": 17670,
-      "sha256": "921ea87030dd36011defebc875752bc593a7f3b1984f8d6777848ff1d65c45bc"
+      "bytes": 18297,
+      "sha256": "7bdef56f3ad5c8f51ef9aabfb93dbbdeec409dd47021c09b2b3fa4c5ffdf0451"
     },
     {
       "path": "tools/profile-app-icons.mjs",
@@ -261,7 +261,7 @@
   ],
   "design": {
     "mark": "split die: one six-face die, left pip column in p1, right column in p2, cut on a seam",
-    "launcherDiePadding": 0.1,
+    "launcherDiePadding": 0.15,
     "launcherTiltDegrees": 7,
     "androidAdaptiveInset": "10%",
     "darkGradient": {
@@ -3529,18 +3529,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png",
-      "bytes": 849229,
-      "sha256": "babfb8e5cbae98d245aeefb429513ea1c753263ee7fe869b9577ce83ed29f116"
+      "bytes": 768470,
+      "sha256": "3b50a473e10c1c98ddf3b9a2902ee4e339d9f594e2155d6da0b381002ec67821"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 844857,
-      "sha256": "e7563c0638d34258f7224efed981df72b15020a2adfa9cef245ca40797492937"
+      "bytes": 736041,
+      "sha256": "30982851912b48192b414aee79a01b080883514eaea8c4c1091e9f9c6ed615a7"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/AppIcon.appiconset/Contents.json",
@@ -3549,18 +3549,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-cy.appiconset/AppIcon-512@2x.png",
-      "bytes": 846925,
-      "sha256": "feea597d952c1bdeb18c945b4098409cf8a6b3a338e7bbe7500365bca3d18945"
+      "bytes": 770741,
+      "sha256": "81246ea61298f5675bc9bfe7bb5d2dfc43cbcf805f7fdc4399f9b3bd296b6599"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-cy.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 845769,
-      "sha256": "f55649bd2efb668809e70053163318fbca831fd44677e0fa709308689fd75e88"
+      "bytes": 740046,
+      "sha256": "f9a7871db7a1de2db1ea516c1a74ea13409e4ebd0a0e7b9577b0d3ca935c6363"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-cy.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-cy.appiconset/Contents.json",
@@ -3569,18 +3569,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-gold.appiconset/AppIcon-512@2x.png",
-      "bytes": 848513,
-      "sha256": "d9132cec34ad65f758fa7f5bb8d564fb92f246b474b657203a7c6b85094a76e9"
+      "bytes": 773434,
+      "sha256": "ffa869bd8e8d7c484436daa0dfa970ffda1d3d05f7f6122d19c35ed9ce33455d"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-gold.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 851802,
-      "sha256": "eb79e9b75f747e830d6d225ded95d16806e9829028cbfd727403e1d358ef2b4d"
+      "bytes": 750647,
+      "sha256": "78215caa4a396538681e0810ec56710a83d142cf4b26651525ce3d752ffbfaa8"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-gold.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-gold.appiconset/Contents.json",
@@ -3589,18 +3589,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-green.appiconset/AppIcon-512@2x.png",
-      "bytes": 870547,
-      "sha256": "3e643041a3061d98ad9f1efdada1dd6b9c02a1824b5a7fbe39f1263b906b823b"
+      "bytes": 794288,
+      "sha256": "714bffd2b5ccc75e418c2cc58e58f34237b7434dfa4b3b503350b2f9acf8ea76"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-green.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 867432,
-      "sha256": "456e2b8c04293f6e81c300620e3401f5134e5af7a24645fef61b203d6fdea062"
+      "bytes": 759840,
+      "sha256": "cc3dfc2c67dcd48c4d9a179eb82c612eca3ca7cb661a9107b1c79587514fa0b0"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-green.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-green.appiconset/Contents.json",
@@ -3609,18 +3609,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-mg.appiconset/AppIcon-512@2x.png",
-      "bytes": 848423,
-      "sha256": "4a6a318a52515b46a8ea20c7ec3eff3bd3e522046da0ffac00d3ae6cf9f68bcd"
+      "bytes": 776633,
+      "sha256": "b9d5e7dac5724f12db43b1b6988bb74ba9b5c90a7f2055ddf350878e14ba81cf"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-mg.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 839923,
-      "sha256": "1e37fa3dcff3323c0b6b69c8acabc6cbc82a7a997aad183ba8061470dd9afad6"
+      "bytes": 738012,
+      "sha256": "9f1313b933446bdf6854129dc309e4c0a88c38a209f1d3a51f287da07e876a16"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-mg.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-mg.appiconset/Contents.json",
@@ -3629,18 +3629,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-orange.appiconset/AppIcon-512@2x.png",
-      "bytes": 848056,
-      "sha256": "853386222d1adc275515009125d127e757d2d3569d5fb88ac9af2a68012eef5e"
+      "bytes": 776998,
+      "sha256": "144e1b28e86225186ffed04a7d886013efcd40e560c29d588747ec80e4b4b0fc"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-orange.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 844238,
-      "sha256": "c263e0df3490449b52ca2b4178e09d10dfabdb8330ffda404354a48374a46994"
+      "bytes": 745846,
+      "sha256": "acb5d02cccb91bdf34cdbbaa846d9ac12b3f4f2c812f8b8ea1a79bb71b20357c"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-orange.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-orange.appiconset/Contents.json",
@@ -3649,18 +3649,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-violet.appiconset/AppIcon-512@2x.png",
-      "bytes": 847464,
-      "sha256": "213d8d1ace697bcc5f9a068b3e3f809f5626292caa45fa90a16f50e299039ea8"
+      "bytes": 773059,
+      "sha256": "c0a4c11e96beb8a1c721fd8d3438036ad8207d983e6ff6d0ebb27e277197facb"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-violet.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 852371,
-      "sha256": "db9874792d0f23911f7b3cb502e466865787ed0d29a6825108506e245a6cdb9e"
+      "bytes": 752232,
+      "sha256": "407d47340f3ff31d515ef42d5da69f05c955c850dcde314616f976c2a4ed4d97"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-violet.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-blue-violet.appiconset/Contents.json",
@@ -3669,18 +3669,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-cy-blue.appiconset/AppIcon-512@2x.png",
-      "bytes": 845164,
-      "sha256": "3b74db904f728d859471ea1498610234b918d58e14f3945230bf2ff215ae1e0a"
+      "bytes": 765644,
+      "sha256": "0700ccfabe32b70edbe8d7789afbabd0bb64c7e5728144913e350c20d2273d51"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-cy-blue.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 848288,
-      "sha256": "f48a5a49aa6f435b3a6ddb1b0e4971a8ee828693c7dae233168fa61762bfa805"
+      "bytes": 743642,
+      "sha256": "4641f568b69f1102b7f9edb202965f8a9b2ac072b8cffbcbf749e27c3a54095f"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-cy-blue.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-cy-blue.appiconset/Contents.json",
@@ -3689,18 +3689,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-cy-gold.appiconset/AppIcon-512@2x.png",
-      "bytes": 848980,
-      "sha256": "bbbd3c53b672a341acc566158f667857cdf785b123d173bf945cb196c7161a75"
+      "bytes": 764966,
+      "sha256": "4b5a1a06692ac8546f21f9e8423121e27c58fc66b88057c405b078fcd8eb6cf1"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-cy-gold.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 856774,
-      "sha256": "161c227e5f8974c60df678b02ec8b73fc282ed10ddb7d78929b7c6991a61098a"
+      "bytes": 748293,
+      "sha256": "bd5a4e2a096048e46a1bdff8a0cfdf0ef772dfe971475684c12507400f67fdc8"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-cy-gold.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-cy-gold.appiconset/Contents.json",
@@ -3709,18 +3709,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-cy-green.appiconset/AppIcon-512@2x.png",
-      "bytes": 870212,
-      "sha256": "9b0aeca5526e3f3d13f988d3da69c9875462492340bff3b80c131df46aabeef3"
+      "bytes": 785993,
+      "sha256": "802c3350483e30a6bca42e2dbe45edaea2d46a1392f67fe817740e89755dbc80"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-cy-green.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 872208,
-      "sha256": "184576c73708a38b43dce32aaafcc88dc5a0f3bdaac7f48f4885429bb51c72ba"
+      "bytes": 757400,
+      "sha256": "237a23538a14ac4a446a6efa55f92c1f15ae6ffdb99ba89ccdefc3353d6a0a3f"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-cy-green.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-cy-green.appiconset/Contents.json",
@@ -3729,18 +3729,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-cy-orange.appiconset/AppIcon-512@2x.png",
-      "bytes": 848865,
-      "sha256": "2d40aab34db0ec087b496bf57f97dc07e2df102d51cc07e27aca3c973a5c3cab"
+      "bytes": 769285,
+      "sha256": "40d3c2b34ef2d26fe41f72651d0dd3a496584ef8089fe9d30d41e40acb96a32a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-cy-orange.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 849254,
-      "sha256": "a3ddc739df98d6c75cb70fb926ff392e2d6a3ebdd5a116f76d56d58ec25dc9b6"
+      "bytes": 743922,
+      "sha256": "cb50453270293b6a516ea83c73573bfcc88af20d985d4756057c276486ef1406"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-cy-orange.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-cy-orange.appiconset/Contents.json",
@@ -3749,18 +3749,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-cy-violet.appiconset/AppIcon-512@2x.png",
-      "bytes": 848623,
-      "sha256": "35470d79e1c28061a2d72e22b995f73d754a8df6067b384f91446954c7d8088b"
+      "bytes": 765243,
+      "sha256": "87ad7ea23b37a0e6736619cc8acecd2e2a6ffa44da033670ba20a8125d4ba5dc"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-cy-violet.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 857384,
-      "sha256": "900d9218f6f79372a6551d74ddcfeef4b4bc561c9b3f7e35ea97cfe8997bd5ae"
+      "bytes": 750477,
+      "sha256": "10a59af432eda3c9b86afe7849e68f27e8daab6e9bb19b3d7625be0c9da0e357"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-cy-violet.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-cy-violet.appiconset/Contents.json",
@@ -3769,18 +3769,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-blue.appiconset/AppIcon-512@2x.png",
-      "bytes": 849471,
-      "sha256": "67c14a1cd7f0550c961348d1afdacd4afec884929dd2329e5eba19400d1ea49b"
+      "bytes": 771725,
+      "sha256": "7a4be78455e5bf18eebee78ac1abe68031e4f22e1d9d0a65ab63c3b7c97262af"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-blue.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 853883,
-      "sha256": "4c06345adcbc933bc36cf891ac5e8e5e79de1434bbe5a55eb5f829266f4934f8"
+      "bytes": 752569,
+      "sha256": "967134be2e8b2afa46ffb038a3726e73b71a40d783857457b28e992765685104"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-blue.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-blue.appiconset/Contents.json",
@@ -3789,18 +3789,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-cy.appiconset/AppIcon-512@2x.png",
-      "bytes": 851198,
-      "sha256": "5207f61b7554eb5724c4b6807ba5b8fc894dbafc69c6fb9acebbc05de31dc91e"
+      "bytes": 768628,
+      "sha256": "d3ba3d8fb9b9085961b060311982ad6659dd3e2894f8444d1d23a4b391849d1b"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-cy.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 855477,
-      "sha256": "6ac01fca255b27e6b0e77feed4cd27d5724ba7e9ffb964d5489dc55021bb281d"
+      "bytes": 746513,
+      "sha256": "828a30bf642f1cebe88e1d4f673e64b5dd4dc9456e8a477ff459630117c25bc4"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-cy.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-cy.appiconset/Contents.json",
@@ -3809,18 +3809,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-green.appiconset/AppIcon-512@2x.png",
-      "bytes": 870803,
-      "sha256": "30246d25a5fbdc10c11026b8990cb5dffb0731f5fa3ca3b9924d5defe4184cb7"
+      "bytes": 789935,
+      "sha256": "eac5038baedbc55ef2bed0846bc56a44aac3ad66b1dcb54a3ac1b311e791e395"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-green.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 873915,
-      "sha256": "11ed2fb1462dedc94a34b45342904fc9fdc132974962123fd5085e7d89820824"
+      "bytes": 762750,
+      "sha256": "ddc81ab4f86125111848421d940077881e2ba3d4458af336264b5babbfcad3db"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-green.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-green.appiconset/Contents.json",
@@ -3829,18 +3829,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-mg.appiconset/AppIcon-512@2x.png",
-      "bytes": 847909,
-      "sha256": "19cf9f9ac7430883e9fd381e9d5ae284d944a2abad4db35c584a327f85c67399"
+      "bytes": 770166,
+      "sha256": "fa339fddd3274bc5d80e633a2de2672fb57bbbcd1bbb0a5e42c5e2ce114fada1"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-mg.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 844493,
-      "sha256": "8ffe42cef70961c9e3489f8f9e1332b07d2982203cafd4f2976527bd00a3204d"
+      "bytes": 738902,
+      "sha256": "419c14441ed1f8b8ce691254d2be8c57da4ef513316df7282b5622847d86a9ba"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-mg.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-mg.appiconset/Contents.json",
@@ -3849,18 +3849,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-orange.appiconset/AppIcon-512@2x.png",
-      "bytes": 846378,
-      "sha256": "ba9aa0c4e1068d7c7e47b9a9c2d8f99b4a46a4ed9484ca0fd8c12e96b0db830f"
+      "bytes": 769984,
+      "sha256": "77b59ce806d0380b2dc62d36248f675b55be1761826549062d91b6d6f2812cb9"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-orange.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 848154,
-      "sha256": "3f60e2062a3fcba58faed8fd95b6f90cf0ec9c7f713ed456091cb6c87844ffb5"
+      "bytes": 745550,
+      "sha256": "f94b77b441be27f2d08ce1b855c7235c9d45f9dad36cc06960444e61c11132d1"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-orange.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-orange.appiconset/Contents.json",
@@ -3869,18 +3869,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-violet.appiconset/AppIcon-512@2x.png",
-      "bytes": 851345,
-      "sha256": "b0ae691c5cc581518d8fc643b66c410eb6d1af13fb979b880b741e3fc1129cf1"
+      "bytes": 770785,
+      "sha256": "5e4f51f5e4aa8b84e29ace96473614cd9467efbb19813abd393a0e27645a1664"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-violet.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 861287,
-      "sha256": "617dd1cfd74490a5f025a70000e0a508c8517dd02444f04f5b630da57bb0f34e"
+      "bytes": 757923,
+      "sha256": "73b928829de6180d80e901ba4c5bc8fe7f21212a4cf559ef77fe254c2a5fbda5"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-violet.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-gold-violet.appiconset/Contents.json",
@@ -3889,18 +3889,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-blue.appiconset/AppIcon-512@2x.png",
-      "bytes": 864373,
-      "sha256": "e686aea79b555b456c4cd8ba7f2b774ecfcdb08098012bd3ee9568d4ed86d265"
+      "bytes": 782981,
+      "sha256": "37c23d25ac49f26c0a01001f2f966a488a7e7b0a03ed740dc4aa9c32cbcbbbc2"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-blue.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 868200,
-      "sha256": "b74e06e1684aed90a376d0eacbf8c84a42cb0d111206923a02ca93a5af0b165b"
+      "bytes": 761645,
+      "sha256": "870e18df9d9a01d6b2924114720d6d089eb49b9ebe227dd320f35cd9f43b51c8"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-blue.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-blue.appiconset/Contents.json",
@@ -3909,18 +3909,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-cy.appiconset/AppIcon-512@2x.png",
-      "bytes": 866134,
-      "sha256": "2a9fee53268061c6ec9eb56d3fbdddcbe5808e5d93653b12c21e59362c675f1e"
+      "bytes": 779573,
+      "sha256": "78563be1c5db17c0a134e1ca3ae78f5822e34477b63b68a9793d4f11312c9867"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-cy.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 869922,
-      "sha256": "219c975b94dbb26e1235be1e53181df147ab3fffefcbc66a23c2e592379b8b9e"
+      "bytes": 755258,
+      "sha256": "59005acf4191487d53b4a16eb66901e01a8b5a412a265035d352728074dc7b56"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-cy.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-cy.appiconset/Contents.json",
@@ -3929,18 +3929,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-gold.appiconset/AppIcon-512@2x.png",
-      "bytes": 864579,
-      "sha256": "1885e8fc4a6c31a7852504ba2f198e8a1bf2087e2476af806196d8d9e7d0a2f3"
+      "bytes": 779521,
+      "sha256": "a9c8bbde76b1ab8b774f1238bb73cc77a7ac82db54c89f1b4fa70a26a35474d8"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-gold.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 872592,
-      "sha256": "3f5ada063c0d5e436a3c290993468b81417b522d569dd2bebe431d0333201fa3"
+      "bytes": 762674,
+      "sha256": "2d3e778e0c2428ab82a2a3d1f2cacfec953e505e00375a4deccdfbd756d63a5b"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-gold.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-gold.appiconset/Contents.json",
@@ -3949,18 +3949,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-mg.appiconset/AppIcon-512@2x.png",
-      "bytes": 865778,
-      "sha256": "978c79eca9e50898fff73665833b943e909c5382cfd4e388f6230759eef70f49"
+      "bytes": 783529,
+      "sha256": "231b1f5b4e7ad38ad768a2f583d5a6269b710b6feac292f3607f8e31f98a14d8"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-mg.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 862066,
-      "sha256": "49311fb78935670355d0023e69604fb96825b226dc5bdf4799609fde8bbf40ad"
+      "bytes": 751492,
+      "sha256": "2ec8eeb3cb884c679141051db80fa2b2fd2c4d824fd6f6d448d2e5ec51847e08"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-mg.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-mg.appiconset/Contents.json",
@@ -3969,18 +3969,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-orange.appiconset/AppIcon-512@2x.png",
-      "bytes": 864691,
-      "sha256": "61809ee318ebd1f6f676b27b59c516142184387bfaeee262689fc33ea059311b"
+      "bytes": 783848,
+      "sha256": "a35c368f417e94a84e0ce205525b3d07b30f1b9b2577299eb5619245d8608f78"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-orange.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 865716,
-      "sha256": "966d4afecb7986d08d8dadbcd5e44ff9acbd582996c6f136f6b2fc29f4c9c651"
+      "bytes": 758032,
+      "sha256": "a310463460d866a0a1664fb6938f64894671ddc10a77e0a2e1109f85d22c3a32"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-orange.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-orange.appiconset/Contents.json",
@@ -3989,18 +3989,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-violet.appiconset/AppIcon-512@2x.png",
-      "bytes": 867330,
-      "sha256": "028e0aed5f62285e441a990cfd43b222fa0df5c5648dfab4c4b8c6db6565d1f8"
+      "bytes": 782351,
+      "sha256": "520e456e2cf869a52c06b349164e534ab8a17b83972f1d39eddf99dd66d136b4"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-violet.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 876378,
-      "sha256": "b8e7ae9a9ccdb055ebf90857b603f774e659982bfad92dffd05deb43decb7331"
+      "bytes": 767615,
+      "sha256": "40e290678b8400cc04ccd70834e1eff8ae265d105145911c9416ae443b213858"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-violet.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-green-violet.appiconset/Contents.json",
@@ -4009,18 +4009,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-blue.appiconset/AppIcon-512@2x.png",
-      "bytes": 848575,
-      "sha256": "69e9757512b45b6b065002bb2926a210435aac37c89bb0d0c65df9a15096679f"
+      "bytes": 776706,
+      "sha256": "d5e3a8f37dddbbb48166a49faea5dd811ad9d431c7609cbe55133a5be359ed9f"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-blue.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 847028,
-      "sha256": "352698e8314c704954797cb434db6e9a89ef2219d4849343d56da271086c8d73"
+      "bytes": 748644,
+      "sha256": "b3f9c7cd57f1a9dcdc1498a326b4cd4014fe843b50db89be28aa4810d38cb9f3"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-blue.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-blue.appiconset/Contents.json",
@@ -4029,18 +4029,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-cy.appiconset/AppIcon-512@2x.png",
-      "bytes": 850687,
-      "sha256": "aef0b398ebbf44198c068bd649e1481b3beca716e61276644ae11b6cd957dcad"
+      "bytes": 773858,
+      "sha256": "b8d3051da9521e67070c05a22515156f903c963df0170cb991b769015bfcc605"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-cy.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 849628,
-      "sha256": "5d13f83779e5d0b3748d6fa6ae1d703ab17cd31ddc640a6c22d6905cb260859a"
+      "bytes": 742827,
+      "sha256": "f09a98176a53e3ddac50665b1ff70ae98e88873a83e82730c9e8fdffcf2f32eb"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-cy.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-cy.appiconset/Contents.json",
@@ -4049,18 +4049,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-gold.appiconset/AppIcon-512@2x.png",
-      "bytes": 847268,
-      "sha256": "9a25bc892a7008a4338e3ea7f233850af03ed729d5e9d0d9386239420929394d"
+      "bytes": 772191,
+      "sha256": "0b68215d3a86c8f1398dfd41df773187a6ce2fa1b9a1432752ca0ca1be6ac7d1"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-gold.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 849964,
-      "sha256": "244254ff9c35ee85e332bd4cfc4bbb84ec97bebd9b5a72aa3827f519c1151c00"
+      "bytes": 747352,
+      "sha256": "7abeb97decf37405c751ba3633f7dd69fb8fe1efd5f69a56a40add0375b52e2a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-gold.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-gold.appiconset/Contents.json",
@@ -4069,18 +4069,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-green.appiconset/AppIcon-512@2x.png",
-      "bytes": 871190,
-      "sha256": "2f1258f0857487f326175e1801b99173a4e24bddc18f04194145040affaceb23"
+      "bytes": 796195,
+      "sha256": "39cea9f4317c1505f5a8db14854c273e42f745166be3c8c1335bb53eb143e16f"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-green.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 868312,
-      "sha256": "e38df189105b4d9f2ee221a09cef59478bbb75303392d8dbb0094ebc9491d155"
+      "bytes": 759739,
+      "sha256": "82a2cd31e321bf72be45b2c02873958d66090201bd3ef502f289f77ea725dfbf"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-green.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-green.appiconset/Contents.json",
@@ -4089,18 +4089,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-orange.appiconset/AppIcon-512@2x.png",
-      "bytes": 846851,
-      "sha256": "5a730163d4f94706e0cd891a2a17f65e1a732910c347018128259f9cfc192e2f"
+      "bytes": 775647,
+      "sha256": "512b63522aa2e8c411da833784710f6ffcd4e650c9d0529b06a62afdd7664398"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-orange.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 843034,
-      "sha256": "07723a46b7383c6ccc3d80fe61efe2044a6793ab5f9e06e20a6f08cadfaad854"
+      "bytes": 742430,
+      "sha256": "22aff7fdd7ade2c730b7005e0ffec88531d01e0d2e20e1508820fcf012e39e3b"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-orange.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-orange.appiconset/Contents.json",
@@ -4109,18 +4109,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-violet.appiconset/AppIcon-512@2x.png",
-      "bytes": 851404,
-      "sha256": "c1ebf1183866e7a32f255cc518688c396084a40bb031de1ad7100e8c9ec44159"
+      "bytes": 775862,
+      "sha256": "115069083697517313d00e654fe6ff5a05c360dd36d6f7a72278c3fa0d705b28"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-violet.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 855389,
-      "sha256": "ba4350b901d436312ccc07228ed7a61039ee86107ace596c143cc4fa1cc422b7"
+      "bytes": 754461,
+      "sha256": "ddc93f89ad39bb3a616e52c19709ec740c2c808f8d667395f27cd315d7154f56"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-violet.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-mg-violet.appiconset/Contents.json",
@@ -4129,18 +4129,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-blue.appiconset/AppIcon-512@2x.png",
-      "bytes": 847112,
-      "sha256": "e00cc8f9112952086a11cca7a990d858ac27c092364680905ac29dd7a222a930"
+      "bytes": 775468,
+      "sha256": "f713bd610cd22f3a422efd1d40e6eedf14a41d901ca73162ebcbf6bb77d9e4b1"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-blue.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 846722,
-      "sha256": "6311d5fdae93241d7847b489052a7d18478a574ce7f28c58df41e66bf6980c09"
+      "bytes": 748486,
+      "sha256": "962c8881a352c0d740200018deec77c57f1fc64ec26c8242e49952807f994509"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-blue.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-blue.appiconset/Contents.json",
@@ -4149,18 +4149,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-cy.appiconset/AppIcon-512@2x.png",
-      "bytes": 849628,
-      "sha256": "23dc93f026f2b8df855672db3f69fa243315209959c6a1c367638a7e52883523"
+      "bytes": 772431,
+      "sha256": "33d49a39612170eea7d8d20378960cc0435fc5b3793ac3b9f6ece058fcfcf477"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-cy.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 848684,
-      "sha256": "f4a59a2ecc2d3ebad10837b8671fdb59ddcec2ca8e7b66fd7d8b066db7cb4009"
+      "bytes": 742439,
+      "sha256": "9eb12583c4b790187c7735dc2e55cceaa970dd0d6aeb42b7072a999656bfc0c8"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-cy.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-cy.appiconset/Contents.json",
@@ -4169,18 +4169,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-gold.appiconset/AppIcon-512@2x.png",
-      "bytes": 845507,
-      "sha256": "25662359717112f703139b29407597cac122b0ea7d1c1565a7a4483eb85e1aa6"
+      "bytes": 769712,
+      "sha256": "c7378b0bdf821e98d223c315e9b971ba2c46a336b715199f01a406a79c1cdaeb"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-gold.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 848092,
-      "sha256": "4dd0a1f0602056c44bb846af35f90fadd81526da74c162b7422da46604537ff8"
+      "bytes": 745536,
+      "sha256": "c65766132669541a78868740c46682f7c34d689cae7f87abfebe9083af6a7686"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-gold.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-gold.appiconset/Contents.json",
@@ -4189,18 +4189,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-green.appiconset/AppIcon-512@2x.png",
-      "bytes": 870029,
-      "sha256": "245d4202043e3fe6ed7b2f6ff63d45107e591f3a3708aa9640408140d63381cc"
+      "bytes": 793691,
+      "sha256": "b3c331e10ece7ed05f2bda50db0863936e9e6997dbb94859d420d03e0baa5f2c"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-green.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 867693,
-      "sha256": "f4f2b01a9f8a0cdd1f650ee3c7ba3577f26c1934403daf591fc210c3a0634464"
+      "bytes": 758489,
+      "sha256": "1c156290040f6ba8d5434582a2b124754abef785ddb8ae911f93c77cd7b8852a"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-green.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-green.appiconset/Contents.json",
@@ -4209,18 +4209,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-mg.appiconset/AppIcon-512@2x.png",
-      "bytes": 846380,
-      "sha256": "26489843bc3b203bc162afae1315f184846aae2c6d89ab36e3506e4a43447503"
+      "bytes": 774271,
+      "sha256": "6706bdf33192ec819193f24c2e01418836c6e7e0537d49ffe715c9cc5b4d3f25"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-mg.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 837180,
-      "sha256": "b65745123759b44e42c560ae1dc2cd84109a0f4f76c271dc8698c4a9973c6d1e"
+      "bytes": 734425,
+      "sha256": "4563858d3236034654f7cb3b9c58dd05acb6e425c289088edebf71741bcd34ef"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-mg.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-mg.appiconset/Contents.json",
@@ -4229,18 +4229,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-violet.appiconset/AppIcon-512@2x.png",
-      "bytes": 849710,
-      "sha256": "291c5651ab2331d77c20baf02a4ec1169b55955abd09d3410e11ccc58479df93"
+      "bytes": 774758,
+      "sha256": "bd01794babf8dd7fc1c5fdc03965e85cecffff6be5d5707eae566cabdcd1f906"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-violet.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 854743,
-      "sha256": "a5059f53e5618c8d93c0ab8b7f5c3d84e239871ddc11e9ac8619caa7381e05bf"
+      "bytes": 753975,
+      "sha256": "df6af5c56bb5414c4aa0bb82e568359db6f5ad134e09406192efb2ab842bcaa8"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-violet.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-orange-violet.appiconset/Contents.json",
@@ -4249,18 +4249,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-blue.appiconset/AppIcon-512@2x.png",
-      "bytes": 847896,
-      "sha256": "5b0811e654f5b065f725865192637ebf3eb0f413c9942a26be443da226ec9403"
+      "bytes": 772739,
+      "sha256": "5282287df9ed2d7f82034bfd570c58f8d0429930c6f62a1eb20b3b27ec3f5d84"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-blue.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 851594,
-      "sha256": "c63a9686764f4b14940f1ddec64ec8b8215d777c46a2912db9ff6b82401dca7a"
+      "bytes": 753758,
+      "sha256": "1327b28a2b789d12efdb148ccbbee864cafb5614e49d44fdc8ff142f1350fa6f"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-blue.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-blue.appiconset/Contents.json",
@@ -4269,18 +4269,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-cy.appiconset/AppIcon-512@2x.png",
-      "bytes": 850800,
-      "sha256": "f9d452cf0f0d100baec0c09131be43f012a3a5ce70c88ba2b8bf3855e4f9bff2"
+      "bytes": 770021,
+      "sha256": "e724ad8561ca0c7652c054ca394f38931b10afaddfb9a14927b5a6935a1a7849"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-cy.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 854048,
-      "sha256": "a0f16e5a50e49ba1c19c7a895e7de2215d02dc7fddd6b4dc0a57e31d7d981d41"
+      "bytes": 748367,
+      "sha256": "e48d8039c4c0907551e4eaa1235cce40298d75f1082da676fcc72188c5f542e2"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-cy.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-cy.appiconset/Contents.json",
@@ -4289,18 +4289,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-gold.appiconset/AppIcon-512@2x.png",
-      "bytes": 850620,
-      "sha256": "5a337e1826ff300f57b7e7d7236bc55622695f970cc5031a13e6f0218d1ff671"
+      "bytes": 772353,
+      "sha256": "9e280df2e4e56f5279d5667a16f658c380cd31be9aa2978e174aa6030ff5122d"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-gold.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 858994,
-      "sha256": "ad259a90b2391647a086f77fc2efc71f176cdaa79c39e075db4a273d4ffa4f52"
+      "bytes": 757918,
+      "sha256": "f8063dcc30c0e8c61bfbc401a32aac7756be6f7ce0d31ff354b95885a6df2ee3"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-gold.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-gold.appiconset/Contents.json",
@@ -4309,18 +4309,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-green.appiconset/AppIcon-512@2x.png",
-      "bytes": 873107,
-      "sha256": "05de2c80b4a1e4d5a30945a1b347d96db0042258fb29a41def07d711d805449b"
+      "bytes": 794034,
+      "sha256": "187599fff1ed4d518564d0886fd87cefc64cb456eb7e714309c39672b39eae25"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-green.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 875154,
-      "sha256": "16eaa376fe8e36d113cf64c8549782ac1824f574426416ce77fd98e8c6f1ba1f"
+      "bytes": 767539,
+      "sha256": "b5b326ed162c8c7364700fb0f4c78933692aa05bf756e581082a6eb9d6dbdba1"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-green.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-green.appiconset/Contents.json",
@@ -4329,18 +4329,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-mg.appiconset/AppIcon-512@2x.png",
-      "bytes": 850896,
-      "sha256": "b42f4ee709b42f09004932016de8f368f8096ad62327e75ed2bcdb64568160c3"
+      "bytes": 776093,
+      "sha256": "f39bd2ab6c4e123264669b82a34fa6d4f638982fd89ed92cf4b426b734d4cd6f"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-mg.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 847360,
-      "sha256": "061a6b40f77d703a06589fdf8836a30a0aed81a81605f63b9a9fcf314a8dfec6"
+      "bytes": 745513,
+      "sha256": "cbd375dfb658ab7fdd6d71c23c29d867fbcfe593ebcf814a62556b07a78a1e8c"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-mg.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-mg.appiconset/Contents.json",
@@ -4349,18 +4349,18 @@
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-orange.appiconset/AppIcon-512@2x.png",
-      "bytes": 850667,
-      "sha256": "458865d74a86023d27b0b55cc6b033bf49a8e374c1dacd63a87aed617130b605"
+      "bytes": 776092,
+      "sha256": "cf5cc913bcc9f6ff6afb06bfe256a8fa82be98156a24a1d354d7d7f7bff95b07"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-orange.appiconset/AppIcon-Dark-512@2x.png",
-      "bytes": 851518,
-      "sha256": "0e2400d87fd04cb50b7e57104612dbd02af6ab9e9e016a5d760d9e42fd7665cb"
+      "bytes": 753216,
+      "sha256": "4d5209b6b2626eea1242440a8fe7a25db9f1345de6eb879f50f5e537d9d85d56"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-orange.appiconset/AppIcon-Tinted-512@2x.png",
-      "bytes": 36910,
-      "sha256": "1edc4416f4afe9ec25b2873d2aff87478c8fd2b37c487ffdaa7a6a3b59a8a148"
+      "bytes": 33271,
+      "sha256": "00bd441ae2d46519144af4b103e51a5a16bb94144471a2cc0d74acf93cb34236"
     },
     {
       "path": "native/ios/App/App/Assets.xcassets/split-violet-orange.appiconset/Contents.json",
@@ -4369,23 +4369,23 @@
     },
     {
       "path": "public/icon-180.png",
-      "bytes": 42122,
-      "sha256": "46f12e0c88fd0060b6cb7c6949ffd995ac54a3120890dd01ccf40d794a98f9ae"
+      "bytes": 37929,
+      "sha256": "b36ea324528d309e8dcd38bdabb12ef9c66c08137d020d0b440cf9f0b22ae7de"
     },
     {
       "path": "public/icon-192.png",
-      "bytes": 46530,
-      "sha256": "85813fe323b8fff9c157d414081c5add4bd5597b94e313061c4e6504838df44e"
+      "bytes": 42219,
+      "sha256": "0225d15fc100947f62c3392722d86177d8281536fb54c6fdff1c2a5ccd0edfb0"
     },
     {
       "path": "public/icon-512.png",
-      "bytes": 251757,
-      "sha256": "2de93a00723ba090d02b44c4b894589b826bc14d38277eb653aeec6ba5a412fb"
+      "bytes": 223094,
+      "sha256": "7bebd58883f4be23a1af0e788276d4af5eea29d2f95a99230ad85a57271953fd"
     },
     {
       "path": "public/icon-maskable-512.png",
-      "bytes": 192447,
-      "sha256": "38ddc90f72e93561081a714e16daf5dabac356d86011ce28bc08c1e1a962c4ab"
+      "bytes": 194920,
+      "sha256": "f91060075f9fef5f5ae13e921899ee563e8ecaf2f2ca38090428bea52a2ce542"
     }
   ]
 }

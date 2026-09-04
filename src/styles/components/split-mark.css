@@ -85,3 +85,15 @@
      glow spills outside the 96px layout box, which is what a glow should do:
      .hero is a flex column and visual overflow moves nothing. */
   overflow:visible}
+/* AND THE ICON CANVAS CLIPS THE GLOW, not the die's own box. The tile does want
+   its light contained — it must not bleed off a launcher tile — but containing
+   it AT THE DIE cuts the same hard-edged square the rule above exists to undo.
+   That went unseen while the die filled 80% of the canvas and the cut landed
+   within a few percent of the edge. Giving the mark its margin (SPLIT_ICON_PAD,
+   tools/appicon.mjs) moved the cut inward, into open background, where it reads
+   as a box drawn around the die. The canvas already carries overflow:hidden of
+   its own, so lifting the clip here loses nothing: the glow falls off naturally
+   and the CANVAS ends it, at the edge where a launcher tile ends anyway. This
+   is one rule for every rendition — 41 alternate pairs, light, dark and tinted
+   all come off this same canvas. */
+:where(#kbroot) .appicon-canvas .split{overflow:visible}

@@ -22,8 +22,16 @@ import { inlineCssGraph } from './css-graph.mjs';
 
 export const APP_ICON_PAD = .15;
 /* The split die is authored in a 120-unit square with a 96-unit die (the
-   card's own proportions), so the launcher's die box is 80% of the canvas. */
-export const SPLIT_ICON_PAD = .1;
+   card's own proportions), which put the launcher's die box at 80% of the
+   canvas — and the die is TILTED, so its corners reached further still and the
+   mark ran edge to edge. iOS masks an icon to a continuous rounded rectangle,
+   so artwork that close to the sides has nothing to sit in and the corners
+   crowd the arc. Apple publishes no percentage for this (the guidance is
+   qualitative: keep what matters away from the corners, because the mask cuts
+   them), so this takes the value the app's OTHER icon already uses rather than
+   inventing one — .15, matching APP_ICON_PAD above, which drops the die box to
+   70% and gives the mark the same room the non-split icon has always had. */
+export const SPLIT_ICON_PAD = .15;
 export const SPLIT_ICON_FACE = 6;
 export const MASKABLE_ICON_PAD = .2;
 export const APP_ICON_TILT_DEG = 7;
