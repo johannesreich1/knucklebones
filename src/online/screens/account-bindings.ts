@@ -27,6 +27,7 @@ import { setRuneEquipment, type EquippedRuneSelection } from '../runes/rune-equi
 import { bindAccountAppleRepair } from './account-apple-repair.ts';
 import { bindAccountGameCenterLink } from './account-game-center-link.ts';
 import { bindAccountDelete } from './account-delete-flow.ts';
+import { retireClaimOffer } from './account-offers.ts';
 import type { AuthMode, AuthOrigin } from './auth-screen.ts';
 
 export interface AccountBindingPorts {
@@ -178,7 +179,11 @@ export function bindAccountScreen(ports: AccountBindingPorts): void {
     }
     if (!await stillOwnsVisibleAccount(accountId)) return;
     ports.clearNickError();
-    $('#accClaim').hidden = true;
+    /* The claim is spent, so it leaves the deck. Re-dealing rather than
+       hiding the card keeps the count and the dots honest: a guest who has
+       just named themselves drops from two offers to one, and the seam
+       collapses the chrome with it. */
+    retireClaimOffer();
     ($('#onAccount') as HTMLElement).dataset.accountName = name;
     button.disabled = false;
     await ports.refresh();

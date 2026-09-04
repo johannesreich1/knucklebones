@@ -264,3 +264,32 @@
 @media (prefers-reduced-motion:reduce){
   :where(#kbroot) #onAccount .accseat.acc-rune-guide-target{animation:none}
 }
+
+/* ── THE IDENTITY OFFER DECK ────────────────────────────────────────────────
+   The two boxed offers (name claim, guest) are one deck you swipe rather than
+   a stack that asks twice. It wears no card chrome of its own — the cards
+   inside already carry theirs — so the deck is a column of head, card, dots.
+   ONE OFFER WEARS NOTHING. The seam drops the `1 / 1` label; --single takes
+   the rest of the chrome with it, so a player owed a single answer never
+   learns a deck was involved. */
+:where(#kbroot) #onAccount .offerdeck{display:flex;flex-direction:column;gap:8px;width:100%;
+  touch-action:pan-y}
+:where(#kbroot) #onAccount .offerdeck__head{display:flex;align-items:center;min-height:11px}
+/* right edge, like the promotion deck's counter — margin-left:auto rather than
+   justify-content, so a kicker can arrive on the left without moving it */
+:where(#kbroot) #onAccount .offerdeck__page{margin-left:auto;color:var(--dim);font-size:8px;
+  font-weight:900;letter-spacing:.14em}
+:where(#kbroot) #onAccount .offerdeck__dots{display:flex;align-items:center;justify-content:center;
+  gap:6px;min-height:9px}
+:where(#kbroot) #onAccount .offerdeck__dots i{display:block;width:5px;height:5px;border-radius:999px;
+  background:#41485e;transition:width .2s,background .2s}
+:where(#kbroot) #onAccount .offerdeck__dots i[aria-current="true"]{width:18px;background:var(--p1);
+  box-shadow:0 0 10px color-mix(in srgb,var(--p1) 65%,transparent)}
+:where(#kbroot) #onAccount .offerdeck--single .offerdeck__head,
+:where(#kbroot) #onAccount .offerdeck--single .offerdeck__dots{display:none}
+/* THE COLUMN DOES NOT JUMP UNDER YOUR THUMB. The two cards are different
+   heights and the claim card grows again the moment a validation error appears
+   (base.css: .err:empty is display:none), so paging would shift everything
+   below it mid-swipe. Reserving the taller card's height costs one dead strip
+   under the shorter one and buys a deck that stays still. */
+:where(#kbroot) #onAccount .offerdeck .guestbox{min-height:var(--offerdeck-card, auto)}

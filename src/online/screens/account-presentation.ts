@@ -9,6 +9,7 @@ import {
 } from '../../ladder-presentation.ts';
 import type { LadderCurveVersion } from '../../progression-status-cache.ts';
 import { S } from '../../state.ts';
+import { accountOffers, paintAccountOffers } from './account-offers.ts';
 import {
   formatDate,
   formatNumber,
@@ -130,16 +131,17 @@ export function paintAccountFrame(
   clearNickError: () => void,
 ): void {
   const { profile, user, ladder, standing } = account;
-  $('#accGuest').hidden = !user.guest;
   ($('#btnSignOut') as HTMLElement).hidden = user.guest;
+  /* The two offers are dealt together now — they were two independent `hidden`
+     writes, which is exactly how the profile came to ask both questions at
+     once. account-offers.ts decides which apply and the deck pages them. */
+  paintAccountOffers(accountOffers(!!profile.named_at, user.guest));
   /* THE NAME IS STATE, NOT A HEADLINE. The profile no longer prints the
      nickname under the ring (owner call): it is your own profile, and the line
      only pushed the points down. It stays addressable as panel state so
      anything asking "whose profile is on screen" still has one honest answer. */
   ($('#onAccount') as HTMLElement).dataset.accountName = profile.nickname;
-  const claim = $('#accClaim');
-  claim.hidden = !!profile.named_at;
-  if (!claim.hidden) {
+  if (!profile.named_at) {
     ($('#onNick') as HTMLInputElement).placeholder = profile.nickname;
     clearNickError();
   }
@@ -175,10 +177,9 @@ export function resetAccountPresentation(
   $('#accRank').textContent = '–';
   $('#accStreak').textContent = formatNumber(0);
   ($('#onAccount') as HTMLElement).dataset.accountName = '';
-  $('#accGuest').hidden = true;
+  paintAccountOffers([]);
   paintAccountProviders(null, null);
   ($('#btnSignOut') as HTMLElement).hidden = true;
-  $('#accClaim').hidden = true;
   paintAvatar($('#accDie'), DEFAULT_AVATAR);
   paintAccountRunes([]);
   paintEquippedSeat(null, { kind: 'none' }, []);

@@ -142,20 +142,30 @@ const OVERLAY = `
          named_at is stamped (migration 0026) the card is gone for good, not
          disabled. It leads the guest card: naming yourself comes before
          deciding where the account lives. -->
-    <div class="guestbox namebox" id="accClaim" hidden>
-      <b data-i18n="online:profile.claimTitle">CLAIM YOUR NAME</b>
-      <p data-i18n="online:profile.claimDetail">One name per account — set once and kept for good. 3–16 letters, digits or underscores.</p>
-      <!-- no maxlength: a silent cap eats keystrokes mid-word; the claim
-           button answers over-long names with the limit instead -->
-      <input id="onNick" autocomplete="off" spellcheck="false" autocapitalize="off">
-      <div class="err" id="onNickErr"></div>
-      <button class="btn primary" id="btnClaim" data-i18n="online:profile.claimName">Claim name</button>
-    </div>
-    <div class="guestbox" id="accGuest" hidden>
-      <b data-i18n="common:people.guest">GUEST</b>
-      <p data-i18n="online:profile.guestDetail">This account lives on this device only. Delete the app and the rating goes with it.</p>
-      <button class="btn primary" id="btnKeepAcc" data-i18n="online:profile.keepForever">Keep it forever</button>
-      <button class="btn ghost" id="btnHaveAcc" data-i18n="online:auth.alreadyHaveAccount">I already have an account</button>
+    <!-- THE TWO IDENTITY OFFERS ARE ONE DECK. What you are called and where
+         the account lives are independent facts, so an ordinary first run owes
+         BOTH answers — and two boxed offers stacked in the column is the
+         profile asking twice at once. Swipe instead, name first. Paging, the
+         count and the dots are ui/slide-deck.ts, shared with the league
+         promotion deck; account-offers.ts owns only which cards apply. -->
+    <div class="offerdeck" id="accOffers" hidden>
+      <div class="offerdeck__head"><span class="offerdeck__page" id="accOfferPage"></span></div>
+      <div class="guestbox namebox" id="accClaim" hidden>
+        <b data-i18n="online:profile.claimTitle">CLAIM YOUR NAME</b>
+        <p data-i18n="online:profile.claimDetail">One name per account — set once and kept for good. 3–16 letters, digits or underscores.</p>
+        <!-- no maxlength: a silent cap eats keystrokes mid-word; the claim
+             button answers over-long names with the limit instead -->
+        <input id="onNick" autocomplete="off" spellcheck="false" autocapitalize="off">
+        <div class="err" id="onNickErr"></div>
+        <button class="btn primary" id="btnClaim" data-i18n="online:profile.claimName">Claim name</button>
+      </div>
+      <div class="guestbox" id="accGuest" hidden>
+        <b data-i18n="common:people.guest">GUEST</b>
+        <p data-i18n="online:profile.guestDetail">This account lives on this device only. Delete the app and the rating goes with it.</p>
+        <button class="btn primary" id="btnKeepAcc" data-i18n="online:profile.keepForever">Keep it forever</button>
+        <button class="btn ghost" id="btnHaveAcc" data-i18n="online:auth.alreadyHaveAccount">I already have an account</button>
+      </div>
+      <div class="offerdeck__dots" id="accOfferDots" role="group"></div>
     </div>
     <!-- Every row here is painted in or out by account-provider-view: the box
          exists only while something in it is actionable, so each row starts

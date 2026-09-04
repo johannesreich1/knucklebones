@@ -150,11 +150,17 @@ export async function runAccountLifecycleScenarios(suite) {
     viewport: { width: 430, height: 1550 }, probe: probeIdentityOfferOrder });
   const offerOrder = offerRun.probeResult;
   out.accountIdentityOrder = offerOrder;
+  /* THE TWO OFFERS NOW SHARE ONE SLOT, so this no longer reads claim ABOVE
+     guest — they are one deck and the guest card is dealt behind the claim
+     rather than stacked under it. What still has to hold is where that slot
+     sits: after the three facts and before PAST DUELS, with the history door
+     under the rows it summarises. `guest` is null here precisely because it is
+     on the second slide; asserting that is asserting the deck. */
   check(offerOrder?.recent.length === 3
     && dealsNewestFirst(offerOrder)
     && precedes(offerOrder.facts, offerOrder.claim)
-    && precedes(offerOrder.claim, offerOrder.guest)
-    && precedes(offerOrder.guest, offerOrder.duels)
+    && offerOrder.guest === null
+    && precedes(offerOrder.claim, offerOrder.duels)
     && precedes(offerOrder.duels, offerOrder.recent[0])
     && precedes(offerOrder.recent[2], offerOrder.history),
   'profile identity offers, PAST DUELS and the history door are out of order', offerOrder);

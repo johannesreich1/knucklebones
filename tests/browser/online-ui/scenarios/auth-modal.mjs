@@ -3,6 +3,7 @@
 // it goes. What SUBMITTING it does to the flow lives in auth-credentials.mjs.
 
 import { waitForOverlayTransitions } from '../../support/overlay-transitions.mjs';
+import { openOffer } from '../harness/offer-deck.mjs';
 
 async function beginTouchDrag(page, locator, distance, pointerId) {
   const box = await locator.boundingBox();
@@ -110,6 +111,7 @@ async function probeSessionlessModal(page) {
 }
 
 async function probeAccountOrigin(page) {
+  await openOffer(page, 'guest');
   await page.click('#btnHaveAcc');
   await page.waitForSelector('.authsheet .focard');
   const opened = await page.evaluate(() => ({

@@ -17,6 +17,7 @@ import {
   probeAppleRestoreSuccess,
 } from './auth-apple-probes.mjs';
 import { waitForOverlayTransitions } from '../../support/overlay-transitions.mjs';
+import { openOffer } from '../harness/offer-deck.mjs';
 
 async function submitCredentials(page) {
   await page.fill('#onEmail', 'player@example.test');
@@ -201,6 +202,7 @@ async function probeCancelledHydration(page, routes) {
 }
 
 async function probeAccountCredentialSuccess(page, routes) {
+  await openOffer(page, 'guest');
   await page.click('#btnHaveAcc');
   await submitCredentials(page);
   await page.waitForFunction(() => !document.querySelector('.authsheet'));

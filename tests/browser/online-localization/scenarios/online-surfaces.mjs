@@ -6,6 +6,7 @@ import { checkReachableTargets, checkSurface, frame,
   inspectSurface } from '../../localization/harness/layout-inspection.mjs';
 import { inspectRuneSheets } from './profile-rune-sheets.mjs';
 import { inspectOfflineSheet } from './connection-sheet.mjs';
+import { openOffer } from '../../online-ui/harness/offer-deck.mjs';
 
 const VIEWPORTS = [
   { name: '320x568', width: 320, height: 568 },
@@ -14,11 +15,15 @@ const VIEWPORTS = [
   { name: '667x375', width: 667, height: 375 },
 ];
 const GUEST_ID = '00000000-0000-4000-8000-00000000cafe';
+/* The two identity offers are one deck, so only one card is laid out at a time.
+   Coverage is not dropped: the guest card is inspected on its own slide below,
+   at every viewport and in every locale, exactly as before. */
 const PROFILE_TARGETS = [
   '#btnAvatar', '#btnLadder', '#btnRank', '#onNick', '#btnClaim',
   '#accRuneGrid .accrune[data-rune="fate"]', '#accRuneGrid .accrune[data-rune="nudge"]',
-  '#btnKeepAcc', '#btnHaveAcc', '#btnHistory', '#btnDeleteAcc',
+  '#btnHistory', '#btnDeleteAcc',
 ];
+const GUEST_OFFER_TARGETS = ['#btnKeepAcc', '#btnHaveAcc'];
 
 const b64 = (value) => Buffer.from(JSON.stringify(value)).toString('base64url');
 const jwt = (subject) => `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({
@@ -124,10 +129,17 @@ async function inspectAccount(suite, page, label) {
     '#accGroup', '#btnLadder', '#btnLadder span', '.fact span',
     '#accSeat', '#accRunesTitle', '#accRuneCount', '.accrune',
     '#accClaim b', '#accClaim p', '#onNick', '#btnClaim',
-    '#accGuest b', '#accGuest p', '#btnKeepAcc', '#btnHaveAcc',
     '#accRecentTitle',
     '#btnHistory', '#accSince', '#btnDeleteAcc',
   ], PROFILE_TARGETS);
+  /* …and the guest offer on its own slide: same copy, same fit, dealt first. */
+  await openOffer(page, 'guest');
+  await assertPanel(suite, page, `profile-guest-${label}`, [
+    '#accGuest b', '#accGuest p', '#btnKeepAcc', '#btnHaveAcc',
+  ], GUEST_OFFER_TARGETS);
+  /* Leave the deck at rest on the claim, or the NEXT wait times out on #onNick
+     and reads as a page bug rather than as this probe's leftover. */
+  await openOffer(page, 'claim');
   const runeHeading = await page.evaluate(() => {
     const root = document.getElementById('kbroot');
     const title = document.getElementById('accRunesTitle');
@@ -304,6 +316,7 @@ async function runViewport(suite, locale, viewport) {
     `${label} profile title did not use its locale`, account.heading.items);
   const runeSheets = await inspectRuneSheets(suite, page, label, locale);
 
+  await openOffer(page, 'guest');
   await page.click('#btnHaveAcc');
   await page.waitForSelector('.authsheet #onAuth', { timeout: 15000 });
   await frame(page);
@@ -312,6 +325,8 @@ async function runViewport(suite, locale, viewport) {
     `${label} auth title did not use its locale`, auth.heading.items);
   await page.click('.authsheet .fograb');
   await page.waitForSelector('.authsheet', { state: 'detached' });
+  /* the door back out was on the guest slide; the profile at rest is the claim */
+  await openOffer(page, 'claim');
   await waitForPanel(page, 'onAccount', PROFILE_TARGETS);
   await page.click('#btnOnlineBack');
   await page.waitForSelector('#ovStart.on');

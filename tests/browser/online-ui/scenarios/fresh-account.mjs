@@ -24,7 +24,56 @@ export async function runFreshAccountScenarios(suite) {
   check(fresh.seen.claim === true, 'a fresh player was not offered the name claim', fresh.seen);
   check(fresh.seen.nickValue === '' && fresh.seen.nickHint === 'TestGuest001',
         'the claim input should start empty with the minted name as placeholder', fresh.seen);
-  check(fresh.seen.guestBox === true, 'guest was not offered the way up', fresh.seen);
+  /* BOTH OFFERS, ONE DECK, NAME FIRST. What you are called and where the
+     account lives are independent facts, so an ordinary first run is owed both
+     answers — and the profile used to ask by stacking two boxed offers in the
+     column. Now it deals them: two dots, a `1 / 2`, and the claim on top,
+     because what you are called comes before where you live. */
+  check(fresh.seen.offers?.count === 2 && fresh.seen.offers?.active === 0
+    && fresh.seen.offers?.showing === 'claim',
+  'the profile does not deal both identity offers with the name first', fresh.seen.offers);
+  check(/\b1\b[^\d]+\b2\b/.test(fresh.seen.offers?.page ?? ''),
+    'the identity deck does not say how many offers there are', fresh.seen.offers);
+  /* and the guest offer is REACHED, not merely dealt — a count that promises a
+     second card the player cannot get to is worse than the old stack. */
+  const swiped = await visit({ skipStandardProbes: true, probe: async (page) => {
+    await page.waitForSelector('#accOffers:not([hidden])', { timeout: 15000 });
+    /* START ON THE CARD'S HEADING, NOT ITS MIDDLE. The deck's centre lands on
+       the name input, and the deck deliberately refuses to begin a gesture
+       inside a text field — a horizontal drag there is a selection, and on iOS
+       it is how the selection handles are moved. Measured: a swipe from the
+       centre does nothing, which is the guard working. */
+    const box = await page.evaluate(() => {
+      const title = document.querySelector('#accClaim b');
+      const r = (title ?? document.getElementById('accOffers')).getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    });
+    /* a real gesture, over the deck's own surface: 48px of travel is the
+       threshold and this clears it, decisively horizontal. */
+    await page.mouse.move(box.x + 70, box.y);
+    await page.mouse.down();
+    for (const step of [50, 20, -10, -40, -70]) {
+      await page.mouse.move(box.x + step, box.y);
+    }
+    await page.mouse.up();
+    await page.waitForTimeout(120);
+    return page.evaluate(() => ({
+      showing: !document.getElementById('accClaim')?.hidden ? 'claim'
+        : !document.getElementById('accGuest')?.hidden ? 'guest' : null,
+      keepReachable: (() => {
+        const b = document.getElementById('btnKeepAcc');
+        if (!b) return false;
+        const r = b.getBoundingClientRect();
+        if (r.width < 44 || r.height < 44) return false;
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return !!hit && b.contains(hit);
+      })(),
+    }));
+  } });
+  out.offerSwipe = swiped.probeResult;
+  check(swiped.probeResult?.showing === 'guest' && swiped.probeResult?.keepReachable === true,
+    'swiping the identity deck does not bring the guest offer under a finger',
+    swiped.probeResult);
   check(fresh.seen.signOut === false, 'guest offered Sign out — that discards, not signs out', fresh.seen);
   check(fresh.errs.length === 0, 'page errors on the guest path', fresh.errs);
   // both ladder facts are doors: tapping either lands on the board

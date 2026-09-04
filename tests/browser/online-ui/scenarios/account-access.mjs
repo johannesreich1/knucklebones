@@ -20,6 +20,7 @@
 // `hidden` on a row inside .providerbox is a claim about the DOM, and
 // `.providerbox p{display:flex}` outranks the attribute on specificity alone.
 import { readAccountAccess as readAccess } from '../harness/account-access-view.mjs';
+import { openOffer } from '../harness/offer-deck.mjs';
 
 const HEALTHY = { gameCenterLinked: false, appleLinked: true, appleRevocationReady: true };
 const REPAIRABLE = { gameCenterLinked: false, appleLinked: true, appleRevocationReady: false };
@@ -179,6 +180,8 @@ async function probeProviderSuccessWithCacheWriteFailure(page, routes) {
 /* The other button in the same region must be untouched: a guest still gets
    the upgrade sheet, with its own copy, from its own card. */
 async function probeGuestUpgradeIntact(page) {
+  /* the way up lives on the guest offer, which is the deck's second slide */
+  await openOffer(page, 'guest');
   await page.waitForSelector('#btnKeepAcc:not([hidden])');
   await page.click('#btnKeepAcc');
   await page.waitForSelector('.authsheet .focard', { timeout: 15000 });

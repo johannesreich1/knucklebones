@@ -25,6 +25,7 @@ import {
   type GroupTransitionSlide,
 } from './group-transition-model.ts';
 import { restoreGroupTransitionResultFocus } from './group-transition-focus.ts';
+import { createSlideDeck } from '../../ui/slide-deck.ts';
 
 const MARKUP = `<section class="gt-deck" role="dialog" aria-modal="true" tabindex="-1">
   <div class="gt-head"><span class="gt-kicker" id="gtKicker"></span><span class="gt-page" id="gtPage"></span></div>
@@ -43,7 +44,6 @@ interface Presentation {
   readonly slides: readonly GroupTransitionSlide[];
   readonly avatar: string | null | undefined;
   readonly hasCollectedRune: boolean;
-  index: number;
   resolve: (result: GroupTransitionResult) => void;
   background: readonly InertSnapshot[];
   opener: HTMLElement | null;
@@ -88,13 +88,11 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
   const next = required<HTMLButtonElement>(overlay, '#gtNext');
   const announcement = required<HTMLElement>(overlay, '#gtAnnouncement');
   let active: Presentation | null = null;
-  let pointer: { id: number; x: number; y: number } | null = null;
 
   const close = (result: GroupTransitionResult): void => {
     const closing = active;
     if (!closing) return;
     active = null;
-    pointer = null;
     overlay.classList.remove('on');
     overlay.hidden = true;
     restoreModalBackground(closing.background);
@@ -108,26 +106,8 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
     });
   };
 
-  const move = (step: -1 | 1): void => {
-    if (!active) return;
-    const index = Math.max(0, Math.min(active.slides.length - 1, active.index + step));
-    if (index === active.index) return;
-    active.index = index;
-    Sfx.tap();
-    paint();
-  };
-
-  const advance = (): void => {
-    if (!active) return;
-    if (active.index < active.slides.length - 1) {
-      move(1);
-      return;
-    }
-    Sfx.tap();
-    const slide = active.slides[active.index];
-    close(slide.kind === 'rune-seat' && active.hasCollectedRune
-      ? 'profile' : 'continue');
-  };
+  const move = (step: -1 | 1): void => { if (active) pager.move(step); };
+  const advance = (): void => { if (active) pager.advance(); };
 
   const paintGroup = (
     presentation: Presentation,
@@ -169,30 +149,23 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
       ? 'groupTransition.promotionBody' : 'groupTransition.demotionBody');
   };
 
-  function paint(): void {
+  /* The deck's own drawing. Paging, the `n / m` label and the dots are the
+     shared seam's (ui/slide-deck.ts); everything below is what makes this one
+     a mandatory league dialog rather than a deck. */
+  function renderSlide(current0: number, total: number): void {
     if (!active) return;
-    const slide = active.slides[active.index];
+    const slide = active.slides[current0];
     if (slide.kind === 'group') paintGroup(active, slide);
     else paintGroupTransitionFeature(deck, body, kicker, slide);
 
-    const current = active.index + 1;
-    const total = active.slides.length;
+    const current = current0 + 1;
     const single = total === 1;
     deck.classList.toggle('gt-single', single);
     swipe.textContent = t('online', 'groupTransition.swipeExplore');
-    page.textContent = `${formatNumber(current)} / ${formatNumber(total)}`;
-    page.hidden = single;
     const slideLabel = t('online', 'groupTransition.slideLabel', { current, total });
-    dots.setAttribute('aria-label', slideLabel);
-    dots.replaceChildren(...active.slides.map((_, index) => {
-      const dot = document.createElement('i');
-      dot.setAttribute('aria-hidden', 'true');
-      if (index === active!.index) dot.setAttribute('aria-current', 'true');
-      return dot;
-    }));
-    back.hidden = active.index === 0;
+    back.hidden = current0 === 0;
     back.textContent = t('common', 'actions.back');
-    const final = active.index === total - 1;
+    const final = current0 === total - 1;
     const opensProfile = final && slide.kind === 'rune-seat' && active.hasCollectedRune;
     next.textContent = opensProfile
       ? t('online', 'groupTransition.openProfile')
@@ -208,33 +181,31 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
     next.focus({ preventScroll: true });
   }
 
+  /* ARROW KEYS ARE DELIBERATELY NOT THE SEAM'S HERE. This deck also swallows
+     Escape and traps Tab, and all three have to be one capture-phase handler on
+     the document (or the embed root) so a mandatory dialog wins them; handing
+     the seam a scoped element would split that ownership in two. An inline
+     deck on a scrolling page does the opposite and scopes them. */
+  const pager = createSlideDeck({
+    surface: deck,
+    page,
+    dots,
+    render: renderSlide,
+    formatNumber,
+    slideLabel: (current, total) =>
+      t('online', 'groupTransition.slideLabel', { current, total }),
+    onMove: () => Sfx.tap(),
+    onPastEnd: () => {
+      if (!active) return;
+      Sfx.tap();
+      const slide = active.slides[pager.index];
+      close(slide.kind === 'rune-seat' && active.hasCollectedRune
+        ? 'profile' : 'continue');
+    },
+  });
+
   back.addEventListener('click', () => move(-1));
   next.addEventListener('click', advance);
-  deck.addEventListener('pointerdown', (event) => {
-    if (!active || !event.isPrimary || event.button !== 0) return;
-    /* Capturing a button's pointer retargets WebKit's click to the deck. The
-       swipe surface is everything around the controls; buttons keep their
-       native click/focus semantics. */
-    if (event.target instanceof Element && event.target.closest('button')) return;
-    pointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
-    try {
-      deck.setPointerCapture?.(event.pointerId);
-    } catch {
-      /* Synthetic regression pointers are not registered as active in WebKit;
-         the same bubbled stream still exercises the gesture without capture. */
-    }
-  });
-  deck.addEventListener('pointerup', (event) => {
-    const start = pointer;
-    pointer = null;
-    if (!active || !start || start.id !== event.pointerId) return;
-    const dx = event.clientX - start.x;
-    const dy = event.clientY - start.y;
-    if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
-    if (dx < 0) advance();
-    else move(-1);
-  });
-  deck.addEventListener('pointercancel', () => { pointer = null; });
   const handleKey = (event: KeyboardEvent): void => {
     if (!active) return;
     if (event.key === 'Escape') {
@@ -259,7 +230,7 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
   };
   if (isEmbed()) appRoot().addEventListener('keydown', handleKey, true);
   else document.addEventListener('keydown', handleKey, true);
-  subscribeLocale(() => { if (active) paint(); });
+  subscribeLocale(() => { if (active) pager.repaint(); });
 
   return {
     present(event, avatar, options = {}): Promise<GroupTransitionResult> {
@@ -277,7 +248,6 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
           slides,
           avatar,
           hasCollectedRune: options.hasCollectedRune === true,
-          index: 0,
           resolve,
           background,
           opener,
@@ -285,7 +255,7 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
         overlay.classList.add('on');
         /* Make the live region part of the visible accessibility tree before
            its initial text mutation; later slide paints are already visible. */
-        paint();
+        pager.setTotal(slides.length, 0);
         fit();
       });
     },

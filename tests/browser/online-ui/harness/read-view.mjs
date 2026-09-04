@@ -32,6 +32,22 @@ export function readOnlineView(page) {
         return group ? { text: group.textContent, color: getComputedStyle(group).color } : null;
       })(),
       claim: vis('#accClaim'),
+      /* THE TWO OFFERS ARE ONE DECK now, so "is the guest card painted" is no
+         longer the same question as "is the guest offer on the table". One of
+         them is on screen and the rest are dealt behind it. */
+      offers: (() => {
+        const root = document.querySelector('#accOffers');
+        if (!root || root.hidden) return null;
+        const dots = root.querySelectorAll('.offerdeck__dots i');
+        return {
+          count: dots.length,
+          active: [...dots].findIndex((dot) => dot.getAttribute('aria-current') === 'true'),
+          page: document.querySelector('#accOfferPage')?.hidden === false
+            ? document.querySelector('#accOfferPage')?.textContent : null,
+          showing: !document.querySelector('#accClaim')?.hidden ? 'claim'
+            : !document.querySelector('#accGuest')?.hidden ? 'guest' : null,
+        };
+      })(),
       nickValue: document.querySelector('#onNick')?.value,
       nickHint: document.querySelector('#onNick')?.placeholder,
       guestBox: vis('#accGuest'),

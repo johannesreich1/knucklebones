@@ -1,3 +1,5 @@
+import { openOffer } from '../harness/offer-deck.mjs';
+
 async function openAppleWarning(page) {
   await page.waitForSelector('.authsheet:not(.foout) .tap.apple');
   await page.click('.authsheet .tap.apple');
@@ -19,6 +21,7 @@ function restoredAuthState() {
 }
 
 export async function probeAppleRestoreSuccess(page, routes) {
+  await openOffer(page, 'guest');
   await page.click('#btnHaveAcc');
   const beforeProfileCalls = routes.profileCalls();
   await openAppleWarning(page);
@@ -75,6 +78,7 @@ export async function probeAppleRestoreSuccess(page, routes) {
 }
 
 export async function probeAppleAskReplacement(page, routes) {
+  await openOffer(page, 'guest');
   await page.click('#btnHaveAcc');
   await openAppleWarning(page);
   /* The account is inert under Apple, but application navigation can still
@@ -102,6 +106,7 @@ export async function probeAppleAskReplacement(page, routes) {
 }
 
 export async function probeAppleExplicitCancellation(page, routes) {
+  await openOffer(page, 'guest');
   await page.click('#btnHaveAcc');
   await openAppleWarning(page);
   await page.click('#btnAskNo');
