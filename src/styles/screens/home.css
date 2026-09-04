@@ -174,6 +174,15 @@
    the mark adds 2 of its own to make the 8. And the two small lines are now a
    matched pair: same 9px, same .28em, so neither reads as the larger one. */
 :where(#kbroot) .hero{gap:6px}
+/* The two small lines close on the wordmark (owner call, 2026-09-04). The step
+   under the mark was 8 / 6 / 6; the gaps BRACKETING KNUCKLEBONES are the two
+   that read loose, so they go to 4 and the mark keeps its 8. Doing it as the
+   h1's own block margin rather than by dropping .hero's gap is what keeps that
+   distinction — the gap is also what sets the mark-to-eyebrow distance, and
+   pulling it would have tightened a relationship nobody asked about. The step
+   is now 8 / 4 / 4, so the three lines read as one block hung under the mark
+   more firmly than before, which was the point of the stagger. */
+:where(#kbroot) .hero h1{margin-block:-2px}
 :where(#kbroot) .hero .eyebrow{align-self:stretch;text-align:left;letter-spacing:.28em}
 :where(#kbroot) .hero .sub2{align-self:stretch;text-align:right;font-size:9px;margin-right:-.28em}
 /* THE MARK WEARS NO ADDED GLOW ON HOME (owner call, 2026-09-04, decided from a

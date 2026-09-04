@@ -101,7 +101,36 @@
 /* The base rung, stated rather than inherited, so nothing in the app rests on
    the UA's idea of "normal" and tests/typeface.test.ts can demand that every
    weight in the product names a rung. */
-:where(#kbroot){font-weight:var(--fw-body)}
+/* AND THE LINE BOX IS PINNED, because bundling a face changed it everywhere.
+   `line-height: normal` is the FACE's metric, not a constant, and Chakra Petch
+   sets a far taller one than the ui-rounded/SF Pro Rounded stack this app was
+   laid out against. Measured in the built PWA at 390px, identical text, normal
+   line-height, both stacks:
+
+     font-size   9    9.5   10   11   12   12.5   13.5   15
+     rounded    11    11    12   13   15    15     16    18
+     Chakra     14    15    15   17   19    19     21    24
+
+   That is ~1.2x against ~1.56x — every unpinned line in the product grew about
+   a third. It surfaced as online-ui-account failing by exactly 10px, because
+   the profile column only had "a couple of pixels to spare" on that phone
+   (account-lifecycle.mjs says so where it stopped being a scrolling case), but
+   the account column was only the first place to run out of room, not the bug.
+   1.2 reproduces the rounded stack's own ratio to within a pixel at every size
+   above, so the typeface swap costs no height anywhere and the layout stops
+   depending on which family happens to load. Anything wanting a different
+   rhythm still states its own line-height and wins on specificity. */
+:where(#kbroot){font-weight:var(--fw-body);line-height:1.2}
+/* Form controls need it SAID TO THEM, not handed down. The UA stylesheet
+   declares line-height:normal directly on button/input/select/textarea, and a
+   declaration — even the UA's — beats an inherited value, so the rule above
+   reaches every line in the product EXCEPT the ones inside controls. That is
+   most of a screen's furniture: the account footer alone is two buttons. It
+   cost 6px of the account column's 10px overflow and read as if pinning the
+   line box had only half worked. Author origin outranks UA origin whatever the
+   specificity, so :where() is enough to take it back without raising the floor
+   for anything that wants its own. */
+:where(#kbroot) :where(button,input,select,textarea){line-height:1.2}
 /* <b> WAS 700 BY A TABLE NOBODY WROTE DOWN. The UA sheet gives b and strong
    `bolder`, which from an inherited 400 computes to 700 — so the rules prose
    had a hierarchy (.rules .k at 800 over a plain <b> at 700) that no stylesheet

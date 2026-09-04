@@ -63,8 +63,8 @@
     },
     {
       "path": "src/styles/components/overlays.css",
-      "bytes": 14177,
-      "sha256": "6bc8f0cebf6877597cc9e61020fb452c3790754fe09b70818a66f3f4283a555a"
+      "bytes": 14174,
+      "sha256": "b4b23d8e392a1445993a323cfd0a372117678d4b5d193f3b665399b9830b7d89"
     },
     {
       "path": "src/styles/components/picker.css",
@@ -103,8 +103,8 @@
     },
     {
       "path": "src/styles/foundations/typeface.css",
-      "bytes": 8734,
-      "sha256": "042dd44663fb6eae3b5a57190f193b86067779d49c3d3179a775cb7157500314"
+      "bytes": 10711,
+      "sha256": "ac4b6a09269b8548170be0a959e26e1fe95bf4b75cf08e51955eefeb1875d6d6"
     },
     {
       "path": "src/styles/game/anvil.css",
@@ -193,8 +193,8 @@
     },
     {
       "path": "src/styles/screens/home.css",
-      "bytes": 16824,
-      "sha256": "0f1cada7de785ff34eaae149a1f7342a293acf4885c2b0e6a9f2265071c6f429"
+      "bytes": 17487,
+      "sha256": "1cc29f0253bc6409f472647aba999d3a3a34e717e3cdaf458b3db78bab259915"
     },
     {
       "path": "src/styles/screens/learn-settings.css",
