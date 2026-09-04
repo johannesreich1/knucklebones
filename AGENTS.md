@@ -27,6 +27,7 @@ touching an area:
 | Spells or their balance/interaction rules | `docs/SPELLS.md`; for the ranked/equipped-rune decisions behind them, `docs/RUNE_MULTIPLAYER_INVESTIGATION.md` |
 | Ladder points, groups, bots, or matchmaking policy | `docs/LADDER.md` |
 | Accounts, guest upgrade, nickname, or Game Center identity | `docs/IDENTITY.md` |
+| Shipping a server change an installed app must understand — release phasing, capability negotiation, the UPDATE REQUIRED path | `docs/CLIENT_COMPATIBILITY.md` |
 | Impressum, privacy, consent, or anything shipping to a store listing | `docs/LEGAL.md` |
 | Historical August rationale or rejected alternatives | `docs/history/2026-08-sprint.md`, `docs/RUNE_CANDIDATE_STUDY.md` (exploratory runes, none shipped) |
 

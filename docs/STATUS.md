@@ -122,6 +122,18 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   minutes with nothing in flight. BadRandolf landed on 3890/3890 as designed.
   The remap held its invariants across all 203 rows: no negative points, and
   `peak >= points` everywhere.
+- **A capability refusal reaches the player as "check your connection."**
+  `supabase/functions/pvp-join/operation.ts` collapses every RPC error into
+  `queue-failed` 500, so when `enqueue_ranked_player_v3` raises `ranked client
+  does not support active curve v2` the reason is discarded and the shared ask
+  card shows CAN'T CONNECT instead of UPDATE REQUIRED — a player who must update
+  is sent to inspect their wifi. The fix is to return `incompatible-client` 409,
+  which `queue-screen.ts` already routes to the right state; the modal should
+  also carry a store link, which it currently lacks. Both belong **before any
+  App Store submission**: until a binary ships the only affected device is the
+  owner's, and a build already in someone's hand cannot be repaired
+  retroactively. Release phasing, the adoption query and the platform limits are
+  in `docs/CLIENT_COMPATIBILITY.md`.
 - The legacy player-points, bot-seed/refresh and wipe helpers now **refuse by
   design** (`legacy production player-points helper is disabled after curve-v2
   activation`). Their fixtures describe v1 and cannot safely mutate a v2
