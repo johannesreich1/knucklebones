@@ -1,18 +1,17 @@
-<!-- meta name="F9 — Chakra Petch" group="1d · The app's typeface" subtitle="Angular and unmistakably a game face; stops at 700, where the app asks for 800 and 900 · static 300–700 · OFL 1.1" width=412 height=712 sizes="md" links="Ladder, Settings, Practice offline" -->
+<!-- meta name="F9 — Chakra Petch (CHOSEN, shipped 2026-09-04)" group="1d · The app's typeface" subtitle="The app's face. Angular and unmistakably a game face; static 300–700, so the whole weight ladder is cut to a 700 ceiling — and its digits come from Saira, because it carries no tabular figures of its own · OFL 1.1" width=412 height=712 sizes="md" links="Ladder, Settings, Practice offline" -->
 <style>
   /* preview glue, the Home baseline's own three lines (10-home-signed-in) */
   .scr{align-items:center}
   .hero{margin-top:34px}
   .viewfoot{margin-top:auto;padding-top:20px}
 </style>
-{{font:chakrapetch}}
-<!-- THE WHOLE SCREEN WEARS THE CANDIDATE, not the wordmark alone: the question
-     is what the app's ONE font should be, so data-font sits on .stage and every
-     descendant under it — the tracked caps, the buttons, the plate's figures —
-     resolves Chakra Petch exactly as <body> would in the app. Home is the
-     baseline card's body verbatim (10-home-signed-in); the typeface is the only
-     variable, the way 14a-14h varied only the mark. -->
-<div class="stage" data-font="chakrapetch"><div class="bgfx"></div><div class="scr">
+<!-- NO {{font:…}} TOKEN AND NO data-font, and that absence is the whole point:
+     this option won, so the card wears the app's own face by inheritance like
+     every other product card. The other eleven still carry their candidate as a
+     data URI, because nothing in the product would otherwise render them. If
+     this card ever needs a token again, the decision was reversed and the
+     comparison board is where to start. -->
+<div class="stage"><div class="bgfx"></div><div class="scr">
   <div class="hero">
     {{splitmark:96}}
     <div class="eyebrow">Neon Edition</div>
