@@ -159,7 +159,13 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
      the lookup and honest rejoin above remain available while the queue and
      every new start are closed. */
   if (runtime.admission_paused) return json({ error: "ranked-paused" }, 503);
-  if (curveVersion === LADDER_CURVE_V2 && !input.capabilities.includes("curve_v2")) {
+  /* The same condition enqueue_ranked_player_v3 applies, stated here so a client
+     it would refuse never reaches it. This used to test the capability alone
+     while the RPC tests the protocol version too, which left a client claiming
+     curve_v2 on protocol 1 to be refused a statement later — by an exception,
+     where the reason does not survive (see the enqueue below). */
+  if (curveVersion === LADDER_CURVE_V2
+      && (input.protocolVersion !== 2 || !input.capabilities.includes("curve_v2"))) {
     return json({ error: "incompatible-client" }, 409);
   }
 
@@ -190,7 +196,31 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
     p_capabilities: input.capabilities,
     p_entry_kind: entryKind,
   });
-  if (queueError || !queuedRaw || typeof queuedRaw !== "object") {
+  /* A REFUSAL IS NOT A FAILURE, and the player is told which. Every error from
+     this RPC used to collapse into queue-failed 500, which the client reads as
+     "could not reach the server" and shows as CAN'T CONNECT — so on 2026-09-04
+     a curve-v2 capability refusal sent players to inspect their wifi while the
+     UPDATE REQUIRED sheet they needed sat unused. The client has always routed
+     `incompatible-client` there (queue-screen.ts); nothing but this mapping was
+     missing.
+     22023 is the RPC's own capability validation — an invalid capability array,
+     capabilities without protocol 2, a rune capability without its predecessor.
+     P0001 is a runtime refusal and carries several meanings, so it is read: the
+     curve ones are the client being too old, admission is the ladder being
+     closed and already has an answer of its own. Anything else is still a
+     genuine failure and still says so. */
+  if (queueError) {
+    const code = (queueError as { code?: string }).code ?? "";
+    const message = (queueError as { message?: string }).message ?? "";
+    if (code === "22023" || /curve v2/i.test(message)) {
+      return json({ error: "incompatible-client" }, 409);
+    }
+    if (/admission is paused/i.test(message)) {
+      return json({ error: "ranked-paused" }, 503);
+    }
+    return json({ error: "queue-failed" }, 500);
+  }
+  if (!queuedRaw || typeof queuedRaw !== "object") {
     return json({ error: "queue-failed" }, 500);
   }
   const queueState = queuedRaw as {

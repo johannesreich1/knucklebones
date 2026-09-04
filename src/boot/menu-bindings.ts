@@ -2,7 +2,7 @@
 // existing UI/flow operations; no game rule lives here.
 import { type Mode as RulesMode } from '../core/rules.ts';
 import {
-  SUPPORTED_LOCALES,
+  LOCALE_PICKER_ORDER,
   effectiveLocale,
   setLanguageOverride,
   t,
@@ -116,9 +116,9 @@ function huePicker(selector: string, write: (hue: string) => void): void {
 
 function bindLanguagePicker(): void {
   const cycle = (step: -1 | 1): void => {
-    const current = SUPPORTED_LOCALES.indexOf(effectiveLocale());
-    const next = SUPPORTED_LOCALES[
-      (current + step + SUPPORTED_LOCALES.length) % SUPPORTED_LOCALES.length
+    const current = LOCALE_PICKER_ORDER.indexOf(effectiveLocale());
+    const next = LOCALE_PICKER_ORDER[
+      (current + step + LOCALE_PICKER_ORDER.length) % LOCALE_PICKER_ORDER.length
     ];
     S.localeOverride = next;
     setLanguageOverride(next);

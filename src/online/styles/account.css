@@ -272,13 +272,24 @@
    ONE OFFER WEARS NOTHING. The seam drops the `1 / 1` label; --single takes
    the rest of the chrome with it, so a player owed a single answer never
    learns a deck was involved. */
-:where(#kbroot) #onAccount .offerdeck{display:flex;flex-direction:column;gap:8px;width:100%;
-  touch-action:pan-y}
-:where(#kbroot) #onAccount .offerdeck__head{display:flex;align-items:center;min-height:11px}
-/* right edge, like the promotion deck's counter — margin-left:auto rather than
-   justify-content, so a kicker can arrive on the left without moving it */
-:where(#kbroot) #onAccount .offerdeck__page{margin-left:auto;color:var(--dim);font-size:8px;
+:where(#kbroot) #onAccount .offerdeck{position:relative;display:flex;flex-direction:column;gap:8px;
+  width:100%;touch-action:pan-y}
+/* THE COUNT SITS IN THE CARD, on the card's own first line (owner call,
+   2026-09-04: "like the league deck"). It used to be a strip ABOVE the cards,
+   which read as a caption belonging to the column rather than to the offer —
+   the promotion deck has always put its count inside, on the same row as the
+   kicker, and these two are the same idea. The card is the deck's only sized
+   child, so absolute here lands on the card itself; 15px matches .guestbox's
+   own padding, which is what puts the count on the heading's line rather than
+   near it. It reads at the heading's 10px too: at 8px against a 10px title it
+   was a footnote about the card instead of part of it. */
+:where(#kbroot) #onAccount .offerdeck__head{position:absolute;top:15px;right:15px;z-index:2;
+  display:flex;align-items:center;pointer-events:none}
+:where(#kbroot) #onAccount .offerdeck__page{color:var(--dim);font-size:10px;
   font-weight:var(--fw-max);letter-spacing:.14em}
+/* and the heading yields the corner, so a long translation wraps before it
+   reaches the count rather than running under it */
+:where(#kbroot) #onAccount .offerdeck .guestbox > b{padding-right:42px}
 :where(#kbroot) #onAccount .offerdeck__dots{display:flex;align-items:center;justify-content:center;
   gap:6px;min-height:9px}
 :where(#kbroot) #onAccount .offerdeck__dots i{display:block;width:5px;height:5px;border-radius:999px;

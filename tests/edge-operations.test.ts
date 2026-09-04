@@ -15,7 +15,8 @@
 // to the replayed log version (edge-checked-settlement.ts).
 import { runCheckedSettlementTests } from './support/edge-checked-settlement.ts';
 import {
-  EdgeOperationsService, edgeContext, jsonBody, materializeEdgeOperations, standardJoinInput,
+  EdgeOperationsService, edgeContext, jsonBody, materializeEdgeOperations,
+  type RpcRoute, standardJoinInput,
 } from './support/edge-operations.ts';
 import { runTurnCommandTests } from './support/edge-turn-command.ts';
 import { emitReport } from './support/emit-report.mjs';
@@ -41,6 +42,58 @@ try {
     const unread = await run(unreadable);
     check(unread.status === 500 && (await jsonBody(unread)).error === 'match-read-failed',
       `${label} did not map a failed match read to match-read-failed`);
+  }
+
+  /* A CLIENT TOO OLD FOR THE ACTIVE CURVE IS TOLD SO. Both of these answered
+     with something else until 2026-09-04, and the cost was not theoretical: a
+     capability refusal reached players as CAN'T CONNECT, so the sheet that
+     says "update Knucklebones" — which the client has always routed
+     `incompatible-client` to — never appeared, and people were sent to inspect
+     their wifi instead. */
+  {
+    const onCurveTwo = () => ({
+      data: { curve_version: 2, scoring_version: 2, admission_paused: false },
+    });
+    /* Routed all the way to the queue on purpose: a client that should have
+       been refused at the guard must not simply throw on the first table it
+       was never meant to reach — it must be seen QUEUEING, which is the defect
+       stated as the player would meet it. */
+    const joinService = (enqueue: RpcRoute) =>
+      new EdgeOperationsService({
+        matches: () => ({ data: null }),
+        matchmaking_queue: () => ({ data: null }),
+        profiles: () => ({ data: { rating: 0, ranked_pool_tier: 'stone' } }),
+      }, {
+        ranked_runtime_contract: onCurveTwo,
+        current_season: () => ({ data: 1 }),
+        players_near: () => ({ data: 0 }),
+        enqueue_ranked_player_v3: enqueue,
+      });
+
+    /* The guard used to read the capability alone while the RPC also requires
+       protocol 2, so a client claiming curve_v2 on protocol 1 walked past it
+       and was refused a statement later, as an exception. */
+    const stale = joinService(() => ({ data: { status: 'queued' } }));
+    const staleReply = await operations.joinMatch(edgeContext('player-1', stale),
+      { ...standardJoinInput, protocolVersion: 1, capabilities: ['curve_v2'] });
+    const staleBody = await jsonBody(staleReply);
+    check(staleReply.status === 409 && staleBody.error === 'incompatible-client',
+      'joinMatch let a protocol-1 client past the curve-v2 guard by claiming the capability',
+      { status: staleReply.status, body: staleBody });
+
+    /* And a refusal the RPC itself raises keeps its reason instead of becoming
+       a generic 500 that the client cannot tell from an unreachable server. */
+    const refused = joinService(() => ({
+      error: { code: 'P0001', message: 'ranked client does not support active curve v2' },
+    }));
+    const refusedReply = await operations.joinMatch(edgeContext('player-1', refused),
+      { ...standardJoinInput, protocolVersion: 2, capabilities: ['curve_v2'] });
+    /* read ONCE: a Response body does not survive a second reader, and asking
+       twice reports a TypeError where the assertion should have been */
+    const refusedBody = await jsonBody(refusedReply);
+    check(refusedReply.status === 409 && refusedBody.error === 'incompatible-client',
+      'joinMatch collapsed a curve-v2 refusal into a generic queue failure',
+      { status: refusedReply.status, body: refusedBody });
   }
 
   await runTurnCommandTests(check, operations);

@@ -191,7 +191,7 @@
    reads as roughly 18px of visible air while the three type lines stay locked
    at 4. That asymmetry is the point — the mark is a separate object, the three
    lines are one. */
-:where(#kbroot) .hero{gap:4px}
+:where(#kbroot) .hero{gap:2px}
 /* THE PAIR TAKES A SIDE EACH (owner call, 2026-09-04). They were both --dim,
    then briefly both --p1; the line on the LEFT now wears yours and the line on
    the RIGHT theirs, which is the same left/right ownership the wordmark's own

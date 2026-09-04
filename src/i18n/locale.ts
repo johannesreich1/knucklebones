@@ -21,6 +21,25 @@ export const SUPPORTED_LOCALES: readonly SupportedLocale[] = Object.freeze(
   LOCALE_REGISTRY.map(({ id }) => id),
 );
 
+/* THE ORDER THE PICKER STEPS THROUGH, alphabetical by the name a player reads
+   (owner call, 2026-09-04). The registry above keeps its own order and its own
+   meaning — English leads it because it is the base catalogue every other
+   locale falls back to, and LOCALE_REGISTRY[0] is read as exactly that in
+   places (tests/browser/legal.mjs). Sorting the registry itself would have
+   moved that stake to Bahasa Indonesia across a hundred call sites to change
+   the order of one control, so presentation gets its own list instead and the
+   registry stays the single place a locale is declared.
+   Sorted on selfName rather than the id, because the stepper shows selfName:
+   an alphabetical list that reads Deutsch, English, Español is alphabetical to
+   the person using it, while one sorted by 'de', 'en', 'es' only looks it by
+   coincidence — and stops looking it entirely at 日本語, which localeCompare
+   places after the Latin names where a reader expects it. */
+export const LOCALE_PICKER_ORDER: readonly SupportedLocale[] = Object.freeze(
+  [...LOCALE_REGISTRY]
+    .sort((a, b) => a.selfName.localeCompare(b.selfName, 'en'))
+    .map(({ id }) => id),
+);
+
 export function isSupportedLocale(value: unknown): value is SupportedLocale {
   return typeof value === 'string'
     && SUPPORTED_LOCALES.includes(value as SupportedLocale);
