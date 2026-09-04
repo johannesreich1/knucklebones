@@ -13,7 +13,7 @@
    with a negative margin equal to its own tracking, so every right edge is the
    edge of the last painted glyph. The eyebrow needs none: tracking does not
    lead, so its first glyph already sits on the left edge. */
-:where(#kbroot) .hero h1{font-size:28px;letter-spacing:.24em;line-height:1;margin-right:-.24em}
+:where(#kbroot) .hero h1{font-size:28px;letter-spacing:.24em;line-height:1}
 /* THE HERO MARK. Two numbers here and both are measured, not chosen.
    4px of margin, not the 12 the eye asks for, because the 120-unit arrangement
    carries 12 units of transparent margin on every side: at a 96px frame the
@@ -157,12 +157,19 @@
    its width IS the wordmark's; stretching the two small lines to it is what
    makes "left" and "right" mean the wordmark's own edges.
 
-   No tracking compensation is needed on either line, and the first draft of
-   this was wrong to add one. letter-spacing does append a space after the last
-   glyph, but the browser does not carry it into the right edge of a
-   text-align:right line — measured, the glyphs already end flush, and a
-   -.28em pull made them overhang by exactly 2.8px. Both lines are left at
-   their natural edges. */
+   NO TRACKING COMPENSATION ON ANY OF THE THREE, and the negative margins that
+   used to sit here were not merely unnecessary — they were the misalignment.
+   letter-spacing appends a space after the last glyph, but the browser does not
+   carry it into the right edge of a text-align:right line. Measured at 390px,
+   ink edges, with the pulls and without (owner spotted it, 2026-09-04):
+
+     with     h1 48.39-348.31   sub2 259.64-344.39   eyebrow 48.39-149.98
+     without  h1 45.03-344.95   sub2 260.20-344.95   eyebrow 45.03-146.63
+
+   Without them h1.left EQUALS eyebrow.left and h1.right EQUALS sub2.right, to
+   the hundredth — which is the stagger this block describes. With them the
+   wordmark overhung 3.36px and the two right edges missed by 3.92. The comment
+   had said this since the first draft; the declarations never caught up. */
 /* the tagline drops to the eyebrow's 9px (owner call): the two small lines
    bracket the wordmark, so they read as a pair only if they are the same size.
    Tracking stays each line's own — .34em up top, .28em below — because the
@@ -194,7 +201,7 @@
 :where(#kbroot) .hero .eyebrow{align-self:stretch;text-align:left;letter-spacing:.28em;
   color:var(--p1);font-weight:var(--fw-max)}
 :where(#kbroot) .hero .sub2{color:var(--p2);font-weight:var(--fw-max)}
-:where(#kbroot) .hero .sub2{align-self:stretch;text-align:right;font-size:10px;margin-right:-.28em}
+:where(#kbroot) .hero .sub2{align-self:stretch;text-align:right;font-size:10px}
 /* THE MARK WEARS NO ADDED GLOW ON HOME (owner call, 2026-09-04, decided from a
    pair of device screenshots). #homeMark used to carry two 26px drop-shadows in
    the duel pair's hues. Measured off those two shots, they are a broad, soft
