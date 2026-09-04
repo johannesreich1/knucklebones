@@ -297,7 +297,9 @@ export async function runCachedProfileResilienceScenarios(suite) {
       const highlighted = await mine.count();
       if (highlighted) await mine.click();
       await page.waitForSelector('#onAccount:not([hidden])', { timeout: 5000 });
-      return { highlighted, profileName: await page.locator('#accName').innerText() };
+      return { highlighted,
+        profileName: await page.evaluate(
+          () => document.getElementById('onAccount')?.dataset.accountName ?? '') };
     },
   });
   out.onlineLoading.failedLadderStanding = failedLadderStanding.probeResult;

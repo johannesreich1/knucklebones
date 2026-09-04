@@ -177,11 +177,13 @@ export async function runAccountLifecycleScenarios(suite) {
     shortDuels.probeResult);
 
   // 1c · the named player: the claim is spent, the card is GONE — not
-  // disabled, not re-offered. The headline is all that remains of the name UI.
+  // disabled, not re-offered. Nothing of the name UI remains on screen; the
+  // name survives only as panel state.
   const namedRun = await visit({ named: true, probe: probeIdentityOfferOrder });
   out.named = { accName: namedRun.seen.accName, claim: namedRun.seen.claim,
     order: namedRun.probeResult };
-  check(namedRun.seen.accName === 'TestGuest001', 'a named player lost their headline', namedRun.seen);
+  check(namedRun.seen.accName === 'TestGuest001',
+    'a named player is no longer identified by the profile', namedRun.seen);
   check(namedRun.seen.claim === false, 'the claim card survives after the name is set', namedRun.seen);
   check(namedRun.probeResult?.claim === null
     && precedes(namedRun.probeResult?.facts, namedRun.probeResult?.guest)
@@ -193,24 +195,34 @@ export async function runAccountLifecycleScenarios(suite) {
 
   /* Spare height pins account actions; a device the profile outgrows keeps the
      pbody as the ONE scroller and carries those same actions into reach at its
-     end. Since PAST DUELS deals its third row on every device, the profile is
-     31px taller than a 390x932 phone can hold (measured), so the pin is
-     asserted where there is genuinely room to pin against — a tablet in
-     portrait — and both phone shapes assert the scroll. */
-  const roomyLayout = await visit({ named: true, skipStandardProbes: true,
-    viewport: { width: 820, height: 1180 }, probe: probeAccountFooter });
+     end. Both halves are real and each needs a device that actually shows it.
+     390x932 USED TO BE A SCROLLING CASE and is now a fitting one. It was
+     measured at 31px taller than the phone could hold; dropping the nickname
+     headline from under the ring took ~33px out of the column (a 17px line and
+     one 16px stack gap), so the profile now clears that phone with a couple of
+     pixels to spare and its actions pin instead of scrolling. That is the
+     change doing its job, not a weakened assertion — the scroll contract still
+     has to hold, so it keeps the short phone, which outgrows the profile by
+     far too much for any plausible edit to rescue. */
+  const fittingLayouts = [];
+  for (const viewport of [{ width: 820, height: 1180 }, { width: 390, height: 932 }]) {
+    const run = await visit({ named: true, skipStandardProbes: true,
+      viewport, probe: probeAccountFooter });
+    fittingLayouts.push({ viewport, ...run.probeResult });
+  }
   const phoneLayouts = [];
-  for (const viewport of [{ width: 390, height: 932 }, { width: 390, height: 568 }]) {
+  for (const viewport of [{ width: 390, height: 568 }]) {
     const run = await visit({ named: true, skipStandardProbes: true,
       viewport, probe: probeAccountFooter });
     phoneLayouts.push({ viewport, ...run.probeResult });
   }
-  out.accountFooter = { roomy: roomyLayout.probeResult, phones: phoneLayouts };
-  const roomy = roomyLayout.probeResult;
-  check(roomy && !roomy.before.scrollable && !roomy.before.nestedScroller
-    && Math.abs(roomy.before.bottomError) <= 1
-    && roomy.before.signOutHit && roomy.before.deleteHit,
-  'account actions are not pinned to the usable bottom when the profile fits', roomy);
+  out.accountFooter = { fitting: fittingLayouts, phones: phoneLayouts };
+  for (const roomy of fittingLayouts) {
+    check(roomy && !roomy.before.scrollable && !roomy.before.nestedScroller
+      && Math.abs(roomy.before.bottomError) <= 1
+      && roomy.before.signOutHit && roomy.before.deleteHit,
+    'account actions are not pinned to the usable bottom when the profile fits', roomy);
+  }
   for (const phone of phoneLayouts) {
     check(phone.before?.scrollable && !phone.before.nestedScroller
       && phone.after.scrollTop > 0

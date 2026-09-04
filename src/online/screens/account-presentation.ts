@@ -8,6 +8,7 @@ import {
   currentInApex,
 } from '../../ladder-presentation.ts';
 import type { LadderCurveVersion } from '../../progression-status-cache.ts';
+import { S } from '../../state.ts';
 import {
   formatDate,
   formatNumber,
@@ -34,8 +35,25 @@ function paintGroup(points: number, apex = false, version?: LadderCurveVersion):
   const group = currentBoardGroup(points, apex, version);
   const label = $('#accGroup') as HTMLElement;
   const material = `var(--g-${group.id})`;
+  /* COLOUR-BLIND MODE SPENDS ITS ONE GOLD ON THE LEAGUE. The seven league
+     materials are stone, bone, ivory, silver, gold, obsidian and neon — four
+     of them near-neutral and two of them the very hues the mode exists to
+     separate, so as a set they carry no information to a player who cannot
+     tell them apart. The mode already pins the displayed pair to cyan-vs-gold
+     (ui/hues.ts), so the league name and its number take var(--p2) — gold in
+     this mode by construction, and never a second hue to resolve.
+     THE RING KEEPS ITS MATERIAL: it reports progress by how far it is filled,
+     which survives any palette, and it is the one place the league's own
+     colour still costs nothing. */
+  const ink = S.colorblind ? 'var(--p2)' : material;
   label.textContent = ladderGroupName(group.id);
-  label.style.setProperty('--gc', material);
+  /* THE LEAGUE'S MATERIAL IS ONE FACT ABOUT THIS SCREEN, so it lands on the
+     PANEL and everything that speaks league reads the same --gc: the name in
+     the ring's mouth and the points below it. It used to sit on the label
+     alone, which left the points a hardcoded gold — right at GOLD and wrong at
+     every other league. The ladder row's points (.lrow .rt) and the Home plate
+     already read var(--gc,var(--gold)); this is the profile joining them. */
+  ($('#onAccount') as HTMLElement).style.setProperty('--gc', ink);
   ($('#accRing') as HTMLElement).style.setProperty('--lr-material', material);
 }
 
@@ -114,7 +132,11 @@ export function paintAccountFrame(
   const { profile, user, ladder, standing } = account;
   $('#accGuest').hidden = !user.guest;
   ($('#btnSignOut') as HTMLElement).hidden = user.guest;
-  $('#accName').textContent = profile.nickname;
+  /* THE NAME IS STATE, NOT A HEADLINE. The profile no longer prints the
+     nickname under the ring (owner call): it is your own profile, and the line
+     only pushed the points down. It stays addressable as panel state so
+     anything asking "whose profile is on screen" still has one honest answer. */
+  ($('#onAccount') as HTMLElement).dataset.accountName = profile.nickname;
   const claim = $('#accClaim');
   claim.hidden = !!profile.named_at;
   if (!claim.hidden) {
@@ -152,7 +174,7 @@ export function resetAccountPresentation(
   $('#accGames').textContent = t('online', 'profile.noneYet');
   $('#accRank').textContent = '–';
   $('#accStreak').textContent = formatNumber(0);
-  $('#accName').textContent = '';
+  ($('#onAccount') as HTMLElement).dataset.accountName = '';
   $('#accGuest').hidden = true;
   paintAccountProviders(null, null);
   ($('#btnSignOut') as HTMLElement).hidden = true;

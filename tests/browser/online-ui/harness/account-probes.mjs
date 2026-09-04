@@ -42,7 +42,7 @@ export async function probeAccountActions(page, { door, named }, routes) {
         const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
       return { head: document.querySelector('#askHead')?.textContent,
                claimGone: !vis('#accClaim'),
-               headline: document.querySelector('#accName')?.textContent,
+               headline: document.querySelector('#onAccount')?.dataset.accountName,
                /* an invitation wears primary on YES (ask's loud flag) — read
                   the computed paint, not the class list */
                yesLoud: getComputedStyle(document.querySelector('#btnAskYes')).backgroundImage.includes('gradient') };

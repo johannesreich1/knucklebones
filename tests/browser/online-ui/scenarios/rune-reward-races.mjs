@@ -216,7 +216,7 @@ async function accountSwitchAfterRuneProbe(page, routes) {
       switched: didSwitch,
       accountVisible: document.getElementById('onAccount')?.hidden === false,
       loadingVisible: document.getElementById('onLoading')?.hidden === false,
-      name: document.getElementById('accName')?.textContent?.trim(),
+      name: document.getElementById('onAccount')?.dataset.accountName?.trim(),
       cachedAccount: cache?.accountId ?? null,
       staleCache: cache?.accountId === accountA.toLowerCase(),
       rewardSheetOpen: !!document.querySelector('.rune-reward-sheet'),

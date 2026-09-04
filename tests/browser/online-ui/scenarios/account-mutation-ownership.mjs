@@ -21,7 +21,7 @@ const profilePatch = (request) => {
 };
 
 const visibleAccount = () => ({
-  name: document.getElementById('accName')?.textContent?.trim(),
+  name: document.getElementById('onAccount')?.dataset.accountName?.trim(),
   owner: JSON.parse(localStorage.getItem(
     'knucklebones.online.account-profile') ?? 'null')?.accountId ?? null,
 });
@@ -31,7 +31,7 @@ async function waitForClaimBoundary(page) {
     const loading = document.getElementById('onLoading');
     const account = document.getElementById('onAccount');
     return loading?.hidden === false
-      || account?.querySelector('#accName')?.textContent === 'NeonKing77'
+      || account?.dataset.accountName === 'NeonKing77'
       || document.querySelector('#askHead')?.textContent?.startsWith('Keep ');
   }, null, { timeout: 10000 });
   await page.waitForTimeout(150);
@@ -114,7 +114,7 @@ async function probeAvatarSwitchBeforeSave(page, routes) {
   await page.waitForSelector('#onAvatar:not([hidden])', { timeout: 5000 });
   await page.waitForSelector('#avFaces button[data-face="2"]', { timeout: 5000 });
   const before = await page.evaluate(() => ({
-    name: document.getElementById('accName')?.textContent?.trim(),
+    name: document.getElementById('onAccount')?.dataset.accountName?.trim(),
     owner: JSON.parse(localStorage.getItem(
       'knucklebones.online.account-profile') ?? 'null')?.accountId ?? null,
     avatarOpen: document.getElementById('onAvatar')?.hidden === false,
@@ -131,7 +131,7 @@ async function probeAvatarSwitchBeforeSave(page, routes) {
   const switched = await page.evaluate(switchStoredSession, ACCOUNT_B);
   await page.click('#btnAvatarSave');
   await page.waitForFunction(() => document.getElementById('onAccount')?.hidden === false
-    && document.getElementById('accName')?.textContent?.trim() === 'AccountB'
+    && document.getElementById('onAccount')?.dataset.accountName?.trim() === 'AccountB'
     && !document.getElementById('onAccount')?.hasAttribute('data-account-pending'),
   null, { timeout: 15000 });
   page.off('request', recordPatch);
@@ -140,7 +140,7 @@ async function probeAvatarSwitchBeforeSave(page, routes) {
     switched,
     patches,
     avatarOpen: document.getElementById('onAvatar')?.hidden === false,
-    name: document.getElementById('accName')?.textContent?.trim(),
+    name: document.getElementById('onAccount')?.dataset.accountName?.trim(),
     face: document.querySelector('#accDie .die')?.getAttribute('data-v'),
     cached: JSON.parse(localStorage.getItem(
       'knucklebones.online.account-profile') ?? 'null')?.profile ?? null,

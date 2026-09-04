@@ -179,7 +179,7 @@ export function bindAccountScreen(ports: AccountBindingPorts): void {
     if (!await stillOwnsVisibleAccount(accountId)) return;
     ports.clearNickError();
     $('#accClaim').hidden = true;
-    $('#accName').textContent = name;
+    ($('#onAccount') as HTMLElement).dataset.accountName = name;
     button.disabled = false;
     await ports.refresh();
     const user = await currentUser();

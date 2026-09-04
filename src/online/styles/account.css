@@ -32,10 +32,6 @@
    one design. The type inside it is literally the sheet's, below. */
 :where(#kbroot) #onAccount .warnbox{background:color-mix(in srgb,var(--orange) 8%,transparent);
   border-color:color-mix(in srgb,var(--orange) 42%,transparent)}
-/* the name headline under the ring: identity reads cyan (like the home chip),
-   sized between the group label above it and the gold points below */
-:where(#kbroot) #onAccount .accname{font-size:17px;font-weight:900;letter-spacing:.06em;color:var(--p1);
-  text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 /* A NAMED SECTION of the profile, worn by the rune collection and by PAST
    DUELS: one heading treatment, so a second labelled block cannot arrive with
    its own idea of what a profile heading looks like. The head is a row because

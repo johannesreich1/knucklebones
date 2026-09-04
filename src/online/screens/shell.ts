@@ -96,10 +96,6 @@ const OVERLAY = `
       <button class="accseat" id="accSeat" type="button" hidden
         aria-label="Equipped rune"></button>
     </div>
-    <!-- the name the ring crowns. Until it is claimed this is the minted
-         placeholder; after the claim it is the one line the old edit-field
-         used to be, minus the ability to edit -->
-    <div class="accname" id="accName"></div>
     <!-- the points are a DOOR: the number names your place on the ladder, so
          tapping it opens the ladder — same pattern as the identity chip and
          the match-history row, where the fact leads to the list behind it -->
@@ -108,7 +104,12 @@ const OVERLAY = `
       <b id="accPoints">0</b><span data-i18n="online:profile.ladderPoints">Ladder points</span>
     </button>
     <div class="facts">
-      <button class="fact" id="btnRank" type="button" aria-label="Open the ladder"><span class="factvalue" id="accRank">–</span><span data-i18n="online:profile.rank">RANK</span></button>
+      <!-- RANK is a door — it shares the ladder handler with the points above
+           (account-bindings) — so it wears the app's one door mark. The chevron
+           is LAST on purpose: the caption is read as the button's first
+           non-.factvalue span, here and in the tests. Its neighbours stay
+           unmarked because they open nothing. -->
+      <button class="fact" id="btnRank" type="button" aria-label="Open the ladder"><span class="factvalue" id="accRank">–</span><span data-i18n="online:profile.rank">RANK</span><span class="chev">›</span></button>
       <div class="fact"><b id="accStreak">0</b><span data-i18n="online:profile.bestStreak">BEST STREAK</span></div>
       <div class="fact pk"><b id="accPeak">0</b><span data-i18n="online:profile.peak">PEAK</span></div>
     </div>

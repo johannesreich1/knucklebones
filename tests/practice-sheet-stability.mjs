@@ -138,6 +138,16 @@ try {
         await frame();
         const bodyTop = body.getBoundingClientRect().top;
         const first = body.firstElementChild?.getBoundingClientRect();
+        /* WHERE THE COLUMN ACTUALLY STARTS, read off a laid-out child rather
+           than recomputed from --pad-x and --w-col: re-deriving the rule under
+           test proves only that the arithmetic was copied correctly. The FIRST
+           child is not always that child — #ovOnline opens with a hidden
+           <div class="panel" id="onLoading">, and a hidden element's rect is
+           all zeros, which would read as a column starting at x=0. */
+        const lead = [...body.children]
+          .map((el) => el.getBoundingClientRect())
+          .find((r) => r.width > 0) ?? null;
+        const back = ov.querySelector('.shead [data-page-back]')?.getBoundingClientRect() ?? null;
         const before = head.getBoundingClientRect().y.toFixed(1);
         /* HOW FAR THE GLASS ACTUALLY REACHES, read off the pseudo-element
            rather than guessed from a var name. It used to read --band, which
@@ -238,6 +248,19 @@ try {
           extraScrollers: extra,
           /* resting content must clear the glass's REAL reach, not --band's */
           clearAtRest: first ? first.top >= glassBottom - 0.5 : true,
+          /* THE BAR SITS IN THE SAME COLUMN AS THE PAGE. --pad-x is the app's
+             one horizontal inset and every screen body spends it the same way:
+             .pbody runs full width, pads itself, and lets its children carry
+             the --w-col cap. .shead capped ITSELF at --w-col and then padded
+             inside that cap, and under border-box that cap swallows the very
+             14px it holds — so above 428px the Back control drifted a constant
+             --pad-x right of every row, card and button on the page (user
+             report with a screenshot, from a Pro Max). Invisible at 360 and
+             390, which is why it went unseen: both are narrower than the cap.
+             Measured against a real laid-out child, at four widths, so the two
+             narrow ones stay the control. */
+          lead: lead ? +lead.left.toFixed(2) : null,
+          backLeft: back ? +back.left.toFixed(2) : null,
           /* EVERY PAGED VIEW GOES BACK: one Duel Brackets control on the left,
              labelled Back, and
              no header ✕. The edge-swipe handler presses this very control, so
@@ -294,6 +317,11 @@ try {
       check(p.nav.side === 'left' && p.nav.shared && p.nav.duel && p.nav.label === 'Back',
         `${p.id} does not wear the shared labelled Duel Brackets Back control on the left: ` + label, p.nav);
       check(!p.nav.hasX, `${p.id} still carries a header ✕: ` + label, p.nav);
+      if (p.lead !== null && p.backLeft !== null) {
+        check(Math.abs(p.backLeft - p.lead) <= 0.5,
+          `${p.id}'s Back control has left the column its page sits in `
+          + `(back ${p.backLeft}, column ${p.lead}): ` + label, p);
+      }
     }
 
     /* THE NOTCH'S SPACE IS NOT THE BAR'S. Every measurement above is taken at

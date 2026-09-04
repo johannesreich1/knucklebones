@@ -22,7 +22,7 @@ export async function runStandingAccountSwitchScenario(suite, seedCompleteProfil
             && !control.disabled);
       }, null, { timeout: 5000 });
       const beforeSwitch = await page.evaluate(() => ({
-        name: document.getElementById('accName')?.textContent?.trim(),
+        name: document.getElementById('onAccount')?.dataset.accountName?.trim(),
         rankBusy: document.getElementById('btnRank')?.getAttribute('aria-busy'),
         actionsPending: document.getElementById('onAccount')
           ?.hasAttribute('data-account-pending'),
@@ -74,7 +74,7 @@ export async function runStandingAccountSwitchScenario(suite, seedCompleteProfil
         return {
           accountVisible: document.getElementById('onAccount')?.hidden === false,
           loadingVisible: document.getElementById('onLoading')?.hidden === false,
-          name: document.getElementById('accName')?.textContent?.trim(),
+          name: document.getElementById('onAccount')?.dataset.accountName?.trim(),
           actionsPending: document.getElementById('onAccount')
             ?.hasAttribute('data-account-pending'),
           actionsDisabled: actionIds.every((id) =>

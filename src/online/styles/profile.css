@@ -24,8 +24,13 @@
 :where(#kbroot) #onAccount .ptv{display:flex;flex-direction:column;align-items:center;gap:2px;
   border:0;background:none;padding:0;font-family:inherit;cursor:pointer}
 :where(#kbroot) #onAccount .ptv:focus-visible{outline:2px solid var(--p1);outline-offset:3px;border-radius:8px}
-:where(#kbroot) #onAccount .ptv b{font-size:33px;font-weight:900;color:var(--gold);line-height:1;
-  text-shadow:0 0 24px rgba(255,209,102,.42)}
+/* THE POINTS WEAR THE LEAGUE, like the ladder row they open (.lrow .rt) and
+   the Home plate. The glow follows the same source: a fixed gold halo around
+   an OBSIDIAN player's purple number was the tell that this was hardcoded.
+   --gc comes from the panel (account-presentation paintGroup); the gold
+   fallback is what an unpainted profile shows. */
+:where(#kbroot) #onAccount .ptv b{font-size:33px;font-weight:900;color:var(--gc,var(--gold));line-height:1;
+  text-shadow:0 0 24px color-mix(in srgb,var(--gc,var(--gold)) 42%,transparent)}
 /* Every centred label with tracking carries text-indent EQUAL to its
    letter-spacing: the spacing trails the last glyph, so it counts into the
    centred width and shifts the visible text half a space left of what it
@@ -43,7 +48,7 @@
   text-transform:uppercase;text-align:center;margin-top:-6px}
 :where(#kbroot) #onAccount .togo b{color:var(--gold)}
 :where(#kbroot) #onAccount .facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
-:where(#kbroot) #onAccount .fact{flex:1;text-align:center;padding:9px 5px;border-radius:12px;
+:where(#kbroot) #onAccount .fact{position:relative;flex:1;text-align:center;padding:9px 5px;border-radius:12px;
   background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);font-family:inherit;color:inherit}
 :where(#kbroot) #onAccount button.fact{cursor:pointer;appearance:none;-webkit-appearance:none}
 :where(#kbroot) #onAccount[data-account-pending] :is(button,input,select,textarea){pointer-events:none}
@@ -64,6 +69,15 @@
 /* display:block because text-indent only applies to block containers — as a
    plain inline the indent is ignored and the caption stays half a space left */
 :where(#kbroot) #onAccount .fact > span:not(.factvalue){display:block;font-size:clamp(8px,2.1vw,9px);letter-spacing:.2em;text-indent:.2em;color:var(--dim);text-transform:uppercase}
+/* THE DOOR MARK COSTS NO LAYOUT. The rule above says "any span that is not the
+   value is the caption", so a chevron placed in flow would be dealt a third
+   stacked line — 9px, uppercase, tracked — and the grid's three 1fr tiles all
+   grow to the tallest. Absolute instead: the value and caption stay centred in
+   their 5px of side padding, and the tile's box does not move, which
+   loading-panels pins to half a pixel across the inline-loader swap. Equal
+   specificity to the caption rule, so this must stay BELOW it. */
+:where(#kbroot) #onAccount .fact > span.chev{position:absolute;right:6px;top:50%;translate:0 -50%;
+  display:block;font-size:12px;letter-spacing:normal;text-indent:0;text-transform:none}
 /* Gold is reserved for the number that is LIVE — the points you have right
    now. The peak is a fact like the others and reads white; its gold belongs on
    the ring, where the notch has to stand out against the cyan fill. */
@@ -72,9 +86,10 @@
    on short devices, where the shared pbody remains the ONE scroller. */
 :where(#kbroot) #ovOnline #onAccount{flex:1 0 auto;margin:0}
 /* …and its children keep their NATURAL size: in a scrollable flex column,
-   anything wearing overflow (the ellipsised name headline) has an automatic
-   minimum of ZERO and gets crushed flat before the panel deigns to scroll —
-   the gate caught the headline at height 0 exactly that way */
+   anything wearing overflow has an automatic minimum of ZERO and gets crushed
+   flat before the panel deigns to scroll. The gate caught this on the old name
+   headline, at height 0; the headline is gone but the hazard belongs to the
+   column, not to that one element, so the rule stays. */
 :where(#kbroot) #ovOnline #onAccount > *{flex-shrink:0}
 :where(#kbroot) #onAccount .accfoot{margin-top:auto;display:flex;flex-direction:column;gap:12px;width:100%}
 :where(#kbroot) #onAccount .accfoot .viewfoot{margin-top:0;padding-bottom:0}

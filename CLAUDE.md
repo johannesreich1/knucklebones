@@ -114,6 +114,56 @@ differs. A second near-copy is a design failure, not a shortcut.
   machine cannot afford it: three at once reached load 284 and produced
   starvation failures indistinguishable from defects. Do not work around the
   wait; `KB_NO_LOCK=1` exists for a single deliberate run, not for a habit.
+- **The lock protects the run; the icon manifest needs the whole TREE.**
+  `native/profile-app-icons.manifest.json` records a sha256 for every CSS file
+  in the graph, so it is only ever consistent with ONE working tree. Whoever
+  gates must therefore be the only session holding uncommitted CSS:
+  `tools/appicon.mjs` stamps whatever is dirty at that moment, including other
+  sessions' files, and committing that puts a provenance hash for bytes that
+  exist in nobody's checkout into `main` — green where it was stamped, red for
+  everyone who pulls, and undiagnosable, because the manifest names a file
+  whose committed content never produced that hash. On 2026-09-04 this cost two
+  sessions a gate each, symmetrically: one run died on the other's uncommitted
+  `home.css`, and the other would have died on the first's `paged-view.css`.
+  Serialise by stashing to a named stash BY EXPLICIT PATH — a bare `git stash`
+  sweeps the peer's files into your stash and is the same mistake wearing a
+  third costume.
+- **A worktree stamps the icon manifest WRONG unless you copy `native/assets/`.**
+  It is gitignored, so a fresh worktree has none, and `tools/appicon.mjs` there
+  writes `"missing": true` for icon-background, icon-foreground,
+  icon-monochrome, icon-only and AppIcon-512@2x. That is green in the worktree
+  and red in every checkout that has those files. `cp -R native/assets/.
+  <worktree>/native/assets/` before stamping, then confirm the diff moves only
+  your own source entry. This trap is worth naming beside the rule above,
+  because the obvious remedy for that rule walks straight into it.
+- **A gate can DIE SILENTLY under memory pressure, and no setting is known to
+  prevent it.** The run stops mid-suite with no error, no failing assertion and
+  no exit line — indistinguishable from the `pkill` incident below, which is
+  why on 2026-09-04 one session lost five releases hunting a culprit who did
+  not exist and another was asked whether it was killing peer processes. A
+  failure mode that impersonates sabotage is the thing to recognise here; the
+  tuning below is not a fix.
+  MEASURE FIRST: `sysctl -n hw.memsize`, `vm_stat`, `sysctl vm.swapusage`. That
+  day the box showed 1.77 GB available of **32 GB** with swap 87% full (7.1 of
+  8.2 GB) — a simulator, an IDE, a browser, a container runtime and ~27 agent
+  CLIs, none of them the gate's to reclaim. Note the shape: 32 GB with ~30
+  committed points at something holding more than it should, where "small
+  machine, full" invites buying headroom. One session summed `vm_stat` page
+  classes, got ~15 GB, and repeated it three times before it was checked
+  against `hw.memsize`; page classes miss compressed and purgeable.
+  `KB_JOBS` (`gate-manifest.mjs`, `env.KB_JOBS ?? (env.CI ? 1 : 4)`) sets suite
+  parallelism, and each online-ui shard launches its own Chromium workers — but
+  THE EVIDENCE DOES NOT NAME A SAFE VALUE, so do not read one into it. Both
+  deaths that were tuned to `KB_JOBS=1` died at `start online-ui-entry` with
+  zero suites complete; the run that finished used `2` (1086s, against 692s at
+  the default `4`, which had also completed earlier that morning). A guess that
+  foreground rather than detached execution was the difference does not survive
+  the other session's runs, which completed detached three times the same day.
+  Treat it as an OPEN QUESTION, report what a run actually did, and do not let
+  a hunch harden into a remedy here.
+  What is not in doubt: **tee the output to a file**, never pipe it to `tail`.
+  A piped run buffers until exit, so a death leaves zero bytes to diagnose and
+  the failure has to be reconstructed from process tables.
 - **Keep `src/core/` portable.** No DOM or timers. Replay/scoring are
   deterministic across browser, Node, and Deno; any AI/dice randomness stays
   explicit, injectable, and outside authoritative replay outcomes.

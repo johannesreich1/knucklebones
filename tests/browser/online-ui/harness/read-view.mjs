@@ -7,14 +7,26 @@ export function readOnlineView(page) {
       title: document.querySelector('#onAuth')?.hidden === false
         ? document.querySelector('#onAuthTitle')?.textContent
         : document.querySelector('#onTitle')?.textContent,
-      /* the profile shows the name ONCE, as the headline under the ring. The
-         claim card exists only while the name is still the minted placeholder
-         (migration 0026): its input starts EMPTY, with the current name as the
-         placeholder — the name you keep by never claiming. */
-      accName: document.querySelector('#accName')?.textContent,
+      /* WHOSE PROFILE IS ON SCREEN. The name is no longer printed under the
+         ring (owner call: it is your own profile, and the line only pushed the
+         points down), so identity is read as panel state instead of as a
+         headline — every scenario that asks "which account is showing" still
+         gets one honest answer, and none of them wanted the pixels.
+         The claim card exists only while the name is still the minted
+         placeholder (migration 0026): its input starts EMPTY, with the current
+         name as the placeholder — the name you keep by never claiming. */
+      accName: document.querySelector('#onAccount')?.dataset.accountName,
+      /* and the headline is GONE: nothing may reintroduce a name line here. */
       accNameShown: vis('#accName'),
       /* League identity is paint, not just copy: the profile must use the
-         exact material colour the same league receives on the ladder. */
+         exact material colour the same league receives on the ladder — and so
+         must the POINTS, which are the same fact and open the same board. */
+      accPointsColor: (() => {
+        const pts = document.querySelector('#accPoints');
+        return pts ? getComputedStyle(pts).color : null;
+      })(),
+      /* the rank tile is a door, so it wears the app's one door mark */
+      rankChevron: vis('#btnRank .chev'),
       accGroup: (() => {
         const group = document.querySelector('#accGroup');
         return group ? { text: group.textContent, color: getComputedStyle(group).color } : null;

@@ -37,12 +37,12 @@ export async function probeAppleRestoreSuccess(page, routes) {
         .every((button) => button.disabled),
       onlineInert: document.getElementById('ovOnline')?.inert,
       hitOwned: !!sheet && !!hit && sheet.contains(hit),
-      staleNickname: document.getElementById('accName')?.textContent?.trim() ?? null,
+      staleNickname: document.getElementById('onAccount')?.dataset.accountName?.trim() ?? null,
     };
   });
   routes.releaseAppleToken();
   await page.waitForFunction(() =>
-    document.getElementById('accName')?.textContent?.trim() === 'ApplePlayer99',
+    document.getElementById('onAccount')?.dataset.accountName?.trim() === 'ApplePlayer99',
   null, { timeout: 5000 }).catch(() => { /* the observation below owns the failure */ });
   return page.evaluate(({ beforeProfileCalls, profileCalls, appleTokenCalls,
     appleRegistrationCalls, appleAccountId, identity, waiting }) => ({
@@ -57,7 +57,7 @@ export async function probeAppleRestoreSuccess(page, routes) {
     sheets: document.querySelectorAll('.faceoff').length,
     authHidden: document.getElementById('onAuth')?.hidden,
     accountVisible: document.getElementById('onAccount')?.hidden === false,
-    nickname: document.getElementById('accName')?.textContent?.trim() ?? null,
+    nickname: document.getElementById('onAccount')?.dataset.accountName?.trim() ?? null,
     providerBoxVisible: document.getElementById('accProviders')?.hidden === false,
     claimVisible: document.getElementById('accClaim')?.hidden === false,
     guestOfferVisible: document.getElementById('accGuest')?.hidden === false,

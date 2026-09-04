@@ -87,11 +87,11 @@ export async function runOnlineLoadingPanelScenarios(suite) {
         const tile = document.getElementById('btnRank')?.getBoundingClientRect();
         const loader = document.querySelector('#accRank .die.ldclock');
         const loaderRect = loader?.getBoundingClientRect();
-        const caption = document.querySelector('#btnRank > span:not(.factvalue)')?.getBoundingClientRect();
+        const caption = document.querySelector('#btnRank>span:not(.factvalue):not(.chev)')?.getBoundingClientRect();
         return {
           accountVisible: visible(document.getElementById('onAccount')),
           fullLoaderHidden: !visible(document.querySelector('#onLoading .ldwait')),
-          name: document.getElementById('accName')?.textContent,
+          name: document.getElementById('onAccount')?.dataset.accountName,
           points: document.getElementById('accPoints')?.textContent,
           peak: document.getElementById('accPeak')?.textContent,
           streak: document.getElementById('accStreak')?.textContent,
@@ -211,7 +211,7 @@ export async function runOnlineLoadingPanelScenarios(suite) {
         return {
         profileVisible: document.getElementById('onAccount')?.hidden === false,
         fullLoaderHidden: document.getElementById('onLoading')?.hidden === true,
-        name: document.getElementById('accName')?.textContent,
+        name: document.getElementById('onAccount')?.dataset.accountName,
         avatarEnabled: !document.getElementById('btnAvatar')?.disabled,
         claimEnabled: !document.getElementById('btnClaim')?.disabled,
         seatDisabled: document.getElementById('accSeat')?.disabled,

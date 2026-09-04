@@ -12,7 +12,7 @@ export async function runProfileCacheBoundaryScenarios(suite, seedCompleteProfil
     skipStandardProbes: true,
     returnAfterProbe: true,
     probe: (page) => page.evaluate(() => ({
-      name: document.getElementById('accName')?.textContent?.trim(),
+      name: document.getElementById('onAccount')?.dataset.accountName?.trim(),
       fullAccount: JSON.parse(localStorage.getItem(
         'knucklebones.online.account-profile') ?? 'null')?.accountId,
     })),
@@ -31,7 +31,7 @@ export async function runProfileCacheBoundaryScenarios(suite, seedCompleteProfil
     skipStandardProbes: true,
     returnAfterProbe: true,
     probe: async (page, routes) => {
-      await page.waitForFunction(() => document.getElementById('accName')?.textContent ===
+      await page.waitForFunction(() => document.getElementById('onAccount')?.dataset.accountName ===
         'TestGuest001' && !document.getElementById('onAccount')
         ?.hasAttribute('data-account-pending'));
       const first = await page.evaluate(() => JSON.parse(localStorage.getItem(
@@ -40,7 +40,7 @@ export async function runProfileCacheBoundaryScenarios(suite, seedCompleteProfil
       await page.click('#btnOnlineBack');
       await page.waitForSelector('#ovStart.on', { timeout: 5000 });
       await page.click('#homeChip');
-      await page.waitForFunction(() => document.getElementById('accName')?.textContent ===
+      await page.waitForFunction(() => document.getElementById('onAccount')?.dataset.accountName ===
         'TestGuest001' && !document.getElementById('onAccount')
         ?.hasAttribute('data-account-pending'));
       const reopened = await page.evaluate(() => {

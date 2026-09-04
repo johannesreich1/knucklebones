@@ -264,12 +264,12 @@ export async function runEquippedSeatInterlockScenarios({ visit, out, check }) {
       const writeFinished = await signalWithin(routes.equipmentWriteFinished);
       await page.waitForFunction(() => document.getElementById('onLoading')?.hidden === false
         && document.getElementById('onAccount')?.hidden === true
-        && document.getElementById('accName')?.textContent === '',
+        && document.getElementById('onAccount')?.dataset.accountName === '',
       null, { timeout: 5000 });
       const invalidated = await page.evaluate(() => ({
         loaderVisible: document.getElementById('onLoading')?.hidden === false,
         profileHidden: document.getElementById('onAccount')?.hidden === true,
-        name: document.getElementById('accName')?.textContent,
+        name: document.getElementById('onAccount')?.dataset.accountName,
         pending: document.getElementById('onAccount')?.hasAttribute('data-account-pending'),
       }));
       await page.click('#btnOnlineBack');
@@ -280,7 +280,7 @@ export async function runEquippedSeatInterlockScenarios({ visit, out, check }) {
         return {
           accountHidden: document.getElementById('onAccount')?.hidden,
           loadingHidden: document.getElementById('onLoading')?.hidden,
-          name: document.getElementById('accName')?.textContent?.trim(),
+          name: document.getElementById('onAccount')?.dataset.accountName?.trim(),
           seatLabel: seat?.getAttribute('aria-label'),
           seatDisabled: seat?.disabled,
           pending: document.getElementById('onAccount')?.hasAttribute('data-account-pending'),
@@ -292,7 +292,7 @@ export async function runEquippedSeatInterlockScenarios({ visit, out, check }) {
       await page.waitForFunction(() => {
         const seat = document.getElementById('accSeat');
         return document.getElementById('onAccount')?.hidden === false
-          && document.getElementById('accName')?.textContent?.trim() === 'AccountB'
+          && document.getElementById('onAccount')?.dataset.accountName?.trim() === 'AccountB'
           && /PILFER/i.test(seat?.getAttribute('aria-label') ?? '')
           && !document.getElementById('onAccount')?.hasAttribute('data-account-pending');
       }, null, { timeout: 10000 }).catch(async (error) => {
@@ -308,7 +308,7 @@ export async function runEquippedSeatInterlockScenarios({ visit, out, check }) {
           'knucklebones.online.account-profile') ?? 'null');
         const runes = JSON.parse(localStorage.getItem('knucklebones.runes.v1') ?? 'null');
         return {
-          name: document.getElementById('accName')?.textContent?.trim(),
+          name: document.getElementById('onAccount')?.dataset.accountName?.trim(),
           full: full ? { accountId: full.accountId, equipment: full.equipment } : null,
           runes: runes ? { accountId: runes.accountId, equipment: runes.equipment } : null,
         };
