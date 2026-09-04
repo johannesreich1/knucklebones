@@ -41,6 +41,7 @@ import {
   assertExactRuneTrialPrerequisite,
   assertHumanWipeOverride,
   assertProductionRankedCurveAudit,
+  assertProductionRankedCurveAuditIsReadOnlyExecutable,
   assertSeedOrchestration,
   assertWipeOrchestration,
 } from './support/production-test-data-orchestration-cases.ts';
@@ -338,6 +339,10 @@ check('BadRandolf executor accepts only the exact generated program and a privat
 
 await checkAsync('exact Rune prerequisite reuses full schema, body, grant, RLS, publication, cron, and baseline audits', async () => {
   await assertExactRuneTrialPrerequisite();
+});
+
+check('runtime-curve audit runs as the read-only role the helpers actually use', () => {
+  assertProductionRankedCurveAuditIsReadOnlyExecutable();
 });
 
 await checkAsync('runtime-curve audit is backward-compatible before install and exact after install', async () => {

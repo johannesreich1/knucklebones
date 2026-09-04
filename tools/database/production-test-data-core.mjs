@@ -16,14 +16,23 @@ export const PRODUCTION_BOT_MAX_BEST_STREAK = 7;
 
 /* The helper predates the durable v2 progression model. Before the v2
    migration is installed there is no version function, which is equivalent to
-   the only legacy curve. Once installed, the public scalar is the narrow
-   authoritative read that keeps preview and apply on the same runtime. */
+   the only legacy curve. Presence of that function is still the installation
+   signal: to_regprocedure only resolves a name and needs no privilege.
+
+   Read the VERSION from the contract singleton, not from the public scalar.
+   Clients are the scalar's audience, so the v2 migration grants EXECUTE on it
+   to exactly anon and authenticated; these helpers read through the Management
+   read-only endpoint as supabase_read_only_user, which is neither and gets
+   42501. That role does reach the private singleton, which is the same
+   authority the scalar itself returns. */
 export const PRODUCTION_RANKED_CURVE_STAGE_SQL = String.raw`
 select to_regprocedure('public.active_ranked_curve_version()') is not null
   as "versionFunction";
 `;
 export const PRODUCTION_RANKED_CURVE_VERSION_SQL = String.raw`
-select public.active_ranked_curve_version()::integer as "curveVersion";
+select contract.curve_version::integer as "curveVersion"
+  from private.ranked_runtime_contract contract
+ where contract.singleton;
 `;
 
 export const PRODUCTION_TEST_DATA_PHASES = Object.freeze([

@@ -4,6 +4,7 @@
 // unchanged. Fakes here count calls and replay canned reads — the typed stubs
 // below keep them inside the tool's real option contract.
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   BASE_PRODUCTION_TEST_DATA_AUDIT_SQL,
   EMPTY_RUNE_TRIAL_DATA_AUDIT_SQL,
@@ -75,6 +76,34 @@ export const exactPrerequisiteStub = (onCheck?: () => void): ExactPrerequisite =
     onCheck?.();
     return { ledgerStage: 1 };
   }) as unknown as ExactPrerequisite;
+
+/* The guarded helpers read production through the Management read-only
+   endpoint as supabase_read_only_user. Any audit query that calls a function
+   whose EXECUTE is granted only to the client roles dies with 42501 before the
+   helper can refuse or apply anything — which is how every curve-auditing
+   production helper became unusable the moment the v2 migration shipped. Pin
+   the privilege contract against the query rather than the query alone: a
+   later re-grant is then allowed to make the direct call legal again. */
+export function assertProductionRankedCurveAuditIsReadOnlyExecutable() {
+  const migration = readFileSync(
+    new URL('../../supabase/migrations/20260901162456_progression_v2.sql', import.meta.url),
+    'utf8',
+  );
+  const grants = migration.match(
+    /grant execute on function public\.active_ranked_curve_version\(\)\s+to ([^;]+);/,
+  );
+  assert.ok(grants, 'the v2 migration must grant the public curve scalar explicitly');
+  const granted = grants[1].split(',').map(role => role.trim()).sort();
+  assert.deepEqual(granted, ['anon', 'authenticated'],
+    'the curve scalar is client-only; the read-only audit role can never call it');
+
+  assert.doesNotMatch(PRODUCTION_RANKED_CURVE_VERSION_SQL, /active_ranked_curve_version/,
+    'the curve-version audit must not call a scalar the audit role cannot execute');
+  assert.match(PRODUCTION_RANKED_CURVE_VERSION_SQL, /private\.ranked_runtime_contract/,
+    'the curve-version audit reads the contract singleton the audit role can reach');
+  assert.match(migration, /create table private\.ranked_runtime_contract/,
+    'the audited singleton must be the one the migration installs');
+}
 
 export async function assertProductionRankedCurveAudit() {
   const legacyQueries: string[] = [];
