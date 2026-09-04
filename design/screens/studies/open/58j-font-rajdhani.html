@@ -1,0 +1,50 @@
+<!-- meta name="F10 — Rajdhani" group="1d · The app's typeface" subtitle="Condensed and squared, esports-adjacent — thinnest of the twelve, and the 9px caps go faint · static 300–700 · OFL 1.1" width=412 height=720 sizes="md" links="Ladder, Settings, Practice offline" -->
+<style>
+  /* preview glue, the Home baseline's own three lines (10-home-signed-in) */
+  .scr{align-items:center}
+  .hero{margin-top:34px}
+  .viewfoot{margin-top:auto;padding-top:20px}
+</style>
+{{font:rajdhani}}
+<!-- THE WHOLE SCREEN WEARS THE CANDIDATE, not the wordmark alone: the question
+     is what the app's ONE font should be, so data-font sits on .stage and every
+     descendant under it — the tracked caps, the buttons, the plate's figures —
+     resolves Rajdhani exactly as <body> would in the app. Home is the
+     baseline card's body verbatim (10-home-signed-in); the typeface is the only
+     variable, the way 14a-14h varied only the mark. -->
+<div class="stage" data-font="rajdhani"><div class="bgfx"></div><div class="scr">
+  <div class="hero">
+    {{splitmark:96}}
+    <div class="eyebrow">Neon Edition</div>
+    <h1>KNUCKLEBONES</h1>
+    <div class="sub2">Dice duels</div>
+  </div>
+
+  <div class="homestack">
+    <button class="pplate dice-static">
+      <span class="ringwrap mini" style="--p:.489"><i class="lring"></i><span class="pav">{{die:5:p1:18}}</span></span>
+      <span class="nm2">FrostLynx303</span>
+      <span class="meta2"><span class="mrow"><b>2,494</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #4</span></span>
+      <span class="chev">›</span>
+    </button>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">{{ico:play:25}}</span><span class="btn-label">Play ranked match</span></button>
+    <div class="hrow">
+      <button class="btn">Ladder</button>
+      <button class="btn">Settings</button>
+    </div>
+  </div>
+
+  <div class="quiet">
+    <div class="cap">Practice offline</div>
+    <div class="hrow">
+      <button class="btn">VS AI</button>
+      <button class="btn">2 players</button>
+      <button class="btn">How to play</button>
+    </div>
+  </div>
+
+  <div class="viewfoot">
+    <button class="linkbtn">Impressum</button>
+    <button class="linkbtn">Privacy</button>
+  </div>
+</div></div>

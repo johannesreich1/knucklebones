@@ -293,6 +293,46 @@ function avatarHtml(spec, size) {
   return dieMarkup(face, { classes: 'p1', size, inlineStyle: `--dc:${AV_HUES[hue]}` });
 }
 
+/* THE FONT STUDY'S CANDIDATE FACES (study 58).
+ *
+ * The app ships no font file: src/styles/page.css names OS-provided faces only,
+ * which is why tests/support/rendering-font.mjs exists to say out loud when a
+ * host is measuring a rendering no player will ever see. A card picturing a
+ * candidate therefore has to CARRY that candidate — there is nothing on the
+ * machine to name.
+ *
+ * design/fonts/<slug>/ holds a text subset of each family, cut to the glyphs
+ * these cards paint, beside the OFL text that is our permission to ship it at
+ * all; candidates.json is the index. The faces go in as data URIs so a synced
+ * card needs no network and lays out identically on the Linux runner and here,
+ * which is also the study's own argument: a bundled face ends the fontconfig
+ * lottery. The subsets are PREVIEW material — a shipped bundle takes the full
+ * latin + latin-ext files from the same families. */
+const FONT_CANDIDATES = JSON.parse(readFileSync(join(here, 'fonts', 'candidates.json'), 'utf8'));
+
+function fontFaces(slug, onlyWeight) {
+  const candidate = FONT_CANDIDATES.find((c) => c.slug === slug);
+  if (!candidate) die(`no such font candidate: {{font:${slug}}} (design/fonts/candidates.json)`);
+  const weights = Object.keys(candidate.files).map(Number)
+    .filter((w) => !onlyWeight || w === onlyWeight);
+  if (!weights.length) die(`font candidate ${slug} has no weight ${onlyWeight}`);
+  const faces = weights.map((w) => {
+    const data = readFileSync(join(here, 'fonts', slug, `${w}.woff2`)).toString('base64');
+    /* font-display:block, not swap: a card is a still picture that gets
+       screenshotted, and a swap would let the fallback be what the camera
+       caught. */
+    return `@font-face{font-family:"${candidate.family}";font-style:normal;font-weight:${w};`
+      + `font-display:block;src:url(data:font/woff2;base64,${data}) format("woff2")}`;
+  });
+  /* The card wears the face through a data attribute rather than an inline
+     style, so the family name is written ONCE, here, from the index — a card
+     that retyped it could ask for a family its own @font-face never defined
+     and silently render the fallback, which is the one failure a font study
+     must not be able to have. */
+  faces.push(`[data-font="${slug}"]{font-family:"${candidate.family}",ui-rounded,system-ui,sans-serif}`);
+  return `<style>${faces.join('\n')}</style>`;
+}
+
 function appIconMarkup(size, appearance) {
   const svg = appearance === 'light'
     ? splitDieIconSVG(512, SPLIT_ICON_PAD, 'light', false)
@@ -401,6 +441,8 @@ for (const screen of screens) {
   let body = src.slice(meta[0].length)
     .replace(/\{\{appicon(?::(\d+))?(?::(light))?\}\}/g,
       (_, size, appearance) => appIconMarkup(size ? +size : 44, appearance))
+    /* a study's candidate typeface, faces and all (design/fonts/) */
+    .replace(/\{\{font:([a-z0-9]+)(?::(\d+))?\}\}/g, (_, slug, w) => fontFaces(slug, w ? +w : 0))
     .replace(/\{\{splashmark(?::(\d+))?\}\}/g, (_, size) => splashMarkMarkup(size ? +size : 44))
     /* Home's hero, as LIVE DOM from src/ui/split-mark.ts — the same element the
        app renders, so a card cannot show a mark the product does not have. The
