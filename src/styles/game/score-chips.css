@@ -13,7 +13,7 @@
    lane over them — on the bottom half that is the gap to the centre stage */
 #kbroot.tut .cols{margin-top:15px}
 :where(#kbroot) .chip{height:20px;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:3px;
-  font-size:12px;font-weight:800;color:var(--dim);
+  font-size:12px;font-weight:var(--fw-strong);color:var(--dim);
   background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);position:relative;transition:.2s}
 :where(#kbroot) .chip.has{color:var(--c);border-color:color-mix(in srgb,var(--c) 30%,transparent);
   background:color-mix(in srgb,var(--c) 9%,transparent);text-shadow:0 0 10px color-mix(in srgb,var(--c) 70%,transparent)}
@@ -22,7 +22,7 @@
 /* empty badge spans must not eat flex gaps — the number sits dead centre
    (bit the row rail: an empty ×badge shoved every rowscore 3px off) */
 :where(#kbroot) .chip .mx:empty,:where(#kbroot) .chip .sh:empty,:where(#kbroot) .rowchips .rc .mx:empty{display:none}
-:where(#kbroot) .chip .dl{position:absolute;left:50%;top:-15px;font-size:10.5px;font-weight:900;padding:1px 5px;border-radius:99px;
+:where(#kbroot) .chip .dl{position:absolute;left:50%;top:-15px;font-size:10.5px;font-weight:var(--fw-max);padding:1px 5px;border-radius:99px;
   opacity:0;transform:translate(-50%,4px);transition:.18s;pointer-events:none;white-space:nowrap;line-height:1.25}
 :where(#kbroot) .chip .dl.show{opacity:1;transform:translate(-50%,0)}
 /* gain chip follows the active player's colour (--c comes from the .side) */

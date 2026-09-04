@@ -120,6 +120,38 @@
      game metadata may stay smaller when a larger primary label supplies its
      context, so this is deliberately not a minimum for every glyph. */
   --font-label-min:10px;
+  /* THE WEIGHT LADDER — five rungs, and the app may not ask for a sixth.
+     Every font-weight in the product reads one of these. They exist because
+     the ceiling is a property of the SHIPPED FACE, not of any one rule: the
+     app used to declare 900, 800 and even 950 against a stack of OS faces
+     that answered with whatever they happened to own, so the same screen came
+     out three different weights on three platforms. With one face bundled the
+     ladder has to fit inside it, and fitting it is four numbers here instead
+     of ninety-seven edits across thirty-one files.
+     THE CEILING IS 700 BECAUSE THE SHIPPED FACE STOPS THERE. Chakra Petch
+     (foundations/typeface.css) is a static family with faces at 400, 500, 600
+     and 700 and nothing above. The rungs below are not the old numbers clamped
+     — they are the old ladder RESCALED onto the four faces that exist, so the
+     three places where weight is the only difference between two elements
+     survive: the record numbers against their labels (.n1/.n2 in .ws and in
+     .fost), and .rules .k against a plain <b>. Flattening everything to 700
+     would have erased all three.
+     --fw-ultra is gone with this. Four rules asked for 950, and the tidy
+     reading — nothing goes past Black, so it already renders as 900 — was
+     false: measured against the OLD stack, 950 painted 0.9% wider than 900,
+     because macOS's ui-rounded keeps going. Under a face that stops at 700
+     the distinction cannot exist at all, so those four rules read --fw-max
+     and lose a little weight on Apple. That is the ceiling being honest,
+     and it is the only visible loss in the rescale.
+     --fw-quiet and --fw-sub collide on 500 under this face. They keep separate
+     names because they mean different things — "lighter than my neighbours"
+     and "a step down inside a heavy cell" — and a face with a 300 would want
+     them apart. */
+  --fw-body:400;      /* prose, and the default everything inherits */
+  --fw-sub:500;       /* a step DOWN inside a heavier cell (history's sub-line) */
+  --fw-quiet:500;     /* deliberately lighter than its neighbours (.status) */
+  --fw-strong:600;    /* buttons, names, figures, the prose <b> */
+  --fw-max:700;       /* titles, totals, tracked caps, the primary action */
   /* the LADDER GROUP palette. Root-scoped on purpose: the identity plate
      paints these on Home and on the result screen, both outside #ovOnline —
      the palette's first home, where a plate on document.body once silently

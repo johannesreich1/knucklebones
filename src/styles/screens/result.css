@@ -124,7 +124,7 @@
    `--fg` that this app never defines, which is the same hue by accident and
    would have flipped to white the day somebody defined the token. */
 :where(#kbroot) .rune-reward .endfeature-copy{display:flex;flex-direction:column;text-align:left;gap:3px}
-:where(#kbroot) .rune-reward .endfeature-copy small{font-size:var(--font-label-min);font-weight:900;
+:where(#kbroot) .rune-reward .endfeature-copy small{font-size:var(--font-label-min);font-weight:var(--fw-max);
   letter-spacing:.2em;color:var(--feature-hue)}
 :where(#kbroot) .rune-reward .endfeature-copy b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   font-size:14.5px;letter-spacing:.1em}

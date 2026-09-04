@@ -1,0 +1,151 @@
+<!-- meta name="F0 — The twelve, and the one that shipped" group="1d · The app's typeface" subtitle="Every candidate wearing the home lockup at its heaviest weight, over the face the app rendered before it had one — the wordmark question alone, with the mark held constant. F9 Chakra Petch won and shipped 2026-09-04" width=412 height=1635 sizes="md" links="F1 Outfit, F5 Nunito, F9 Chakra Petch" -->
+<style>
+  /* Board glue only. The lockup itself is the APP'S .hero — same 23px, same
+     .24em, same ink-aligned negative margins — so a row cannot flatter a face
+     with type the product does not set. The mark is deliberately absent: it is
+     the one part of the logo this study does not touch, and twelve copies of it
+     would only make the rows harder to compare. */
+  .fbboard{width:100%;max-width:var(--w-col);margin:0 auto;display:flex;flex-direction:column;gap:15px}
+  /* THE ROW CENTRES ITS LOCKUP, and it has to: .hero is a SHRINK-TO-FIT flex
+     column, and the app's staggered hero (home.css:164) hangs the eyebrow on
+     its left edge and the tagline on its right — the WORDMARK's edges. Left to
+     stretch inside the board column, those two lines would hang off the card
+     instead, and every row would picture a lockup the app does not draw. */
+  .fbrow{border-top:1px solid rgba(255,255,255,.07);padding-top:9px;
+    display:flex;flex-direction:column;align-items:center}
+  .fbname{font-size:8.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim);
+    text-align:center;margin-bottom:7px}
+  /* the weight each family actually reaches. It decided this study: three of
+     these stop at 700, the app was asking for 800 and 900 in ninety-odd places,
+     and the answer was to rescale the ladder onto the winner rather than to
+     rule the winner out. So the number belongs on the row. */
+  .fbname em{font-style:normal;color:var(--gold);opacity:.75}
+  .fbmark{gap:3px}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="cap2">The wordmark, twelve ways</div>
+  <div class="fbboard">
+  <!-- THE BEFORE ROW HAS TO NAME THE OLD STACK OUT LOUD. It used to need no
+       font at all — it was the app's own rendering, and inheriting was the
+       point. Now that the app bundles Chakra Petch, inheriting would paint this
+       row in the winner and quietly claim the app always looked like that. The
+       literal below is exactly what src/styles/page.css carried before study 58
+       shipped, and it is the one place in the repo that should still say it. -->
+  <div class="fbrow" style="border-top:0">
+    <div class="fbname">Before · system stack <em>OS</em></div>
+    <div class="hero fbmark" style="font-family:ui-rounded,'SF Pro Rounded',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
+      <div class="eyebrow">Neon Edition</div>
+      <h1>KNUCKLEBONES</h1>
+      <div class="sub2">Dice duels</div>
+    </div>
+  </div>
+  <div class="fbrow">
+    <div class="fbname">F1 · Outfit <em>900</em></div>
+    {{font:outfit:900}}
+    <div class="hero fbmark" data-font="outfit">
+      <div class="eyebrow">Neon Edition</div>
+      <h1>KNUCKLEBONES</h1>
+      <div class="sub2">Dice duels</div>
+    </div>
+  </div>
+  <div class="fbrow">
+    <div class="fbname">F2 · Urbanist <em>900</em></div>
+    {{font:urbanist:900}}
+    <div class="hero fbmark" data-font="urbanist">
+      <div class="eyebrow">Neon Edition</div>
+      <h1>KNUCKLEBONES</h1>
+      <div class="sub2">Dice duels</div>
+    </div>
+  </div>
+  <div class="fbrow">
+    <div class="fbname">F3 · Sora <em>800</em></div>
+    {{font:sora:800}}
+    <div class="hero fbmark" data-font="sora">
+      <div class="eyebrow">Neon Edition</div>
+      <h1>KNUCKLEBONES</h1>
+      <div class="sub2">Dice duels</div>
+    </div>
+  </div>
+  <div class="fbrow">
+    <div class="fbname">F4 · Plus Jakarta Sans <em>800</em></div>
+    {{font:plusjakartasans:800}}
+    <div class="hero fbmark" data-font="plusjakartasans">
+      <div class="eyebrow">Neon Edition</div>
+      <h1>KNUCKLEBONES</h1>
+      <div class="sub2">Dice duels</div>
+    </div>
+  </div>
+  <div class="fbrow">
+    <div class="fbname">F5 · Nunito <em>900</em></div>
+    {{font:nunito:900}}
+    <div class="hero fbmark" data-font="nunito">
+      <div class="eyebrow">Neon Edition</div>
+      <h1>KNUCKLEBONES</h1>
+      <div class="sub2">Dice duels</div>
+    </div>
+  </div>
+  <div class="fbrow">
+    <div class="fbname">F6 · Manrope <em>800</em></div>
+    {{font:manrope:800}}
+    <div class="hero fbmark" data-font="manrope">
+      <div class="eyebrow">Neon Edition</div>
+      <h1>KNUCKLEBONES</h1>
+      <div class="sub2">Dice duels</div>
+    </div>
+  </div>
+  <div class="fbrow">
+    <div class="fbname">F7 · Archivo <em>900</em></div>
+    {{font:archivo:900}}
+    <div class="hero fbmark" data-font="archivo">
+      <div class="eyebrow">Neon Edition</div>
+      <h1>KNUCKLEBONES</h1>
+      <div class="sub2">Dice duels</div>
+    </div>
+  </div>
+  <div class="fbrow">
+    <div class="fbname">F8 · Space Grotesk <em>700</em></div>
+    {{font:spacegrotesk:700}}
+    <div class="hero fbmark" data-font="spacegrotesk">
+      <div class="eyebrow">Neon Edition</div>
+      <h1>KNUCKLEBONES</h1>
+      <div class="sub2">Dice duels</div>
+    </div>
+  </div>
+  <div class="fbrow">
+    <div class="fbname">F9 · Chakra Petch <em>700</em> ✦ shipped</div>
+    {{font:chakrapetch:700}}
+    <div class="hero fbmark" data-font="chakrapetch">
+      <div class="eyebrow">Neon Edition</div>
+      <h1>KNUCKLEBONES</h1>
+      <div class="sub2">Dice duels</div>
+    </div>
+  </div>
+  <div class="fbrow">
+    <div class="fbname">F10 · Rajdhani <em>700</em></div>
+    {{font:rajdhani:700}}
+    <div class="hero fbmark" data-font="rajdhani">
+      <div class="eyebrow">Neon Edition</div>
+      <h1>KNUCKLEBONES</h1>
+      <div class="sub2">Dice duels</div>
+    </div>
+  </div>
+  <div class="fbrow">
+    <div class="fbname">F11 · Exo 2 <em>900</em></div>
+    {{font:exo2:900}}
+    <div class="hero fbmark" data-font="exo2">
+      <div class="eyebrow">Neon Edition</div>
+      <h1>KNUCKLEBONES</h1>
+      <div class="sub2">Dice duels</div>
+    </div>
+  </div>
+  <div class="fbrow">
+    <div class="fbname">F12 · Saira <em>900</em></div>
+    {{font:saira:900}}
+    <div class="hero fbmark" data-font="saira">
+      <div class="eyebrow">Neon Edition</div>
+      <h1>KNUCKLEBONES</h1>
+      <div class="sub2">Dice duels</div>
+    </div>
+  </div>
+  </div>
+</div></div>

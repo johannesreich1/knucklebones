@@ -43,7 +43,7 @@
    the colour belongs to wherever the line lands. The HUD no longer carries one
    — it names what is being played, never the tally — so the only cyan/magenta
    pair left is the match-history total's (online/online.css .htotal). */
-:where(#kbroot) .n1,:where(#kbroot) .n2{font-weight:800;font-style:normal}
+:where(#kbroot) .n1,:where(#kbroot) .n2{font-weight:var(--fw-strong);font-style:normal}
 /* every chip the badge makes tappable opens that roster's sheet — offline too,
    so the affordance and its ⓘ belong in the eager sheet, not the online chunk */
 :where(#kbroot) .rchip.tapmode{cursor:pointer;transition:transform .15s}
@@ -51,7 +51,7 @@
 /* tap() holds the press class on the ROW it is bound to, exactly as the picker
    rows do — one chip pressed, the badge acknowledges */
 :where(#kbroot) :is(.rec,.rune-tag).pressing .rchip.tapmode{transform:scale(.94)}
-:where(#kbroot) .rchip .mi{color:var(--dim);font-weight:800;margin-left:2px}
+:where(#kbroot) .rchip .mi{color:var(--dim);font-weight:var(--fw-strong);margin-left:2px}
 /* In the compact HUD fallback, a distinct two-rune deal needs an owner dot to
    make its two controls unambiguous. Roomy portrait puts each rune on its own
    player plate instead, where the adjacent identity already says whose it is. */
@@ -61,7 +61,7 @@
 :where(#kbroot) .rchip[data-owner="0"]{--owner:var(--p2)}
 :where(#kbroot) .ico{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;
   background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
-  color:var(--txt);font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
+  color:var(--txt);font-size:13px;font-weight:var(--fw-quiet);cursor:pointer;transition:.15s}
 :where(#kbroot) .ico:active,:where(#kbroot) .ico.pressing{transform:scale(.9);background:rgba(255,255,255,.12)}
 
 /* TABLE */
@@ -84,7 +84,7 @@
 :where(#kbroot) .plate .sp{flex:1}
 :where(#kbroot) .plate .pright{display:flex;align-items:center;gap:7px}
 :where(#kbroot) .plate .dot{width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c);flex:0 0 auto}
-:where(#kbroot) .plate .nm{font-size:11.5px;font-weight:800;letter-spacing:.16em;color:var(--txt);opacity:.9}
+:where(#kbroot) .plate .nm{font-size:11.5px;font-weight:var(--fw-strong);letter-spacing:.16em;color:var(--txt);opacity:.9}
 :where(#kbroot) .plate :is(.tag,.rune-tag .rchip){font-size:9px;letter-spacing:.12em;color:var(--dim);
   border:1px solid rgba(255,255,255,.12);border-radius:99px;padding:2px 6px}
 /* On the player line a rune reads like the adjacent NORMAL/HARD metadata: its
@@ -159,7 +159,7 @@
 #kbroot:not(.sidepts):not(.land) .side.top .plate .bty{grid-row:1}
 #kbroot:not(.sidepts):not(.land) .plate :is(.wpt,.bty){margin:0;font-size:9px;line-height:8px}
 #kbroot:not(.sidepts):not(.land) .plate .wpt .sico{width:8px;height:8px}
-:where(#kbroot) .plate .tot{font-size:20px;font-weight:900;letter-spacing:.02em;color:var(--c);
+:where(#kbroot) .plate .tot{font-size:20px;font-weight:var(--fw-max);letter-spacing:.02em;color:var(--c);
   text-shadow:0 0 16px var(--c);min-width:34px;text-align:right;transition:transform .18s}
 :where(#kbroot) .plate.bump .tot{transform:scale(1.28)}
 /* colour follows the PLAYER, not the half of the screen they're sitting in,

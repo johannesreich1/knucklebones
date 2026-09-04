@@ -83,14 +83,14 @@
   max-width:var(--w-col);margin-bottom:auto}   /* pins the pairing to the top */
 :where(#kbroot) .dwho:empty{display:none}
 :where(#kbroot) .dside{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;min-width:0}
-:where(#kbroot) .dside .dnm{font-size:11.5px;font-weight:900;letter-spacing:.05em;max-width:100%;
+:where(#kbroot) .dside .dnm{font-size:11.5px;font-weight:var(--fw-max);letter-spacing:.05em;max-width:100%;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-:where(#kbroot) .dside .rt{font-size:16px;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums}
+:where(#kbroot) .dside .rt{font-size:16px;font-weight:var(--fw-max);color:var(--gold);font-variant-numeric:tabular-nums}
 :where(#kbroot) .dside.me .dnm{color:var(--p1)} :where(#kbroot) .dside.foe .dnm{color:var(--p2)}
 /* the avatar slot: paintAvatar fills it with the player's chosen die, so it
    carries no chrome of its own — the die IS the picture, as everywhere else */
 :where(#kbroot) .dav{width:44px;height:44px;display:grid;place-items:center}
-:where(#kbroot) .dvs{flex:0 0 auto;font-size:14px;font-weight:900;letter-spacing:.1em;color:var(--txt);
+:where(#kbroot) .dvs{flex:0 0 auto;font-size:14px;font-weight:var(--fw-max);letter-spacing:.1em;color:var(--txt);
   font-style:italic}
 /* The hold: five seconds to READ the result, cut short the moment everyone has.
    It only exists once there is something to read. */
@@ -153,13 +153,13 @@
    up here nothing arrives later, so nothing has to be held open for it */
 :where(#kbroot) .wsett .wblurb{min-height:0;margin:0;display:block}
 :where(#kbroot) .wpill{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:99px;
-  font-size:10px;font-weight:900;letter-spacing:.16em;
+  font-size:10px;font-weight:var(--fw-max);letter-spacing:.16em;
   border:1px solid color-mix(in srgb,currentColor 45%,transparent);
   background:color-mix(in srgb,currentColor 12%,transparent);
   box-shadow:0 0 14px color-mix(in srgb,currentColor 22%,transparent)}
 :where(#kbroot) .wpill svg{width:13px;height:13px}
 :where(#kbroot) .wowner{display:inline-flex;align-items:center;gap:5px;max-width:100%;
-  min-width:0;font-size:10px;line-height:1;letter-spacing:.12em;font-weight:900;
+  min-width:0;font-size:10px;line-height:1;letter-spacing:.12em;font-weight:var(--fw-max);
   text-transform:none;white-space:nowrap}
 :where(#kbroot) .wownername{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 :where(#kbroot) .wowner::before{content:"";width:4px;height:4px;flex:0 0 auto;border-radius:50%;
@@ -173,12 +173,12 @@
 /* the countdown belongs to the WHOLE reveal, not to a beat: `landed` says this
    beat found its answer, `holding` says there are no more questions */
 :where(#kbroot) #ovWheel.holding .dhold{visibility:visible}
-:where(#kbroot) .dhold b{font-size:26px;font-weight:900;color:var(--p1);line-height:1;
+:where(#kbroot) .dhold b{font-size:26px;font-weight:var(--fw-max);color:var(--p1);line-height:1;
   text-shadow:0 0 18px rgba(var(--p1-rgb),.55);font-variant-numeric:tabular-nums}
 :where(#kbroot) .dhold span{font-size:9.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;min-height:12px}
 :where(#kbroot) #ovWheel.ready .dhold b{color:var(--gold);text-shadow:0 0 18px rgba(255,209,102,.6)}
 /* the readout reserves its lines, so filling them cannot shift the dial */
-:where(#kbroot) .wname{font-size:clamp(15px,4.6vmin,20px);font-weight:900;letter-spacing:.18em;
+:where(#kbroot) .wname{font-size:clamp(15px,4.6vmin,20px);font-weight:var(--fw-max);letter-spacing:.18em;
   min-height:1.4em;margin-top:5px;display:flex;align-items:center;justify-content:center;gap:8px}
 :where(#kbroot) .wblurb{font-size:11px;letter-spacing:.12em;color:var(--dim);text-align:center;
   line-height:1.45;min-height:2.9em;max-width:var(--w-col);

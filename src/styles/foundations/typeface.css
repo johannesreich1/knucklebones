@@ -1,0 +1,115 @@
+/* ============ THE FACE THE APP SHIPS ============ */
+/* Until now this app shipped NO font. page.css named OS faces and took what the
+ * device owned, so one screen was SF Pro Rounded on an iPhone, Roboto on
+ * Android, Segoe on Windows and — on a Linux CI runner with none of them —
+ * whatever fontconfig ranked first, which for days was DejaVu and once was a
+ * Chinese face. Three commits went into chasing geometry failures that were
+ * really that, two of them by widening design-card frames to fit metrics no
+ * player will ever see. Bundling one face ends the lottery: the runner and the
+ * phone now lay out the same pixels, which is why tests/typeface.test.ts and
+ * tests/support/rendering-font.mjs can finally assert something true.
+ *
+ * CHAKRA PETCH, chosen by the owner out of design study 58 (design/screens/
+ * product/58*). OFL 1.1 — ours to bundle and ship in both stores, no fee, no
+ * attribution in the UI, on two conditions we keep: OFL-chakrapetch.txt ships
+ * beside the files, and a modified cut may not keep the Reserved Font Name.
+ *
+ * IT IS A STATIC FAMILY THAT STOPS AT 700. That is not a limitation this file
+ * works around, it is the ceiling the whole weight ladder is now cut to
+ * (tokens.css, --fw-*). Ask for 800 anywhere and CSS will quietly hand back the
+ * 700 face while the stylesheet keeps claiming 800; tests/typeface.test.ts
+ * exists to make that unsayable.
+ *
+ * The faces are split latin / latin-ext exactly as Google cuts them. In the
+ * single-file builds Vite inlines both regardless, but the PWA build emits them
+ * as separate assets and a player who never types a Polish or Turkish glyph
+ * never fetches the 35KB of latin-ext.
+ *
+ * WHAT IS NOT COVERED, on purpose: Japanese and Korean. The app is localized to
+ * ja and ko, no latin face carries CJK, and Noto CJK is 4-8MB. The stack in
+ * page.css names Chakra Petch first and keeps the old OS stack behind it, so
+ * those two locales fall through to the system face exactly as they do today —
+ * fallback is resolved per GLYPH, so a Japanese string picks up the OS face
+ * while the Latin around it stays Chakra Petch. Nothing else can arrive
+ * uncovered: nicknames are ^[A-Za-z0-9_]{3,16}$ in the database, so no
+ * player-supplied text reaches the UI outside this face's range.
+ *
+ * Provenance (exact URLs and sha256 per file): src/styles/fonts/provenance.json
+ */
+
+/* ---- Chakra Petch: everything that is not a digit ----------------------- */
+@font-face{font-family:"Chakra Petch";font-style:normal;font-weight:400;font-display:block;
+  src:url(../fonts/chakrapetch-400-latin.woff2) format("woff2");
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Chakra Petch";font-style:normal;font-weight:400;font-display:block;
+  src:url(../fonts/chakrapetch-400-latin-ext.woff2) format("woff2");
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Chakra Petch";font-style:normal;font-weight:500;font-display:block;
+  src:url(../fonts/chakrapetch-500-latin.woff2) format("woff2");
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Chakra Petch";font-style:normal;font-weight:500;font-display:block;
+  src:url(../fonts/chakrapetch-500-latin-ext.woff2) format("woff2");
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Chakra Petch";font-style:normal;font-weight:600;font-display:block;
+  src:url(../fonts/chakrapetch-600-latin.woff2) format("woff2");
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Chakra Petch";font-style:normal;font-weight:600;font-display:block;
+  src:url(../fonts/chakrapetch-600-latin-ext.woff2) format("woff2");
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Chakra Petch";font-style:normal;font-weight:700;font-display:block;
+  src:url(../fonts/chakrapetch-700-latin.woff2) format("woff2");
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Chakra Petch";font-style:normal;font-weight:700;font-display:block;
+  src:url(../fonts/chakrapetch-700-latin-ext.woff2) format("woff2");
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+
+/* ---- the digits come from somewhere else, and here is why --------------- */
+/* CHAKRA PETCH HAS NO TABULAR FIGURES. Not "does not default to them" — there
+ * is no tnum table to switch on, so page.css's font-variant-numeric:tabular-nums
+ * is inert against it. Measured in a browser against the real woff2 at 200px:
+ * "0000000000" is 1256px and "1111111111" is 716px, and tabular-nums moves
+ * neither. A "1" is 43% narrower than a "0".
+ *
+ * A single centred digit does not care — a countdown ticking 5,4,3,2,1 just
+ * gets narrower around the same midpoint, and the two 26px clocks (.dhold b,
+ * .trial-select__clock b) are fine. The ladder is what cannot absorb it:
+ * .lrow .rt is a right-aligned column where 2,494 sits above 1,455 above 812,
+ * and with proportional digits four-figure scores of similar magnitude come out
+ * visibly different widths. A leaderboard whose numbers do not line up reads as
+ * broken. .plate .tot has the same problem in miniature, inside its 34px
+ * right-aligned box, under a bump animation.
+ *
+ * So digits — and only digits, U+0030-0039 — come from Saira, bound to the SAME
+ * family name. It is the closest of the twelve study candidates to Chakra
+ * Petch's squared technical drawing, it has real tabular figures, and the
+ * subset is 2.8KB per weight because it carries fourteen glyphs. Declared AFTER
+ * the faces above on purpose: for an overlapping unicode-range the last
+ * matching @font-face wins, and the latin ranges above include the digits.
+ *
+ * If this ever reads as foreign beside the letters, deleting these four blocks
+ * restores Chakra Petch's own digits and costs only the alignment. */
+@font-face{font-family:"Chakra Petch";font-style:normal;font-weight:400;font-display:block;
+  src:url(../fonts/saira-digits-400.woff2) format("woff2");unicode-range:U+0030-0039}
+@font-face{font-family:"Chakra Petch";font-style:normal;font-weight:500;font-display:block;
+  src:url(../fonts/saira-digits-500.woff2) format("woff2");unicode-range:U+0030-0039}
+@font-face{font-family:"Chakra Petch";font-style:normal;font-weight:600;font-display:block;
+  src:url(../fonts/saira-digits-600.woff2) format("woff2");unicode-range:U+0030-0039}
+@font-face{font-family:"Chakra Petch";font-style:normal;font-weight:700;font-display:block;
+  src:url(../fonts/saira-digits-700.woff2) format("woff2");unicode-range:U+0030-0039}
+
+/* ---- what the ladder's rungs mean in markup ---------------------------- */
+/* The base rung, stated rather than inherited, so nothing in the app rests on
+   the UA's idea of "normal" and tests/typeface.test.ts can demand that every
+   weight in the product names a rung. */
+:where(#kbroot){font-weight:var(--fw-body)}
+/* <b> WAS 700 BY A TABLE NOBODY WROTE DOWN. The UA sheet gives b and strong
+   `bolder`, which from an inherited 400 computes to 700 — so the rules prose
+   had a hierarchy (.rules .k at 800 over a plain <b> at 700) that no stylesheet
+   in this repo stated, and that a re-weighting would have silently inverted:
+   .k lands on 600 under the new ladder, which is LIGHTER than the 700 the UA
+   was handing <b>. There are ~10 such tags in TS-generated markup (learn.ts,
+   ladder-screen.ts, account-runes.ts) and none of them said so.
+   Written with :where() on both halves so the whole selector is (0,0,1) — an
+   ID here would outweigh .rules .k and invert the pair the other way. Every
+   existing rule (.n1/.n2, .lrow .gap b, .rules .k) still wins over it. */
+:where(#kbroot) :where(b,strong){font-weight:var(--fw-strong)}

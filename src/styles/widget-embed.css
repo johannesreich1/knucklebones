@@ -7,7 +7,12 @@
 #kbroot{position:relative;display:block;width:100%;max-width:100%;min-width:0;
   height:var(--kb-widget-height,640px);border-radius:16px;overflow:hidden;
   background:#05060e;color:#e9f1ff;
-  font-family:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-family:"Chakra Petch",ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  /* no faux bold: the bundled family stops at 700 and the ladder is cut to it,
+     so a request the face cannot answer should render as the 700 face rather
+     than as a smeared one. Weight only — .dvs (mode-dial) is italic and ships
+     no italic cut, and that synthesised oblique is the intended look. */
+  font-synthesis-weight:none;
   -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;
   touch-action:manipulation;-webkit-user-select:none;user-select:none;
   -webkit-tap-highlight-color:transparent;border:0.5px solid rgba(255,255,255,.12);

@@ -1,0 +1,116 @@
+[
+  {
+    "family": "Outfit",
+    "slug": "outfit",
+    "license": "OFL-1.1",
+    "files": {
+      "400": 14420,
+      "800": 14436,
+      "900": 13412
+    }
+  },
+  {
+    "family": "Urbanist",
+    "slug": "urbanist",
+    "license": "OFL-1.1",
+    "files": {
+      "400": 10528,
+      "800": 10512,
+      "900": 10256
+    }
+  },
+  {
+    "family": "Sora",
+    "slug": "sora",
+    "license": "OFL-1.1",
+    "files": {
+      "400": 13816,
+      "800": 13580
+    }
+  },
+  {
+    "family": "Plus Jakarta Sans",
+    "slug": "plusjakartasans",
+    "license": "OFL-1.1",
+    "files": {
+      "400": 11276,
+      "800": 11400
+    }
+  },
+  {
+    "family": "Nunito",
+    "slug": "nunito",
+    "license": "OFL-1.1",
+    "files": {
+      "400": 15004,
+      "800": 15212,
+      "900": 15312
+    }
+  },
+  {
+    "family": "Manrope",
+    "slug": "manrope",
+    "license": "OFL-1.1",
+    "files": {
+      "400": 13400,
+      "800": 12852
+    }
+  },
+  {
+    "family": "Archivo",
+    "slug": "archivo",
+    "license": "OFL-1.1",
+    "files": {
+      "400": 14720,
+      "800": 14388,
+      "900": 13228
+    }
+  },
+  {
+    "family": "Space Grotesk",
+    "slug": "spacegrotesk",
+    "license": "OFL-1.1",
+    "files": {
+      "400": 13628,
+      "700": 13292
+    }
+  },
+  {
+    "family": "Chakra Petch",
+    "slug": "chakrapetch",
+    "license": "OFL-1.1",
+    "files": {
+      "400": 10324,
+      "700": 10524
+    }
+  },
+  {
+    "family": "Rajdhani",
+    "slug": "rajdhani",
+    "license": "OFL-1.1",
+    "files": {
+      "400": 8292,
+      "700": 8424
+    }
+  },
+  {
+    "family": "Exo 2",
+    "slug": "exo2",
+    "license": "OFL-1.1",
+    "files": {
+      "400": 14720,
+      "800": 15192,
+      "900": 14496
+    }
+  },
+  {
+    "family": "Saira",
+    "slug": "saira",
+    "license": "OFL-1.1",
+    "files": {
+      "400": 13292,
+      "800": 13100,
+      "900": 12796
+    }
+  }
+]

@@ -76,8 +76,13 @@ check(isolation.htmlCell === 'host-cell' && isolation.rootCell.endsWith('px'),
   'widget sizing variables escaped onto the host root', isolation);
 check(isolation.hostColor === 'rgb(17, 34, 51)' && isolation.hostBox === 'content-box' &&
   isolation.bodyBg === 'rgb(250, 249, 245)', 'widget CSS mutated host computed styles', isolation);
+/* The weight literal here has to track src/styles/components/overlays.css. It is
+   the app's .btn weight, and the check is that a host's own .btn did NOT catch
+   it — so if the app's weight moves and this does not, the assertion keeps
+   passing against a widget that leaks. It moved from 800 to --fw-strong (600)
+   when the app started bundling a face whose ladder stops at 700. */
 check(isolation.hostClasses.btn.minWidth !== '210px' && isolation.hostClasses.btn.padding !== '16px 20px' &&
-  isolation.hostClasses.btn.radius !== '14px' && isolation.hostClasses.btn.weight !== '800' &&
+  isolation.hostClasses.btn.radius !== '14px' && isolation.hostClasses.btn.weight !== '600' &&
   isolation.hostClasses.cardDisplay !== 'flex' &&
   (isolation.hostClasses.die.display !== 'grid' || isolation.hostClasses.die.position !== 'relative') &&
   isolation.hostClasses.ov.position !== 'fixed' && isolation.hostClasses.ov.visibility !== 'hidden' &&

@@ -49,7 +49,12 @@ page.on('console', (m) => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.
 /* EVERY height below is a font measurement. A host rendering the cards in a
    face the app never names does not produce a smaller set of true failures —
    it produces a list of cards that are "12px too tall" and sends the reader
-   off to edit card declarations. Name the cause once, here, before the loop. */
+   off to edit card declarations. Name the cause once, here, before the loop.
+   ON A CARD, NOT ON about:blank. The app ships its own face now, so the
+   question is whether THIS page bound it — and a blank page has no stylesheet
+   to bind anything with. Asked on about:blank the guard reports, correctly and
+   uselessly, that the family does not exist. */
+await page.goto('file://' + join(dist, files[0]));
 const font = await checkRenderingFont(page);
 out.font = font;
 check(!font.problem,

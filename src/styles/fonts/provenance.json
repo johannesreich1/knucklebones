@@ -1,0 +1,110 @@
+[
+  {
+    "name": "chakrapetch-400-latin-ext.woff2",
+    "weight": 400,
+    "subset": "latin-ext",
+    "bytes": 8904,
+    "sha256": "c2086b274b3c6e1597c9c1638e40be0220f406e7dd04247069d423f292ab8ec7",
+    "url": "https://fonts.gstatic.com/s/chakrapetch/v13/cIf6MapbsEk7TDLdtEz1BwkWkapgar3I1D8t.woff2",
+    "range": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+  },
+  {
+    "name": "chakrapetch-400-latin.woff2",
+    "weight": 400,
+    "subset": "latin",
+    "bytes": 9728,
+    "sha256": "e592818029a919d578974df32686d415d6acd8401bc5420695de41a46eeae426",
+    "url": "https://fonts.gstatic.com/s/chakrapetch/v13/cIf6MapbsEk7TDLdtEz1BwkWn6pgar3I1A.woff2",
+    "range": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+  },
+  {
+    "name": "chakrapetch-500-latin-ext.woff2",
+    "weight": 500,
+    "subset": "latin-ext",
+    "bytes": 9024,
+    "sha256": "b821fcd55102d303590e2b5da0c6097f2e0c384bd5ad8fbf157bb5e91402c250",
+    "url": "https://fonts.gstatic.com/s/chakrapetch/v13/cIflMapbsEk7TDLdtEz1BwkebIl1SZ_F_gUk0wzH.woff2",
+    "range": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+  },
+  {
+    "name": "chakrapetch-500-latin.woff2",
+    "weight": 500,
+    "subset": "latin",
+    "bytes": 9944,
+    "sha256": "adf007cd277ef6dac0c8cecacfb60cc5e24e7c8bcce4db98aa233bd3a88ef5a3",
+    "url": "https://fonts.gstatic.com/s/chakrapetch/v13/cIflMapbsEk7TDLdtEz1BwkebIl1R5_F_gUk0w.woff2",
+    "range": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+  },
+  {
+    "name": "chakrapetch-600-latin-ext.woff2",
+    "weight": 600,
+    "subset": "latin-ext",
+    "bytes": 9100,
+    "sha256": "140bd5c457550ed1e06cf2346e5ab432d4a7344c4ba44d5460ee7384f210d098",
+    "url": "https://fonts.gstatic.com/s/chakrapetch/v13/cIflMapbsEk7TDLdtEz1BwkeQI51SZ_F_gUk0wzH.woff2",
+    "range": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+  },
+  {
+    "name": "chakrapetch-600-latin.woff2",
+    "weight": 600,
+    "subset": "latin",
+    "bytes": 10040,
+    "sha256": "4d6d5f0b31b3a471a843779c4ecada040e5bc291f96bca9805a94293fe8003fa",
+    "url": "https://fonts.gstatic.com/s/chakrapetch/v13/cIflMapbsEk7TDLdtEz1BwkeQI51R5_F_gUk0w.woff2",
+    "range": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+  },
+  {
+    "name": "chakrapetch-700-latin-ext.woff2",
+    "weight": 700,
+    "subset": "latin-ext",
+    "bytes": 9044,
+    "sha256": "afe317b164b50683882a9cc969421017f72dcea9ce681bb9d28b59f72302a4b7",
+    "url": "https://fonts.gstatic.com/s/chakrapetch/v13/cIflMapbsEk7TDLdtEz1BwkeJI91SZ_F_gUk0wzH.woff2",
+    "range": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+  },
+  {
+    "name": "chakrapetch-700-latin.woff2",
+    "weight": 700,
+    "subset": "latin",
+    "bytes": 9868,
+    "sha256": "3c2433eb167176cddcdb3eb2ea306d68c2a4ed4c6e78a0dc07b3853d8f6ae8e3",
+    "url": "https://fonts.gstatic.com/s/chakrapetch/v13/cIflMapbsEk7TDLdtEz1BwkeJI91R5_F_gUk0w.woff2",
+    "range": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+  },
+  {
+    "name": "saira-digits-400.woff2",
+    "weight": 400,
+    "subset": "digits",
+    "bytes": 2872,
+    "sha256": "4704eba9ebcdbf1fbec84b572da46e829f4fe6aec61e01d0afb183154dc70730",
+    "url": "https://fonts.gstatic.com/l/font?kit=memWYa2wxmKQyPMrZX79wwYZQMhsyuShhKMjjbU9uXuA71rCos07lwYnWVYMyoI8Ux93qS8NKr3dNIsQYQ&skey=536864831ea068c7&v=v23",
+    "range": "U+0030-0039"
+  },
+  {
+    "name": "saira-digits-500.woff2",
+    "weight": 500,
+    "subset": "digits",
+    "bytes": 2896,
+    "sha256": "93489dab66beb34821caf862996a1ef4b045d1b1b34e8e2d896d4f10ca1e0656",
+    "url": "https://fonts.gstatic.com/l/font?kit=memWYa2wxmKQyPMrZX79wwYZQMhsyuShhKMjjbU9uXuA72jCos07lwYnWVYMyoI8Ux93qS8NKr3dNIsQYQ&skey=536864831ea068c7&v=v23",
+    "range": "U+0030-0039"
+  },
+  {
+    "name": "saira-digits-600.woff2",
+    "weight": 600,
+    "subset": "digits",
+    "bytes": 2860,
+    "sha256": "70dc61b29aefb3a7384aaec654978c33d20c5623df253541ebb6656a14521133",
+    "url": "https://fonts.gstatic.com/l/font?kit=memWYa2wxmKQyPMrZX79wwYZQMhsyuShhKMjjbU9uXuA74TFos07lwYnWVYMyoI8Ux93qS8NKr3dNIsQYQ&skey=536864831ea068c7&v=v23",
+    "range": "U+0030-0039"
+  },
+  {
+    "name": "saira-digits-700.woff2",
+    "weight": 700,
+    "subset": "digits",
+    "bytes": 2972,
+    "sha256": "e40dd87d79c7916ecada84f32225dd0fb6bc7e6d3b266f9abc016ff071a04d23",
+    "url": "https://fonts.gstatic.com/l/font?kit=memWYa2wxmKQyPMrZX79wwYZQMhsyuShhKMjjbU9uXuA773Fos07lwYnWVYMyoI8Ux93qS8NKr3dNIsQYQ&skey=536864831ea068c7&v=v23",
+    "range": "U+0030-0039"
+  }
+]

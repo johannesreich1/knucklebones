@@ -23,23 +23,23 @@
     },
     {
       "path": "src/styles/components/ask-card.css",
-      "bytes": 3761,
-      "sha256": "83c1269f3f2474ba45b39a8b192cdd51e5634f0022773446ba888ca5d50dc946"
+      "bytes": 3771,
+      "sha256": "fadd1bc893bab63bc9adafa46381ee1cbea31de5bfe4acb43aa8b6cd582c140d"
     },
     {
       "path": "src/styles/components/game-info.css",
-      "bytes": 1754,
-      "sha256": "3ff9a4a1d32094185e7e126c7cd01bb6b05bdd005d0f0b28870ee06c55566e13"
+      "bytes": 2320,
+      "sha256": "0ea42c98bbf56824d0fccda7face2f60634a87a8608ecce3a26da4f5635cbab2"
     },
     {
       "path": "src/styles/components/identity.css",
-      "bytes": 15708,
-      "sha256": "6db50cc27d7b8e0e49d3a4d5eef38981650f183710bfc0ca29dc3348ef26c2ab"
+      "bytes": 15761,
+      "sha256": "4d5e2ce4edd387f094e9f97acd1d6eba3420f307f3832bf61acae6dfce5db823"
     },
     {
       "path": "src/styles/components/language-picker.css",
-      "bytes": 1013,
-      "sha256": "7d957a8f0fff2aff3f67e64ddc508e2ce5e80bf1cf6283069e43a30e088d0cad"
+      "bytes": 1039,
+      "sha256": "d586d0eb50fafcbb9472b9754d895d336f7397267dc0e5271ef3d8ba78494903"
     },
     {
       "path": "src/styles/components/legal.css",
@@ -48,8 +48,8 @@
     },
     {
       "path": "src/styles/components/library.css",
-      "bytes": 1345,
-      "sha256": "034fb479599efabc1d7c0591a5291e493f1b418271d5a3cc4459f155746b7d0c"
+      "bytes": 1355,
+      "sha256": "d395a3e9f3efb0f872c2ad0869777e53e583cf31241608c99dd23ae5ba0316a8"
     },
     {
       "path": "src/styles/components/loader.css",
@@ -58,28 +58,28 @@
     },
     {
       "path": "src/styles/components/mode-dial.css",
-      "bytes": 15827,
-      "sha256": "7ec307458d28dbfb897f8e19185f9c7eefbe2bee82c7d0e3d20ed331ac2a1f56"
+      "bytes": 15897,
+      "sha256": "e9472d3d7c5c7656dcfc6c85a888ccaddb5018c3674aaa07bdfb1df1219ce523"
     },
     {
       "path": "src/styles/components/overlays.css",
-      "bytes": 13440,
-      "sha256": "ef97f5c32885f78f180d5a1a0160690e697ef9ae417c378ce8fe0c98f7fe3883"
+      "bytes": 14177,
+      "sha256": "6bc8f0cebf6877597cc9e61020fb452c3790754fe09b70818a66f3f4283a555a"
     },
     {
       "path": "src/styles/components/picker.css",
-      "bytes": 3543,
-      "sha256": "5d1686751daff7f5c074f3d903738245e36ca502cf0d75c139a8f3d7d880b2f7"
+      "bytes": 3553,
+      "sha256": "7083d15fb71aaed3c8f66dfc2f89cb414d6156a204a7569c939b58c66864ff9f"
     },
     {
       "path": "src/styles/components/rune-deal.css",
-      "bytes": 5823,
-      "sha256": "7a1b6c970ea7b6700b824171ab58d23f21b771d00d3ac50fe69fe8f9fdff06b4"
+      "bytes": 5843,
+      "sha256": "e9e240a64f36bcadf62cdc003e99b059b7f4f3cd3fdf40246fe05cc04cb9ca13"
     },
     {
       "path": "src/styles/components/sheet.css",
-      "bytes": 11323,
-      "sha256": "21e311cd53442a08a39af16e2a319968b0aeafb2eaa0bafca5827960cba6ea8d"
+      "bytes": 11336,
+      "sha256": "15b9112bd15ec4427d9274a0e8f824a15e2dc2569c30933cc700a143a72c8710"
     },
     {
       "path": "src/styles/components/split-mark.css",
@@ -88,8 +88,8 @@
     },
     {
       "path": "src/styles/components/trial-select.css",
-      "bytes": 6460,
-      "sha256": "f513776a1bac5ada575b21f623056fbd62bd7e20308e85b38ad30de6b96fc0bb"
+      "bytes": 6490,
+      "sha256": "29fdac90256a27de8fa523e4ca1ec5c8be2d13bd196a2c665bf559138838a683"
     },
     {
       "path": "src/styles/foundations/backdrop.css",
@@ -98,8 +98,13 @@
     },
     {
       "path": "src/styles/foundations/tokens.css",
-      "bytes": 10802,
-      "sha256": "e6971f339c4964b43287f32d3a6b80340326aef6e6cc2afb13be137146f33f56"
+      "bytes": 13118,
+      "sha256": "f7ccdd7d36d19728708cee406a568c2bb52c3bbce0cf0da414a876ca12c8a6e9"
+    },
+    {
+      "path": "src/styles/foundations/typeface.css",
+      "bytes": 8734,
+      "sha256": "042dd44663fb6eae3b5a57190f193b86067779d49c3d3179a775cb7157500314"
     },
     {
       "path": "src/styles/game/anvil.css",
@@ -133,18 +138,18 @@
     },
     {
       "path": "src/styles/game/responsive.css",
-      "bytes": 6318,
-      "sha256": "b9a222d9f8cb0300b8da3dde35b2baba25b2908dacfc8fdd706d590d8f818d86"
+      "bytes": 6328,
+      "sha256": "c7976b9234fd265bdc889a255c888bdbe1dca557d931dec969ccaf9e72352425"
     },
     {
       "path": "src/styles/game/row-modes.css",
-      "bytes": 7115,
-      "sha256": "d4dd2dff3dc3e11d2468a3ddd8b5eb3374ed7ee59148a09ff03721e39bb7a135"
+      "bytes": 7128,
+      "sha256": "03743aaccaec8a6c0924fa6c80753c66233d0fb255dd45090720a7770c5012ce"
     },
     {
       "path": "src/styles/game/score-chips.css",
-      "bytes": 2497,
-      "sha256": "884667e877a262eb7a4815ea32123e56584d844b28ac8b7927ace52acb150f93"
+      "bytes": 2520,
+      "sha256": "7c85d5ae73abdb3a1fde2a013dcc2bcf02e355859714f85b6547d7b074893621"
     },
     {
       "path": "src/styles/game/seating.css",
@@ -153,8 +158,8 @@
     },
     {
       "path": "src/styles/game/shell.css",
-      "bytes": 12615,
-      "sha256": "b902ed55e1f6abf6c561e0aa680afda9b21f111804f9108f2c9bb7edf45f1422"
+      "bytes": 12676,
+      "sha256": "d0d606487d19892f4cb8703755cb946ce629211c46cb4f98aba9fc2e3c2160cf"
     },
     {
       "path": "src/styles/game/spell-effects-ward-sunder.css",
@@ -173,18 +178,18 @@
     },
     {
       "path": "src/styles/game/stage.css",
-      "bytes": 4788,
-      "sha256": "59194d654c5e178d5846f74f8e4d6d42bee0c339a6e023332a0283f38025d91e"
+      "bytes": 4820,
+      "sha256": "58cb676f41b2a56164c4ff56dbbc5da108db3c1006f2f8bf82059c8caa507520"
     },
     {
       "path": "src/styles/game/variants.css",
-      "bytes": 10089,
-      "sha256": "b9b3ee92ed2b1bc5cbcb55510334293232f59fbb0e86aef11a4ba771f4857294"
+      "bytes": 10119,
+      "sha256": "cc051027196254ef537e390d0d4c08b58ccbccbdc07f52db7d08ee8ed8b0d690"
     },
     {
       "path": "src/styles/main.css",
-      "bytes": 1422,
-      "sha256": "c127e94c23c57c9857ffbaffba187f38e1db945f91d94be542e6c3bfb0b1e17a"
+      "bytes": 1597,
+      "sha256": "3211c4f260c75d7f2c4d156bedeb2cc710d02e765ab4fe75a88adeceb23d95d0"
     },
     {
       "path": "src/styles/screens/home.css",
@@ -193,23 +198,23 @@
     },
     {
       "path": "src/styles/screens/learn-settings.css",
-      "bytes": 3072,
-      "sha256": "74ce0eb911aeb6fa50f56a7f67f21f98983005f0a795444daa3b9193b4a8a249"
+      "bytes": 3092,
+      "sha256": "e1b7a12e2856472e6151dd59d0d232b6d44c5f28f5fab1bb3f65a11efe4cc3d2"
     },
     {
       "path": "src/styles/screens/result.css",
-      "bytes": 9602,
-      "sha256": "b2b1ffd93c047df0c363aa917e4ae00e11e0a4ec03d903472697f778f4c8bb04"
+      "bytes": 9612,
+      "sha256": "67b49bfe4498afb8c3a43c5181f1f707a656cfb11f4076238482ae16ec7567b3"
     },
     {
       "path": "src/styles/screens/tutorial-handoff.css",
-      "bytes": 2995,
-      "sha256": "a3437aeaa93cadcde43c01592da2e94f7d04f09c5666176d3ef62203bf72aeec"
+      "bytes": 3028,
+      "sha256": "ab5eb25337f6364b2f508372cec168539a1bf31685c26b889ed54afaa86fc1c9"
     },
     {
       "path": "src/styles/shell/paged-view.css",
-      "bytes": 24048,
-      "sha256": "0b1b24ab70d173e96256ee40b1dfe1501fc30cfb0423c3a12938900868e09519"
+      "bytes": 24058,
+      "sha256": "08433da0fd164553f32278f3045e0adf4860bd5ed0a11e4943f53405fc82f5e5"
     },
     {
       "path": "src/ui/die-markup.ts",
@@ -218,8 +223,8 @@
     },
     {
       "path": "tools/appicon.mjs",
-      "bytes": 17238,
-      "sha256": "5f6f60f3952fcab44724fbe2021ded06a3e94b1853751e97269f316496a78cf4"
+      "bytes": 17670,
+      "sha256": "921ea87030dd36011defebc875752bc593a7f3b1984f8d6777848ff1d65c45bc"
     },
     {
       "path": "tools/profile-app-icons.mjs",
