@@ -94,11 +94,22 @@ addition shares the other 60% equally.** Access is a permanent high-water mark
 derived from the player's historical ladder peak. As of 2026-09-01, the current
 source registry is:
 
+This table is CURVE V2, which production has run since 2026-09-04. It used to
+describe v1 and was left behind when the pools were re-cut — the fixed order
+below it already said Bounty had replaced Limited in STONE while the table
+still handed STONE Limited, which is the sort of disagreement that gets read as
+a bug in the code. The v1 pools are gone with the curve; the activation cannot
+be rolled back.
+
 | Permanent pool | Peak floor | Eligible outcomes | Odds |
 |---|---:|---|---|
-| STONE | 0 | Classic; Single Strike; Column Shield; Limited | Classic 40%; each addition 20% |
-| BONE | 300 | STONE + Row Switch; Row Multiply; Bounty | Classic 40%; each addition 10% |
-| IVORY | 720 | BONE + Rune Trial | Classic 40%; each addition `60/7` (about 8.571%) |
+| STONE | 0 | Classic; Single Strike; Column Shield; Bounty | Classic 40%; each addition 20% |
+| BONE | 360 | STONE + Row Multiply | Classic 40%; each addition 15% |
+| IVORY | 840 | BONE + Rune Ritual | Classic 40%; each addition 12% |
+| SILVER | 1490 | IVORY (equipped runes, no new mode) | as IVORY |
+| GOLD | 2490 | IVORY + Row Switch; Limited | Classic 40%; each addition `60/7` (about 8.571%) |
+| OBSIDIAN | 3890 | GOLD (weekly featured challenge) | as GOLD |
+| NEON | 6090 | GOLD (prestige and cosmetics only) | as GOLD |
 
 Promotion affects the next match. Demotion and season turnover do not relock a
 pool. A human match draws from the lower/shared permanent pool after
