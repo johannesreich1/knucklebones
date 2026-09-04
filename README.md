@@ -128,6 +128,8 @@ deploys automatically.
 ```bash
 mise exec -- npm test                   # full application gate
 mise exec -- npm test -- --suite architecture  # one manifest owner while iterating
+mise exec -- npm test -- --suite typecheck-tests # pair with ANY .ts suite: a focused
+                                                 # run strips types without checking them
 mise exec -- npm run db:start           # fresh database-only Supabase stack
 mise exec -- npm run test:db            # pgTAP database contracts
 ```

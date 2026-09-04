@@ -55,15 +55,33 @@
      The live table adds a violet cloud between them, because the board there
      is a third object competing with both seats. One list composes the other,
      so the two hues can never drift apart between the two screens. */
+  /* The two owners' strengths are knobs, not literals: Home dims its lower
+     cloud (owner call — yours was reading heavier than theirs down there) and
+     the table keeps both at full. One gradient, two settings. */
+  --cloud-p1-a:.36;
+  --cloud-p2-a:.42;
   --duel-clouds:
-    radial-gradient(closest-side,rgba(var(--p2-rgb),.42),transparent 70%) 20% 16%/64% 48% no-repeat,
-    radial-gradient(closest-side,rgba(var(--p1-rgb),.36),transparent 70%) 80% 86%/66% 50% no-repeat;
+    radial-gradient(closest-side,rgba(var(--p2-rgb),var(--cloud-p2-a)),transparent 70%) 20% 16%/64% 48% no-repeat,
+    radial-gradient(closest-side,rgba(var(--p1-rgb),var(--cloud-p1-a)),transparent 70%) 80% 86%/66% 50% no-repeat;
+  /* THE SAME CLOUDS WITHOUT A BLUR TO PAY FOR. #bg::before blurs 34px because
+     it drifts and the blur hides the seams of a moving layer. A still copy does
+     not need it, and paying for it was visible: coming back to Home from a page
+     re-rasterised a blurred, 160%-of-viewport layer while the overlay was
+     already fading in, so the colours arrived late. The falloff is carried by
+     the gradient itself instead — stops run to 100% and the ellipses are wider,
+     which lands in the same place with nothing to recompute. */
+  --duel-clouds-still:
+    radial-gradient(closest-side,rgba(var(--p2-rgb),var(--cloud-p2-a)),transparent 100%) 20% 16%/78% 60% no-repeat,
+    radial-gradient(closest-side,rgba(var(--p1-rgb),var(--cloud-p1-a)),transparent 100%) 80% 86%/80% 62% no-repeat;
   --table-clouds:
     var(--duel-clouds),
     radial-gradient(closest-side,rgba(126,60,255,.30),transparent 70%) 62% 42%/52% 40% no-repeat;
+  /* .15, up from .12 (owner call): the two corner washes were reading as
+     almost-black on a phone in daylight. A tiny lift — still well under the
+     table's own clouds, so a page never competes with the board. */
   --aurora:
-    radial-gradient(106% 95% at -8% -8%,rgba(var(--p2-rgb),.12),transparent 66%),
-    radial-gradient(106% 95% at 108% 108%,rgba(var(--p1-rgb),.12),transparent 66%),
+    radial-gradient(106% 95% at -8% -8%,rgba(var(--p2-rgb),.15),transparent 66%),
+    radial-gradient(106% 95% at 108% 108%,rgba(var(--p1-rgb),.15),transparent 66%),
     linear-gradient(125deg,transparent 34%,rgba(126,60,255,.07) 50%,transparent 66%);
   /* THE MULTIPLIER HEATS — what a ×2 (gold) and ×3 (hot orange) die wear.
      These are the base values; the real ones are PER SIDE (--p1-mx2 …,

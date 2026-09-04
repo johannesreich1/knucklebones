@@ -47,17 +47,23 @@
    inset:-30% so the blur has room to decay past every edge; z-index:-1 puts it
    under Home's content but over Home's own background, inside the stacking
    context isolation:isolate creates — so it cannot escape upward into the app.
-   No animation: backdrop.css pauses the table's drift whenever an overlay is
-   up, and Home is always up, so a drifting copy here would be the only moving
-   blur in the product.
+   No animation and no blur: backdrop.css pauses the table's drift whenever an
+   overlay is up, and Home is always up, so a drifting copy here would be the
+   only moving blur in the product — and a STILL blur was worse than useless.
+   Re-entering Home from a page re-rasterised it mid-fade, which is why both
+   colours arrived a beat late. --duel-clouds-still carries the same falloff in
+   the gradient, so there is nothing left to recompute on the way in.
+   --cloud-p1-a drops to .22 here: yours sat heavier at the bottom than theirs
+   did at the top, and Home is the one screen where that asymmetry shows.
 
    IT IS ::after, AND THAT IS NOT ARBITRARY. #ovStart::before is already taken:
    overlays.css uses it as the flex spacer whose margin-top:auto centres Home's
    column against .viewfoot's own auto margin ("ONE spacer, not two"). Painting
    the clouds there overrode it and dropped the whole column to the top of the
    screen — caught in a render, not in review. */
+:where(#kbroot) #ovStart{--cloud-p1-a:.22}
 :where(#kbroot) #ovStart::after{content:"";position:absolute;inset:-30%;z-index:-1;
-  pointer-events:none;background:var(--duel-clouds);filter:blur(34px)}
+  pointer-events:none;background:var(--duel-clouds-still)}
 
 /* ── THE BOOT HANDOFF ──────────────────────────────────────────────────────
    Design study 15b / A2, chosen 2026-09-03. src/ui/boot-handoff.ts measures the
@@ -92,20 +98,34 @@
    disappear — the whole large-scale half of the travel played invisibly and
    the mark seemed to pop into existence at 255ms. Caught by scrubbing the
    transition, not by reading it. */
+/* WHAT MOVES AND WHAT DOES NOT. The first version transitioned a filter
+   holding two 26px drop-shadows while the element scaled 96 -> 196px: on a 3x
+   phone that re-blurs a ~590px surface every frame, which is what "laggy" was.
+   Now the only animated properties on the mark are transform and opacity, both
+   of which the compositor can run without repainting, and will-change promotes
+   it so the scale is a texture transform rather than a re-raster.
+   The colour arrives as a grayscale() on #homeMark — a colour matrix, no blur —
+   placed AFTER the drop-shadows so the glow greys with the die and the frame
+   where a grey die wears a coloured halo can never render. The shadow's own
+   radius and colour never change, so nothing re-blurs on their account. */
 #kbroot.booting .hero .splitmark{
-  transform:translate(var(--boot-dx,0px),var(--boot-dy,0px)) scale(var(--boot-scale,1));
-  filter:grayscale(1) opacity(.62)
-    drop-shadow(0 0 0 rgba(var(--p1-rgb),0)) drop-shadow(0 0 0 rgba(var(--p2-rgb),0))}
+  will-change:transform,opacity;opacity:.62;
+  transform:translate(var(--boot-dx,0px),var(--boot-dy,0px)) scale(var(--boot-scale,1))}
+#kbroot.booting .hero #homeMark{
+  filter:drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))
+    grayscale(1)}
 #kbroot.booting .hero>:not(#homeMark),
 #kbroot.booting #ovStart>:not(.hero){opacity:0;transform:translateY(10px)}
 /* .45,.6,.25,1 covers 15/43/75/93% at the tenth, quarter, 40% and 60% marks —
    it starts, it moves, it settles. The study's first curve put 49% of the
    travel into the first 10% and read as a teleport followed by a drift. */
 #kbroot.boot-run .hero .splitmark{
-  transition:transform 340ms cubic-bezier(.45,.6,.25,1),filter 340ms cubic-bezier(.4,0,.2,1);
-  transform:none;
-  filter:grayscale(0) opacity(1)
-    drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))}
+  transition:transform 340ms cubic-bezier(.45,.6,.25,1),opacity 340ms cubic-bezier(.4,0,.2,1);
+  transform:none;opacity:1}
+#kbroot.boot-run .hero #homeMark{
+  transition:filter 340ms cubic-bezier(.4,0,.2,1);
+  filter:drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))
+    grayscale(0)}
 #kbroot.boot-run .hero>:not(#homeMark),
 #kbroot.boot-run #ovStart>:not(.hero){
   transition:opacity 320ms cubic-bezier(.32,.72,.28,1) 180ms,
@@ -115,6 +135,7 @@
    paints settled — but a stale class must not be able to strand the screen. */
 @media (prefers-reduced-motion:reduce){
   #kbroot.booting .hero .splitmark,
+  #kbroot.booting .hero #homeMark,
   #kbroot.booting .hero>:not(#homeMark),
   #kbroot.booting #ovStart>:not(.hero){transform:none;filter:none;opacity:1}
 }
@@ -132,13 +153,29 @@
    text-align:right line — measured, the glyphs already end flush, and a
    -.28em pull made them overhang by exactly 2.8px. Both lines are left at
    their natural edges. */
-:where(#kbroot) .hero .eyebrow{align-self:stretch;text-align:left}
 /* the tagline drops to the eyebrow's 9px (owner call): the two small lines
    bracket the wordmark, so they read as a pair only if they are the same size.
    Tracking stays each line's own — .34em up top, .28em below — because the
    tagline is the longer string and would break the column at .34em. */
+/* THE THREE-LINE STEP (owner call). The eyebrow sits 8px under the mark; the
+   two gaps that bracket the wordmark are 6px — similar to each other and a
+   little tighter than the one above, so the type reads as one block hung under
+   the mark rather than three evenly spaced captions. .hero's gap does the 6;
+   the mark adds 2 of its own to make the 8. And the two small lines are now a
+   matched pair: same 9px, same .28em, so neither reads as the larger one. */
+:where(#kbroot) .hero{gap:6px}
+:where(#kbroot) .hero .eyebrow{align-self:stretch;text-align:left;letter-spacing:.28em}
 :where(#kbroot) .hero .sub2{align-self:stretch;text-align:right;font-size:9px;margin-right:-.28em}
-:where(#kbroot) .hero .splitmark{margin-bottom:4px;
+/* THE GLOW LIVES INSIDE THE ELEMENT BOX. It used to sit on .splitmark, a 96px
+   element with a 26px shadow — so 26px of light fell OUTSIDE the box that owns
+   it. Nothing clips that on desktop, and the luminance profile here ramps
+   smoothly through it, but a promoted compositor layer on iOS can clip filter
+   output to its own bounds, and the glow was reported cut at the top on device.
+   Carrying it on #homeMark with 30px of padding puts every lit pixel inside the
+   element, so there is no bound left to clip against. The negative margin takes
+   the padding back out of layout, so the hero measures exactly what it did. */
+:where(#kbroot) .hero #homeMark{display:block;line-height:0;box-sizing:content-box;
+  padding:30px;margin:-30px -30px calc(2px - 30px);
   filter:drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))}
 :where(#kbroot) .sub2{font-size:10px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase;
   text-align:center;margin-bottom:12px}

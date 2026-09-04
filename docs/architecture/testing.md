@@ -37,6 +37,13 @@ them, so the gate suite `typecheck-tests` runs the dedicated
 `tsconfig.tests.json` project through the pinned compiler; the root
 `tsconfig.json` continues to gate `src/` inside `build.mjs`.
 
+**So a focused run of a `.ts` suite proves it RUNS, never that it compiles.**
+Add `--suite typecheck-tests` whenever you write or edit one (the second
+example above does exactly that). Skipping it does not fail fast: the suite
+passes as often as you like, and the gate only disagrees at `typecheck-tests`
+— which on 2026-09-04 landed after 97 of 103 suites had already run, for a test
+file that had never compiled once.
+
 Database contracts are a sibling CI gate because they require Docker and a
 fresh Supabase database: `mise exec -- npm run db:start`,
 `mise exec -- npm run test:db`, then schema

@@ -132,6 +132,7 @@ export const GATE_SUITES = Object.freeze([
   typed('edge-operations'),
   typed('edge-auto-forfeit'),
   typed('progression-v2-edge'),
+  typed('boot-handoff'),
   typed('cssgraph'),
   typed('cssreach'),
   typed('design-library'),
@@ -192,7 +193,7 @@ export const CI_SHARDS = Object.freeze({
     'limited-bag-gauge', 'architecture', 'rune-ward-sensitivity',
     'preferences', 'i18n-catalog', 'edge-handlers', 'edge-operations',
     'edge-auto-forfeit', 'progression-v2-edge',
-    'cssgraph', 'fnsync', 'ladder', 'group-transition',
+    'boot-handoff', 'cssgraph', 'fnsync', 'ladder', 'group-transition',
     'ranked-progression-durability', 'local-options', 'pwa-update',
   ]),
   'ci-4': Object.freeze([

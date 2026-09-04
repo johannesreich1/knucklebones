@@ -19,15 +19,16 @@ touching an area:
 | Frontend flow, state, module boundaries, or shared game rendering | `docs/architecture/frontend.md` |
 | CSS, responsive layout, game-state overrides, or widget isolation | `docs/architecture/styles.md` |
 | Locale detection, translated copy, language settings, or translation layout budgets | `docs/architecture/localization.md` |
-| Supabase, auth, RLS, migrations, RPCs, Realtime, or Edge Functions | `docs/architecture/backend.md`, `supabase/DESIGN.md`, and the applicable Supabase skills |
+| Supabase, auth, RLS, migrations, RPCs, Realtime, or Edge Functions | `docs/architecture/backend.md`, `supabase/DESIGN.md`, `supabase/functions/README.md` (what each function is for), and the applicable Supabase skills |
 | Build artifacts, PWA, service worker, widget packaging, native, or deploy | `docs/architecture/build.md` |
 | Tests, CI, browser harnesses, live probes, or verification policy | `docs/architecture/testing.md` |
 | Claude Design cards, study lifecycle, or DesignSync | `design/README.md`, then `README.md` → Design system |
 | Game modes or their balance/odds | `docs/MODES.md` |
-| Spells or their balance/interaction rules | `docs/SPELLS.md` |
+| Spells or their balance/interaction rules | `docs/SPELLS.md`; for the ranked/equipped-rune decisions behind them, `docs/RUNE_MULTIPLAYER_INVESTIGATION.md` |
 | Ladder points, groups, bots, or matchmaking policy | `docs/LADDER.md` |
 | Accounts, guest upgrade, nickname, or Game Center identity | `docs/IDENTITY.md` |
-| Historical August rationale or rejected alternatives | `docs/history/2026-08-sprint.md` |
+| Impressum, privacy, consent, or anything shipping to a store listing | `docs/LEGAL.md` |
+| Historical August rationale or rejected alternatives | `docs/history/2026-08-sprint.md`, `docs/RUNE_CANDIDATE_STUDY.md` (exploratory runes, none shipped) |
 
 For a routine localized change, inspect its owners and tests; `STATUS.md` is
 not mandatory unless the task depends on current/open external state.
@@ -162,6 +163,17 @@ mise exec -- npm run dev       local Vite server
 mise exec -- npm run build     all web/widget/native-web artifacts
 mise exec -- npm test          full release gate
 ```
+
+**A focused run of a `.ts` suite does NOT typecheck it.** Suites launch through
+`node --experimental-strip-types`, which *erases* type annotations without
+checking them, so `npm test -- --suite <name>` can pass repeatedly on a file
+that does not compile. The gate typechecks separately (`typecheck-tests`,
+`tsconfig.tests.json`) and fails there instead — after most of the suites have
+already run. When you add or edit a `.ts` test, run
+`mise exec -- npm test -- --suite typecheck-tests` alongside the focused run;
+it takes about a second and is the only thing that reads the types you wrote.
+`docs/architecture/testing.md` carries the mechanism and the rest of the
+harness's traps.
 
 Run a focused owner test while iterating. Before handoff or deployment, decide
 whether focused/specialized gates cover the affected surface decisively; use
