@@ -135,7 +135,26 @@ try {
         if (!head || !body) { rows.push({ id: ov.id, err: !head ? 'no .shead' : 'no .pbody' }); continue; }
         const was = ov.classList.contains('on');
         ov.classList.add('on');
-        await frame();
+        /* .on OPENS A DOOR, and a door takes longer than a frame. Every geometry
+           below was read one rAF after the class went on, which lands in the
+           middle of the page transition: the header is already in place while
+           the column is still arriving, so the Back control measured 2.5px out
+           of its column at 360, 2.89 at 430 and 5.28 at 768 — the same ~0.7% of
+           the distance each time, which is a page in motion, not a layout. It
+           failed about one run in five and had nothing to do with the bundled
+           faces: removing the typeface reproduced it exactly. Wait for the
+           transitions this class actually started, bounded so a looping
+           decoration elsewhere in the subtree cannot hang the probe. */
+        const settle = async () => {
+          const moving = ov.getAnimations({ subtree: true })
+            .filter((a) => a.constructor && a.constructor.name === 'CSSTransition');
+          await Promise.race([
+            Promise.all(moving.map((a) => a.finished.catch(() => {}))),
+            new Promise((resolve) => setTimeout(resolve, 600)),
+          ]);
+          await frame();
+        };
+        await settle();
         const bodyTop = body.getBoundingClientRect().top;
         const first = body.firstElementChild?.getBoundingClientRect();
         /* WHERE THE COLUMN ACTUALLY STARTS, read off a laid-out child rather
