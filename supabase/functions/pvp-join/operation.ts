@@ -27,6 +27,7 @@ import {
 } from "./matchmaking.ts";
 import { MatchStartFailure, startProgressiveRankedMatch, type StartedRankedMatch } from "./start.ts";
 import { settleAbandonedBotMatch } from "./stalled-bot-match.ts";
+import { classifyEnqueueFailure, type EnqueueFailure } from "./enqueue-refusal.ts";
 import {
   MATCH_COLUMNS,
   type JoinInput, type MatchActionRow, type MatchRow, type ProfileSummary,
@@ -196,29 +197,11 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
     p_capabilities: input.capabilities,
     p_entry_kind: entryKind,
   });
-  /* A REFUSAL IS NOT A FAILURE, and the player is told which. Every error from
-     this RPC used to collapse into queue-failed 500, which the client reads as
-     "could not reach the server" and shows as CAN'T CONNECT — so on 2026-09-04
-     a curve-v2 capability refusal sent players to inspect their wifi while the
-     UPDATE REQUIRED sheet they needed sat unused. The client has always routed
-     `incompatible-client` there (queue-screen.ts); nothing but this mapping was
-     missing.
-     22023 is the RPC's own capability validation — an invalid capability array,
-     capabilities without protocol 2, a rune capability without its predecessor.
-     P0001 is a runtime refusal and carries several meanings, so it is read: the
-     curve ones are the client being too old, admission is the ladder being
-     closed and already has an answer of its own. Anything else is still a
-     genuine failure and still says so. */
+  /* A refusal is not a failure, and the player is told which
+     (./enqueue-refusal.ts). */
   if (queueError) {
-    const code = (queueError as { code?: string }).code ?? "";
-    const message = (queueError as { message?: string }).message ?? "";
-    if (code === "22023" || /curve v2/i.test(message)) {
-      return json({ error: "incompatible-client" }, 409);
-    }
-    if (/admission is paused/i.test(message)) {
-      return json({ error: "ranked-paused" }, 503);
-    }
-    return json({ error: "queue-failed" }, 500);
+    const refusal = classifyEnqueueFailure(queueError as EnqueueFailure);
+    return json({ error: refusal.error }, refusal.status);
   }
   if (!queuedRaw || typeof queuedRaw !== "object") {
     return json({ error: "queue-failed" }, 500);
