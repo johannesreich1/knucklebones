@@ -73,9 +73,25 @@ export function bindEnd(): void {
   tap($('#btnShare'), () => { Sfx.tap(); void shareResult(); });
   // bound once like the rest: a listener per paint stacks up one per result
   tap($('#endFeature'), () => { Sfx.tap(); live?.feature?.tap(); });
+  /* WIDTH ONLY. A ResizeObserver reports the whole box, and fitting the verdict
+     changes its FONT SIZE — so the clip gets shorter, the observer wakes, the
+     fit is recomputed, and the title moves again. .titleclip is width:100% of
+     its parent, so its width is never the title's doing and is the only input
+     the fit actually has (limit = min(clip width, 90% of the viewport)); its
+     height is entirely the title's doing and therefore a feedback loop. This
+     read as an element that never settled: Playwright timed out after 30s of
+     "element is not stable" and took the whole localization suite with it. It
+     could not happen while the fitter was returning early on most locales; the
+     moment it started doing its job it never stopped. */
   if (typeof ResizeObserver !== 'undefined') {
-    titleResizeObserver ??= new ResizeObserver(() => fitEndTitle());
-    titleResizeObserver.observe($('#ovEnd .titleclip'));
+    const clip = $('#ovEnd .titleclip');
+    titleResizeObserver ??= new ResizeObserver(() => {
+      const width = Math.round(clip.clientWidth);
+      if (width === lastFittedClipWidth) return;
+      lastFittedClipWidth = width;
+      fitEndTitle();
+    });
+    titleResizeObserver.observe(clip);
   }
 }
 
@@ -84,6 +100,10 @@ export function bindEnd(): void {
    and only by the exact ratio needed to fit. This is copy- and locale-neutral:
    a future long English/French/German word follows the same rule, while
    multi-word duo verdicts retain their intentional wrapping. */
+/* The clip width the last fit was computed for; the observer ignores anything
+   that leaves it unchanged. Reset on paint so a fresh result always fits. */
+let lastFittedClipWidth = -1;
+
 function fitEndTitle(): void {
   const title = $('#endTitle');
   title.style.removeProperty('--fitted-verdict');
