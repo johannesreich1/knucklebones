@@ -207,8 +207,15 @@ export async function runPrimaryCtaGlintScenarios(suite) {
     && JSON.stringify(action.pips) === JSON.stringify([
       ['8.5', '8.5', '1.25'], ['12', '12', '1.25'], ['15.5', '15.5', '1.25'],
     ])
-    && action.iconSize?.every((size) => size === 25)
-    && action.gap === 11 && Math.abs(action.groupCentreError) <= .5
+    /* SIZE AND GAP ARE LAID-OUT LENGTHS, so they are compared with a tolerance
+       and not for equality. iconSize is a raw getBoundingClientRect width: a
+       loaded machine measured 25.000030517578125 for a 25px icon and failed a
+       release gate that three runs on the identical tree passed. The float is
+       not the defect — asking a sub-pixel layout engine for an exact integer
+       is. Half a pixel is far below any size change worth catching (a 24 or a
+       26 still fails) and far above the ~3e-5 that layout actually drifts. */
+    && action.iconSize?.every((size) => Math.abs(size - 25) <= .5)
+    && Math.abs(action.gap - 11) <= .5 && Math.abs(action.groupCentreError) <= .5
     && Math.abs(action.iconCentreError) <= .5 && action.fits;
   check(selectedIcon(homeAction, 'Play ranked match'),
     'the main-menu play label does not keep the selected canted die in front', homeAction);

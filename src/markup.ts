@@ -196,12 +196,16 @@ ${OVERLAY_CARDS_MARKUP}
         <button data-rm="0" data-i18n="common:states.off">OFF</button>
       </div>
     </div>
+    <!-- deploy truth: the screen you open when something looks wrong is the
+         screen that should say WHICH build is wrong. It is the LAST thing in
+         the scroller, not a line in the pinned foot — .settings-foot is a
+         sibling of .pbody and therefore never scrolls away, so a build id
+         parked there spent permanent screen space on something you read twice
+         a month. Here you reach it by scrolling Settings to the end. -->
+    <div class="tiny" id="buildTag">build dev</div>
   </div>
-  <!-- deploy truth lives here now: the screen you open when something looks
-       wrong is the screen that should tell you WHICH build is wrong -->
   <div class="viewfoot settings-foot">
     ${LEGAL_SETTINGS_NAV_MARKUP}
-    <div class="tiny" id="buildTag">build dev</div>
   </div>
 </div>
 

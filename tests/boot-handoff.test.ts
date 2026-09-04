@@ -35,6 +35,8 @@ interface BootHandoffProbe {
   owner(): HTMLElement;
   eyebrow(): HTMLElement;
   root(): HTMLElement;
+  home(): HTMLElement;
+  wordmark(): HTMLElement;
 }
 declare global {
   interface Window { __bh: BootHandoffProbe }
@@ -62,12 +64,20 @@ const helpers = `
     owner() { return document.querySelector('.hero #homeMark'); },
     eyebrow() { return document.querySelector('.hero .eyebrow'); },
     root() { return document.querySelector('#kbroot'); },
+    home() { return document.querySelector('#ovStart'); },
+    wordmark() { return document.querySelector('.hero h1'); },
   };
 `;
 await page.evaluate(helpers);
 
 /* Read the resting state BEFORE staging anything. Reading it after teardown
    measures a transition still running home — 60ms in, the mark was at 1.376. */
+const fits = await page.evaluate(() => {
+  const home = window.__bh.home();
+  return { scrollW: home.scrollWidth, clientW: home.clientWidth,
+    scrollH: home.scrollHeight, clientH: home.clientHeight };
+});
+
 const settled = await page.evaluate(() => ({
   markShown: window.__bh.shown(window.__bh.mark()),
   markScale: window.__bh.scale(window.__bh.mark()),
@@ -99,6 +109,7 @@ const launch = await page.evaluate(() => ({
   markFilter: getComputedStyle(window.__bh.mark()).filter,
   eyebrowShown: window.__bh.shown(window.__bh.eyebrow()),
   ownerGrey: /grayscale\(1\)/.test(getComputedStyle(window.__bh.owner()).filter),
+  wordmarkFilter: getComputedStyle(window.__bh.wordmark()).filter,
 }));
 
 /* THE MARK MUST BE VISIBLE IN PIXELS, not merely un-faded. The original fault
@@ -142,7 +153,34 @@ const cleanup = await page.evaluate(() => {
   return { classes: root.className,
     varsLeft: ['--boot-dx', '--boot-dy', '--boot-scale'].filter((n) => root.style.getPropertyValue(n)) };
 });
-const out = { settled, launch, run, glow, cleanup, painted };
+/* HOME'S GROUND, measured on its own. Home's content is hidden for this: the
+   primary CTA is a wide cyan slab and any reading taken through it is the
+   button, not the ground. R-G separates the two owners in the default pair —
+   positive where theirs (magenta) leads, negative where yours (cyan) does. */
+const groundFile = join(tmpdir(), 'kb-home-ground.png');
+await page.evaluate(() => {
+  const hide = document.createElement('style');
+  hide.id = 'kb-ground-probe';
+  hide.textContent = '#kbroot #ovStart>*{visibility:hidden}';
+  window.__bh.root().appendChild(hide);
+});
+await page.screenshot({ path: groundFile });
+await page.evaluate(() => document.getElementById('kb-ground-probe')?.remove());
+const ground = (() => {
+  const px = readPngPixels(groundFile);
+  let theirs = 0, yours = 0;
+  for (let x = 6; x < px.width - 6; x += 6) {
+    for (let y = 0; y < px.height; y += 4) {
+      const p = px.pixel(x, y);
+      const chroma = p.red - p.green;
+      if (y < px.height * .45) theirs = Math.max(theirs, chroma);
+      else yours = Math.min(yours, chroma);
+    }
+  }
+  return { theirs, yours, ratio: +(Math.abs(yours) / Math.max(1, theirs)).toFixed(2) };
+})();
+
+const out = { settled, launch, run, glow, cleanup, painted, fits, ground };
 await browser.close();
 
 /* 1 + 2 — the launch frame must SHOW the mark. Either historical fault takes
@@ -170,6 +208,29 @@ check(out.launch.eyebrowShown === 0,
 check(out.launch.ownerGrey,
   'the launch frame must be colourless — the launch image is greyscale', out.launch);
 
+/* 5 — THE WORDMARK CARRIES NO FILTER WHILE IT MOVES. .ov h1 clips a gradient
+   to its glyphs, and a filter on such an element makes Safari abandon the clip
+   and paint the gradient as a SOLID RECTANGLE — the repo learned this on
+   #endTitle (screens/result.css) and left the rule written beside the filter in
+   components/overlays.css. The handoff then animated this title anyway, and the
+   box appeared around the hero type on first load. Chromium does not reproduce
+   the paint bug, so this asserts the RULE rather than the pixels: no filter on
+   a background-clip:text title that is mid-animation. */
+check(out.launch.wordmarkFilter === 'none',
+  'the wordmark is filtered while the handoff animates it — a filter on a '
+  + 'background-clip:text element makes Safari paint the gradient as a solid '
+  + 'rectangle behind the words', out.launch);
+
+/* 6 — HOME OFFERS NOTHING TO SCROLL TO. #ovStart is a scroll container, so any
+   descendant reaching past its bottom or right edge becomes scrollable area —
+   and the clouds spent a release as an ::after at inset:-30%, which is exactly
+   30% of empty ground to scroll into on both axes. Reported as "I can scroll to
+   the bottom and right even though there is no content". Decoration belongs in
+   a background, which has no box to overflow. */
+check(out.fits.scrollW <= out.fits.clientW && out.fits.scrollH <= out.fits.clientH + 1,
+  'Home scrolls past its own content — something reaches beyond the scroll '
+  + 'container, and empty ground is scrollable', out.fits);
+
 /* 3 — only compositor properties on the mark. A filter here re-blurs a scaling
    surface every frame; the colour belongs to the parent's colour matrix. */
 const markProps = out.run.markTransitions.split(',').map((p) => p.trim()).sort();
@@ -186,6 +247,20 @@ const widest = Math.max(0, ...out.glow.blurs);
 check(out.glow.blurs.length > 0 && out.glow.ownerPadding >= widest,
   'the glow reaches outside the element that owns it, where a compositor layer '
   + 'can clip it — pad the owner by at least the shadow\'s blur', out.glow);
+
+/* 7 — THEIRS ON TOP, YOURS BELOW AND QUIETER (owner call). This is asserted in
+   painted pixels rather than in the token, because the token is exactly where
+   it went wrong: --duel-clouds-still is declared on #kbroot, so the var()s
+   inside it resolve THERE, and a --cloud-p1-a override written on #ovStart was
+   inert. Home shipped a release painting the live table's full-strength clouds
+   while a dimming rule sat in home.css reading as if it worked. Nothing about
+   that is visible in the CSS; only the ground is. */
+check(out.ground.theirs > 24 && Math.abs(out.ground.yours) > 8,
+  'Home has lost one of its two owners — the ground should carry theirs above '
+  + 'and yours below, both visible', out.ground);
+check(out.ground.ratio < .6,
+  'Home\'s lower cloud is not subordinate to its upper one — yours is reading '
+  + 'as heavy as theirs, which is what an inert alpha knob looks like', out.ground);
 
 /* the resting screen is the finished one — nothing staged, nothing faded */
 check(out.settled.markShown === 1 && out.settled.markScale === 1 && out.settled.eyebrowShown === 1,

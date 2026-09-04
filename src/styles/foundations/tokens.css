@@ -55,11 +55,22 @@
      The live table adds a violet cloud between them, because the board there
      is a third object competing with both seats. One list composes the other,
      so the two hues can never drift apart between the two screens. */
-  /* The two owners' strengths are knobs, not literals: Home dims its lower
-     cloud (owner call — yours was reading heavier than theirs down there) and
-     the table keeps both at full. One gradient, two settings. */
-  --cloud-p1-a:.36;
+  /* The two owners' strengths are knobs, not literals: Home dims both clouds
+     and its lower one hard (owner call — yours read heavier than theirs down
+     there), while the table keeps them at full. One gradient definition each,
+     two settings, nothing copied.
+     BOTH PAIRS ARE DECLARED HERE, and they have to be. A custom property
+     resolves the var()s inside it where it is DECLARED, not where it is used,
+     so the token stream that reaches Home already has these numbers substituted
+     into it — setting --cloud-p1-a further down the tree, on #ovStart, is
+     silently INERT. That is exactly how Home spent a release painting the
+     table's full-strength clouds while a dimming rule sat in home.css looking
+     correct and doing nothing. A second gradient wants a second pair of knobs
+     up here; it does not want an override down there. */
+  --cloud-p1-a:.36;   /* the live table: both owners at full */
   --cloud-p2-a:.42;
+  --home-p1-a:.14;    /* Home: yours clearly subordinate to theirs (owner call) */
+  --home-p2-a:.36;
   --duel-clouds:
     radial-gradient(closest-side,rgba(var(--p2-rgb),var(--cloud-p2-a)),transparent 70%) 20% 16%/64% 48% no-repeat,
     radial-gradient(closest-side,rgba(var(--p1-rgb),var(--cloud-p1-a)),transparent 70%) 80% 86%/66% 50% no-repeat;
@@ -71,8 +82,8 @@
      the gradient itself instead — stops run to 100% and the ellipses are wider,
      which lands in the same place with nothing to recompute. */
   --duel-clouds-still:
-    radial-gradient(closest-side,rgba(var(--p2-rgb),var(--cloud-p2-a)),transparent 100%) 20% 16%/78% 60% no-repeat,
-    radial-gradient(closest-side,rgba(var(--p1-rgb),var(--cloud-p1-a)),transparent 100%) 80% 86%/80% 62% no-repeat;
+    radial-gradient(closest-side,rgba(var(--p2-rgb),var(--home-p2-a)),transparent 100%) 20% 16%/78% 60% no-repeat,
+    radial-gradient(closest-side,rgba(var(--p1-rgb),var(--home-p1-a)),transparent 100%) 80% 86%/80% 62% no-repeat;
   --table-clouds:
     var(--duel-clouds),
     radial-gradient(closest-side,rgba(126,60,255,.30),transparent 70%) 62% 42%/52% 40% no-repeat;

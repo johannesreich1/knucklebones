@@ -348,7 +348,7 @@ export function verifyIosShellContract(check: Check): {
     platform: 'iOS',
     inkSpan: { min: .179, max: .185, by: 'width', label: '18.2%' },
     markSamples: [[.4720, .4720], [.4660, .5450], [.5520, .4770], [.5410, .5540]],
-    groundCeiling: 24,
+    groundCeiling: 30,
   }, check);
   /* The launch mark used to enlarge a CSS shadow until Chromium truncated its
      blur into a visible square. Scan the clear air outside the die instead of

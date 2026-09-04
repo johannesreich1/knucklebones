@@ -47,7 +47,10 @@ export async function runSettingsNavigationScenarios(suite) {
         && !!(heading.compareDocumentPosition(faces) & Node.DOCUMENT_POSITION_FOLLOWING)
         && !!(faces.compareDocumentPosition(colourBlind) & Node.DOCUMENT_POSITION_FOLLOWING)
         && !!(colourBlind.compareDocumentPosition(motion) & Node.DOCUMENT_POSITION_FOLLOWING)
-        && motion === body.lastElementChild;
+        /* motion is the last CONTROL. It used to be the scroller's last element
+           outright; the build tag sits after it since 2026-09-04, and reading
+           "last control" as "last child" would call that a reordering. */
+        && motion === [...body.querySelectorAll(':scope > .card')].at(-1);
     })(),
     accessibilityHelp: ['faceSeg', 'cbSeg', 'motionSeg'].flatMap((id) => {
       const card = document.getElementById(id)?.closest('.card');
@@ -267,7 +270,12 @@ export async function runSettingsNavigationScenarios(suite) {
     const viewBox = document.getElementById('ovSettings').getBoundingClientRect();
     return {
       pages: buttons.map((button) => button.dataset.legalOpen),
-      beforeBuild: footer.querySelector('.legal-settings-nav')?.nextElementSibling?.id === 'buildTag',
+      /* THE BUILD TAG LEFT THIS FOOTER (owner call, 2026-09-04). .settings-foot
+         is a sibling of .pbody, so nothing in it ever scrolls away — a build
+         id parked there spent permanent screen space on a line you read twice
+         a month. It is the last thing in the SCROLLER now, so the footer holds
+         the legal pair and nothing else. */
+      footHasBuild: !!footer.querySelector('#buildTag'),
       atBottom: Math.abs(footBox.bottom - viewBox.bottom) <= 2,
       targets: buttons.map((button) => {
         const box = button.getBoundingClientRect();
@@ -276,10 +284,34 @@ export async function runSettingsNavigationScenarios(suite) {
       }),
     };
   });
-  check(out.settingsLegal.pages.join() === 'imprint,privacy' && out.settingsLegal.beforeBuild
+  check(out.settingsLegal.pages.join() === 'imprint,privacy' && !out.settingsLegal.footHasBuild
     && out.settingsLegal.atBottom
     && out.settingsLegal.targets.every((target) => target.width >= 44 && target.height >= 44 && target.hit),
   'placeholder legal doors are not a reachable Imprint/Privacy pair at the Settings bottom', out.settingsLegal);
+  /* WHERE THE BUILD TAG IS, asserted as reaching it rather than as DOM order.
+     The ask was "only visible when scrolling fully down", and the old markup
+     satisfied every structural reading of "at the bottom of Settings" while
+     being permanently on screen — it was in the pinned foot. So this scrolls. */
+  out.buildTagReach = await page.evaluate(async () => {
+    const body = document.querySelector('#ovSettings .pbody');
+    const tag = document.getElementById('buildTag');
+    const seen = () => {
+      const t = tag.getBoundingClientRect(), b = body.getBoundingClientRect();
+      return t.top < b.bottom - 2 && t.bottom > b.top + 2;
+    };
+    body.scrollTop = 0;
+    await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+    const atTop = seen();
+    body.scrollTop = body.scrollHeight;
+    await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+    return { inScroller: body.contains(tag), last: body.lastElementChild?.id === 'buildTag',
+      scrolls: body.scrollHeight > body.clientHeight + 1, atTop, atEnd: seen() };
+  });
+  check(out.buildTagReach.inScroller && out.buildTagReach.last && out.buildTagReach.atEnd,
+    'the build tag is not the last line of the Settings scroller', out.buildTagReach);
+  check(!out.buildTagReach.scrolls || !out.buildTagReach.atTop,
+    'the build tag is on screen before Settings is scrolled — it is pinned '
+    + 'again, not parked at the end of the content', out.buildTagReach);
   await page.tap('#btnSettingsPrivacy'); await page.waitForTimeout(100);
   await waitForPageMotion(page);
   out.settingsPrivacy = await page.evaluate(() => {

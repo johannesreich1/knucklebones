@@ -87,10 +87,12 @@ differs. A second near-copy is a design failure, not a shortcut.
   Johannes builds from and hand him the expected tag:
   `LANG=en_US.UTF-8 mise exec -- npm run native:sync:ios` (CocoaPods needs the
   UTF-8 locale), then `native:verify:ios`, then report the `data-build` value
-  now in `native/ios/App/App/public/index.html` — **Settings** renders it, in the
-  footer under the legal links (`#buildTag`, `src/markup.ts`, painted by
-  `stampBuild()` in `src/ui/dom.ts`), so he can confirm the device actually took
-  the build. Not the title screen. Say explicitly that Xcode needs Clean Build
+  now in `native/ios/App/App/public/index.html` — **Settings** renders it, as the
+  last line of the scrolling content, below the final card and above the pinned
+  legal links (`#buildTag`, `src/markup.ts`, painted by `stampBuild()` in
+  `src/ui/dom.ts`), so he can confirm the device actually took the build. Tell
+  him to scroll Settings to the end; it is not on the title screen and no longer
+  in the pinned footer. Say explicitly that Xcode needs Clean Build
   Folder first; it reuses a stale bundle otherwise.
   **Sync from the checkout that has `.env`.** A worktree has none, so a payload
   built there bakes an EMPTY identity-gateway URL and its `data-build` differs

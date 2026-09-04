@@ -241,7 +241,7 @@ export function verifyAndroidResourceContract(
     platform: 'Android',
     inkSpan: { min: .180, max: .187, by: 'height', label: '18.3%' },
     markSamples: [[.4600, .4688], [.4440, .5440], [.5664, .4792], [.5600, .5528]],
-    groundCeiling: 24,
+    groundCeiling: 30,
   }, check);
   for (const [file, xEdges, yEdges] of [
     [normalSplashFile, [.32, .68], [.38, .62]],

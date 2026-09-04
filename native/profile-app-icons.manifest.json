@@ -98,8 +98,8 @@
     },
     {
       "path": "src/styles/foundations/tokens.css",
-      "bytes": 10007,
-      "sha256": "917a93d96cf58bd00d7d3f7252ded9dfed0ae94015d9d2ea9fc94e27095a8a1d"
+      "bytes": 10802,
+      "sha256": "e6971f339c4964b43287f32d3a6b80340326aef6e6cc2afb13be137146f33f56"
     },
     {
       "path": "src/styles/game/anvil.css",
@@ -188,13 +188,13 @@
     },
     {
       "path": "src/styles/screens/home.css",
-      "bytes": 15386,
-      "sha256": "3ce46f9748e433fae0376d0e12e5a537e8ee5a5f79f13683271fc243ae9c6387"
+      "bytes": 15250,
+      "sha256": "ccc4b7090bd770d0b21e4c843584f6a4299d0e00be0adba5d1eec545869d1165"
     },
     {
       "path": "src/styles/screens/learn-settings.css",
-      "bytes": 2747,
-      "sha256": "896730abc7e59b79b956fc9e3693926f31488268e2274aedc0247f72ed1e5f53"
+      "bytes": 3072,
+      "sha256": "74ce0eb911aeb6fa50f56a7f67f21f98983005f0a795444daa3b9193b4a8a249"
     },
     {
       "path": "src/styles/screens/result.css",

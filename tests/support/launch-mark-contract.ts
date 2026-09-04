@@ -63,18 +63,42 @@ export function verifyLaunchMarkContract(
 ): void {
   const { platform } = geometry;
 
-  /* THE GROUND. Dark, and colourless like everything else here. The corners
-     are not identical any more — the frame wears the app's own --aurora, which
-     is brighter at the top — so this bounds them rather than equating them. */
-  const corners = [pixelAt(pixels, .04, .04), pixelAt(pixels, .04, .96)];
+  /* THE GROUND. Dark, and colourless like everything else here. The corners are
+     not identical — the frame wears the app's own --aurora, which seats a glow
+     just outside two OPPOSITE corners — so this bounds them rather than
+     equating them, and it reads ALL FOUR. It read only the two on the left
+     until 2026-09-04, which left the brightest corner of the image, the
+     bottom-right one the aurora actually lights, unmeasured by both checks
+     below. The ceiling is therefore a bound on the ground's brightest point
+     rather than on a typical one: it moved 24 -> 30 when the sample widened to
+     include that corner, which reads 26 under the approved aurora. That is the
+     scope of the check changing, not a budget being relaxed to fit a render —
+     the mark itself lands at 160, so the ground still has an order of magnitude
+     of room before this could stop meaning "the app's night". */
+  const corners = [
+    pixelAt(pixels, .04, .04), pixelAt(pixels, .96, .04),
+    pixelAt(pixels, .04, .96), pixelAt(pixels, .96, .96),
+  ];
   check(corners.every((corner) => luma(corner) <= geometry.groundCeiling),
     `the ${platform} loading screen must keep the app's night behind the mark, found `
     + `${corners.map((corner) => luma(corner).toFixed(1)).join(' / ')}`);
   check(corners.every((corner) => colorSpread(corner) <= NEUTRAL_SPREAD),
     `the ${platform} loading screen's ground must claim no duel hue`);
 
-  /* THE INK, measured by lightness against that ground. */
-  const groundLuma = luma(corners[0]);
+  /* THE INK, measured by lightness against that ground — and the ground is
+     measured at its BRIGHTEST corner, not at an arbitrary one. The frame is the
+     app's own page background, whose aurora seats a glow just outside two
+     OPPOSITE corners: the four read 17 / 8 / 8 / 28 at the time of writing, so
+     picking corners[0] compares the lit corner against the unlit one and calls
+     the ground's own glow "ink". That reported the mark as 59% of the frame
+     instead of 18%, and it only started once --aurora was lifted .12 -> .15 and
+     the gap crossed this threshold — a real launch image, a real budget, and a
+     measurement taken against the wrong reference.
+     THE BUDGET IS NOT THE THING TO MOVE HERE. Against the brightest corner the
+     same frame measures 0.1812 against a declared 18.2%, which is the number
+     the generator intends; widening the range to admit 0.59 would have made
+     any mark, at any size, pass. */
+  const groundLuma = Math.max(...corners.map(luma));
   let left = pixels.width;
   let right = -1;
   for (let y = 0; y < pixels.height; y++) {

@@ -16,9 +16,13 @@
 
 /* the deploy-truth tag sits at the foot of SETTINGS — the screen you open when
    something looks wrong should say which build is wrong. A plain last line, not
-   a pinned overlay fixture: it left home on 2026-08-19, and the Account panel
-   (now PROFILE) on 2026-08-20, though this comment claimed it until 08-22. */
-:where(#kbroot) #buildTag{text-align:center;opacity:.5;margin-top:2px}
+   a pinned overlay fixture: it left home on 2026-08-19, the Account panel (now
+   PROFILE) on 2026-08-20, and the pinned .settings-foot on 2026-09-04 — that
+   foot is a sibling of the scroller, so the tag never scrolled away and held
+   permanent screen space for a line read twice a month. It is the last child of
+   .pbody now, so you reach it by scrolling Settings to the end. The margin is
+   the gap it needs from the final card, which the pinned foot used to supply. */
+:where(#kbroot) #buildTag{text-align:center;opacity:.5;margin:14px 0 2px}
 :where(#kbroot) #ovSettings .settings-foot{flex-direction:column;gap:0;
   padding-bottom:calc(env(safe-area-inset-bottom,0px) + 4px)}
 :where(#kbroot) #ovSettings .setsection{width:100%;max-width:var(--w-col);margin:12px 0 -2px;
