@@ -4,10 +4,10 @@
    one local play ends on and lives in main.css. Only these two go in the
    meta slot, and only ranked has them: the points delta is the trophy moment,
    the ladder spot is where it left you. */
-:where(#kbroot) .pointschip{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:900;color:#0a0410;
+:where(#kbroot) .pointschip{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:var(--fw-max);color:#0a0410;
   background:var(--gold);border-radius:99px;padding:7px 16px;
   box-shadow:0 0 24px rgba(255,209,102,.55)}
-:where(#kbroot) .pointschip small{font-weight:800;font-size:9px;letter-spacing:.2em}
+:where(#kbroot) .pointschip small{font-weight:var(--fw-strong);font-size:9px;letter-spacing:.2em}
 /* a lost delta is no trophy: the chip goes red with white text on defeat */
 :where(#kbroot) .pointschip.down{color:#fff;background:linear-gradient(100deg,var(--mg),#c9156f);
   box-shadow:0 0 24px rgba(var(--mg-rgb),.5)}
@@ -21,14 +21,14 @@
 /* Kicker and name both wear the rune's tint, which the content block above
    already sets — so neither restates a colour, and neither names the `--fg`
    this app never defines (the same hue by accident, white the day it is). */
-:where(#kbroot) .faceoff.rune-reward-sheet .rune-reward-sheet__kicker{font-size:9px;font-weight:900;letter-spacing:.24em}
+:where(#kbroot) .faceoff.rune-reward-sheet .rune-reward-sheet__kicker{font-size:9px;font-weight:var(--fw-max);letter-spacing:.24em}
 :where(#kbroot) .faceoff.rune-reward-sheet .rune-reward-sheet__icon{display:grid;place-items:center;width:64px;height:82px;margin-top:2px;
   border-radius:14px;background:linear-gradient(158deg,#1e2440,#0b0e1c);
   border:1px solid color-mix(in srgb,var(--mh) 52%,transparent);
   box-shadow:0 11px 26px rgba(0,0,0,.48),0 0 24px color-mix(in srgb,var(--mh) 24%,transparent)}
 :where(#kbroot) .faceoff.rune-reward-sheet .rune-reward-sheet__icon svg{width:35px;height:35px;filter:drop-shadow(0 0 10px currentColor)}
 :where(#kbroot) .faceoff.rune-reward-sheet .rune-reward-sheet__title{margin:1px 0 0;font-size:21px;line-height:1.1;
-  font-weight:900;letter-spacing:.14em}
+  font-weight:var(--fw-max);letter-spacing:.14em}
 :where(#kbroot) .faceoff.rune-reward-sheet .rune-reward-sheet__body{min-height:2.8em;margin:0 0 4px;color:var(--dim);
   font-size:11.5px;line-height:1.45;letter-spacing:.02em}
 :where(#kbroot) .faceoff.rune-reward-sheet .rune-reward-sheet__content .btn{width:100%;min-width:0}

@@ -19,7 +19,7 @@
   color:var(--txt);
   font-family:inherit;
   font-size:24px;
-  font-weight:800;
+  font-weight:var(--fw-strong);
   line-height:1;
   cursor:pointer;
 }
@@ -34,7 +34,7 @@
   min-height:44px;
   color:var(--txt);
   font-size:13px;
-  font-weight:800;
+  font-weight:var(--fw-strong);
   letter-spacing:.08em;
   line-height:1.25;
   text-align:center;

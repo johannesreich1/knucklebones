@@ -16,4 +16,4 @@
 :where(#kbroot) #ovOnline .err:empty,:where(#kbroot) #onAuth .err:empty{display:none}
 :where(#kbroot) #ovOnline .who{font-size:13px;letter-spacing:.12em;text-align:center;color:var(--txt)}
 :where(#kbroot) #ovOnline .who b{color:var(--p1)}
-:where(#kbroot) #ovOnline .who .rt{color:var(--gold);font-weight:800}
+:where(#kbroot) #ovOnline .who .rt{color:var(--gold);font-weight:var(--fw-strong)}

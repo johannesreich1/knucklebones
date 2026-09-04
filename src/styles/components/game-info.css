@@ -6,13 +6,13 @@
    translated rules both follow the chosen opponent hue. New rich prose gets
    the same treatment by using <b>, while .k keeps its stronger weight. */
 :where(#kbroot) .rules :is(b,.k){color:var(--prose-highlight)}
-:where(#kbroot) .rules .k{font-weight:800}
+:where(#kbroot) .rules .k{font-weight:var(--fw-strong)}
 :where(#kbroot) .scoreline{display:flex;align-items:center;justify-content:center;gap:16px;font-size:15px;
-  font-weight:800;letter-spacing:.08em;width:100%;max-width:var(--w-col)}
+  font-weight:var(--fw-strong);letter-spacing:.08em;width:100%;max-width:var(--w-col)}
 /* equal halves so the VS sits dead centre whatever the name lengths */
 :where(#kbroot) .scoreline .sc{flex:1;min-width:0}
-:where(#kbroot) .scoreline .you{color:var(--p1);text-shadow:0 0 14px rgba(var(--p1-rgb),.5);font-size:32px;font-weight:900}
-:where(#kbroot) .scoreline .cpu{color:var(--p2);text-shadow:0 0 14px rgba(var(--p2-rgb),.5);font-size:32px;font-weight:900}
+:where(#kbroot) .scoreline .you{color:var(--p1);text-shadow:0 0 14px rgba(var(--p1-rgb),.5);font-size:32px;font-weight:var(--fw-max)}
+:where(#kbroot) .scoreline .cpu{color:var(--p2);text-shadow:0 0 14px rgba(var(--p2-rgb),.5);font-size:32px;font-weight:var(--fw-max)}
 :where(#kbroot) .scoreline .vs{color:var(--dim);font-size:12px;letter-spacing:.2em}
 :where(#kbroot) .scoreline .sc{display:flex;flex-direction:column;align-items:center;gap:1px}
 :where(#kbroot) .scoreline .sc em{font-style:normal;font-size:9.5px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}

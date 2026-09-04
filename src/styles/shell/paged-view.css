@@ -12,7 +12,7 @@
    this back to var(--w-col). */
 :where(#kbroot) .shead{display:flex;align-items:center;width:100%;
   max-width:calc(var(--w-col) + 2 * var(--pad-x));margin:0 auto;flex:0 0 auto}
-:where(#kbroot) .shead .ttl{flex:1;text-align:center;font-size:16px;letter-spacing:.26em;font-weight:900;
+:where(#kbroot) .shead .ttl{flex:1;text-align:center;font-size:16px;letter-spacing:.26em;font-weight:var(--fw-max);
   text-transform:uppercase;
   background:linear-gradient(100deg,var(--p1),#fff 50%,var(--p2));
   -webkit-background-clip:text;background-clip:text;color:transparent;

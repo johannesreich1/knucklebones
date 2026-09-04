@@ -132,7 +132,7 @@ const retiredHero = `
   var(--duel-die-outer-glow,0 0 34px color-mix(in srgb,var(--dc) 45%,transparent))}
 .duel .die.p1{transform:rotate(-9deg)}
 .duel .die.p2{transform:rotate(9deg)}
-.duel .vs{font-size:19px;font-weight:900;letter-spacing:.08em;color:var(--gold);
+.duel .vs{font-size:19px;font-weight:var(--fw-max);letter-spacing:.08em;color:var(--gold);
   text-shadow:0 0 18px rgba(255,209,102,.65);font-style:italic}
 `;
 
@@ -161,7 +161,7 @@ body{display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px
 .flows{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:384px}
 .flows .fc{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
   border:1px dashed rgba(255,255,255,.22);border-radius:99px;padding:3px 9px}
-.flows .fc b{color:var(--cy);font-weight:800}
+.flows .fc b{color:var(--cy);font-weight:var(--fw-strong)}
 .dice-static .die{animation:none}
 /* Product cards are compact stages rather than runtime .ov rooms. Start the
    same shared primary-button beat here so Home, results, auth, Offline, and
@@ -182,7 +182,7 @@ body{display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px
    sizes not updated" against a build whose fonts were correct.
    At (0,0,1) this is what it was always meant to be: a fallback for headings
    no product rule claims, which any product rule outranks. */
-:where(.scr) h1,:where(.scr) h2{margin:0;font-size:23px;font-weight:900;text-align:center;letter-spacing:.22em;
+:where(.scr) h1,:where(.scr) h2{margin:0;font-size:23px;font-weight:var(--fw-max);text-align:center;letter-spacing:.22em;
   background:linear-gradient(100deg,var(--p1),#fff 50%,var(--p2));
   -webkit-background-clip:text;background-clip:text;color:transparent}
 
@@ -215,7 +215,7 @@ body{display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px
 .sprow3{display:grid;grid-template-columns:repeat(3,var(--cell));gap:var(--gap);
   justify-content:center;width:calc(var(--cell)*3 + var(--gap)*2)}
 .spchip{height:20px;border-radius:8px;display:flex;align-items:center;justify-content:center;
-  font-size:12px;font-weight:800;color:var(--c);font-variant-numeric:tabular-nums;position:relative;
+  font-size:12px;font-weight:var(--fw-strong);color:var(--c);font-variant-numeric:tabular-nums;position:relative;
   border:1px solid color-mix(in srgb,var(--c) 30%,transparent);
   background:color-mix(in srgb,var(--c) 9%,transparent);
   text-shadow:0 0 10px color-mix(in srgb,var(--c) 70%,transparent)}

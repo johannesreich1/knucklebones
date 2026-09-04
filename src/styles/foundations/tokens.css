@@ -120,6 +120,32 @@
      game metadata may stay smaller when a larger primary label supplies its
      context, so this is deliberately not a minimum for every glyph. */
   --font-label-min:10px;
+  /* THE WEIGHT LADDER — five rungs, and the app may not ask for a sixth.
+     Every font-weight in the product reads one of these. They exist because
+     the ceiling is a property of the SHIPPED FACE, not of any one rule: the
+     app used to declare 900, 800 and even 950 against a stack of OS faces
+     that answered with whatever they happened to own, so the same screen came
+     out three different weights on three platforms. With one face bundled the
+     ladder has to fit inside it, and fitting it is four numbers here instead
+     of ninety-seven edits across thirty-one files.
+     --fw-ultra IS ON BORROWED TIME. Four rules asked for 950, and the obvious
+     reading — that no face goes past 900, so it renders as 900 — is wrong:
+     measured against this stack, `950` paints 0.9% wider than `900` at 200px,
+     because macOS's ui-rounded carries a weight axis that keeps going. So
+     folding it into --fw-max is a real change on Apple, not a tidy-up, and it
+     does not belong in a commit whose whole claim is that nothing moves. It
+     goes when the bundled face arrives and takes every rung above its own
+     ceiling with it.
+     --fw-quiet and --fw-sub collide on one value under the current face. They
+     keep separate names because they mean different things — "lighter than my
+     neighbours" and "a step down inside a heavy cell" — and a face with a 300
+     would want them apart. */
+  --fw-body:400;      /* prose, and the default everything inherits */
+  --fw-sub:650;       /* a step DOWN inside a heavier cell (history's sub-line) */
+  --fw-quiet:700;     /* deliberately lighter than its neighbours (.status) */
+  --fw-strong:800;    /* buttons, names, figures, the prose <b> */
+  --fw-max:900;       /* titles, totals, tracked caps, the primary action */
+  --fw-ultra:950;     /* four rules that reach past Black; see above */
   /* the LADDER GROUP palette. Root-scoped on purpose: the identity plate
      paints these on Home and on the result screen, both outside #ovOnline —
      the palette's first home, where a plate on document.body once silently

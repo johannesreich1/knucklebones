@@ -8,7 +8,7 @@
    order alone; the z-index states the intent so a build order that mounts this
    one first cannot bury it. */
 :where(#kbroot) .trial-select{gap:12px;text-align:center;z-index:81}
-:where(#kbroot) .trial-select__eyebrow{min-height:1.3em;font-size:11px;font-weight:900;
+:where(#kbroot) .trial-select__eyebrow{min-height:1.3em;font-size:11px;font-weight:var(--fw-max);
   letter-spacing:.18em;text-transform:uppercase}
 :where(#kbroot) .trial-select__title{margin:0;color:#b18cff;font-size:clamp(22px,7vw,32px);
   letter-spacing:.16em;text-transform:uppercase;text-shadow:0 0 20px rgba(177,140,255,.35)}
@@ -33,7 +33,7 @@
     inset 0 0 20px rgba(255,209,102,.1)}
 :where(#kbroot) .trial-select__claim,:where(#kbroot) .trial-select__claim-owned{
   position:absolute;z-index:3;left:50%;translate:-50% 0;border-radius:999px;
-  white-space:nowrap;font-weight:950;line-height:1;text-transform:uppercase}
+  white-space:nowrap;font-weight:var(--fw-ultra);line-height:1;text-transform:uppercase}
 :where(#kbroot) .trial-select__claim{top:-9px;padding:5px 9px;background:#ffd166;color:#17120a;
   font-size:9px;letter-spacing:.16em;box-shadow:0 3px 14px rgba(255,209,102,.46)}
 :where(#kbroot) .trial-select__claim-owned{bottom:-9px;padding:4px 7px;
@@ -48,7 +48,7 @@
    Tabular numerals so the digit does not shuffle the label as it counts. */
 :where(#kbroot) .trial-select__clock{display:flex;flex-direction:column;align-items:center;
   gap:6px;padding-top:10px}
-:where(#kbroot) .trial-select__clock b{font-size:26px;font-weight:900;color:var(--p1);
+:where(#kbroot) .trial-select__clock b{font-size:26px;font-weight:var(--fw-max);color:var(--p1);
   line-height:1;text-shadow:0 0 18px rgba(var(--p1-rgb),.55);font-variant-numeric:tabular-nums}
 :where(#kbroot) .trial-select__clock span{font-size:9.5px;letter-spacing:.2em;
   color:var(--dim);text-transform:uppercase}

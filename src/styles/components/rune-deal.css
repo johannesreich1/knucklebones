@@ -60,7 +60,7 @@
   box-shadow:0 14px 34px rgba(0,0,0,.66),0 0 26px color-mix(in srgb,currentColor 26%,transparent),
     inset 0 0 22px color-mix(in srgb,currentColor 10%,transparent)}
 :where(#kbroot) .rface svg{filter:drop-shadow(0 0 12px currentColor)}
-:where(#kbroot) .rlbl{font-size:calc(var(--card)*.145);letter-spacing:.2em;font-weight:900;text-align:center}
+:where(#kbroot) .rlbl{font-size:calc(var(--card)*.145);letter-spacing:.2em;font-weight:var(--fw-max);text-align:center}
 
 /* Rune Trial turns both already-public secret choices in the same beat. The
    paired resting layout is Trial-only; ordinary ranked enters the table
@@ -76,7 +76,7 @@
    stays on the NAME, not the row, or a long name would clip the dot instead. */
 :where(#kbroot) .trial-reveal__owner{display:flex;align-items:center;gap:5px;
   max-width:calc(var(--card)*1.7);
-  font-size:9px;font-weight:900;letter-spacing:.15em;text-transform:uppercase}
+  font-size:9px;font-weight:var(--fw-max);letter-spacing:.15em;text-transform:uppercase}
 :where(#kbroot) .trial-reveal__owner .dot{width:8px;height:8px;border-radius:50%;
   background:var(--c);box-shadow:0 0 10px var(--c);flex:0 0 auto}
 :where(#kbroot) .trial-reveal__owner .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

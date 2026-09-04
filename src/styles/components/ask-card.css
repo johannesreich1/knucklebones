@@ -18,7 +18,7 @@
 :where(#kbroot) #ovFirst .askcard{padding:22px 20px;border-radius:20px;overflow:visible;touch-action:auto;
   background:rgba(255,255,255,.035);border:1px solid color-mix(in srgb,var(--p1) 26%,transparent);
   box-shadow:0 0 40px rgba(var(--p1-rgb),.10)}
-:where(#kbroot) .askcard .fh{font-size:19px;font-weight:900;letter-spacing:.1em;color:var(--p1)}
+:where(#kbroot) .askcard .fh{font-size:19px;font-weight:var(--fw-max);letter-spacing:.1em;color:var(--p1)}
 :where(#kbroot) .askcard .fp{margin:0;font-size:12.5px;line-height:1.6;color:var(--dim)}
 :where(#kbroot) .askcard .btn{width:100%;min-width:0}
 /* The shared sheet is above every .ov rather than one of them, so the generic

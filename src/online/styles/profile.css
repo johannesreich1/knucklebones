@@ -29,7 +29,7 @@
    an OBSIDIAN player's purple number was the tell that this was hardcoded.
    --gc comes from the panel (account-presentation paintGroup); the gold
    fallback is what an unpainted profile shows. */
-:where(#kbroot) #onAccount .ptv b{font-size:33px;font-weight:900;color:var(--gc,var(--gold));line-height:1;
+:where(#kbroot) #onAccount .ptv b{font-size:33px;font-weight:var(--fw-max);color:var(--gc,var(--gold));line-height:1;
   text-shadow:0 0 24px color-mix(in srgb,var(--gc,var(--gold)) 42%,transparent)}
 /* Every centred label with tracking carries text-indent EQUAL to its
    letter-spacing: the spacing trails the last glyph, so it counts into the
@@ -41,7 +41,7 @@
    space and becomes the label. Sized to fit the widest name (OBSIDIAN) inside
    the 90deg mouth, which is ~70% of the ring's width at the band. */
 :where(#kbroot) #onAccount .gname{position:absolute;left:0;right:0;bottom:-1px;text-align:center;z-index:2;
-  font-size:clamp(12px,3.4vw,15px);font-weight:900;letter-spacing:.18em;text-indent:.18em;
+  font-size:clamp(12px,3.4vw,15px);font-weight:var(--fw-max);letter-spacing:.18em;text-indent:.18em;
   color:var(--gc,var(--txt));text-shadow:0 0 18px rgba(4,5,12,.9)}
 /* what is still owed, directly under the number it is owed against */
 :where(#kbroot) #onAccount .togo{font-size:9.5px;letter-spacing:.16em;text-indent:.16em;color:var(--dim);
@@ -55,7 +55,7 @@
 :where(#kbroot) #onAccount button.fact:focus-visible{outline:2px solid var(--p1);outline-offset:2px}
 /* nowrap matters: the record is "W 12 · L 7", which wrapped to three lines in
    a third of the width and made the row twice as tall as the other two */
-:where(#kbroot) #onAccount .fact > b,:where(#kbroot) #onAccount .fact > .factvalue{display:block;font-size:clamp(13.5px,3.4vw,15px);font-weight:900;color:var(--txt);
+:where(#kbroot) #onAccount .fact > b,:where(#kbroot) #onAccount .fact > .factvalue{display:block;font-size:clamp(13.5px,3.4vw,15px);font-weight:var(--fw-max);color:var(--txt);
   white-space:nowrap}
 /* The inline loading die borrows the VALUE's line box, never the reverse.
    Top-aligned, the 16px die sits inside the strut the number will occupy

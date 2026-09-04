@@ -62,9 +62,9 @@
 :where(#kbroot) #ovOnline .online-listview .lb > *{width:100%;max-width:var(--w-col);margin-inline:auto}
 :where(#kbroot) #ovOnline .lb .row{display:flex;gap:10px;align-items:center;font-size:clamp(13px,3.3vw,14.5px);padding:9px 12px;
   border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
-:where(#kbroot) #ovOnline .lb .row .rank{color:var(--dim);min-width:22px;text-align:right;font-weight:800}
-:where(#kbroot) #ovOnline .lb .row .nm{flex:1;font-weight:800;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-:where(#kbroot) #ovOnline .lb .row .rt{color:var(--gold);font-weight:900}
+:where(#kbroot) #ovOnline .lb .row .rank{color:var(--dim);min-width:22px;text-align:right;font-weight:var(--fw-strong)}
+:where(#kbroot) #ovOnline .lb .row .nm{flex:1;font-weight:var(--fw-strong);letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+:where(#kbroot) #ovOnline .lb .row .rt{color:var(--gold);font-weight:var(--fw-max)}
 :where(#kbroot) #ovOnline .lb .row .ws{color:var(--dim);font-size:10.5px}
 :where(#kbroot) #ovOnline .lb .row.me{background:rgba(var(--p1-rgb),.07);border-color:rgba(var(--p1-rgb),.35)}
 :where(#kbroot) #ovOnline .lb .row.me .nm{color:var(--p1)}
@@ -114,7 +114,7 @@
   linear-gradient(90deg,transparent,var(--gc) 30%,var(--gc) 70%,transparent);opacity:.45}
 :where(#kbroot) #ovOnline .ghor::before{flex:0 0 18px}
 :where(#kbroot) #ovOnline .ghor::after{flex:1}
-:where(#kbroot) #ovOnline .ghor .gn{font-size:clamp(11px,3vw,13px);font-weight:900;letter-spacing:.24em;color:var(--gc)}
+:where(#kbroot) #ovOnline .ghor .gn{font-size:clamp(11px,3vw,13px);font-weight:var(--fw-max);letter-spacing:.24em;color:var(--gc)}
 :where(#kbroot) #ovOnline .ghor .gf{font-size:clamp(9.5px,2.6vw,11px);letter-spacing:.14em;color:var(--dim)}
 :where(#kbroot) #ovOnline .ghor.apex .gn{text-shadow:0 0 12px color-mix(in srgb,var(--gc) 70%,transparent)}
 /* a row is a BUTTON — tapping deals the face-off — so it resets button chrome */
@@ -123,13 +123,13 @@
   border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
   color:var(--txt);font-family:inherit;text-align:left;cursor:pointer}
 :where(#kbroot) #ovOnline .lrow:focus-visible{outline:2px solid var(--p1);outline-offset:1px}
-:where(#kbroot) #ovOnline .lrow .rank{color:var(--dim);min-width:22px;text-align:right;font-weight:800}
+:where(#kbroot) #ovOnline .lrow .rank{color:var(--dim);min-width:22px;text-align:right;font-weight:var(--fw-strong)}
 :where(#kbroot) #ovOnline .lrow .av{flex:0 0 auto;line-height:0}
-:where(#kbroot) #ovOnline .lrow .nm{flex:1;min-width:0;font-weight:800;letter-spacing:.04em;
+:where(#kbroot) #ovOnline .lrow .nm{flex:1;min-width:0;font-weight:var(--fw-strong);letter-spacing:.04em;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 :where(#kbroot) #ovOnline .lrow .ws{color:var(--dim);font-size:10.5px}
-:where(#kbroot) #ovOnline .lrow .gap{font-size:clamp(9px,2.3vw,10px);font-weight:800;letter-spacing:.06em;color:var(--dim);white-space:nowrap}
-:where(#kbroot) #ovOnline .lrow .gap b{color:var(--p2);font-weight:900}
+:where(#kbroot) #ovOnline .lrow .gap{font-size:clamp(9px,2.3vw,10px);font-weight:var(--fw-strong);letter-spacing:.06em;color:var(--dim);white-space:nowrap}
+:where(#kbroot) #ovOnline .lrow .gap b{color:var(--p2);font-weight:var(--fw-max)}
 :where(#kbroot) #ovOnline .lrow .gap b.down{color:var(--p1)}
 /* On narrow phones the gap column crowds the row's identity out: at 390px its
    53-77px squeeze a 16-char name into ellipsis, at 360px the name loses half
@@ -138,16 +138,16 @@
    goes — the name and the points ARE the row. The face-off keeps the exact
    figure one tap away. */
 @media (max-width:429px){:where(#kbroot) #ovOnline .lrow .gap{display:none}}
-:where(#kbroot) #ovOnline .lrow .rt{color:var(--gc,var(--gold));font-weight:900;min-width:44px;text-align:right}
+:where(#kbroot) #ovOnline .lrow .rt{color:var(--gc,var(--gold));font-weight:var(--fw-max);min-width:44px;text-align:right}
 /* YOU: the one large row, the screen's true centre */
 :where(#kbroot) #ovOnline .lrow.me{gap:12px;padding:12px 14px;border-radius:15px;
   border-color:rgba(var(--p1-rgb),.5);background:rgba(var(--p1-rgb),.08);
   box-shadow:0 0 24px rgba(var(--p1-rgb),.12)}
 :where(#kbroot) #ovOnline .lrow.me .nmwrap{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-:where(#kbroot) #ovOnline .lrow.me .nm{font-size:clamp(15px,3.8vw,16.5px);font-weight:900;color:var(--p1)}
+:where(#kbroot) #ovOnline .lrow.me .nm{font-size:clamp(15px,3.8vw,16.5px);font-weight:var(--fw-max);color:var(--p1)}
 :where(#kbroot) #ovOnline .lrow.me .mesub{font-size:clamp(8.5px,2.2vw,9.5px);letter-spacing:.16em;color:var(--dim);
   text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 :where(#kbroot) #ovOnline .lrow.me .mesub b{color:var(--gc,var(--gold));letter-spacing:.06em}
 :where(#kbroot) #ovOnline .lrow.me .ptcol{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
-:where(#kbroot) #ovOnline .lrow.me .pt2{font-size:clamp(19px,4.7vw,21px);font-weight:900;color:var(--gold);line-height:1}
+:where(#kbroot) #ovOnline .lrow.me .pt2{font-size:clamp(19px,4.7vw,21px);font-weight:var(--fw-max);color:var(--gold);line-height:1}
 :where(#kbroot) #ovOnline .lrow.me .rk2{font-size:clamp(8.5px,2.2vw,9.5px);letter-spacing:.14em;color:var(--dim);text-transform:uppercase}

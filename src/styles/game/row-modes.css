@@ -64,7 +64,7 @@
    bare number still centres: the empty ×badge is display:none, not a spacer. */
 :where(#kbroot) .rowchips .rc{min-width:41px;height:20px;padding:0 6px;border-radius:8px;
   display:flex;align-items:center;justify-content:center;gap:3px;
-  font-size:11.5px;font-weight:800;color:var(--dim);font-variant-numeric:tabular-nums;
+  font-size:11.5px;font-weight:var(--fw-strong);color:var(--dim);font-variant-numeric:tabular-nums;
   background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);transition:.2s}
 :where(#kbroot) .rowchips .rc .mx{font-size:9px;opacity:.9;color:var(--mx2,var(--gold))}
 :where(#kbroot) .rowchips .rc .mx.h3{color:var(--mx3,var(--orange))}

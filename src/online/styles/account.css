@@ -39,7 +39,7 @@
    simply leaves that side empty. */
 :where(#kbroot) #onAccount .accsec{display:flex;flex-direction:column;gap:8px;width:100%}
 :where(#kbroot) #onAccount .acchead{display:flex;align-items:center;justify-content:space-between;
-  padding:0 2px;color:var(--dim);font-size:var(--font-label-min);font-weight:900;letter-spacing:.2em}
+  padding:0 2px;color:var(--dim);font-size:var(--font-label-min);font-weight:var(--fw-max);letter-spacing:.2em}
 /* Both section titles share the head's subdued --dim token with the rune
    count. Their weight and tracking still name the sections without making
    RUNES or PAST DUELS compete with the player's live profile facts. */
@@ -50,7 +50,7 @@
 :where(#kbroot) #onAccount .accach-grid{display:flex;flex-wrap:wrap;gap:7px}
 :where(#kbroot) #onAccount .accach-mark{display:inline-flex;align-items:center;gap:7px;min-height:34px;
   padding:7px 10px;border:1px solid currentColor;border-radius:999px;background:rgba(255,255,255,.025);
-  font-size:8.5px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
+  font-size:8.5px;font-weight:var(--fw-max);letter-spacing:.11em;text-transform:uppercase}
 :where(#kbroot) #onAccount .accach-mark.weekly{color:var(--gold);
   background:rgba(255,209,102,.055);border-color:rgba(255,209,102,.32)}
 :where(#kbroot) #onAccount .accach-mark.neon{color:var(--p1);
@@ -106,7 +106,7 @@
    this hue by accident and would have flipped to white the day somebody
    defined the token. */
 :where(#kbroot) #onAccount .accrune span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  font-size:8px;font-weight:900;letter-spacing:.08em}
+  font-size:8px;font-weight:var(--fw-max);letter-spacing:.08em}
 :where(#kbroot) #onAccount .accrune.locked{filter:saturate(.15);opacity:.46;background:rgba(255,255,255,.018)}
 :where(#kbroot) #onAccount .accrune.locked::after{content:"";position:absolute;inset:0;border-radius:inherit;
   background:linear-gradient(135deg,rgba(255,255,255,.09),rgba(255,255,255,.015));
@@ -142,7 +142,7 @@
 :where(#kbroot) #onAuth{width:100%;min-height:0;max-width:var(--w-col);display:flex;flex-direction:column;gap:14px;
   overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;padding:2px 3px 8px;
   -webkit-overflow-scrolling:touch}
-:where(#kbroot) #onAuth .auth-title{margin:0;text-align:center;font-size:17px;line-height:1.25;font-weight:900;
+:where(#kbroot) #onAuth .auth-title{margin:0;text-align:center;font-size:17px;line-height:1.25;font-weight:var(--fw-max);
   letter-spacing:.18em;text-transform:uppercase;background:linear-gradient(100deg,var(--p1),#fff 50%,var(--p2));
   -webkit-background-clip:text;background-clip:text;color:transparent}
 :where(#kbroot) #onAuth input{width:100%}
@@ -190,7 +190,7 @@
 :where(#kbroot) .faceoff.warnsheet .wshead svg,
 :where(#kbroot) #onAccount .wshead svg{flex:0 0 auto}
 :where(#kbroot) .faceoff.warnsheet .wstitle,
-:where(#kbroot) #onAccount .wstitle{min-width:0;font-size:11px;font-weight:900;letter-spacing:.2em;
+:where(#kbroot) #onAccount .wstitle{min-width:0;font-size:11px;font-weight:var(--fw-max);letter-spacing:.2em;
   text-transform:uppercase}
 /* The sentence stays the roster's reading colour, never the tint: amber body
    text is amber body text nobody finishes, and this is the half that matters.
@@ -251,7 +251,7 @@
   border-left:1px solid rgba(177,140,255,.46);border-top:1px solid rgba(177,140,255,.46);
   background:rgb(15 15 29)}
 :where(#kbroot) #onAccount .acc-rune-guide-title{color:#cdb7ff;font-size:10px;
-  line-height:1.25;font-weight:950;letter-spacing:.2em;text-transform:uppercase}
+  line-height:1.25;font-weight:var(--fw-ultra);letter-spacing:.2em;text-transform:uppercase}
 :where(#kbroot) #onAccount .acc-rune-guide-body{margin:0;color:#d5ddf0;font-size:11px;
   line-height:1.5;letter-spacing:.02em}
 :where(#kbroot) #onAccount .accseat.acc-rune-guide-target{top:calc(50% + 17px);
@@ -278,7 +278,7 @@
 /* right edge, like the promotion deck's counter — margin-left:auto rather than
    justify-content, so a kicker can arrive on the left without moving it */
 :where(#kbroot) #onAccount .offerdeck__page{margin-left:auto;color:var(--dim);font-size:8px;
-  font-weight:900;letter-spacing:.14em}
+  font-weight:var(--fw-max);letter-spacing:.14em}
 :where(#kbroot) #onAccount .offerdeck__dots{display:flex;align-items:center;justify-content:center;
   gap:6px;min-height:9px}
 :where(#kbroot) #onAccount .offerdeck__dots i{display:block;width:5px;height:5px;border-radius:999px;

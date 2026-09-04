@@ -90,7 +90,7 @@
 :where(#kbroot) .pplate{position:relative;display:flex;align-items:center;gap:10px;width:100%;padding:7px 12px 7px 7px;
   border-radius:14px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.035);
   font:inherit;color:var(--txt);cursor:pointer;text-align:left}
-:where(#kbroot) .pplate .nm2{font-size:10.5px;letter-spacing:.1em;font-weight:800;
+:where(#kbroot) .pplate .nm2{font-size:10.5px;letter-spacing:.1em;font-weight:var(--fw-strong);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* the roomier cut (PlateSpec.large): the result screen's plates breathe a
    little more top and bottom; the home chip keeps the slim row */
@@ -123,10 +123,10 @@
 /* the group pill: ONE look for a player's group + rank wherever they appear —
    the face-off's columns and the identity plate wear the same class, so the
    result screen, the home chip and the compare card can never drift apart */
-:where(#kbroot) .gpill{font-size:clamp(7.5px,2vw,9px);font-weight:900;letter-spacing:.16em;text-transform:uppercase;
+:where(#kbroot) .gpill{font-size:clamp(7.5px,2vw,9px);font-weight:var(--fw-max);letter-spacing:.16em;text-transform:uppercase;
   color:var(--gc,var(--gold));border:1px solid color-mix(in srgb,var(--gc,var(--gold)) 45%,transparent);
   border-radius:6px;padding:2.5px 7px;white-space:nowrap}
-:where(#kbroot) .pplate .meta2 b{font-size:13.5px;font-weight:900;color:var(--gold)}
+:where(#kbroot) .pplate .meta2 b{font-size:13.5px;font-weight:var(--fw-max);color:var(--gold)}
 /* ONE MARK FOR A ROW THAT OPENS SOMETHING: the identity plate wears it, and so
    does the result's feature card (ui/endscreen.ts) — a second glyph at a second
    size would make two answers to "is this row a door".
@@ -143,7 +143,7 @@
 :where(#kbroot) .pplate.wonp{border-color:rgba(255,209,102,.5);background:rgba(255,209,102,.05)}
 :where(#kbroot) .pplate.lostp{opacity:.66}
 /* what the match paid, beside the number it changed — green up, magenta down */
-:where(#kbroot) .pdelta{font-size:11px;font-weight:900;color:#8dffcf;letter-spacing:.05em}
+:where(#kbroot) .pdelta{font-size:11px;font-weight:var(--fw-max);color:#8dffcf;letter-spacing:.05em}
 :where(#kbroot) .pdelta.down{color:var(--mg)}
 /* the stamp across the beaten foe's row (design 36d), in-flow but askew */
 /* the stamp is slapped ON the plate, not set IN it (user call): it sits
@@ -164,7 +164,7 @@
 @keyframes plateIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
 :where(#kbroot) .pstamp{position:absolute;left:38px;bottom:-6px;transform:rotate(-8deg);
   border:2px solid rgba(var(--mg-rgb),.8);color:var(--mg);border-radius:6px;
-  padding:2.5px 8px;font-size:10px;font-weight:900;letter-spacing:.24em;text-transform:uppercase;
+  padding:2.5px 8px;font-size:10px;font-weight:var(--fw-max);letter-spacing:.24em;text-transform:uppercase;
   background:rgba(5,6,14,.55);text-shadow:0 0 10px rgba(var(--mg-rgb),.55);pointer-events:none;
   /* the SLAM (design 37a, chosen): the stamp drops oversized out of the air
      once the verdict has landed (title stamps in around .3–1s) AND the foe's

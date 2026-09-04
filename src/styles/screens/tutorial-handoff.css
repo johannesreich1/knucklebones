@@ -19,17 +19,17 @@
 :where(#kbroot) #ovPass{gap:10px;background:rgba(4,5,12,.93);cursor:pointer}
 :where(#kbroot) #ovPass .glow{position:absolute;inset:0;pointer-events:none;
   background:radial-gradient(60% 40% at 50% 50%,color-mix(in srgb,var(--pc) 24%,transparent),transparent 72%)}
-:where(#kbroot) #ovPass .who{font-size:34px;font-weight:900;letter-spacing:.16em;color:var(--pc);
+:where(#kbroot) #ovPass .who{font-size:34px;font-weight:var(--fw-max);letter-spacing:.16em;color:var(--pc);
   text-shadow:0 0 30px color-mix(in srgb,var(--pc) 65%,transparent);text-align:center;line-height:1.05}
 :where(#kbroot) #ovPass .hint{font-size:11.5px;letter-spacing:.22em;color:var(--dim);text-transform:uppercase}
 :where(#kbroot) #ovPass .swapicon{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;margin-bottom:2px;
   border:1.5px solid color-mix(in srgb,var(--pc) 45%,transparent);color:var(--pc);font-size:24px;
   box-shadow:0 0 26px color-mix(in srgb,var(--pc) 28%,transparent);animation:spinhint 2.6s ease-in-out infinite}
 @keyframes spinhint{0%,70%,100%{transform:rotate(0)}85%{transform:rotate(180deg)}}
-:where(#kbroot) #ovPass .tapline{margin-top:6px;font-size:13px;font-weight:800;letter-spacing:.2em;color:var(--txt);
+:where(#kbroot) #ovPass .tapline{margin-top:6px;font-size:13px;font-weight:var(--fw-strong);letter-spacing:.2em;color:var(--txt);
   text-transform:uppercase;animation:breathe 1.8s ease-in-out infinite}
 :where(#kbroot) #ovPass .mini{display:flex;gap:14px;align-items:center;font-size:12px;letter-spacing:.12em;color:var(--dim)}
-:where(#kbroot) #ovPass .mini b{font-size:20px;font-weight:900}
+:where(#kbroot) #ovPass .mini b{font-size:20px;font-weight:var(--fw-max)}
 :where(#kbroot) #ovPass .mini .a{color:var(--p1)}:where(#kbroot) #ovPass .mini .b{color:var(--p2)}
 :where(#kbroot) .ico{font-family:inherit;padding:0;-webkit-appearance:none;appearance:none}
 :where(#kbroot) .ico:focus-visible,:where(#kbroot) .btn:focus-visible,:where(#kbroot) .seg button:focus-visible{outline:2px solid var(--p1);outline-offset:2px}
