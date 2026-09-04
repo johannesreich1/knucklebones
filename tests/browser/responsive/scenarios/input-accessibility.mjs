@@ -244,7 +244,18 @@ export async function runInputAccessibilityScenarios(suite) {
   out.numerals.settingsClosed = settingsClosed;
   check(out.numerals.on && out.numerals.numShown === 'flex' && out.numerals.pipHidden === 'none'
         && out.numerals.settingsClosed, 'numerals toggle broken', out.numerals);
-  check(out.numerals.sizeRatio >= .575 && out.numerals.sizeRatio <= .585
+  /* .54, DOWN FROM .58, and the numeral did not get smaller — it stopped
+     getting bigger. Digits come from Saira once the faces are bundled
+     (styles/foundations/typeface.css) and its ink is taller than the ui-rounded
+     stack this ratio was chosen against: measured at line-height 1, a 48.7px
+     digit inks 57 with the old stack and 63 with Saira. Holding .58 would have
+     rendered a numeral 10% larger than the mode was ever designed to show, and
+     it took five pixels of clearance from the score header that shares the die
+     (the four feedback checks above measured exactly that). At .54 the ink is
+     58.7 — still a shade above the 57 this mode has always drawn. The ratio is
+     pinned rather than floored on purpose, so it moves deliberately or not at
+     all; this is the deliberate move, and the numeral on screen is unchanged. */
+  check(out.numerals.sizeRatio >= .535 && out.numerals.sizeRatio <= .545
         && Math.abs(out.numerals.centreOffsetRatio) <= .005,
         'numeral face is not larger and geometrically centred', out.numerals);
   // the LOADING die is exempt: it tells time in pips whatever the face setting

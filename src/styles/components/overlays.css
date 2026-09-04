@@ -83,8 +83,16 @@
   --primary-glint-cycle:5.2s;--primary-glint-alpha:.15;
   background:linear-gradient(100deg,var(--p1),var(--p1-hi) 40%,var(--p2));color:#04101a;border:none;
   box-shadow:0 10px 30px rgba(var(--p1-rgb),.28),0 0 0 1px rgba(255,255,255,.12) inset}
-:where(#kbroot) .btn.primary.play-cta{--primary-glint-cycle:4.6s;--primary-glint-alpha:.21;
-  display:flex;align-items:center;justify-content:center;gap:11px}
+/* TWO JOBS, TWO RULES. .play-cta used to carry both the icon row's layout and
+   a glint variant, so putting the die on the offline view's button silently
+   handed it Home's 4.6s/.21 glint in place of its own 5.2s/.15 — the gate
+   caught it as a duration, which is the only reason it was not shipped. The
+   layout now follows the ICON being there, which is the thing it is actually
+   about, and .play-cta means only what it says: this is the two-colour action
+   whose glint runs faster and brighter. */
+:where(#kbroot) .btn:has(> .btn-leading-icon){display:flex;align-items:center;
+  justify-content:center;gap:11px}
+:where(#kbroot) .btn.primary.play-cta{--primary-glint-cycle:4.6s;--primary-glint-alpha:.21}
 :where(#kbroot) .btn-leading-icon,:where(#kbroot) .btn-label{position:relative;z-index:2}
 :where(#kbroot) .btn-leading-icon{width:25px;height:25px;display:grid;place-items:center;flex:0 0 auto}
 :where(#kbroot) .btn-leading-icon .cico{display:block;overflow:visible}

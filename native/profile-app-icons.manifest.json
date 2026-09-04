@@ -63,8 +63,8 @@
     },
     {
       "path": "src/styles/components/overlays.css",
-      "bytes": 14633,
-      "sha256": "cf96c03d55a4f845ea86064e26d2243f40a1a1baccfdfa256ffa8d1b04b49b70"
+      "bytes": 15191,
+      "sha256": "48a324dd46150fac1edcc4c52d9c33b319096cc85c5cc306b68857219eda8dc5"
     },
     {
       "path": "src/styles/components/picker.css",
@@ -139,7 +139,7 @@
     {
       "path": "src/styles/game/responsive.css",
       "bytes": 6328,
-      "sha256": "c7976b9234fd265bdc889a255c888bdbe1dca557d931dec969ccaf9e72352425"
+      "sha256": "4bf5a458c0a242786f595cb09db9d4d1c2d1c739409a8f6d3cea1ff5aa7ff332"
     },
     {
       "path": "src/styles/game/row-modes.css",
@@ -178,8 +178,8 @@
     },
     {
       "path": "src/styles/game/stage.css",
-      "bytes": 4820,
-      "sha256": "58cb676f41b2a56164c4ff56dbbc5da108db3c1006f2f8bf82059c8caa507520"
+      "bytes": 5215,
+      "sha256": "ce0e7fa7eaff8548b866b71d14bada2c52f955cc012e621cee9154ec1fc12697"
     },
     {
       "path": "src/styles/game/variants.css",

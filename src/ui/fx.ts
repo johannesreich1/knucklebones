@@ -127,8 +127,8 @@ export function floatPts(who: Player, col: number, text: string, color: string, 
     /* Hold the compact header a few pixels inside its reading edge. Anchoring
        with top/bottom keeps the same inset for both seats without measuring
        the label or accumulating a fractional rotated offset. */
-    p.style.top = flippedNumeral ? 'auto' : '3px';
-    if (flippedNumeral) p.style.bottom = '3px';
+    p.style.top = flippedNumeral ? 'auto' : '2px';
+    if (flippedNumeral) p.style.bottom = '2px';
   } else {
     p.style.top = (slot.offsetTop + slot.offsetHeight * .30) + 'px';
   }

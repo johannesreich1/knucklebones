@@ -221,13 +221,20 @@ export async function runPrimaryCtaGlintScenarios(suite) {
     'the main-menu play label does not keep the selected canted die in front', homeAction);
   check(selectedIcon(localizedHomeAction, RESOURCES.pt.game.home.playRanked),
   'locale repaint erased or moved the main-menu play icon', { homeAction, localizedHomeAction });
-  check(practiceAction?.label === RESOURCES.pt.game.practice.playVersusAi
+  /* THE OFFLINE ACTION NOW CARRIES THE DIE TOO (owner call, 2026-09-04). This
+     asserted the opposite — that the icon belonged to the main menu alone — and
+     it was right until Johannes asked for the three controls that actually start
+     a game to look like it. So the check inverts rather than relaxes: the same
+     selectedIcon() the main menu is held to, applied here, which keeps every
+     geometry the old assertion protected (size, gap, centring, the exact die and
+     pip path) and only changes WHETHER the icon is expected. The label halves
+     stay exactly as they were — the icon must not have disturbed the copy, and
+     a repaint in another locale must still leave both intact. */
+  check(selectedIcon(practiceAction, RESOURCES.pt.game.practice.playVersusAi)
     && practiceAction.buttonText === RESOURCES.pt.game.practice.playVersusAi
-    && !practiceAction.iconPresent
-    && duoPracticeAction?.label === RESOURCES.pt.game.practice.playDuel
-    && duoPracticeAction.buttonText === RESOURCES.pt.game.practice.playDuel
-    && !duoPracticeAction.iconPresent,
-  'the unselected offline action changed label or received the main-menu icon', {
+    && selectedIcon(duoPracticeAction, RESOURCES.pt.game.practice.playDuel)
+    && duoPracticeAction.buttonText === RESOURCES.pt.game.practice.playDuel,
+  'the offline action lost the canted die, its geometry, or its label', {
     practiceAction, duoPracticeAction,
   });
   check(selectedIcon(resultAction, 'Next duel'),
