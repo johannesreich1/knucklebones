@@ -56,6 +56,14 @@ const SIZE_ALLOWLIST = new Map<string, string>([
     'progression hold plus cover routing; move the progression hold to its owner'],
   ['tests/browser/legal.mjs',
     'motion sampling joined the matrix; split the sheet-stack cases out'],
+  /* 2026-09-05: sat exactly on 400 and the curve-v2 default added a fixture —
+     the old-schema fallback is only reachable from a cached v1 now, so the case
+     has to establish one. */
+  ['tests/play-sync.test.ts',
+    'snapshot/replay and terminal-projection cases in one file; move the '
+    + 'terminal, rejoin and schema-fallback cases to a support module the way '
+    + 'edge-operations does, once their shared routes/online fixture is passed '
+    + 'rather than closed over'],
   ['tests/browser/online-ui/harness/routes.mjs',
     'rune, equipment and progression stubs; move the rune stubs beside profile-routes'],
   ['tests/browser/online-ui/scenarios/page-navigation-motion.mjs',
