@@ -109,10 +109,23 @@ export function bindOnlineDoors(ports: OnlineDoorPorts): void {
   door('#btnBoardHome', 'ladder');
   door('#homeChip', 'account');
 
+  /* THE WEEKLY DOOR IS WITHHELD FROM HOME. It is not unfinished code and it is
+     not disabled for a bug of its own: everything below still works and the
+     server still owns the entitlement. It is hidden because activating curve v2
+     on 2026-09-04 granted `weekly_challenge` to 73 players at once, and the
+     button this paints let itself onto their Home the same afternoon, unasked.
+     Weekly entry has also never once been exercised in production, so the first
+     player through it would be the one proving it. Johannes asked for it off
+     Home until that is deliberate. Flip this to true to give it back — nothing
+     else has to change, which is the point of gating it here rather than
+     deleting the paint, the label, the expiry timer or the door itself. */
+  const WEEKLY_DOOR_ON_HOME = false;
+
   const paintWeekly = (): void => {
     if (weeklyExpiry) clearTimeout(weeklyExpiry);
     weeklyExpiry = null;
     const button = $('#btnWeekly') as HTMLButtonElement;
+    if (!WEEKLY_DOOR_ON_HOME) { button.hidden = true; return; }
     const status = readProgressionStatusSnapshot();
     const challenge = activeWeeklyChallenge(status);
     button.hidden = !challenge;

@@ -83,17 +83,30 @@ async function probeAchievementsAndWeeklyEntry(page, routes) {
 
   await page.click('#btnOnlineBack');
   await page.waitForSelector('#ovStart.on');
-  await page.waitForFunction(() => document.getElementById('btnWeekly')?.hidden === false);
+  /* HOME WITHHOLDS THE WEEKLY DOOR even with a live, completed rotation staged
+     — the state that used to paint it. This scenario asserted the opposite
+     until 2026-09-04: activating curve v2 granted `weekly_challenge` to 73
+     players at once and this button showed itself on their Home unasked, so
+     WEEKLY_DOOR_ON_HOME (boot/online-door.ts) now keeps it down. Settle the
+     paint before reading, or a hidden button reads hidden for the wrong
+     reason. */
+  await page.waitForFunction(() => document.getElementById('btnWeekly') !== null);
+  await page.waitForTimeout(120);
   const home = await page.evaluate(() => {
     const button = document.getElementById('btnWeekly');
     const box = button?.getBoundingClientRect();
     return {
       hidden: button?.hidden,
-      text: button?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
-      complete: button?.classList.contains('complete') ?? false,
-      width: box ? +box.width.toFixed(1) : 0,
-      height: box ? +box.height.toFixed(1) : 0,
+      painted: box ? +(box.width * box.height).toFixed(1) : 0,
     };
+  });
+  /* The door being off Home does not retire the CONTRACT behind it, which is
+     the only proof weekly entry speaks v2 at all. Open it directly — this is
+     the one caller Home no longer provides — and let the join assertions below
+     keep doing their job. */
+  await page.evaluate(() => {
+    const button = document.getElementById('btnWeekly');
+    if (button) button.hidden = false;
   });
   await page.click('#btnWeekly');
   const deadline = Date.now() + 15000;
@@ -218,12 +231,9 @@ export async function runAccountAchievementsWeeklyScenarios({ visit, out, check 
     && result.achievements.medals.text === '2 NEON SEASON MEDALS',
   'profile did not visibly paint the current weekly mark and durable NEON medals',
   result?.achievements);
-  check(result?.home.hidden === false
-    && result.home.width >= 44 && result.home.height >= 44
-    && result.home.complete === true
-    && result.home.text.includes('Weekly complete')
-    && result.home.text.includes('ROW SWITCH'),
-  'the completed weekly challenge was not a visible, labelled Home entry', result?.home);
+  check(result?.home.hidden === true && result.home.painted === 0,
+  'Home painted the weekly door that WEEKLY_DOOR_ON_HOME withholds — an active '
+  + 'rotation must not put this button back on Home by itself', result?.home);
   check(result?.join?.entry_kind === 'weekly'
     && result.join.curve_version === 2
     && result.join.capabilities?.includes('curve_v2')
