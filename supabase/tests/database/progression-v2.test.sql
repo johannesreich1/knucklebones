@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(59);
+select plan(64);
 
 select has_table('private', 'ranked_runtime_contract',
   'ranked numeric authority is a private singleton');
@@ -369,6 +369,64 @@ select is(
   (select count(*) from public.profiles),
   'activation records exactly one cutover fact for every profile'
 );
+
+/* THE QUEUE MUST ACTUALLY OPEN ON v2. Nothing here exercised an enqueue after
+   the curve flipped, and that gap shipped a total ranked outage on 2026-09-04:
+   private.guard_ranked_admission() fires BEFORE INSERT on matchmaking_queue,
+   public.enqueue_ranked_player() inserts player_id ONLY, and the resulting row
+   carries the column defaults protocol_version = 1 and capabilities = '{}'.
+   The guard's client check read those defaults and raised on EVERY player,
+   compatible clients included, because the UPDATE in enqueue_ranked_player_v3
+   that writes the real values runs one statement after the INSERT it aborted.
+   The three checks below are the ones that would have caught it: a good client
+   gets in, the row it leaves behind is the client's own, and the two paths that
+   must still be refused still are. */
+update private.ranked_runtime_contract
+   set admission_paused = false, updated_at = clock_timestamp()
+ where singleton;
+select lives_ok(
+  $$select public.enqueue_ranked_player_v3(
+      '9e000000-0000-0000-0000-000000000001'::uuid, 2::smallint,
+      array['rune_trial_v1','equipped_rune_v1','curve_v2','rune_trial_claim_v2']::text[],
+      'ordinary'
+    )$$,
+  'a curve-v2 client can enter the queue once the curve is active'
+);
+select results_eq(
+  $$select protocol_version, curve_version, 'curve_v2' = any(capabilities)
+      from public.matchmaking_queue
+     where player_id = '9e000000-0000-0000-0000-000000000001'$$,
+  $$values (2::smallint, 2::smallint, true)$$,
+  'the queued row carries the client''s own protocol, curve and capabilities'
+);
+delete from public.matchmaking_queue
+ where player_id = '9e000000-0000-0000-0000-000000000001';
+select throws_ok(
+  $$select public.enqueue_ranked_player_v3(
+      '9e000000-0000-0000-0000-000000000001'::uuid, 1::smallint,
+      array[]::text[], 'ordinary'
+    )$$,
+  'P0001', null,
+  'a pre-v2 client is still refused, by the RPC and not by a default-valued row'
+);
+/* set_config(..., true) is TRANSACTION-local, and pgTAP runs this whole file in
+   one transaction, so the flag enqueue_ranked_player_v3 set above is still up.
+   Production cannot see that -- every PostgREST call is its own transaction --
+   but this file can, and an unvouched write is the thing being asserted, so the
+   flag has to come down first or the check proves nothing. */
+select is(
+  set_config('knucklebones.progression_v2_queue', '', true), '',
+  'the transition flag can be lowered inside the test transaction'
+);
+select throws_ok(
+  $$insert into public.matchmaking_queue (player_id)
+    values ('9e000000-0000-0000-0000-000000000002')$$,
+  'P0001', null,
+  'a direct queue write that sets no client facts is still refused by the guard'
+);
+update private.ranked_runtime_contract
+   set admission_paused = true, updated_at = clock_timestamp()
+ where singleton;
 select results_eq(
   $$select id, rating from public.profiles order by id$$,
   $$select id, rating from progression_v2_expected_profiles order by id$$,
