@@ -65,7 +65,15 @@
   background:rgba(255,255,255,.05);color:var(--txt);font-size:13.5px;font-weight:var(--fw-strong);letter-spacing:.16em;
   text-transform:uppercase;cursor:pointer;transition:.15s;font-family:inherit}
 :where(#kbroot) .btn:active,:where(#kbroot) .btn.pressing{transform:scale(.96)}
-:where(#kbroot) .btn.primary{position:relative;isolation:isolate;
+/* THE PRIMARY ACTION IS THE ONLY BUTTON AT THE TOP RUNG. Every .btn shared one
+   weight, so the one action a screen is FOR carried exactly the type of the two
+   beside it and was left to argue its case with a gradient alone — and it was
+   losing that argument by more than parity, because its ink is dark on a bright
+   ground while its neighbours are light on dark. At equal weight, dark-on-light
+   reads optically lighter (irradiation), so the loudest button on Home was the
+   one whose label looked thinnest. Owner report, 2026-09-04: "the main button
+   right now isnt 700 is it? looks like the others". It was not; it is now. */
+:where(#kbroot) .btn.primary{position:relative;isolation:isolate;font-weight:var(--fw-max);
   --primary-glint-cycle:5.2s;--primary-glint-alpha:.15;
   background:linear-gradient(100deg,var(--p1),var(--p1-hi) 40%,var(--p2));color:#04101a;border:none;
   box-shadow:0 10px 30px rgba(var(--p1-rgb),.28),0 0 0 1px rgba(255,255,255,.12) inset}
