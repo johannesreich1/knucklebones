@@ -3,7 +3,13 @@
    plate wears it at boot, before this chunk exists. Here is only what the
    account panel adds around it. */
 :where(#kbroot) #ovOnline #onAccount{
-  --profile-stack-gap:16px;
+  /* 14, not 16: pinning the line box for Chakra Petch (foundations/typeface.css)
+     gave every row in this column ~10% more of its own air, and the column had
+     about two pixels of spare height on a 390x932 phone before that. One pixel
+     off each of the six section gaps returns more than the type took, so the
+     VISUAL rhythm lands near where it was while the glyphs stop overflowing
+     their boxes. The budget is untouched: 886 is still the usable bottom. */
+  --profile-stack-gap:14px;
   --profile-history-gap:5px;
   --profile-history-row-height:39px;
   gap:var(--profile-stack-gap)}

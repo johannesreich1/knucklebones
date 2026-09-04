@@ -118,7 +118,7 @@ export const MARKUP = `${BOARD_MARKUP}
     <!-- the commitment, pinned: whatever the sheet above it grows to, the way
          OUT of it is always in the same place under your thumb -->
     <div class="playbar">
-      <button class="btn primary" id="btnPlay">Play</button>
+      <button class="btn primary play-cta" id="btnPlay"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">${chromeIcon('play', 25)}</span><span class="btn-label">Play</span></button>
       <div class="tiny" data-i18n="game:practice.ratingNote">Offline play never touches your online rating</div>
     </div>
   </div>

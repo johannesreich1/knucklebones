@@ -1,7 +1,7 @@
 /* with plates dealing the names, the scoreline goes back to pure numbers */
 :where(#kbroot) #ovEnd .sc em:empty{display:none}
 :where(#kbroot) .hero{display:flex;flex-direction:column;align-items:center;gap:4px;margin:6px 0 2px}
-:where(#kbroot) .hero .eyebrow{font-size:9px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+:where(#kbroot) .hero .eyebrow{font-size:10px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
 /* line-height 1 on an all-caps wordmark: KNUCKLEBONES has no descenders, so
    the default 1.17 was 4px of air the line could not use, pushing the eyebrow
    and the tagline away from the type they belong to. Owner call, 2026-09-03. */
@@ -13,7 +13,7 @@
    with a negative margin equal to its own tracking, so every right edge is the
    edge of the last painted glyph. The eyebrow needs none: tracking does not
    lead, so its first glyph already sits on the left edge. */
-:where(#kbroot) .hero h1{font-size:23px;letter-spacing:.24em;line-height:1;margin-right:-.24em}
+:where(#kbroot) .hero h1{font-size:28px;letter-spacing:.24em;line-height:1;margin-right:-.24em}
 /* THE HERO MARK. Two numbers here and both are measured, not chosen.
    4px of margin, not the 12 the eye asks for, because the 120-unit arrangement
    carries 12 units of transparent margin on every side: at a 96px frame the
@@ -173,18 +173,28 @@
    the mark rather than three evenly spaced captions. .hero's gap does the 6;
    the mark adds 2 of its own to make the 8. And the two small lines are now a
    matched pair: same 9px, same .28em, so neither reads as the larger one. */
-:where(#kbroot) .hero{gap:6px}
-/* The two small lines close on the wordmark (owner call, 2026-09-04). The step
-   under the mark was 8 / 6 / 6; the gaps BRACKETING KNUCKLEBONES are the two
-   that read loose, so they go to 4 and the mark keeps its 8. Doing it as the
-   h1's own block margin rather than by dropping .hero's gap is what keeps that
-   distinction — the gap is also what sets the mark-to-eyebrow distance, and
-   pulling it would have tightened a relationship nobody asked about. The step
-   is now 8 / 4 / 4, so the three lines read as one block hung under the mark
-   more firmly than before, which was the point of the stagger. */
-:where(#kbroot) .hero h1{margin-block:-2px}
-:where(#kbroot) .hero .eyebrow{align-self:stretch;text-align:left;letter-spacing:.28em}
-:where(#kbroot) .hero .sub2{align-self:stretch;text-align:right;font-size:9px;margin-right:-.28em}
+/* ONE GAP OF 4 FOR THE TYPE, AND THE MARK BUYS ITS OWN AIR (owner call,
+   2026-09-04). The first pass at this kept .hero on 6 and pulled the h1 back
+   with margin-block:-2px, which reached 4 between the three lines but only by
+   making two rules disagree about one number. The gap is simply 4 now — the
+   file's own base value, so the override that raised it is gone rather than
+   re-tuned — and the distance under the die is stated where it belongs, on the
+   mark. Its box is bigger than its ink: the 120-unit arrangement carries 12
+   units of transparent margin a side, ~9.6px at this frame, so the 8px below
+   reads as roughly 18px of visible air while the three type lines stay locked
+   at 4. That asymmetry is the point — the mark is a separate object, the three
+   lines are one. */
+:where(#kbroot) .hero{gap:4px}
+/* THE PAIR TAKES A SIDE EACH (owner call, 2026-09-04). They were both --dim,
+   then briefly both --p1; the line on the LEFT now wears yours and the line on
+   the RIGHT theirs, which is the same left/right ownership the wordmark's own
+   gradient states and the board uses all game. Both at --fw-max, because at
+   10px against a 28px mark the hue alone was not enough to read as deliberate.
+   --dim still owns every other caption; this is Home's hero only. */
+:where(#kbroot) .hero .eyebrow{align-self:stretch;text-align:left;letter-spacing:.28em;
+  color:var(--p1);font-weight:var(--fw-max)}
+:where(#kbroot) .hero .sub2{color:var(--p2);font-weight:var(--fw-max)}
+:where(#kbroot) .hero .sub2{align-self:stretch;text-align:right;font-size:10px;margin-right:-.28em}
 /* THE MARK WEARS NO ADDED GLOW ON HOME (owner call, 2026-09-04, decided from a
    pair of device screenshots). #homeMark used to carry two 26px drop-shadows in
    the duel pair's hues. Measured off those two shots, they are a broad, soft
@@ -203,7 +213,7 @@
    them: both existed only to keep filter output inside this element's bounds,
    and there is no filter output left. margin-bottom keeps the 2px the hero
    measured with. */
-:where(#kbroot) .hero #homeMark{display:block;line-height:0;margin-bottom:2px}
+:where(#kbroot) .hero #homeMark{display:block;line-height:0;margin-bottom:8px}
 :where(#kbroot) .sub2{font-size:10px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase;
   text-align:center;margin-bottom:12px}
 /* clear air between the hero and the plate + play pair: the two blocks are

@@ -120,7 +120,7 @@
    above, so the typeface swap costs no height anywhere and the layout stops
    depending on which family happens to load. Anything wanting a different
    rhythm still states its own line-height and wins on specificity. */
-:where(#kbroot){font-weight:var(--fw-body);line-height:1.2}
+:where(#kbroot){font-weight:var(--fw-body);line-height:1.35}
 /* Form controls need it SAID TO THEM, not handed down. The UA stylesheet
    declares line-height:normal directly on button/input/select/textarea, and a
    declaration — even the UA's — beats an inherited value, so the rule above
@@ -130,7 +130,7 @@
    line box had only half worked. Author origin outranks UA origin whatever the
    specificity, so :where() is enough to take it back without raising the floor
    for anything that wants its own. */
-:where(#kbroot) :where(button,input,select,textarea){line-height:1.2}
+:where(#kbroot) :where(button,input,select,textarea){line-height:1.35}
 /* <b> WAS 700 BY A TABLE NOBODY WROTE DOWN. The UA sheet gives b and strong
    `bolder`, which from an inherited 400 computes to 700 — so the rules prose
    had a hierarchy (.rules .k at 800 over a plain <b> at 700) that no stylesheet

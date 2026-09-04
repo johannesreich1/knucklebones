@@ -40,7 +40,10 @@ export function syncSettingsUI(): void {
   $('#diffCard').hidden = duo;
   $('#seatCard').hidden = !duo;
   $('#timerCard').hidden = !duo;
-  $('#btnPlay').textContent = duo
+  /* Into the LABEL, not the button: #btnPlay carries a leading die beside its
+     copy (markup.ts), and textContent on the button would delete it the first
+     time the mode changed. */
+  $('#btnPlay .btn-label').textContent = duo
     ? t('game', 'practice.playDuel')
     : t('game', 'practice.playVersusAi');
   segOn('#modeSeg', 'm', S.mode);

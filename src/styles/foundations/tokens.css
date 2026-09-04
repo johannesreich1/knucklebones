@@ -84,6 +84,23 @@
   --duel-clouds-still:
     radial-gradient(closest-side,rgba(var(--p2-rgb),var(--home-p2-a)),transparent 100%) 20% 16%/78% 60% no-repeat,
     radial-gradient(closest-side,rgba(var(--p1-rgb),var(--home-p1-a)),transparent 100%) 80% 86%/80% 62% no-repeat;
+  /* ON A PHONE THE p2 LOBE LETS GO OF THE EDGE SOONER (owner call, 2026-09-04:
+     "on mobile it looks too harsh, on desktop its better"). Nothing is dimmed —
+     the centre keeps --home-p2-a. A narrow viewport is the whole reason it read
+     hard: the ellipse is sized in PERCENTAGES of the surface, so at 390px the
+     same 78% lobe covers far less absolute distance than it does on a desktop
+     and the ramp from full colour to nothing happens in ~150px instead of ~700.
+     A midpoint at 46% spends that ramp over more pixels, so the colour arrives
+     at the edge already gone. Desktop keeps the original.
+     THE SHAPE IS THE OTHER HALF. The lobe is sized in percentages of the
+     surface, so it inherits the viewport's PROPORTION as well as its scale: at
+     1440x900 the 92%/68% ellipse is 1325 wide by 612 tall and reads as a broad
+     wash, while at 390x932 the identical rule is 359 by 634 — taller than it is
+     wide, which is the narrow column the owner saw. On a phone it therefore
+     runs WIDER THAN THE SCREEN (240%) and much shorter (44%), centred rather
+     than pushed left, so what the viewport actually shows is the broad middle
+     of the ellipse with both edges already faded — the desktop reading, on a
+     surface the wrong shape to produce it by itself. */
   --table-clouds:
     var(--duel-clouds),
     radial-gradient(closest-side,rgba(126,60,255,.30),transparent 70%) 62% 42%/52% 40% no-repeat;
@@ -197,3 +214,18 @@
   --seal-snap:1600ms;    /* a ward's clasp fails and the line unwinds off the column */
 }
 #kbroot,#kbroot *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+
+/* #kbroot, NOT :where(#kbroot): the base tokens live on a bare #kbroot (0,1,0)
+   and a :where() override is (0,0,0), so it loses on specificity no matter how
+   much later it appears. Written the zero-specificity way first, this whole
+   block silently did nothing. */
+@media (max-width:520px){
+  #kbroot{
+    --duel-clouds-still:
+      radial-gradient(closest-side,
+        rgba(var(--p2-rgb),var(--home-p2-a)),
+        rgba(var(--p2-rgb),calc(var(--home-p2-a)*.42)) 46%,
+        transparent 100%) 50% 15%/240% 44% no-repeat,
+      radial-gradient(closest-side,rgba(var(--p1-rgb),var(--home-p1-a)),transparent 100%) 80% 86%/80% 62% no-repeat;
+  }
+}

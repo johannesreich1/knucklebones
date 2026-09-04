@@ -73,6 +73,12 @@
    reads optically lighter (irradiation), so the loudest button on Home was the
    one whose label looked thinnest. Owner report, 2026-09-04: "the main button
    right now isnt 700 is it? looks like the others". It was not; it is now. */
+/* THE PLAY DOORS SPEAK LOUDER THAN THE MENU (owner call, 2026-09-04). Every
+   .btn read 13.5px, which made "start a game" the same size as "settings". The
+   three that actually start one — Home's ranked CTA, NEXT DUEL on the result,
+   and the two offline practice doors — go to 16px and carry the die. The rest
+   of the menu keeps 13.5: this is a hierarchy of ACTION, not of decoration. */
+:where(#kbroot) .btn:is(.primary,.play-cta){font-size:16px}
 :where(#kbroot) .btn.primary{position:relative;isolation:isolate;font-weight:var(--fw-max);
   --primary-glint-cycle:5.2s;--primary-glint-alpha:.15;
   background:linear-gradient(100deg,var(--p1),var(--p1-hi) 40%,var(--p2));color:#04101a;border:none;
