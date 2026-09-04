@@ -199,10 +199,20 @@ export function cachedLadderCurveVersion(): LadderCurveVersion | null {
     ?? null;
 }
 
-/** The server-owned curve contract; an absent or unreadable cache remains v1
- * so offline presentation never renders v2 points or unlocks speculatively. */
+/** The server-owned curve contract. An absent or unreadable cache answers v2,
+ * because v2 is the only curve that exists: production activated it 2026-09-04
+ * and the activation is irreversible. This used to answer v1 so that offline
+ * presentation never rendered v2 points or unlocks speculatively — sound while
+ * v1 could still be live, and wrong the moment it could not, because there is
+ * nothing left to be cautious ON BEHALF OF. It reached a player: someone who
+ * never creates an account never authenticates at boot (boot.ts returns before
+ * the verification) and never enters ranked (which would confirm it), so
+ * nothing ever confirms the curve and their offline mode picker offered Limited
+ * — a GOLD unlock under v2 — while withholding Bounty, which STONE grants. A
+ * genuinely cached v1 still reads v1; only the ABSENCE of a cache changed
+ * meaning, and signed-out boot still makes no request. */
 export function confirmedLadderCurveVersion(): LadderCurveVersion {
-  return cachedLadderCurveVersion() ?? 1;
+  return cachedLadderCurveVersion() ?? 2;
 }
 
 /** Public ladder points survive sign-out independently from account-owned

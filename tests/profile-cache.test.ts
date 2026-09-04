@@ -99,7 +99,11 @@ const refreshedStanding = { ...snapshot.standing, points: 500, rank: 5, percenti
 cacheStanding(accountId, refreshedStanding, false);
 assert.deepEqual(readProfileCache(), {
   accountId: normalized, nickname: 'CachedPlayer', rating: 500,
-  avatar: 'die:5:cy', rank: 5, apex: false, curveVersion: 1,
+  /* 2, because nothing in this test confirms a curve and an unconfirmed client
+     now answers v2 — the only curve production has (progression-status-cache.ts).
+     The snapshot still records WHICH curve classified it, which is the point of
+     the field; only the value a clean device starts from has moved. */
+  avatar: 'die:5:cy', rank: 5, apex: false, curveVersion: 2,
 });
 assert.deepEqual(readAccountProfileCache()?.standing, refreshedStanding,
   'a standing confirmed outside Profile left its complete fallback stale');

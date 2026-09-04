@@ -21,8 +21,18 @@ const values = new Map<string, string>();
 
 const account = '11111111-2222-4333-8444-555555555555';
 const other = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
-assert.equal(confirmedLadderCurveVersion(), 1,
-  'an absent server status speculated about the v2 curve');
+/* AN UNCONFIRMED CLIENT ASSUMES THE ONLY CURVE THERE IS. This asserted 1, and
+   that was right while v1 could still be the live contract: answering 2 without
+   proof would have shown v2 points and unlocks to a player the server had not
+   yet remapped. Production activated v2 on 2026-09-04 and the activation cannot
+   be rolled back, so there is no longer a v1 to fail toward — and failing to it
+   is not caution any more, it is a wrong answer. It reached a player: someone
+   who never creates an account never authenticates at boot and never enters
+   ranked, so nothing ever confirms the curve, and their offline mode picker
+   offered Limited (a GOLD unlock under v2) while withholding Bounty (which
+   STONE grants). Signed-out boot stays offline; this costs no request. */
+assert.equal(confirmedLadderCurveVersion(), 2,
+  'an unconfirmed client fell back to the retired v1 curve');
 assert.equal(confirmedRankedOutcomeEntitlements(account), null);
 
 const v2 = progressionStatusFromRpc({
@@ -184,6 +194,11 @@ values.set(RANKED_CURVE_CACHE_KEY, JSON.stringify({
   confirmedAt: 456,
   curveVersion: 3,
 }));
-assert.equal(confirmedLadderCurveVersion(), 1,
-  'a malformed public curve did not fail closed to v1 on a clean device');
+/* A malformed cache is not a v1 reading, it is NO reading — cachedLadderCurve-
+   Version rejects the 3 above and answers null — so this lands on the same
+   default as a clean device, and for the same reason: v2 is the only curve
+   production has. What the check still proves is that a nonsense value is
+   refused rather than believed; a cached 3 must never classify anything. */
+assert.equal(confirmedLadderCurveVersion(), 2,
+  'a malformed public curve was believed instead of discarded');
 console.log(JSON.stringify({ problems: [] }));
