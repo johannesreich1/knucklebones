@@ -166,6 +166,7 @@ await page.waitForTimeout(60);
 const cleanup = await page.evaluate(() => {
   const root = window.__bh.root();
   return { classes: root.className,
+    wordmarkFilter: getComputedStyle(window.__bh.wordmark()).filter,
     varsLeft: ['--boot-dx', '--boot-dy', '--boot-scale'].filter((n) => root.style.getPropertyValue(n)) };
 });
 /* HOME'S GROUND, measured on its own. Home's content is hidden for this: the
@@ -308,5 +309,17 @@ check(out.settled.markShown === 1 && out.settled.markScale === 1 && out.settled.
 /* and the beat leaves nothing behind: a stale class would strand the screen */
 check(!/booting|boot-run/.test(out.cleanup.classes) && out.cleanup.varsLeft.length === 0,
   'the handoff left its classes or its measured vars on the root', out.cleanup);
+/* AND THE WORDMARK STAYS UNFILTERED ONCE THE CLASSES COME OFF. The check above
+   at the launch frame only proved the glow was gone WHILE the type travelled;
+   `#kbroot.booting .hero h1{filter:none}` is scoped to that class, so removing
+   it handed the drop-shadow straight back. Johannes reported the result from a
+   device: a glow around KNUCKLEBONES that is there after the intro settles and
+   absent when you return to Home from another view, because only the first
+   path leaves a filter on an element that also clips a gradient to its glyphs.
+   Home's title is settled, not static, so it is asserted in its settled state. */
+check(out.cleanup.wordmarkFilter === 'none',
+  'the wordmark carries a filter once the handoff classes come off — the glow '
+  + 'returns to a gradient-clipped title and Home reads differently on first '
+  + 'load than on every return to it', out.cleanup);
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));

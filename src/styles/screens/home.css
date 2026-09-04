@@ -118,19 +118,16 @@
   filter:grayscale(1)}
 #kbroot.booting .hero>:not(#homeMark),
 #kbroot.booting #ovStart>:not(.hero){opacity:0;transform:translateY(10px)}
-/* AND THE WORDMARK DROPS ITS GLOW WHILE IT TRAVELS. .ov h1 paints its letters
-   by clipping a gradient to the glyphs and carries a drop-shadow for the bloom;
-   overlays.css states the rule beside that filter and screens/result.css
-   explains it, having paid for it once already on #endTitle: a filter on an
-   element that also carries -webkit-background-clip:text makes SAFARI ABANDON
-   THE CLIP and paint the gradient as a solid rectangle. It is safe on a static
-   title, which is why every page keeps it — and this handoff made THIS title
-   non-static. That is the hard-edged box reported around the hero type, seen
-   on first load only and gone after leaving the screen and returning, because
-   leaving is what finally repainted the h1 with nothing animating on it.
-   The glow returns when the classes come off, ~200ms after the type has
-   settled, so nothing is moving when it does. */
-#kbroot.booting .hero h1{filter:none}
+/* The wordmark needs no rule here any more. It used to drop a glow only WHILE
+   it travelled: .ov h1 carried a 22px drop-shadow, and a filter on an element
+   that also clips a gradient to its glyphs makes Safari abandon the clip and
+   paint a solid rectangle, so this file suppressed it for the handoff. Scoping
+   the fix to .booting fixed only the frames the class was on — the bloom came
+   straight back when it came off, which is the glow Johannes reported: present
+   after the intro settles, absent when you return to Home, because only the
+   first path ends with a filter on that title. The drop-shadow is gone from
+   overlays.css entirely now, so there is nothing left to suppress and no state
+   in which Home's type and a returning Home's type disagree. */
 /* .45,.6,.25,1 covers 15/43/75/93% at the tenth, quarter, 40% and 60% marks —
    it starts, it moves, it settles. The study's first curve put 49% of the
    travel into the first 10% and read as a teleport followed by a drift. */

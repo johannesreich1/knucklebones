@@ -63,8 +63,8 @@
     },
     {
       "path": "src/styles/components/overlays.css",
-      "bytes": 12786,
-      "sha256": "cd0723b661ea04c680d38271c9ec26b755acebf73b5884b69bc6c4c49ad9bfe1"
+      "bytes": 13440,
+      "sha256": "ef97f5c32885f78f180d5a1a0160690e697ef9ae417c378ce8fe0c98f7fe3883"
     },
     {
       "path": "src/styles/components/picker.css",
@@ -188,8 +188,8 @@
     },
     {
       "path": "src/styles/screens/home.css",
-      "bytes": 16990,
-      "sha256": "afce3e6f63c68bc63b0f945ca8f2d906bce76c7a2ebf9130b0f8185964b8d9e2"
+      "bytes": 16824,
+      "sha256": "0f1cada7de785ff34eaae149a1f7342a293acf4885c2b0e6a9f2265071c6f429"
     },
     {
       "path": "src/styles/screens/learn-settings.css",
