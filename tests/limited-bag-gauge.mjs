@@ -177,7 +177,20 @@ try {
   out.ladder = ladder;
   check(ladder.length === 5 && ladder.every((r) => Math.abs(r.liveH - r.want) <= 0.6),
     'the gutter column is not the remaining fraction of the bag', ladder);
-  check(ladder.every((r) => r.liveW === 2 && r.liveLeft === '-10px' && r.trackH === r.bagH),
+  /* trackH and bagH are the SAME EDGE read two ways — the track is height:100%
+     of the bag — so this asks whether the track spans the bag, not whether two
+     independent numbers agree. Exact equality answered that only while the bag
+     happened to be a whole number of pixels tall. It is not any more: the bag
+     measures the shells AND the number under them, so once the app pinned its
+     line box (foundations/typeface.css) the bag became 57.52 tall and a
+     percentage of it resolved to 57.5. A hundredth of a pixel is not a track
+     that has come off its bag. primary-cta-glint.mjs settled this argument for
+     the repo already, on an icon that measured 25.000030517578125: the float is
+     not the defect, asking a sub-pixel layout engine for exact equality is.
+     Half a pixel is far below any gap a player could see and far above what
+     percentage resolution costs. */
+  check(ladder.every((r) => r.liveW === 2 && r.liveLeft === '-10px'
+    && Math.abs(r.trackH - r.bagH) <= .5),
     'the gutter is not a 2px column in its own lane beside the bag, full-height track behind it', ladder);
   /* the whole point: from six down the shells have stopped saying anything
      different, and the column is the only thing still moving */
