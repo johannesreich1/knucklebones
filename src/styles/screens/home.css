@@ -20,12 +20,13 @@
    die's ink stops 9.6px above the box, so 4 + the .hero gap of 4 + that 9.6 is
    ~18px of VISIBLE air over the eyebrow, and the hero measures the 172px the
    two dice and the VS used to.
-   The glow is the second. The arrangement clips its own light at the 120-unit
-   box (.split{overflow:hidden}), so the die arrives with its 0 0 34px shadow
-   cut off at the edge — a flat plate with a hairline. These two drop-shadows
-   put it back from outside, in the duel pair's live hues, at the radius the
-   old duel dice used. Delete them and compare before arguing with the number:
-   it is the whole difference between a mark and a sticker. */
+   The light is the second, and it is the DIE'S OWN. The 120-unit arrangement
+   clips its light at its box (.split{overflow:hidden}), which on the open page
+   cut the 0 0 34px shadow into a hard square; .splitmark .split{overflow:visible}
+   in components/split-mark.css lifts that clip, so the mark keeps the glow it
+   was drawn with. It does NOT wear a second one on top — this file used to add
+   two 26px drop-shadows on #homeMark and the owner removed them from a pair of
+   device screenshots (see the #homeMark rule below for the measurement). */
 /* HOME WEARS THE TABLE'S GROUND — it does not go transparent to reach it.
    The flat aurora film every other overlay paints was the reported problem:
    the design board has always shown Home over the app's richer two-hue ground.
@@ -71,10 +72,11 @@
    is why it must be indistinguishable from the frame the OS just showed.
    .boot-run is the arrival: 340ms for the mark, the stack 180ms behind it.
 
-   The filter lists are the same length in both states ON PURPOSE. grayscale and
-   opacity are identity at the end, and the two drop-shadows are transparent at
-   the start, so the whole list interpolates — swap in a shorter list and the
-   colour snaps instead of arriving, which is the one thing this beat is for.
+   The filter is grayscale ALONE, in both states, so the list interpolates
+   rather than snapping — a shorter list on one side and the colour would jump
+   instead of arriving, which is the one thing this beat exists for. There is
+   nothing else in it: the two drop-shadows that used to ride along were removed
+   with the hero's added glow, which is also why nothing blurred moves here.
 
    opacity(.62), NOT brightness(.62): it is the value tools/splash.mjs paints
    the launch mark at, and it is the only one that works here. The die's halves
@@ -82,22 +84,38 @@
    disappear — the whole large-scale half of the travel played invisibly and
    the mark seemed to pop into existence at 255ms. Caught by scrubbing the
    transition, not by reading it. */
-/* WHAT MOVES AND WHAT DOES NOT. The first version transitioned a filter
-   holding two 26px drop-shadows while the element scaled 96 -> 196px: on a 3x
-   phone that re-blurs a ~590px surface every frame, which is what "laggy" was.
-   Now the only animated properties on the mark are transform and opacity, both
-   of which the compositor can run without repainting, and will-change promotes
-   it so the scale is a texture transform rather than a re-raster.
-   The colour arrives as a grayscale() on #homeMark — a colour matrix, no blur —
-   placed AFTER the drop-shadows so the glow greys with the die and the frame
-   where a grey die wears a coloured halo can never render. The shadow's own
-   radius and colour never change, so nothing re-blurs on their account. */
-#kbroot.booting .hero .splitmark{
-  will-change:transform,opacity;opacity:.62;
-  transform:translate(var(--boot-dx,0px),var(--boot-dy,0px)) scale(var(--boot-scale,1))}
+/* WHAT MOVES AND WHAT DOES NOT — AND IT ALL MOVES ON ONE ELEMENT.
+   The first version transitioned a filter holding two 26px drop-shadows while
+   the element scaled 96 -> 196px, re-blurring a growing surface every frame;
+   that was "laggy". The second moved the filter to the PARENT and animated only
+   transform and opacity on the child. That left a PROMOTED CHILD INSIDE A
+   FILTERED PARENT — the same shape as the clipped-title hazard two rules below,
+   because a parent's filter is a function of whatever its children currently
+   render, so the scaling child and the parent's raster must agree every frame.
+   Johannes reported an extra glow on the mark once the beat settles on first
+   load, clearing as soon as another view is opened and returned to: the same
+   "gone after a repaint" signature as the title box.
+   IT DOES NOT REPRODUCE OFF DEVICE. Headless WebKit and Chromium both give
+   computed styles and a clipped screenshot of the mark that are identical after
+   boot and after returning. So this is A HAZARD REMOVED, NOT A DEMONSTRATED
+   FIX, and it is written down that way deliberately — the mechanism above is
+   the reason to prefer this arrangement, not evidence that it cured the report.
+   An earlier draft of this comment claimed the glow now scales with the mark;
+   it does not. Measured, the glow's reach stays ~46px per side in absolute
+   pixels whichever element carries the transform, so that claim was removed
+   rather than shipped.
+   WHAT IS VERIFIED: the settled hero is pixel-identical across this change
+   (0 of 55,696 subpixels differ), so nothing players actually sit and look at
+   moved, and #homeMark now owns the whole beat with no transformed child in it.
+   The colour arrives as a grayscale(), the only filter left on this element now
+   that the added glow is gone — so the beat costs a colour matrix and a
+   compositor transform, and nothing in it is blurred. #homeMark's box is
+   concentric with the mark's, so the seat boot-handoff.ts measures on
+   .splitmark still centres the ink. */
 #kbroot.booting .hero #homeMark{
-  filter:drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))
-    grayscale(1)}
+  will-change:transform,opacity,filter;opacity:.62;
+  transform:translate(var(--boot-dx,0px),var(--boot-dy,0px)) scale(var(--boot-scale,1));
+  filter:grayscale(1)}
 #kbroot.booting .hero>:not(#homeMark),
 #kbroot.booting #ovStart>:not(.hero){opacity:0;transform:translateY(10px)}
 /* AND THE WORDMARK DROPS ITS GLOW WHILE IT TRAVELS. .ov h1 paints its letters
@@ -116,13 +134,12 @@
 /* .45,.6,.25,1 covers 15/43/75/93% at the tenth, quarter, 40% and 60% marks —
    it starts, it moves, it settles. The study's first curve put 49% of the
    travel into the first 10% and read as a teleport followed by a drift. */
-#kbroot.boot-run .hero .splitmark{
-  transition:transform 340ms cubic-bezier(.45,.6,.25,1),opacity 340ms cubic-bezier(.4,0,.2,1);
-  transform:none;opacity:1}
 #kbroot.boot-run .hero #homeMark{
-  transition:filter 340ms cubic-bezier(.4,0,.2,1);
-  filter:drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))
-    grayscale(0)}
+  transition:transform 340ms cubic-bezier(.45,.6,.25,1),
+             opacity 340ms cubic-bezier(.4,0,.2,1),
+             filter 340ms cubic-bezier(.4,0,.2,1);
+  transform:none;opacity:1;
+  filter:grayscale(0)}
 #kbroot.boot-run .hero>:not(#homeMark),
 #kbroot.boot-run #ovStart>:not(.hero){
   transition:opacity 320ms cubic-bezier(.32,.72,.28,1) 180ms,
@@ -131,7 +148,6 @@
 /* reduced motion never reaches here — boot-handoff.ts declines and Home simply
    paints settled — but a stale class must not be able to strand the screen. */
 @media (prefers-reduced-motion:reduce){
-  #kbroot.booting .hero .splitmark,
   #kbroot.booting .hero #homeMark,
   #kbroot.booting .hero>:not(#homeMark),
   #kbroot.booting #ovStart>:not(.hero){transform:none;filter:none;opacity:1}
@@ -163,17 +179,25 @@
 :where(#kbroot) .hero{gap:6px}
 :where(#kbroot) .hero .eyebrow{align-self:stretch;text-align:left;letter-spacing:.28em}
 :where(#kbroot) .hero .sub2{align-self:stretch;text-align:right;font-size:9px;margin-right:-.28em}
-/* THE GLOW LIVES INSIDE THE ELEMENT BOX. It used to sit on .splitmark, a 96px
-   element with a 26px shadow — so 26px of light fell OUTSIDE the box that owns
-   it. Nothing clips that on desktop, and the luminance profile here ramps
-   smoothly through it, but a promoted compositor layer on iOS can clip filter
-   output to its own bounds, and the glow was reported cut at the top on device.
-   Carrying it on #homeMark with 30px of padding puts every lit pixel inside the
-   element, so there is no bound left to clip against. The negative margin takes
-   the padding back out of layout, so the hero measures exactly what it did. */
-:where(#kbroot) .hero #homeMark{display:block;line-height:0;box-sizing:content-box;
-  padding:30px;margin:-30px -30px calc(2px - 30px);
-  filter:drop-shadow(0 0 26px rgba(var(--p1-rgb),.22)) drop-shadow(0 0 26px rgba(var(--p2-rgb),.22))}
+/* THE MARK WEARS NO ADDED GLOW ON HOME (owner call, 2026-09-04, decided from a
+   pair of device screenshots). #homeMark used to carry two 26px drop-shadows in
+   the duel pair's hues. Measured off those two shots, they are a broad, soft
+   halo that lifts the whole hero by 9-12 luma and does not fall away until
+   ~320px out, on a mark 230px wide — Johannes picked the frame WITHOUT it.
+   The argument that used to sit here was mine, not a measurement: it claimed
+   the shadows were the whole difference between a mark and a sticker. The die
+   already carries its own light — the lit seam and --duel-die-outer-glow, which
+   .splitmark .split{overflow:visible} deliberately leaves unclipped — so what
+   these added was a second, much wider bloom on top of that one.
+   IT ALSO SETTLES THE LAUNCH SEAM FOR FREE. The launch image has essentially no
+   glow: light dies within ~40px of a 497px die there, against 46.5px on a 96px
+   die here. Those two frames are meant to be the same picture, and with the
+   shadows gone they are, instead of the mark blooming the instant the webview
+   takes the screen. The padding and its cancelling negative margin went with
+   them: both existed only to keep filter output inside this element's bounds,
+   and there is no filter output left. margin-bottom keeps the 2px the hero
+   measured with. */
+:where(#kbroot) .hero #homeMark{display:block;line-height:0;margin-bottom:2px}
 :where(#kbroot) .sub2{font-size:10px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase;
   text-align:center;margin-bottom:12px}
 /* clear air between the hero and the plate + play pair: the two blocks are

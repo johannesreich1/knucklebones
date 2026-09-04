@@ -188,8 +188,8 @@
     },
     {
       "path": "src/styles/screens/home.css",
-      "bytes": 15250,
-      "sha256": "ccc4b7090bd770d0b21e4c843584f6a4299d0e00be0adba5d1eec545869d1165"
+      "bytes": 16990,
+      "sha256": "afce3e6f63c68bc63b0f945ca8f2d906bce76c7a2ebf9130b0f8185964b8d9e2"
     },
     {
       "path": "src/styles/screens/learn-settings.css",

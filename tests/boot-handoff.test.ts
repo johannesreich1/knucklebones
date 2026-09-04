@@ -34,6 +34,7 @@ interface BootHandoffProbe {
   mark(): HTMLElement;
   owner(): HTMLElement;
   eyebrow(): HTMLElement;
+  scales(): Record<string, number>;
   root(): HTMLElement;
   home(): HTMLElement;
   wordmark(): HTMLElement;
@@ -65,6 +66,17 @@ const helpers = `
     eyebrow() { return document.querySelector('.hero .eyebrow'); },
     root() { return document.querySelector('#kbroot'); },
     home() { return document.querySelector('#ovStart'); },
+    /* .splitmark .split carries a STATIC layout scale (96/120) of its own, so
+       "which element is transformed" cannot be asked of one frame — it is
+       answered by which element's transform CHANGES when the beat is staged. */
+    scales() {
+      const out = {};
+      for (const sel of ['.hero #homeMark', '.hero .splitmark', '.hero .splitmark .split']) {
+        const el = document.querySelector(sel);
+        if (el) out[sel] = window.__bh.scale(el);
+      }
+      return out;
+    },
     wordmark() { return document.querySelector('.hero h1'); },
   };
 `;
@@ -82,6 +94,7 @@ const settled = await page.evaluate(() => ({
   markShown: window.__bh.shown(window.__bh.mark()),
   markScale: window.__bh.scale(window.__bh.mark()),
   eyebrowShown: window.__bh.shown(window.__bh.eyebrow()),
+  scales: window.__bh.scales(),
 }));
 
 const glow = await page.evaluate(() => {
@@ -106,7 +119,9 @@ await page.waitForTimeout(60);
 const launch = await page.evaluate(() => ({
   markShown: window.__bh.shown(window.__bh.mark()),
   markScale: window.__bh.scale(window.__bh.mark()),
+  ownerScale: window.__bh.scale(window.__bh.owner()),
   markFilter: getComputedStyle(window.__bh.mark()).filter,
+  scales: window.__bh.scales(),
   eyebrowShown: window.__bh.shown(window.__bh.eyebrow()),
   ownerGrey: /grayscale\(1\)/.test(getComputedStyle(window.__bh.owner()).filter),
   wordmarkFilter: getComputedStyle(window.__bh.wordmark()).filter,
@@ -139,7 +154,7 @@ await page.waitForTimeout(60);
 const run = await page.evaluate(() => ({
   markTransitions: getComputedStyle(window.__bh.mark()).transitionProperty,
   ownerTransitions: getComputedStyle(window.__bh.owner()).transitionProperty,
-  markWillChange: getComputedStyle(window.__bh.mark()).willChange,
+  ownerWillChange: getComputedStyle(window.__bh.owner()).willChange,
 }));
 
 await page.evaluate(() => {
@@ -192,8 +207,21 @@ check(out.painted.brightest - out.painted.ground >= 40,
   'the launch frame paints no visible mark — it is on screen but not legible '
   + 'against the ground (a filter can hide it while opacity still reads 1)',
   out.painted);
-check(out.launch.markScale > 1.5,
+check(out.launch.ownerScale > 1.5,
   'the launch frame does not scale the mark up to the storyboard\'s size', out.launch);
+/* THE ELEMENT THAT MOVES MUST BE THE ELEMENT THAT FILTERS. A parent's filter is
+   recomputed from what its children render, so a transformed child inside a
+   filtered parent makes the two disagree every frame — the arrangement behind
+   the extra glow reported on the mark after the beat settles, and the same
+   shape as the clipped-title bug. .splitmark .split carries a static layout
+   scale of its own and is excluded by being unaffected by the boot vars; what
+   this forbids is the BOOT transform landing anywhere but on #homeMark. */
+const moved = Object.keys(out.launch.scales)
+  .filter((sel) => out.launch.scales[sel] !== out.settled.scales[sel]);
+check(JSON.stringify(moved) === JSON.stringify(['.hero #homeMark']),
+  'the boot transform is not on the element that owns the glow — a filtered '
+  + 'parent recomputing around a scaling child is what this beat must not be',
+  { moved, settled: out.settled.scales, launch: out.launch.scales });
 /* The fade is the SPLASH's: tools/splash.mjs paints the launch mark at
    opacity .62, and the webview's first frame has to be the same picture. An
    earlier version darkened with brightness(.62) instead — the mark stayed
@@ -233,20 +261,32 @@ check(out.fits.scrollW <= out.fits.clientW && out.fits.scrollH <= out.fits.clien
 
 /* 3 — only compositor properties on the mark. A filter here re-blurs a scaling
    surface every frame; the colour belongs to the parent's colour matrix. */
-const markProps = out.run.markTransitions.split(',').map((p) => p.trim()).sort();
-check(JSON.stringify(markProps) === JSON.stringify(['opacity', 'transform']),
-  'the mark must animate transform and opacity ONLY — a filter here repaints '
-  + 'a blurred, scaling surface every frame', out.run);
-check(/transform/.test(out.run.markWillChange),
-  'the mark must be promoted for the scale, or it re-rasterises per frame', out.run);
-check(out.run.ownerTransitions.includes('filter'),
-  'the colour must arrive on the mark\'s owner, as a filter it can afford', out.run);
+check(out.run.markTransitions === 'all' || out.run.markTransitions === 'none'
+  || !/transform|opacity|filter/.test(out.run.markTransitions),
+  'the mark itself animates during the handoff — the whole beat belongs to '
+  + '#homeMark, so that the glow and the movement are one layer', out.run);
+const ownerProps = out.run.ownerTransitions.split(',').map((p) => p.trim()).sort();
+check(JSON.stringify(ownerProps) === JSON.stringify(['filter', 'opacity', 'transform']),
+  'the owner must animate transform, opacity and filter together — split across '
+  + 'two elements, the filter is re-derived from a scaling child every frame', out.run);
+check(/transform/.test(out.run.ownerWillChange),
+  'the owner must be promoted for the scale, or it re-rasterises per frame', out.run);
 
-/* 4 — the glow inside its own element, so a promoted layer cannot clip it. */
-const widest = Math.max(0, ...out.glow.blurs);
-check(out.glow.blurs.length > 0 && out.glow.ownerPadding >= widest,
-  'the glow reaches outside the element that owns it, where a compositor layer '
-  + 'can clip it — pad the owner by at least the shadow\'s blur', out.glow);
+/* 4 — NO ADDED GLOW ON THE HOME MARK. This assertion used to say the opposite:
+   it required a drop-shadow and demanded the owner be padded by at least its
+   blur, because the glow was being clipped on device. Johannes settled it from
+   two device screenshots on 2026-09-04 and chose the frame WITHOUT the halo, so
+   the shadows are gone and the padding that only ever existed to contain them
+   went with them. Measured off those shots, the rejected frame ran 8 luma
+   hotter than the chosen one right around the die.
+   It is also what makes the launch seam honest: the launch image carries almost
+   no light outside its die (gone within ~40px of a 497px die), and the first
+   webview frame is supposed to BE that picture. A glow here is the mark
+   blooming the instant the webview takes the screen. */
+check(out.glow.blurs.length === 0 && out.glow.filter === 'none',
+  'the Home mark has grown an added glow again — the owner chose the frame '
+  + 'without one, and the launch image this continues carries none either',
+  out.glow);
 
 /* 7 — THEIRS ON TOP, YOURS BELOW AND QUIETER (owner call). This is asserted in
    painted pixels rather than in the token, because the token is exactly where
