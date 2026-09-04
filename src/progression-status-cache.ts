@@ -216,8 +216,11 @@ export function confirmedLadderCurveVersion(): LadderCurveVersion {
 }
 
 /** Public ladder points survive sign-out independently from account-owned
- * outcomes. This lets offline boot classify an already-confirmed v2 rating
- * while a fresh device still fails closed to v1. */
+ * outcomes, so offline boot can classify an already-confirmed rating. A fresh
+ * device no longer falls back to v1 — see confirmedLadderCurveVersion above;
+ * v2 is the only curve production runs. Writing v1 here is still meaningful and
+ * still honoured: it records a client that has actually READ an old deployment,
+ * which is the one case play-sync's legacy column fallback exists for. */
 export function cacheConfirmedLadderCurveVersion(
   curveVersion: LadderCurveVersion,
   confirmedAt: number = Date.now(),

@@ -15,6 +15,7 @@ import {
   createOnlineSynchronizer,
 } from '../src/online/play/play-sync.ts';
 import type { OnlineState } from '../src/online/play/play-types.ts';
+import { cacheConfirmedLadderCurveVersion } from '../src/progression-status-cache.ts';
 import { S } from '../src/state.ts';
 import { installFakeDom } from './support/fake-dom.ts';
 import { emitReport } from './support/emit-report.mjs';
@@ -379,7 +380,15 @@ check(appliedTerminal?.scoring_version === 2
   && appliedTerminal.weekly_rotation_id === '2026-W36',
   'terminal fallback dropped v2 score, curve, or entry metadata', appliedTerminal);
 
-/* Only the exact old-schema missing-column response retries legacy fields. */
+/* Only the exact old-schema missing-column response retries legacy fields —
+   AND only while the client has not confirmed curve v2, because a server
+   missing the v2 columns cannot exist once it has (play-sync.ts). An
+   unconfirmed client answers v2 now that v2 is the only curve production runs,
+   so reaching this path at all means holding a genuinely cached v1, which is
+   the situation it describes: an old deployment, seen by a client that has
+   read it. Without this the fallback is unreachable and the retry never
+   happens — which is correct behaviour and an untestable assertion. */
+cacheConfirmedLadderCurveVersion(1, 1, false);
 online = onlineState({ actionProtocol: false });
 const beforeLegacySelects = matchSelects.length;
 routes = {

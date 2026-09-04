@@ -68,6 +68,21 @@ export function installFakeDom(): void {
     elementFromPoint: () => null,
     visibilityState: 'visible', hidden: false,
   };
+  /* A REAL ENOUGH localStorage. Several modules read one — the progression and
+     curve caches above all — and without it every write silently answers false
+     and every read answers null, which reads in a test as "the default", not as
+     "the store is missing". play-sync could not put its client on curve v1 to
+     exercise the old-schema fallback until this existed. In-memory and rebuilt
+     per install, so suites cannot leak state into each other. */
+  const cells = new Map<string, string>();
+  (globalThis as any).localStorage = {
+    get length() { return cells.size; },
+    key: (index: number) => [...cells.keys()][index] ?? null,
+    getItem: (key: string) => (cells.has(key) ? cells.get(key)! : null),
+    setItem: (key: string, value: string) => { cells.set(String(key), String(value)); },
+    removeItem: (key: string) => { cells.delete(key); },
+    clear: () => { cells.clear(); },
+  };
   (globalThis as any).getComputedStyle = () => ({
     getPropertyValue: () => '', borderRadius: '',
   });
