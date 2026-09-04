@@ -193,8 +193,8 @@
     },
     {
       "path": "src/styles/screens/home.css",
-      "bytes": 18624,
-      "sha256": "98015859e0083099883bc0bd577e08eb72033dffd2c2913912887fb61e934909"
+      "bytes": 19297,
+      "sha256": "d1451fff553ee76bdca7f59d94a186b706ff47978188790e325ac4d5bb79279c"
     },
     {
       "path": "src/styles/screens/learn-settings.css",

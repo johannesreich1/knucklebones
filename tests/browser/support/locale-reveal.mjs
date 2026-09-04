@@ -1,9 +1,18 @@
 // Locale-owned reveal contracts shared by the broad rune-deal scenarios.
 // Keep registry traversal, live repaint observations, and translated-copy
 // expectations here so reveal stories do not encode a particular locale order.
-import { LOCALE_REGISTRY, RESOURCES } from '../../../src/i18n/index.ts';
+//
+// THE PICKER'S ORDER, NOT THE REGISTRY'S. Every prediction below is "what does
+// #languageNext land on next", so it has to read the list that control walks.
+// Those were the same list until the stepper was sorted alphabetically by the
+// name a player reads (i18n/locale.ts) and the registry kept its own order
+// with English at the front; deriving from the registry then predicted a
+// locale the button never visits, which is the whole point this file exists to
+// avoid. Importing LOCALE_PICKER_ORDER keeps that promise: the expectation
+// follows the control, wherever the control goes next.
+import { LOCALE_PICKER_ORDER, RESOURCES } from '../../../src/i18n/index.ts';
 
-const LOCALE_IDS = LOCALE_REGISTRY.map(({ id }) => id);
+const LOCALE_IDS = LOCALE_PICKER_ORDER;
 
 export const gameCopyFor = (locale) => RESOURCES[locale].game;
 
