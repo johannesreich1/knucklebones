@@ -132,7 +132,16 @@ export async function runOfflineRuneTrialScenarios({ page, out, check, t }) {
      Install this verified snapshot after that asynchronous boot check, then
      enter practice exactly as an offline player with a retained account does. */
   await page.reload(); await page.waitForTimeout(400);
-  await page.evaluate(([key, account]) => {
+  /* AN IVORY PLAYER, DESCRIBED THE WAY CURVE V2 DESCRIBES ONE. The pool tier
+     alone used to be enough, because under v1 the tier WAS the entitlement —
+     legacyRankedOutcomeEntitlementsForTier read it directly. v2 does not work
+     that way and says so (local-options.ts): exact grants are durable and can
+     be grandfathered into a shape no tier represents, so without the
+     account-owned list a client exposes clean STONE no matter what tier it has
+     cached. Writing only poolTier here therefore described a player who cannot
+     exist under the live curve, and Rune Trial locked. The progression snapshot
+     below is that account-owned fact. */
+  await page.evaluate(([key, account, statusKey]) => {
     localStorage.setItem(key, JSON.stringify({
       version: 1,
       accountId: account,
@@ -140,7 +149,20 @@ export async function runOfflineRuneTrialScenarios({ page, out, check, t }) {
       collected: ['fate', 'nudge', 'ward'],
       poolTier: 'ivory',
     }));
-  }, [CACHE_KEY, ACCOUNT]);
+    localStorage.setItem(statusKey, JSON.stringify({
+      version: 1,
+      accountId: account,
+      confirmedAt: 123,
+      curveVersion: 2,
+      scoringVersion: 2,
+      admissionPaused: false,
+      outcomes: ['classic', 'singlestrike', 'colshield', 'bounty', 'rowmult', 'rune_trial'],
+      weeklyUnlocked: false,
+      pendingBotDebuts: [],
+      neonMedalSeasons: [],
+      weekly: null,
+    }));
+  }, [CACHE_KEY, ACCOUNT, 'knucklebones.progression.v1']);
   await page.tap('#btnVsCpu'); await page.waitForTimeout(150);
   out.runeLocksCollected = await practiceSnapshot(page);
   const cpuEnabled = new Set(out.runeLocksCollected.runes.filter(({ disabled }) => !disabled)
