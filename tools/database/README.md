@@ -21,7 +21,16 @@ hash-pinned allow-list.
 
 ## Progression-v2 owner cutover
 
-Progression v2 deliberately uses the normal linked history/dry-run/apply path:
+> **EXECUTED 2026-09-04. Production is on curve v2**
+> (`public.active_ranked_curve_version()` = 2); 205 profiles and 203 season rows
+> were remapped. The sequence below is kept as the record of what was run and as
+> the mechanism to read when repairing forward — it is NOT a pending task, and
+> it cannot be replayed: the activation is irreversible and
+> `private.activate_progression_v2` rechecks the contract and aborts on a curve
+> that is already 2. Legacy v1 point-edit, bot-seed/refresh and wipe helpers now
+> refuse by design.
+
+Progression v2 deliberately used the normal linked history/dry-run/apply path:
 the migration is a single forward-only suffix after the pinned live 61-file
 ledger, while the irreversible numeric remap lives behind a separate
 database-owner-only function. Do not combine these steps or infer activation

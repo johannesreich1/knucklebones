@@ -107,8 +107,17 @@ audit the paired schema states.
 
 ### Progression-v2 production activation
 
-This is an explicit owner cutover, not part of the web release and not something
-an agent infers from merged code. Keep the order exact:
+> **EXECUTED 2026-09-04. Production is on curve v2**
+> (`public.active_ranked_curve_version()` = 2); 205 profiles and 203 season rows
+> were remapped. The sequence below is kept as the record of what was run and as
+> the mechanism to read when repairing forward — it is NOT a pending task, and
+> it cannot be replayed: the activation is irreversible and
+> `private.activate_progression_v2` rechecks the contract and aborts on a curve
+> that is already 2. Legacy v1 point-edit, bot-seed/refresh and wipe helpers now
+> refuse by design.
+
+This was an explicit owner cutover, not part of the web release and not something
+an agent infers from merged code. The order was exact:
 
 1. Run `supabase migration list --linked`, then
    `supabase db push --linked --dry-run`. The only pending migration may be

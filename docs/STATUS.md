@@ -10,7 +10,7 @@ decisions, and externally owned actions only. Detailed sprint history lives in
 |---|---|---|
 | Web | Live at <https://knucklebones-asg.pages.dev>; pushes to `main` still deploy through the Cloudflare Pages dashboard build immediately, ahead of CI. The gated `deploy` job is merged but skipped until `DEPLOY_VIA_ACTIONS` is set | `build.mjs`, `.github/workflows/ci.yml` |
 | Game | Local solo and two-player play, tutorial, modes, optional offline spells, and shared local/ranked board rendering | `src/core/`, `src/flow/`, `src/ui/` |
-| Ranked | Production currently runs curve v1: server-authoritative play, matchmaking/bot backfill, ladder, history, profiles, deletion, permanent mode-pool progression, IVORY Rune Trial, authoritative casts, rune collection, and historical-SILVER equipped seats. The repository implements version-gated progression v2—new floors, 2–7 finish-margin transfer, redistributed unlocks, CLAIM, debuts, OBSIDIAN weekly challenge, NEON medals, durable entitlements, and old-client refusal—but production remains v1 until the owner applies the dormant migration, deploys the authoritative closure, drains v1 work, and activates the curve. The disposable test population has 200 bots, beatable by a newcomer through GOLD; OBSIDIAN and NEON bots are favoured over a never-attacking newcomer (47% / 45% floors) and underdogs to anyone who looks at the opponent's board with rune winnings and stable equipment — see `docs/LADDER.md` §7 | `src/online/`, `src/core/ranked-outcomes.ts`, `supabase/functions/`, `docs/LADDER.md` |
+| Ranked | Production runs **curve v2** as of 2026-09-04: server-authoritative play, matchmaking/bot backfill, ladder, history, profiles, deletion, permanent mode-pool progression, IVORY Rune Trial, authoritative casts, rune collection, and historical-SILVER equipped seats, plus the v2 contract itself — new floors, 2–7 finish-margin transfer, redistributed unlocks, CLAIM, debuts, OBSIDIAN weekly challenge, NEON medals, durable entitlements, and old-client refusal. The activation remapped 205 profiles and 203 season rows and switched scoring and curve versions together; the legacy v1 point-edit, bot-seed/refresh and wipe helpers now refuse by design. The disposable test population has 200 bots, beatable by a newcomer through GOLD; OBSIDIAN and NEON bots are favoured over a never-attacking newcomer (47% / 45% floors) and underdogs to anyone who looks at the opponent's board with rune winnings and stable equipment — see `docs/LADDER.md` §7 | `src/online/`, `src/core/ranked-outcomes.ts`, `supabase/functions/`, `docs/LADDER.md` |
 | Localization | English, Brazilian Portuguese, Spanish, German, French, Italian, Polish, Turkish, Indonesian, Japanese, and Korean share one ordered registry, complete catalogs, native metadata, and measured eager/online mobile geometry | `src/i18n/`, `docs/architecture/localization.md` |
 | Database | Repository and production share the reconciled 59-migration timestamped prefix through `20260830182406_ranked_progression_events.sql`; `supabase/migration-history.json` and the migration-ledger test pin that base. Production also records the guarded, hash-pinned historical-SILVER and eleven-locale stages, making the live ledger 61 migrations. The repository adds `20260901162456_progression_v2.sql` as the sole pending stage: it installs an audited dormant v2 contract but changes no live score until the database owner invokes its count-guarded activation transaction. The former compact aliases, obsolete 12-bot seed, and two wrong-stamped equipped-rune files are preserved only in the non-executable archive. Catalog, security, data, Realtime, cron, paired-stage, legacy-upgrade, and exact v2 schema/function audits cover the owned surfaces. Ledger alignment does not establish deployed Edge Function bytes. | `supabase/migrations/`, `supabase/legacy-migrations/`, `supabase/migration-history.json` |
 | Builds | Hosted PWA, standalone HTML, widget, and Capacitor web assets come from the same source build | `build.mjs`, `docs/architecture/build.md` |
@@ -108,21 +108,27 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 
 ### Product and release decisions
 
-- Activate the implemented 2026-09-01 progression-v2 contract in production
-  (owner: Johannes). First confirm linked history and require the dry run to
-  contain only `20260901162456_progression_v2.sql`; apply it while curve v1 is
-  still active. Then deploy the guarded `ranked-runes` function plan, pause
-  ranked admission, drain every active v1 match and queue row, and inspect
-  `preview_ranked_curve_v2_activation()`. As database owner, pass its exact
-  profile/season-row counts to `private.activate_progression_v2(bigint,
-  bigint)`, verify the public curve reads 2, then resume admission. The
-  transaction monotonically remaps current/peak points, preserves league/ring
-  position and current entitlements, grants durable v2 outcomes/features,
-  records positional NEON medals, and switches scoring/curve versions together.
-  Do not activate with active v1 work or a mismatched count, and do not use the
-  legacy player-points/test-population helpers afterward. The exact commands,
-  authority boundaries, and failure behavior are in
-  `docs/architecture/backend.md` and `tools/database/README.md`.
+- **Progression v2 is ACTIVE in production (2026-09-04).** Done, in the
+  documented order: migration `20260901162456_progression_v2` confirmed applied;
+  BadRandolf set to 3000 on v1 so the monotonic remap would land him on the v2
+  OBSIDIAN floor; the guarded `ranked-runes` closure deployed and read back
+  byte-for-byte (pvp-join v44, pvp-move v40, pvp-claim v34, account-delete v26,
+  pvp-rune-select v24, pvp-action v23); admission paused; the drain confirmed
+  empty rather than waited out (`active_matches=0`, `queue_entries=0`);
+  `preview_ranked_curve_v2_activation()` read 205 profiles / 203 season rows;
+  `private.activate_progression_v2(205, 203)` returned `curve_version=2`,
+  `scoring_version=2`, 73 features and 15 outcomes added, 0 NEON medals; the
+  public curve verified at 2 and admission resumed. Downtime was about four
+  minutes with nothing in flight. BadRandolf landed on 3890/3890 as designed.
+  The remap held its invariants across all 203 rows: no negative points, and
+  `peak >= points` everywhere.
+- The legacy player-points, bot-seed/refresh and wipe helpers now **refuse by
+  design** (`legacy production player-points helper is disabled after curve-v2
+  activation`). Their fixtures describe v1 and cannot safely mutate a v2
+  ladder. Moving a player's points on v2 needs a reviewed path that does not
+  exist yet; do not work around the guard. The commands, authority boundaries,
+  and failure behavior remain in `docs/architecture/backend.md` and
+  `tools/database/README.md`.
 - The `localization-browser` geometry matrix is manual-only since 2026-08-26
   (owner: Johannes): run
   `mise exec -- node tests/browser/localization/run.mjs` plus the manual
@@ -186,8 +192,9 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   both iPhone 6.9-inch and iPad 13-inch (132 images total), and a post-sync read
   confirmed no remaining metadata, upload, deletion, or order change. No binary
   or review submission was touched. The local campaign is regenerated from the
-  progression-v2 implementation, but before review the owner must activate v2
-  in production and confirm the campaign still matches that released runtime;
+  progression-v2 implementation; v2 is now active in production (2026-09-04), so
+  what remains before review is confirming the campaign still matches that
+  released runtime;
   store-name clearance, localized public
   legal/support URLs, a signed archive and physical-device proof, Services ID
   and Supabase switches, deletion-time token revocation, and the remaining Game
