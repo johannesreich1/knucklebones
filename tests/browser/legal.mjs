@@ -6,7 +6,8 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import pkg from 'playwright';
-import { LOCALE_REGISTRY } from '../../src/i18n/locale.ts';
+import { LOCALE_PICKER_ORDER, LOCALE_REGISTRY } from '../../src/i18n/locale.ts';
+const LOCALE_BY_ID = Object.fromEntries(LOCALE_REGISTRY.map((entry) => [entry.id, entry]));
 import { LEGAL_RELEASE } from '../../src/legal/config.ts';
 import { legalDocument } from '../../src/legal/documents.ts';
 import { generateLegalPageFiles } from '../../src/legal/static-pages.ts';
@@ -240,8 +241,17 @@ await Promise.all([...staticFiles].map(async ([relative, html]) => {
 const staticServer = await serveTree(staticRoot);
 
 async function inspectOpenLocaleRepaint(page, viewport) {
-  const from = LOCALE_REGISTRY.at(-1);
-  const to = LOCALE_REGISTRY[0];
+  /* WHERE THE PAGE IS, AND WHERE ONE PRESS TAKES IT. This named a fixed pair —
+     the registry's last entry and its first — which worked only because the
+     function is entered on that last locale AND because those two were adjacent
+     in the order the arrow walks. Sorting the stepper broke the second half, and
+     the first was never stated anywhere. Reading the live locale settles both:
+     the check is that an OPEN legal page repaints when the locale changes
+     underneath it, and it does not care which two locales that is. */
+  const fromId = await page.$eval('html', (root) => root.dataset.locale);
+  const from = LOCALE_BY_ID[fromId] ?? LOCALE_BY_ID[LOCALE_PICKER_ORDER[0]];
+  const to = LOCALE_BY_ID[LOCALE_PICKER_ORDER[
+    (Math.max(0, LOCALE_PICKER_ORDER.indexOf(from.id)) + 1) % LOCALE_PICKER_ORDER.length]];
   const legalPage = 'privacy';
   await page.evaluate((pageId) => {
     const opener = document.getElementById('legalMatrixOpener');
@@ -348,7 +358,15 @@ try {
     });
     const observations = [];
 
-    for (let localeIndex = 0; localeIndex < LOCALE_REGISTRY.length; localeIndex++) {
+    /* A lap of the ARROW, so the sequence is the picker's — LOCALE_PICKER_ORDER
+       — and it starts from wherever the page actually is rather than from that
+       list's first entry. The two orders were the same until the stepper was
+       sorted by the name a player reads; the registry keeps its own, with
+       English at the front, and English is no longer what one press reaches. */
+    const legalStart = await page.$eval('html', (root) => root.dataset.locale);
+    const legalLap = LOCALE_PICKER_ORDER.map((_id, offset) => LOCALE_PICKER_ORDER[
+      (Math.max(0, LOCALE_PICKER_ORDER.indexOf(legalStart)) + offset) % LOCALE_PICKER_ORDER.length]);
+    for (let localeIndex = 0; localeIndex < legalLap.length; localeIndex++) {
       if (localeIndex > 0) {
         await page.evaluate(() => document.getElementById('languageNext').click());
         await page.waitForTimeout(20);
@@ -357,7 +375,7 @@ try {
         locale: document.documentElement.dataset.locale,
         lang: document.documentElement.lang,
       }));
-      const locale = LOCALE_REGISTRY[localeIndex];
+      const locale = LOCALE_BY_ID[legalLap[localeIndex]];
       check(identity.locale === locale.id, `${viewport}/${locale.id}: runtime locale order drifted`, identity);
       check(identity.lang === locale.languageTag,
         `${viewport}/${locale.id}: document language tag is wrong`, identity);
