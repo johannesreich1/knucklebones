@@ -74,13 +74,23 @@ await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(lo
       aria: b.getAttribute('aria-disabled'),
       reason: b.dataset.lockReason ?? '',
     }])));
-  const STONE_OPEN = ['0', '4', '3', '6'];       // classic, singlestrike, colshield, limited
-  const STONE_HELD = ['1', '2', '5'];            // rowswitch, rowmult, bounty
+  /* STONE's four, on curve v2: Bounty took Limited's place in the starting pool
+     and Limited moved out to GOLD alongside Row Switch (docs/MODES.md). This
+     read the v1 pool, which was right until an unconfirmed client stopped
+     answering v1 — production activated v2 on 2026-09-04 and there is no other
+     curve to describe. */
+  const STONE_OPEN = ['0', '4', '3', '5'];       // classic, singlestrike, colshield, bounty
+  /* Each held mode names the league that actually opens it. v1 could test them
+     all against BONE because BONE opened all three; v2 spreads them, so the
+     check now pins the league per mode — stricter than the one it replaces,
+     which would have passed a picker that offered the wrong reason. */
+  const STONE_HELD = [['1', 'GOLD'], ['2', 'BONE'], ['6', 'GOLD']];  // rowswitch, rowmult, limited
   check(STONE_OPEN.every((v) => out.stonePicker[v] && !out.stonePicker[v].locked),
     'STONE locked a mode every player starts with', out.stonePicker);
-  check(STONE_HELD.every((v) => out.stonePicker[v]?.locked
-      && out.stonePicker[v].aria === 'true' && /BONE/.test(out.stonePicker[v].reason)),
-    'STONE offered a mode the ladder has not unlocked, or locked it without a reason',
+  check(STONE_HELD.every(([v, league]) => out.stonePicker[v]?.locked
+      && out.stonePicker[v].aria === 'true'
+      && new RegExp(league).test(out.stonePicker[v].reason)),
+    'STONE offered a mode the ladder has not unlocked, or named the wrong league',
     out.stonePicker);
   check(out.stonePicker['-2']?.locked && !out.stonePicker['-1']?.locked,
     'the Ritual was offered below IVORY, or RANDOM itself was locked', out.stonePicker);
@@ -99,9 +109,13 @@ await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(lo
 
   out.stoneRing = await page.evaluate(() =>
     [...document.querySelectorAll('#wheelDial .dnode')].map((n) => n.dataset.mode));
+  /* Four distinct modes, and none the ladder has not given this device. The
+     excluded pair is limited and rune_trial on curve v2 — it used to be bounty
+     and rune_trial, because bounty was BONE's before it became STONE's opening
+     mode and limited moved out to GOLD. */
   check(out.stoneRing.length === 4 && new Set(out.stoneRing).size === 4
       && STONE_OPEN.length === out.stoneRing.length
-      && !out.stoneRing.includes('bounty') && !out.stoneRing.includes('rune_trial'),
+      && !out.stoneRing.includes('limited') && !out.stoneRing.includes('rune_trial'),
     'the STONE wheel carried modes this device has not unlocked', out.stoneRing);
 
   /* Selection and explanation are two visible beats. Timestamp DOM changes in
