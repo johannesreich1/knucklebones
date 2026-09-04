@@ -18,7 +18,7 @@
 :where(#kbroot) #ovGroupTransition .gt-body{position:relative;z-index:1;display:flex;flex:1;min-height:0;width:100%;align-items:center;justify-content:center}
 :where(#kbroot) #ovGroupTransition .gt-group-body{flex-direction:column;padding-top:5px}
 :where(#kbroot) #ovGroupTransition .gt-overline{margin-top:clamp(4px,1dvh,9px);color:#c6d3ee;font-size:9px;font-weight:var(--fw-max);letter-spacing:.28em;text-transform:uppercase}
-:where(#kbroot) #ovGroupTransition .gt-group{margin:3px 0 0;padding-inline-start:.22em;color:var(--gt-tier);font-size:clamp(30px,4dvh,35px);font-weight:var(--fw-ultra);
+:where(#kbroot) #ovGroupTransition .gt-group{margin:3px 0 0;padding-inline-start:.22em;color:var(--gt-tier);font-size:clamp(30px,4dvh,35px);font-weight:var(--fw-max);
   line-height:1;letter-spacing:.22em;text-shadow:0 0 11px color-mix(in srgb,var(--gt-tier) 75%,transparent),
   0 0 35px color-mix(in srgb,var(--gt-tier) 38%,transparent)}
 :where(#kbroot) #ovGroupTransition .gt-copy{max-width:292px;margin:clamp(5px,1.2dvh,9px) auto 0;color:#c6d3ee;font-size:11px;line-height:1.5;text-align:center}
@@ -67,7 +67,7 @@
   border:1px dashed color-mix(in srgb,currentColor 25%,transparent)}
 :where(#kbroot) #ovGroupTransition .gt-feature-icon::before{inset:-8px}:where(#kbroot) #ovGroupTransition .gt-feature-icon::after{inset:10px}
 :where(#kbroot) #ovGroupTransition .gt-feature-icon svg{filter:drop-shadow(0 0 10px currentColor)}
-:where(#kbroot) #ovGroupTransition .gt-feature-body h2{margin:0;color:var(--txt);font-size:clamp(18px,2.4dvh,21px);font-weight:var(--fw-ultra);letter-spacing:.17em;text-align:center}
+:where(#kbroot) #ovGroupTransition .gt-feature-body h2{margin:0;color:var(--txt);font-size:clamp(18px,2.4dvh,21px);font-weight:var(--fw-max);letter-spacing:.17em;text-align:center}
 :where(#kbroot) #ovGroupTransition .gt-feature-body p{max-width:306px;margin:clamp(7px,1.3dvh,12px) auto;color:#c6d3ee;font-size:clamp(10.5px,1.4dvh,12px);line-height:1.5;text-align:center}
 :where(#kbroot) #ovGroupTransition .gt-swipe{display:flex;align-items:center;gap:8px;margin:clamp(2px,.6dvh,5px) 0;color:var(--dim);font-size:7.5px;
   font-weight:var(--fw-max);letter-spacing:.18em;text-transform:uppercase;text-align:center}

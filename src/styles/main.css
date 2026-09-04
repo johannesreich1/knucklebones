@@ -1,4 +1,7 @@
 @import "./foundations/tokens.css";
+/* the FACE before every rule that weighs it: the ladder in tokens.css is cut to
+   this file, ships fonts, and states what <b> means */
+@import "./foundations/typeface.css";
 @import "./foundations/backdrop.css";
 @import "./game/shell.css";
 @import "./game/board.css";

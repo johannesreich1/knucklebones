@@ -100,16 +100,24 @@ four runners collectively execute the same registry as an unsharded local gate.
 The Deno closure check runs alongside one shard; database and Android compiler
 gates remain independent jobs.
 
-### Hosted CI renders in a font the app actually names
+### The app ships its own face, and every suite checks it bound
 
-The app ships no font files. `src/styles/page.css` names only OS-provided
-faces, so every pixel a suite measures depends on what the host has installed.
-`system-ui` is a real system face on macOS, Android and Windows; on Linux it is
-whatever fontconfig ranks first, which nobody chose. A stock GitHub runner
-resolves it to DejaVu Sans and the bare Playwright image to WenQuanYi Zen Hei,
-so hosted CI was measuring a rendering no player will ever see and reporting
-its metrics as layout defects — design cards 12-16px "too tall", a French legal
-title "wrapped".
+`src/styles/foundations/typeface.css` bundles Chakra Petch (OFL 1.1, four
+weights, latin + latin-ext) and `page.css` names it first. Before that the app
+shipped no font at all: the stack named OS faces, so every pixel a suite
+measured depended on what the host owned. `system-ui` is a real system face on
+macOS, Android and Windows; on Linux it is whatever fontconfig ranks first,
+which nobody chose. A stock GitHub runner resolved it to DejaVu Sans and the
+bare Playwright image to WenQuanYi Zen Hei, so hosted CI measured a rendering no
+player would ever see and reported its metrics as layout defects — design cards
+12-16px "too tall", a French legal title "wrapped". Two commits answered that by
+widening card frames, which baked those metrics into source.
+
+With one face bundled the runner and the phone lay out the same pixels, so a
+geometry number finally means the same thing in both places. What still falls
+through to the OS is `ja`/`ko` (no latin face carries CJK) and
+`design/build.mjs`'s springboard mock, which asks for `system-ui` deliberately —
+which is why the Roboto step below stays.
 
 The `test_shard` job — the only CI job that renders anything — therefore
 installs pinned `fonts-roboto-unhinted` and aliases the two generic families to
@@ -121,11 +129,17 @@ and keeps winning, which is why the alias is the load-bearing half. The alias
 is `<alias><prefer>`, not a `prepend_first` match rule, so it rewrites only the
 generic names and a test asking for an explicit face still gets that face.
 
-`tests/support/rendering-font.mjs` is the guard. `design-cards-render` and the
-localization runner call it before any geometry, and on Linux they fail with
-the cause by name when the stack does not bind Roboto — instead of emitting a
-list of things that are 12px too tall and sending the reader off to edit card
-declarations. Do not answer a font-shaped geometry failure by widening a budget
+`tests/support/rendering-font.mjs` is the guard, and bundling a face made it
+stronger: it now asks whether OUR family loaded at every weight we declare and
+whether the stack bound it, which is answerable on every platform — a broken
+asset pipeline or a family-name typo fails locally instead of waiting for the
+runner. It must be called on a page that HAS the app's stylesheet; asked on
+about:blank it correctly reports that the family does not exist.
+`design-cards-render` and the localization runner call it before any geometry,
+so a font failure names itself instead of emitting a list of things that are
+12px too tall and sending the reader off to edit card declarations.
+`tests/typeface.test.ts` is the static half: no rule may carry a literal weight,
+and no rung of the ladder may sit above the heaviest face we ship. Do not answer a font-shaped geometry failure by widening a budget
 or a declared card height; that bakes a face nobody has into the source.
 
 The spell browser keeps one no-argument run for whole-suite diagnosis and also

@@ -4,9 +4,16 @@
 :where(#kbroot) .rules p{margin:0 0 12px}
 /* One semantic highlight for every informational page: legal copy and the
    translated rules both follow the chosen opponent hue. New rich prose gets
-   the same treatment by using <b>, while .k keeps its stronger weight. */
+   the same treatment by using <b>, while .k keeps its stronger weight.
+   THAT PAIR ONLY WORKS BECAUSE BOTH SIDES ARE NOW STATED. <b> used to take the
+   UA's `bolder`, which computes to 700 from an inherited 400 — so .k at 800
+   beat it by a rung that no stylesheet here wrote down. foundations/typeface.css
+   puts <b> on --fw-strong, and .k goes up to --fw-max to keep the same order;
+   left at --fw-strong the two would be identical, and left as it was, .k would
+   have ended up LIGHTER than the tag it is supposed to outrank. Same size, same
+   colour, so weight is the whole signal. */
 :where(#kbroot) .rules :is(b,.k){color:var(--prose-highlight)}
-:where(#kbroot) .rules .k{font-weight:var(--fw-strong)}
+:where(#kbroot) .rules .k{font-weight:var(--fw-max)}
 :where(#kbroot) .scoreline{display:flex;align-items:center;justify-content:center;gap:16px;font-size:15px;
   font-weight:var(--fw-strong);letter-spacing:.08em;width:100%;max-width:var(--w-col)}
 /* equal halves so the VS sits dead centre whatever the name lengths */

@@ -128,24 +128,30 @@
      out three different weights on three platforms. With one face bundled the
      ladder has to fit inside it, and fitting it is four numbers here instead
      of ninety-seven edits across thirty-one files.
-     --fw-ultra IS ON BORROWED TIME. Four rules asked for 950, and the obvious
-     reading — that no face goes past 900, so it renders as 900 — is wrong:
-     measured against this stack, `950` paints 0.9% wider than `900` at 200px,
-     because macOS's ui-rounded carries a weight axis that keeps going. So
-     folding it into --fw-max is a real change on Apple, not a tidy-up, and it
-     does not belong in a commit whose whole claim is that nothing moves. It
-     goes when the bundled face arrives and takes every rung above its own
-     ceiling with it.
-     --fw-quiet and --fw-sub collide on one value under the current face. They
-     keep separate names because they mean different things — "lighter than my
-     neighbours" and "a step down inside a heavy cell" — and a face with a 300
-     would want them apart. */
+     THE CEILING IS 700 BECAUSE THE SHIPPED FACE STOPS THERE. Chakra Petch
+     (foundations/typeface.css) is a static family with faces at 400, 500, 600
+     and 700 and nothing above. The rungs below are not the old numbers clamped
+     — they are the old ladder RESCALED onto the four faces that exist, so the
+     three places where weight is the only difference between two elements
+     survive: the record numbers against their labels (.n1/.n2 in .ws and in
+     .fost), and .rules .k against a plain <b>. Flattening everything to 700
+     would have erased all three.
+     --fw-ultra is gone with this. Four rules asked for 950, and the tidy
+     reading — nothing goes past Black, so it already renders as 900 — was
+     false: measured against the OLD stack, 950 painted 0.9% wider than 900,
+     because macOS's ui-rounded keeps going. Under a face that stops at 700
+     the distinction cannot exist at all, so those four rules read --fw-max
+     and lose a little weight on Apple. That is the ceiling being honest,
+     and it is the only visible loss in the rescale.
+     --fw-quiet and --fw-sub collide on 500 under this face. They keep separate
+     names because they mean different things — "lighter than my neighbours"
+     and "a step down inside a heavy cell" — and a face with a 300 would want
+     them apart. */
   --fw-body:400;      /* prose, and the default everything inherits */
-  --fw-sub:650;       /* a step DOWN inside a heavier cell (history's sub-line) */
-  --fw-quiet:700;     /* deliberately lighter than its neighbours (.status) */
-  --fw-strong:800;    /* buttons, names, figures, the prose <b> */
-  --fw-max:900;       /* titles, totals, tracked caps, the primary action */
-  --fw-ultra:950;     /* four rules that reach past Black; see above */
+  --fw-sub:500;       /* a step DOWN inside a heavier cell (history's sub-line) */
+  --fw-quiet:500;     /* deliberately lighter than its neighbours (.status) */
+  --fw-strong:600;    /* buttons, names, figures, the prose <b> */
+  --fw-max:700;       /* titles, totals, tracked caps, the primary action */
   /* the LADDER GROUP palette. Root-scoped on purpose: the identity plate
      paints these on Home and on the result screen, both outside #ovOnline —
      the palette's first home, where a plate on document.body once silently

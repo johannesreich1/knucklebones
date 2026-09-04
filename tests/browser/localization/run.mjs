@@ -161,7 +161,11 @@ const scenarios = smoke ? [['smoke', runLocaleSmokeScenario]] : [
    those numbers describe nobody's phone, so say so instead of reporting a
    translation as too long. See tests/support/rendering-font.mjs. */
 {
+  /* On the BUILT app, not on a blank page: the app carries its own face now, so
+     the question is whether this page bound it, and about:blank has no
+     stylesheet to bind one with. */
   const page = await browser.newPage();
+  await page.goto(suite.standaloneUrl);
   const font = await checkRenderingFont(page);
   out.font = font;
   check(!font.problem,

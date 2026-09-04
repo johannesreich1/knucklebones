@@ -237,9 +237,10 @@ never part of the default gate.
 
 **A green local gate is not a green pipeline.** The gate here runs on macOS;
 hosted CI runs on `ubuntu-latest`, and the two disagree about anything the
-operating system supplies — fonts above all, since the app ships none and its
-stack asks for faces only Apple provides. Hosted CI can therefore be red for
-days while every local run passes. Read `gh run list --branch main` before
+operating system supplies. Fonts used to be the worst of it; the app now
+bundles its own face (`src/styles/foundations/typeface.css`), so type metrics
+finally agree between the two — but everything else the OS supplies still does
+not, and hosted CI can be red for days while every local run passes. Read `gh run list --branch main` before
 claiming the pipeline is green, before wiring anything to CI, and before
 reporting a release as verified.
 

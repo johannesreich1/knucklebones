@@ -84,6 +84,33 @@ try {
   die(error instanceof Error ? error.message : String(error));
 }
 
+/* THE FACES TRAVEL WITH THE CARD. The graph is inlined as TEXT into a file that
+ * lands in design/dist/, so `url(../fonts/x.woff2)` — correct where it was
+ * written, under src/styles/foundations/ — would resolve against the wrong
+ * directory and quietly fall back to whatever the host owns. That is the exact
+ * failure the app just stopped having, and a card rendering in a face the
+ * product does not ship is a card that lies about the product.
+ * Inlined rather than copied next to the cards because the Design pane serves
+ * one HTML file per card with nothing beside it, and because a card that needs
+ * no network renders the same on the Linux runner as it does here.
+ * Resolution is by basename against src/styles/fonts/ and it FAILS LOUDLY: app
+ * CSS carries no other url() asset today, so anything that does not resolve is
+ * a new one nobody taught this about. */
+const FONT_DIR = join(root, 'src', 'styles', 'fonts');
+css = css.replace(/url\(([^)]*\/)?([\w.-]+\.woff2)\)/g, (_, _dir, file) => {
+  let data;
+  try {
+    data = readFileSync(join(FONT_DIR, file));
+  } catch {
+    die(`design/build.mjs cannot inline ${file}: no such file in src/styles/fonts/`);
+  }
+  return `url(data:font/woff2;base64,${data.toString('base64')})`;
+});
+if (/url\((?!data:)/.test(css)) {
+  die('app CSS gained a url() asset design/build.mjs does not know how to inline: '
+    + css.match(/url\((?!data:)[^)]*\)/)[0]);
+}
+
 /* Bare app classes whose rule would SWALLOW a card's element rather than merely
    tint it — the ones a card must never redefine. Cards deliberately tune shared
    chrome (.shead, .btn, .lbl) and that is the point of them; the hazard is the

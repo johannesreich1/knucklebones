@@ -33,7 +33,7 @@
     inset 0 0 20px rgba(255,209,102,.1)}
 :where(#kbroot) .trial-select__claim,:where(#kbroot) .trial-select__claim-owned{
   position:absolute;z-index:3;left:50%;translate:-50% 0;border-radius:999px;
-  white-space:nowrap;font-weight:var(--fw-ultra);line-height:1;text-transform:uppercase}
+  white-space:nowrap;font-weight:var(--fw-max);line-height:1;text-transform:uppercase}
 :where(#kbroot) .trial-select__claim{top:-9px;padding:5px 9px;background:#ffd166;color:#17120a;
   font-size:9px;letter-spacing:.16em;box-shadow:0 3px 14px rgba(255,209,102,.46)}
 :where(#kbroot) .trial-select__claim-owned{bottom:-9px;padding:4px 7px;

@@ -251,7 +251,7 @@
   border-left:1px solid rgba(177,140,255,.46);border-top:1px solid rgba(177,140,255,.46);
   background:rgb(15 15 29)}
 :where(#kbroot) #onAccount .acc-rune-guide-title{color:#cdb7ff;font-size:10px;
-  line-height:1.25;font-weight:var(--fw-ultra);letter-spacing:.2em;text-transform:uppercase}
+  line-height:1.25;font-weight:var(--fw-max);letter-spacing:.2em;text-transform:uppercase}
 :where(#kbroot) #onAccount .acc-rune-guide-body{margin:0;color:#d5ddf0;font-size:11px;
   line-height:1.5;letter-spacing:.02em}
 :where(#kbroot) #onAccount .accseat.acc-rune-guide-target{top:calc(50% + 17px);
