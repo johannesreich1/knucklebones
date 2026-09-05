@@ -1728,3 +1728,96 @@ opens, which is fair over a session — but `S.starter` used to begin at the
 player and is deliberately not persisted, so it reset on every reload and a
 one-game session always gave the player the first move. It is now drawn on a
 coin flip per app load and alternates from there (`src/state.ts`).
+
+## 7. The queue — position, liveness, and abandonment
+
+Written 2026-09-05, when the owner asked what happens if fifty players join and
+leave before a game. The answer was better than it looked and worse in one
+place nobody had named, because the queue's lifecycle was documented nowhere:
+its window lived only in an Edge Function constant and its ordering only in an
+`on conflict do nothing`.
+
+### Two clocks, deliberately
+
+`public.matchmaking_queue` carries two timestamps and they mean different
+things. Conflating them caused both defects below.
+
+| column | meaning | moves when |
+|---|---|---|
+| `created_at` | the player's **place in line** | never on a re-join |
+| `last_seen_at` | the client's **pulse** | every write, stamped by the table |
+
+`findOldestEligiblePartner` (`pvp-join/matchmaking.ts`) reads the queue oldest
+first, so `created_at` is the fairness guarantee: `enqueue_ranked_player`'s
+`on conflict (player_id) do nothing` exists precisely so that re-polling cannot
+cost a player their position.
+
+### The wait is a poll, not a socket
+
+A waiting client re-calls `pvp-join` **every 2.5s** (`queue-screen.ts`), which
+is what makes a server-side pulse possible with no client cooperation at all:
+`matchmaking_queue_stamp_liveness` fires `before update` and stamps
+`last_seen_at`, so every installed build — including one built before the
+column existed — refreshes its own liveness on its next poll. A change of this
+shape needs no capability negotiation and no phased release
+(`docs/CLIENT_COMPATIBILITY.md`); that is a property of putting the stamp on
+the table rather than in a caller.
+
+It is `clock_timestamp()`, not `now()`: the sweep runs earlier in the same
+request, and a transaction timestamp would date the heartbeat to before the
+sweep it exists to survive.
+
+### Leaving
+
+Cancel and backgrounding both leave properly: `goHome()` calls `queue.stop()`,
+which calls `cancellation.cleanup()` → `leave_ranked_queue`, and
+`queue-waiting.ts` sends a backgrounded app home on `visibilitychange`. So the
+app switcher, the home button and screen lock all delete the row.
+
+**But the leave is fired un-awaited** (`void cleanup()`), and iOS can suspend
+the process before the request leaves the device. Do not try to make the
+goodbye bulletproof — a suspending app cannot be relied on to finish a network
+call. The right layer is a **detectable absence**, which is what the pulse is.
+
+### Abandonment, end to end
+
+A genuinely killed client leaves a row behind. What happens to it:
+
+1. **It is swept within 30s.** Every `pvp-join` deletes rows whose
+   `last_seen_at` is older than `QUEUE_LIVENESS_MS`
+   (`pvp-join/queue-liveness.ts`), *before* looking for a partner.
+2. **Inside that window it can poison exactly one match**, because pairing
+   consumes both queue rows (`start_ranked_match`). Fifty abandoners cannot
+   stack into fifty poisoned matches unless all fifty die inside the same
+   window.
+3. **That match is not a dead end.** 12s turn clock (`AUTO_MS`) → the watchdog
+   asks the server → the server auto-places the away seat in a uniform legal
+   column → at `AUTO_FORFEIT_STREAK = 3` it settles as a forfeit
+   (`_shared/match-timing.ts`, `_shared/auto-forfeit.ts`). The live player wins
+   in roughly 36 seconds.
+
+So the exposure is one wasted match per abandoner, bounded by the window, and
+never a hang.
+
+### Why the window is 30s and not the poll interval
+
+The two errors do not cost the same. A window too long leaves ghosts
+matchable; a window too short sweeps a live player — and it sweeps the one who
+has been waiting **longest**, which is exactly who a slow network produces.
+Twelve missed polls is a dead client, not a slow one.
+
+### The bug this replaced, worth not re-introducing
+
+The sweep used to read `created_at`. Two consequences, and the second is the
+one nobody had noticed:
+
+- A player killed 30s ago was **indistinguishable** from one who joined 30s
+  ago, so abandonment could not be detected at all before the full window.
+- The sweep runs *before* the caller is enqueued, so **a player waiting longer
+  than the window had their own row deleted by their own next poll** and
+  re-inserted with a fresh `created_at`. The longest waiter was sent to the
+  back of the line, repeatedly, and the queue could never age.
+
+`supabase/tests/database/queue-liveness.test.sql` pins both halves: a re-join
+moves the pulse and not the position, and the sweep takes the abandoned seat
+while leaving the waiting one. With the trigger dropped it fails 4 of 9.

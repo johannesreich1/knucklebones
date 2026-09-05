@@ -28,26 +28,12 @@ import {
 import { MatchStartFailure, startProgressiveRankedMatch, type StartedRankedMatch } from "./start.ts";
 import { settleAbandonedBotMatch } from "./stalled-bot-match.ts";
 import { classifyEnqueueFailure, type EnqueueFailure } from "./enqueue-refusal.ts";
+import { sweepAbandonedSeats } from "./queue-liveness.ts";
 import {
   MATCH_COLUMNS,
   type JoinInput, type MatchActionRow, type MatchRow, type ProfileSummary,
 } from "../_shared/types.ts";
 
-/* HOW LONG A SEAT OUTLIVES ITS PLAYER. The waiting client re-calls this
-   function every 2.5s (queue-screen.ts) and matchmaking_queue stamps
-   last_seen_at on every write, so a row that has been silent this long has no
-   app behind it: the tab is closed, the process was killed, or the network is
-   gone. Until it is swept it is matchable, and a real player pairing with it
-   wins by forfeit ~36s later (_shared/match-timing.ts) having been made to
-   play a ghost, so the window is the exposure and wants to be small.
-   30s, not the 2.5s poll, because the cost of the two errors is not symmetric:
-   sweeping a live player only costs them their place in line, but it costs it
-   to the player who has been waiting LONGEST, and a slow network is exactly
-   when that happens. Twelve missed polls is a dead client, not a slow one.
-   This used to read created_at — the queue POSITION, which a re-join
-   deliberately never moves — so it measured time since JOINING and could not
-   see abandonment at all. See 20260905101500_queue_liveness_heartbeat.sql. */
-const QUEUE_LIVENESS_MS = 30 * 1000;
 
 export async function joinMatch(context: AuthenticatedContext, input: JoinInput): Promise<Response> {
   const { user } = context;
@@ -184,9 +170,7 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
     return json({ error: "incompatible-client" }, 409);
   }
 
-  const { error: staleError } = await svc.from("matchmaking_queue").delete()
-    .lt("last_seen_at", new Date(Date.now() - QUEUE_LIVENESS_MS).toISOString());
-  if (staleError) return json({ error: "queue-failed" }, 500);
+  if (!await sweepAbandonedSeats(svc)) return json({ error: "queue-failed" }, 500);
 
   const { data: seasonNow, error: seasonError } = await svc.rpc("current_season");
   if (seasonError) return json({ error: "season-read-failed" }, 500);

@@ -7,22 +7,23 @@ screenshots for each campaign locale and required Apple device class:
 | Store locale | Runtime language | iPhone 6.9-inch | iPad 13-inch | Total |
 |---|---|---:|---:|---:|
 | `en-GB` | English (`en`) | 6 | 6 | 12 |
+| `pt-BR` | Brazilian Portuguese (`pt`) | 6 | 6 | 12 |
+| `es-ES` | Spanish (`es`) | 6 | 6 | 12 |
 | `de-DE` | German (`de`) | 6 | 6 | 12 |
 | `fr-FR` | French (`fr`) | 6 | 6 | 12 |
+| `it` | Italian (`it`) | 6 | 6 | 12 |
 | `pl` | Polish (`pl`) | 6 | 6 | 12 |
 | `tr` | Turkish (`tr`) | 6 | 6 | 12 |
 | `id` | Indonesian (`id`) | 6 | 6 | 12 |
 | `ja` | Japanese (`ja`) | 6 | 6 | 12 |
 | `ko` | Korean (`ko`) | 6 | 6 | 12 |
-| **Campaign** | **8 locales** | **48** | **48** | **96** |
+| **Campaign** | **11 locales** | **66** | **66** | **132** |
 
 The output matrix and App Store identifiers are declared in
 `app-store-connect.json`; creative fixtures and localized overlay copy are in
 `manifest.json`; App Store listing fields are in `metadata.json`. These are
-the campaign's eight AI-reviewed listing locales. The product runtime supports
-eleven languages (`en`, `pt`, `es`, `de`, `fr`, `it`, `pl`, `tr`, `id`, `ja`,
-`ko`); that registry does not authorize this uploader to create unreviewed
-Portuguese, Spanish, or Italian store copy or screenshots.
+the campaign's eleven AI-reviewed listing locales, matching the product runtime
+registry (`en`, `pt`, `es`, `de`, `fr`, `it`, `pl`, `tr`, `id`, `ja`, `ko`).
 
 Each app panel comes from the current production single-file runtime
 (`knucklebones-neon.html`) and production renderers. The capture uses a real
@@ -38,16 +39,52 @@ Apple's current format reference is
 
 ## Output layout
 
-- `raw/{locale}/{target}/` contains 112 lossless runtime captures: six hero
-  states plus BOUNTY's separate active state, across eight managed locales and two
+- `raw/{locale}/{target}/` contains 154 lossless runtime captures: six hero
+  states plus BOUNTY's separate active state, across eleven managed locales and two
   devices.
-- `exports/{locale}/{target}/` contains the 96 opaque final PNGs and one
+- `exports/{locale}/{target}/` contains the 132 opaque final PNGs and one
   `checksums.txt` for each locale/device set. These are the upload assets.
-- `contact-sheets/{locale}-{target}.jpg` contains sixteen review aids. Contact
+- `contact-sheets/{locale}-{target}.jpg` contains twenty-two review aids. Contact
   sheets are never uploaded.
 - `capture-provenance.json` records the runtime build, browser versions,
   viewports, raw paths, and capture count. It is written only after a complete
   capture succeeds.
+
+## The locale set is written once
+
+It lives in `app-store-connect.json` and nowhere else. `capture.mjs`,
+`source.html` and `verify-exports.mjs` derive the supported *runtime* locales
+from `src/i18n/locale.ts` (`LOCALE_REGISTRY`) — the app's own list — and
+`verify-exports.mjs` asserts that config, manifest and metadata **agree with
+each other**.
+
+That phrasing is deliberate, and it is the correction of a real failure. The
+check used to assert the campaign contained exactly eight *named* locales, and
+three further copies of that list were literals in code. On 2026-09-01 the
+campaign was expanded to eleven (`d1083ab0`, then `2150604e`, which regenerated
+all 132 screenshots and rewrote this file to match). A parallel branch from
+earlier the same day carried the eight-locale manifest, metadata and README,
+and the merge kept **those** while keeping the eleven-locale config and the
+eleven-locale exports.
+
+Nothing looked broken: the exports for all eleven stayed committed and the
+config still listed eleven, so the campaign was merely un-regenerable — and
+every guard agreed with the regression, because every guard held its own stale
+copy of the list. `verify-exports` was the worst of them: asserting the set was
+*exactly* those eight meant it enforced the loss and would have rejected the
+recovery. It surfaced on 2026-09-05, the next time anyone ran the pipeline, and
+the fix was to restore the reviewed copy from `2150604e` and delete the
+duplicated lists.
+
+**So: never restate the locale set.** Read `app-store-connect.json` for the
+campaign, `LOCALE_REGISTRY` for the runtime. Assert agreement, never a literal
+— an assertion that a set has not *grown* is not a safety check, it is a
+ratchet against your own product.
+
+Use the app's own translated mode and rune names in listing copy (`CAÇADA`,
+`TAGLIA`, `RECOMPENSA`…), never invented terminology: the screenshots show the
+running app underneath, and a listing that names things differently from the
+product reads as a different game.
 
 ## Regenerate and verify
 
@@ -58,8 +95,8 @@ mise exec -- npm run appstore:screenshots:generate
 ```
 
 It rebuilds the product runtime, starts the loopback-only capture server,
-captures all 112 real-runtime source frames with Playwright, finalizes all 96
-App Store PNGs, rebuilds sixteen contact sheets and checksum files, and verifies
+captures all 154 real-runtime source frames with Playwright, finalizes all 132
+App Store PNGs, rebuilds twenty-two contact sheets and checksum files, and verifies
 dimensions, opacity, provenance, locale coverage, metadata limits, and file
 order. The individual stages remain available for diagnosis:
 
@@ -85,13 +122,13 @@ Preview impact is part of the definition of done for every future agent:
    modes, runes, online identity, ladder, localized product copy, screenshot
    overlay copy, fixtures, capture code, finalization code, or campaign
    geometry must be checked for affected previews before handoff.
-2. If one product state changes, regenerate that state in **all eight managed locales
-   and both device targets**: sixteen final previews, their raw sources, all sixteen
+2. If one product state changes, regenerate that state in **all eleven managed locales
+   and both device targets**: twenty-two final previews, their raw sources, all twenty-two
    affected checksum/contact-sheet entries, and capture provenance. A BOUNTY
-   change also regenerates both chronological sources for all sixteen targets.
+   change also regenerates both chronological sources for all twenty-two targets.
 3. If shared layout, typography, runtime framing, localization plumbing, or
    the capture/finalization pipeline changes, run the canonical full generation
-   command and replace the complete 112-raw/96-export campaign.
+   command and replace the complete 154-raw/132-export campaign.
 4. Commit every affected generated file in the same change as its source.
    Passing source tests with a stale preview, checksum, contact sheet, or
    provenance file is a failing handoff, not deferred follow-up work.
@@ -126,8 +163,8 @@ labels runes as offline-only, and no frame shows the exit button.
 
 ## Localized listing ownership
 
-`metadata.json` deliberately owns only these fields for `en-GB`, `de-DE`,
-`fr-FR`, `pl`, `tr`, `id`, `ja`, and `ko`:
+`metadata.json` deliberately owns only these fields for `en-GB`, `pt-BR`,
+`es-ES`, `de-DE`, `fr-FR`, `it`, `pl`, `tr`, `id`, `ja`, and `ko`:
 
 - App Info: `name`, `subtitle`
 - iOS version: `promotionalText`, `keywords`, `description`
@@ -161,22 +198,22 @@ mise exec -- npm run appstore:fastlane:install
 Then use the three safety levels:
 
 1. `mise exec -- npm run appstore:screenshots:check` is credential-free. It
-   runs the focused repository contract and validates all 96 local exports,
+   runs the focused repository contract and validates all 132 local exports,
    metadata, target mappings, and pure sync-planner cases.
 2. Copy `.env.appstore.example` to ignored `.env.appstore`, fill the API-key
    fields and version, and run
    `mise exec -- npm run appstore:screenshots:plan`. The lane reads the exact
    editable app/version and the complete remote localization, metadata, and
    screenshot inventory. It prints the create/keep/update/upload/delete/order
-   plan for all eight managed locales and sixteen locale/device sets plus a confirmation
+   plan for all eleven managed locales and twenty-two locale/device sets plus a confirmation
    token bound to both desired files and that remote snapshot.
 3. After reviewing the plan and machine-readable campaign approval, paste the
    token as `ASC_APP_STORE_SYNC_CONFIRM` and run
    `mise exec -- npm run appstore:screenshots:upload`. It re-reads under a
-   local lock, creates only missing `en-GB`, `de-DE`, `fr-FR`, `pl`, `tr`,
-   `id`, `ja`, or `ko`
+   local lock, creates only missing `en-GB`, `pt-BR`, `es-ES`, `de-DE`,
+   `fr-FR`, `it`, `pl`, `tr`, `id`, `ja`, or `ko`
    localizations/target sets, patches only the five owned metadata fields, and
-   synchronizes exactly six ordered images in each of the sixteen managed sets.
+   synchronizes exactly six ordered images in each of the twenty-two managed sets.
 
 Apple requires `name` in the create request for a new App Info localization.
 The lane therefore creates a missing App Info locale with its already confirmed
@@ -204,11 +241,12 @@ manifest status must be exactly
 upload or review-submission operation, and successful synchronization does not
 make the app public.
 
-Ranked runes are not shipped yet, so the BOUNTY image remains a future-state
-preview: it may be staged in the draft, but the app must not be submitted until
-ranked runes ship and every affected preview is regenerated from that shipping
-implementation. Store-name clearance and localized legal/support URLs are
-independent submission blockers as recorded in `docs/STATUS.md`.
+The ranked-rune implementation is staged with progression v2, but that curve is
+not active in production yet. The BOUNTY image may be staged in the editable
+draft, but the app must not be submitted until the production database and
+authoritative functions activate v2 and the campaign still matches that exact
+released implementation. Store-name clearance and localized legal/support URLs
+are independent submission blockers as recorded in `docs/STATUS.md`.
 
 For credentials, keep the one-time `.p8` download outside this repository and
 point `ASC_KEY_PATH` at its absolute path. Set `ASC_KEY_ID`; set

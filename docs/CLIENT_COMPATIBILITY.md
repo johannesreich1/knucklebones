@@ -102,12 +102,11 @@ repaint. No bespoke modal exists or should.
 `queue-screen.ts` already routes them: `status === 'unavailable'` →
 `connectionUnavailable`, `status === 'incompatible'` → `updateRequired`.
 
-### The defect (open)
+### The refusal defect (fixed 2026-09-05)
 
-**A capability refusal reaches the player as "check your connection."**
+**A capability refusal used to reach the player as "check your connection."**
 
-`supabase/functions/pvp-join/operation.ts` collapses every RPC error into one
-answer:
+`pvp-join/operation.ts` collapsed every RPC error into one answer:
 
 ```js
 if (queueError || !queuedRaw || typeof queuedRaw !== 'object') {
@@ -115,20 +114,25 @@ if (queueError || !queuedRaw || typeof queuedRaw !== 'object') {
 }
 ```
 
-So when `enqueue_ranked_player_v3` raises `ranked client does not support active
-curve v2` (P0001), the reason is discarded, the client sees a 500, and it shows
-CAN'T CONNECT. A player who needs to update is sent to inspect their wifi.
+So when `enqueue_ranked_player_v3` raised `ranked client does not support active
+curve v2` (P0001), the reason was discarded, the client saw a 500, and it showed
+CAN'T CONNECT. A player who needed to update was sent to inspect their wifi.
 
-**The fix** is to catch that P0001 and return `{ error: 'incompatible-client' }`
-with 409 — the same answer `operation.ts` already returns from its own
-pre-insert guard, and which the client already routes to UPDATE REQUIRED. No new
-modal, no new copy, no new state: stop discarding the reason.
+**Fixed** by `pvp-join/enqueue-refusal.ts`: `classifyEnqueueFailure()` reads the
+error and returns `incompatible-client` (409) for a capability refusal, 503 for
+a paused admission, and `queue-failed` (500) only for what is genuinely
+unclassified. The client already routed `incompatible` to UPDATE REQUIRED, so
+this needed no new modal, copy or state — only to stop discarding the reason.
 
-**Also owed:** the modal tells the player to update but does not take them
+The shape of that fix is the reusable part: **an Edge Function that collapses
+distinct server refusals into one status is lying to the player**, and the lie
+is invisible until the day a refusal is correct. Classify at the boundary.
+
+**Still owed:** the modal tells the player to update but does not take them
 anywhere. It should carry a store link — `itms-apps://` on iOS, the Play listing
 on Android.
 
-Both belong before any App Store submission. Until a binary ships, the only
+That belongs before any App Store submission. Until a binary ships, the only
 affected device is the owner's; afterwards it is everyone who did not update,
 and a build already in someone's hand cannot be fixed retroactively.
 

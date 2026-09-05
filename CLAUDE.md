@@ -10,8 +10,12 @@ validation run on Supabase.
 
 ## Load only the context the task needs
 
-Do not read every project document up front. Use this routing table before
-touching an area:
+Do not read every project document up front. **The `knucklebones-docs` skill
+is the router** — it carries this table plus what each document owns and the
+traps that recur across all of them, and it is the place to add a row when you
+learn something new. Invoke it when the area is unfamiliar or you need to know
+which document owns a decision. The short table below is kept here so routing
+works without loading anything:
 
 | Task | Read first |
 |---|---|
@@ -25,7 +29,8 @@ touching an area:
 | Claude Design cards, study lifecycle, or DesignSync | `design/README.md`, then `README.md` → Design system |
 | Game modes or their balance/odds | `docs/MODES.md` |
 | Spells or their balance/interaction rules | `docs/SPELLS.md`; for the ranked/equipped-rune decisions behind them, `docs/RUNE_MULTIPLAYER_INVESTIGATION.md` |
-| Ladder points, groups, bots, or matchmaking policy | `docs/LADDER.md` |
+| Ladder points, groups, seasons, or bots | `docs/LADDER.md` |
+| Matchmaking, the queue, abandonment, forfeits | `docs/LADDER.md` § 7 |
 | Accounts, guest upgrade, nickname, or Game Center identity | `docs/IDENTITY.md` |
 | Shipping a server change an installed app must understand — release phasing, capability negotiation, the UPDATE REQUIRED path | `docs/CLIENT_COMPATIBILITY.md` |
 | Impressum, privacy, consent, or anything shipping to a store listing | `docs/LEGAL.md` |
