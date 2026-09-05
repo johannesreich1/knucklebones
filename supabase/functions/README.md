@@ -2,7 +2,12 @@
 
 - `pvp-join` — matchmaking: pair with the longest-waiting human, or (when the
   client sends `allow_bot: true` after waiting) start a match against a pooled
-  bot. Idempotent — rejoining returns your active match.
+  bot. Idempotent — rejoining returns your active match. Every join that reaches
+  the queue first sweeps seats silent for 30s (`queue-liveness.ts`; the waiting
+  client's re-poll is the heartbeat, stamped by the table), and a refused
+  enqueue is classified (`enqueue-refusal.ts`) so an old client is told to
+  update rather than to check its connection. `docs/LADDER.md` § 8 owns the
+  queue's lifecycle.
 - `pvp-move` — THE match authority: validates each move against the
   server-rebuilt state (turn, legality, seed-stream die), writes the move log,
   atomically commits the public projection and exact idempotent response,

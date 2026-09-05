@@ -57,15 +57,17 @@ select ok(
     where q.player_id = '8a000000-0000-0000-0000-000000000001'),
   'and does NOT cost the player their place in line'
 );
-/* The reason the pulse is clock_timestamp() and not now(): pgTAP runs this file
-   in ONE transaction, and so does every pvp-join request — where the sweep runs
-   BEFORE the enqueue. A transaction timestamp would date the heartbeat to
-   before the sweep it exists to survive, and this assertion would fail. */
+/* The trigger stamps clock_timestamp(), the instant of the write, rather than
+   now(), the transaction start. This assertion pins only that the stamp is
+   RECENT: it would pass under now() too, because pgTAP runs this file in one
+   transaction and a pvp-join request does NOT — its sweep and its enqueue are
+   separate PostgREST requests, so now() would serve production as well. The
+   wall clock is kept as the stricter meaning of a pulse, not as a fix. */
 select ok(
   (select last_seen_at > now() - interval '1 second'
      from public.matchmaking_queue
     where player_id = '8a000000-0000-0000-0000-000000000001'),
-  'the pulse is wall-clock, not the transaction start it would lose to'
+  'the pulse is fresh after the re-join, not the back-dated value it replaced'
 );
 select ok(
   (select q.last_seen_at = b.last_seen_at

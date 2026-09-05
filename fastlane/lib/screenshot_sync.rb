@@ -21,7 +21,7 @@ module KnucklebonesAppStore
       REJECTED
       DEVELOPER_REJECTED
     ].freeze
-    REQUIRED_LOCALES = %w[de-DE en-GB fr-FR id ja ko pl tr].freeze
+    REQUIRED_LOCALES = %w[de-DE en-GB es-ES fr-FR id it ja ko pl pt-BR tr].freeze
     REQUIRED_DISPLAY_TYPES = %w[APP_IPAD_PRO_3GEN_129 APP_IPHONE_67].freeze
     AUTOMATIC_VERSION_LOCALIZATION_WAIT_SECONDS = 60
     SCREENSHOT_PROCESSING_TIMEOUT_SECONDS = 900

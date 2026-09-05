@@ -121,8 +121,8 @@ the reveal's own note line rather than sending the player back to the queue
 panel. A second overlay for the runes is the shape this replaced; a caller that
 reveals a mode, closes, and then reveals the choices has rebuilt it.
 
-The decided successor ranked CLAIM reward, not yet shipped, stays inside that
-same selector and reveal. In ranked Trial exactly one of the three common cards
+The ranked CLAIM reward (live since the 2026-09-04 progression-v2 activation)
+stays inside that same selector and reveal. In ranked Trial exactly one of the three common cards
 is visibly marked CLAIM before either player chooses, and the card says whether
 that rune is already owned **by the viewer**. Both seats see the same marked
 rune, but each ownership annotation comes only from that seat's server-confirmed
@@ -133,9 +133,8 @@ local two-player callers omit the optional mark because they grant no collection
 reward. The result reveals a new collection item only when the authoritative
 resolved winning choice matched the snapshotted CLAIM card.
 
-The decided successor progression adds one other shared presentation contract,
-not yet shipped: ranked-outcome entries appear in unlock order wherever they
-are presented. The exact sequence and per-surface inclusion contract live in
+Progression v2 adds one other shared presentation contract: ranked-outcome
+entries appear in unlock order wherever they are presented. The exact sequence and per-surface inclusion contract live in
 `docs/LADDER.md §7`. One progression/display rank belongs to the shared
 ranked-outcome spec, and one pure roster-order helper orders any supplied
 subset; browser surfaces consume that result rather than owning arrays or
@@ -146,10 +145,10 @@ slides for equipment, weekly access, and the NEON medal. Keep this presentation
 helper separate from the seed-sensitive weighted draw so a UI reorder cannot
 alter game selection.
 
-The successor score curve has its own server-advertised contract version. A
-compatible client renders the active version's shared floors and progress
-helper; it does not infer them from a point total or keep a screen-local table.
-Once v2 points are activated, a v1 client receives an update-required boundary
+The score curve has its own server-advertised contract version. A compatible
+client renders the active version's shared floors and progress helper; it does
+not infer them from a point total or keep a screen-local table. Since v2 points
+were activated (2026-09-04), a v1 client receives an update-required boundary
 before ranked rather than displaying the new points against old floors. The
 dedicated CLAIM capability follows the same rule: advertising it means the
 client can render the mark before choice and the snapshotted reward version on

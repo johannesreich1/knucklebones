@@ -1,6 +1,6 @@
 # Project status
 
-*Current as of 2026-09-01. Keep this page short: current state, unresolved
+*Current as of 2026-09-05. Keep this page short: current state, unresolved
 decisions, and externally owned actions only. Detailed sprint history lives in
 [`docs/history/2026-08-sprint.md`](history/2026-08-sprint.md).*
 
@@ -12,7 +12,7 @@ decisions, and externally owned actions only. Detailed sprint history lives in
 | Game | Local solo and two-player play, tutorial, modes, optional offline spells, and shared local/ranked board rendering | `src/core/`, `src/flow/`, `src/ui/` |
 | Ranked | Production runs **curve v2** as of 2026-09-04: server-authoritative play, matchmaking/bot backfill, ladder, history, profiles, deletion, permanent mode-pool progression, IVORY Rune Trial, authoritative casts, rune collection, and historical-SILVER equipped seats, plus the v2 contract itself — new floors, 2–7 finish-margin transfer, redistributed unlocks, CLAIM, debuts, OBSIDIAN weekly challenge, NEON medals, durable entitlements, and old-client refusal. The activation remapped 205 profiles and 203 season rows and switched scoring and curve versions together; the legacy v1 point-edit, bot-seed/refresh and wipe helpers now refuse by design. The disposable test population has 200 bots, beatable by a newcomer through GOLD; OBSIDIAN and NEON bots are favoured over a never-attacking newcomer (47% / 45% floors) and underdogs to anyone who looks at the opponent's board with rune winnings and stable equipment — see `docs/LADDER.md` §7 | `src/online/`, `src/core/ranked-outcomes.ts`, `supabase/functions/`, `docs/LADDER.md` |
 | Localization | English, Brazilian Portuguese, Spanish, German, French, Italian, Polish, Turkish, Indonesian, Japanese, and Korean share one ordered registry, complete catalogs, native metadata, and measured eager/online mobile geometry | `src/i18n/`, `docs/architecture/localization.md` |
-| Database | Repository and production share the reconciled 59-migration timestamped prefix through `20260830182406_ranked_progression_events.sql`; `supabase/migration-history.json` and the migration-ledger test pin that base. Production also records the guarded, hash-pinned historical-SILVER and eleven-locale stages, making the live ledger 61 migrations. The repository adds `20260901162456_progression_v2.sql` as the sole pending stage: it installs an audited dormant v2 contract but changes no live score until the database owner invokes its count-guarded activation transaction. The former compact aliases, obsolete 12-bot seed, and two wrong-stamped equipped-rune files are preserved only in the non-executable archive. Catalog, security, data, Realtime, cron, paired-stage, legacy-upgrade, and exact v2 schema/function audits cover the owned surfaces. Ledger alignment does not establish deployed Edge Function bytes. | `supabase/migrations/`, `supabase/legacy-migrations/`, `supabase/migration-history.json` |
+| Database | Repository and production hold the same 64 timestamped migrations, through `20260905101500_queue_liveness_heartbeat.sql` (checked against the live ledger 2026-09-05). `supabase/migration-history.json` and the migration-ledger test pin the reconciled 59-migration prefix through `20260830182406_ranked_progression_events.sql`; the later stages — historical-SILVER, eleven locales, progression v2 (activated 2026-09-04), the curve-v2 queue-admission repair, and the queue liveness pulse — are all applied. The former compact aliases, obsolete 12-bot seed, and two wrong-stamped equipped-rune files are preserved only in the non-executable archive. Catalog, security, data, Realtime, cron, paired-stage, legacy-upgrade, and exact v2 schema/function audits cover the owned surfaces. Ledger alignment does not establish deployed Edge Function bytes. | `supabase/migrations/`, `supabase/legacy-migrations/`, `supabase/migration-history.json` |
 | Builds | Hosted PWA, standalone HTML, widget, and Capacitor web assets come from the same source build | `build.mjs`, `docs/architecture/build.md` |
 | Native | Capacitor 8.5 iOS and Android projects are tracked; iOS supports 15+, Android installs on API 24+ while targeting API 36 | `native/`, `docs/architecture/build.md` |
 | Design | Product cards, open studies, and archived candidates are explicitly classified and recursively built from shared application CSS/renderers | `design/screens/`, `design/build.mjs` |
@@ -46,21 +46,16 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   aim/cast/place actions, but separate capabilities because Trial ignores both
   equipment modes and loans its own private choices. The additive v1 placement
   protocol remains only for legacy rune-free standard rows.
-- Current production ranked variety unlocks permanently from the player's
-  historical peak:
-  STONE has Classic, Single Strike, Column Shield, and Limited; BONE adds Row
-  Switch, Row Multiply, and Bounty; IVORY adds Rune Trial. Demotion and season
-  turnover never relock a pool. A human pairing uses the lower shared pool and
-  protocol-capability intersection; a bot uses its human's pool. Classic is
-  exactly 40% and eligible additions split the remaining 60% equally.
-  The implemented, dormant v2 successor redistributes those outcomes, applies
-  the late-weighted score curve and finish transfer, replaces the Trial reward
-  with CLAIM, and adds debuts, weekly challenges, medals, and durable per-outcome
-  entitlements:
-  `docs/LADDER.md §7` owns progression/pacing, `docs/MODES.md §4` owns the mode
-  and weekly rationale, and `docs/SPELLS.md §8` owns the Trial interaction.
-  Until the owner completes the activation sequence, the production-v1 mapping,
-  floors, and selected-rune reward remain runtime truth.
+- Ranked variety unlocks permanently from the player's historical peak;
+  demotion and season turnover never relock a pool. A human pairing uses the
+  lower shared pool and protocol-capability intersection, a bot uses its
+  human's pool, and Classic is exactly 40% with eligible additions splitting
+  the remaining 60% equally. The pools are curve v2's since the 2026-09-04
+  activation and cannot be rolled back: `docs/MODES.md §4` owns the live pool
+  table and the weekly rationale, `docs/LADDER.md §7` owns progression/pacing
+  (the late-weighted score curve, finish transfer, CLAIM, debuts, weekly
+  challenges, medals, durable per-outcome entitlements), and `docs/SPELLS.md
+  §8` owns the Trial interaction.
 - Rune Trial is `format='rune_trial'` with `modifier='classic'`, not an eighth
   mechanical core mode. Both seats receive the same uniform three-of-six loan,
   choose privately, and reveal together; a 10-second deadline (owner call
@@ -94,8 +89,10 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 - Rotate/revoke any live-test credentials that were ever committed. Repository
   live tests must remain environment-only, fail closed, and require explicit
   production opt-in. Credential rotation is an owner action.
-- Confirm the ranked Edge Function closure state independently; the reconciled
-  migration history establishes database identity, not deployed function bytes.
+- Confirm the ranked Edge Function closure state independently after each
+  deploy; the reconciled migration history establishes database identity, not
+  deployed function bytes. Last read back 2026-09-05: pvp-join v46 matches the
+  repository closure (`enqueue-refusal.ts`, `queue-liveness.ts` present).
 - The Apple/Game Center database migrations are recorded in the canonical
   production ledger. Keep the remaining rollout separate: deploy the
   rate-limited Cloudflare identity gateway plus the identity/revocation Edge
@@ -104,7 +101,9 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   with a signed device. None of those non-database production actions is
   recorded as complete here.
 - A fully suspended mobile client can still leave a bot match waiting until it
-  returns. A server-side sweep is the honest remaining solution.
+  returns. A server-side MATCH sweep is the honest remaining solution — distinct
+  from `pvp-join`'s queue-liveness sweep (2026-09-05), which only removes
+  abandoned queue rows (`docs/LADDER.md` § 8).
 
 ### Product and release decisions
 
@@ -122,18 +121,17 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   minutes with nothing in flight. BadRandolf landed on 3890/3890 as designed.
   The remap held its invariants across all 203 rows: no negative points, and
   `peak >= points` everywhere.
-- **A capability refusal reaches the player as "check your connection."**
-  `supabase/functions/pvp-join/operation.ts` collapses every RPC error into
-  `queue-failed` 500, so when `enqueue_ranked_player_v3` raises `ranked client
-  does not support active curve v2` the reason is discarded and the shared ask
-  card shows CAN'T CONNECT instead of UPDATE REQUIRED — a player who must update
-  is sent to inspect their wifi. The fix is to return `incompatible-client` 409,
-  which `queue-screen.ts` already routes to the right state; the modal should
-  also carry a store link, which it currently lacks. Both belong **before any
-  App Store submission**: until a binary ships the only affected device is the
-  owner's, and a build already in someone's hand cannot be repaired
-  retroactively. Release phasing, the adoption query and the platform limits are
-  in `docs/CLIENT_COMPATIBILITY.md`.
+- **A capability refusal now says UPDATE REQUIRED (fixed 2026-09-04,
+  `749ecf69`).** `pvp-join` used to collapse every RPC error into
+  `queue-failed` 500, so a client refused for the active curve saw CAN'T
+  CONNECT and was sent to inspect its wifi; `pvp-join/enqueue-refusal.ts` now
+  classifies the refusal and answers `incompatible-client` 409, which
+  `queue-screen.ts` routes to UPDATE REQUIRED; deployed pvp-join v46 carries
+  it and the queue liveness sweep (closure read back 2026-09-05). **Still owed
+  before any App Store submission:** that modal carries no store link
+  (`itms-apps://` on iOS, the Play listing on Android), and a build already in
+  someone's hand cannot be repaired retroactively. Release phasing, the
+  adoption query and the platform limits are in `docs/CLIENT_COMPATIBILITY.md`.
 - The legacy player-points, bot-seed/refresh and wipe helpers now **refuse by
   design** (`legacy production player-points helper is disabled after curve-v2
   activation`). Their fixtures describe v1 and cannot safely mutate a v2
@@ -261,6 +259,11 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 
 ## Documentation map
 
+The task → document table is in `CLAUDE.md`; what each document owns and does
+not, section by section, is the `knucklebones-docs` skill at
+`.claude/skills/knucklebones-docs/SKILL.md`, and `tests/docs-router.test.ts`
+keeps the two in agreement. This map covers the documents under `docs/`:
+
 | Task | Read |
 |---|---|
 | Frontend flow or module boundaries | [`architecture/frontend.md`](architecture/frontend.md) |
@@ -271,4 +274,7 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 | Tests, CI, browser verification, or live probes | [`architecture/testing.md`](architecture/testing.md) |
 | Legal publication facts, gate, or public routes | [`LEGAL.md`](LEGAL.md) |
 | Modes, spells, ladder, or identity | [`MODES.md`](MODES.md), [`SPELLS.md`](SPELLS.md), [`LADDER.md`](LADDER.md), [`IDENTITY.md`](IDENTITY.md) |
+| Matchmaking, the queue, abandonment, forfeits | [`LADDER.md`](LADDER.md) (`docs/LADDER.md § 8`) |
+| Ranked/equipped-rune decisions, or exploratory runes that never shipped | [`RUNE_MULTIPLAYER_INVESTIGATION.md`](RUNE_MULTIPLAYER_INVESTIGATION.md), [`RUNE_CANDIDATE_STUDY.md`](RUNE_CANDIDATE_STUDY.md) |
+| Shipping a server change an installed app must understand | [`CLIENT_COMPATIBILITY.md`](CLIENT_COMPATIBILITY.md) |
 | Why an August decision was made | [`history/2026-08-sprint.md`](history/2026-08-sprint.md) |

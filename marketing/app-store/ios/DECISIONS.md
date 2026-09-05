@@ -1,24 +1,25 @@
-# iOS App Store campaign — v6 decisions
+# iOS App Store campaign — v7 decisions
 
 **Decision date:** 2026-09-01
 **Status:** Approved for editable-draft synchronization; not approved for review submission
-**Output:** 96 localized portrait screenshots: 8 locales × 2 devices × 6 frames
-**Capture build:** `504c1c2f`
+**Output:** 132 localized portrait screenshots: 11 locales × 2 devices × 6 frames
+**Capture build:** the `runtimeBuild` in `capture-provenance.json` — it is written by the capture and is not restated here
 
 This is the creative, fixture, localization, delivery, and truthfulness
-contract for the sixth campaign pass. It supersedes every earlier exported
+contract for the seventh campaign pass. It supersedes every earlier exported
 sequence. The order is deliberate: core play, mode variety, defensive rune,
 offensive rune, signature-mode spectacle, then ranked progression. The same
-six-frame story is rendered in English, German, French, Polish, Turkish,
-Indonesian, Japanese, and Korean for both required Apple device targets; it is
-not one English master duplicated across locales.
+six-frame story is rendered in English, Brazilian Portuguese, Spanish, German,
+French, Italian, Polish, Turkish, Indonesian, Japanese, and Korean for both
+required Apple device targets; it is not one English master duplicated across
+locales.
 
 ## Locked six-frame story
 
 | # | Product state | Visible context | Creative purpose |
 |---|---|---|---|
 | 1 | ROW MULTIPLY board | `FrostLynx303` vs `EmberCrow896` | Lead with one `×2` row and one `×3` row so both multiplier tiers are visible. |
-| 2 | Orbit dial landed on COLUMN SHIELD | Named ranked opponents and ratings | Show all seven modes through the game's distinctive pre-match theatre. |
+| 2 | Orbit dial landed on COLUMN SHIELD | Named ranked opponents and ratings | Show all seven core modes in canonical unlock order through the game's distinctive pre-match theatre. |
 | 3 | WARD absorbing a real strike | `AI · NORMAL` | Make protection instantly readable: one mint seal, one incoming die, no lost dice. |
 | 4 | SUNDER committed against four victims | `AI · NORMAL` | Counter WARD's precision with the widest and most explosive rune preview. |
 | 5 | BOUNTY two-die strike + later active turn | Named ranked opponents | Align two shipped coin impacts with the visible `✦2`, then add an enlarged face-up WARD, die, and clock from a second production moment. |
@@ -26,23 +27,30 @@ not one English master duplicated across locales.
 
 Four of six frames visibly belong to the named ranked experience. The two
 rune-led frames use the real `AI · NORMAL` presentation. The BOUNTY composite
-also previews the planned ranked rune rail through the production armed-card
-pose; that is why the entire campaign remains gated on ranked-rune launch. The
-preview copy makes no availability claim.
+also shows the implemented ranked rune rail through the production armed-card
+pose. Progression v2 has been active in production since 2026-09-04; what
+still gates review submission is confirming the campaign was generated from
+that released runtime. The preview copy makes no availability claim.
 
 ## Locale and device matrix
 
-The campaign covers its eight AI-reviewed App Store localizations and both device
+The campaign covers its eleven AI-reviewed App Store localizations and both device
 classes declared by the universal iOS target:
 
 | App Store locale | Runtime locale | Runtime viewport | Final export | Frames |
 |---|---|---|---|---:|
 | `en-GB` | `en` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
 | `en-GB` | `en` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
+| `pt-BR` | `pt` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
+| `pt-BR` | `pt` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
+| `es-ES` | `es` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
+| `es-ES` | `es` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
 | `de-DE` | `de` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
 | `de-DE` | `de` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
 | `fr-FR` | `fr` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
 | `fr-FR` | `fr` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
+| `it` | `it` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
+| `it` | `it` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
 | `pl` | `pl` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
 | `pl` | `pl` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
 | `tr` | `tr` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
@@ -57,16 +65,15 @@ classes declared by the universal iOS target:
 Both the marketing overlay and every player-visible product string use the
 selected runtime locale. Localizing only the headline while leaving the game
 UI in English was rejected: it would look like a mockup and would not prove
-the actual localized layouts. The runtime now supports eleven product
-languages, but adding Portuguese, Spanish, or Italian listing assets without
-reviewed metadata and captures remains outside this eight-locale campaign.
+the actual localized layouts. The complete eleven-language product roster is
+represented in both the runtime and the reviewed App Store listing campaign.
 
 The iPad images come from a real 1032 × 1376 runtime layout with iPad safe
 areas, not an enlarged or cropped phone canvas. One deterministic capture
 pipeline owns both devices so fixture meaning stays identical while the real
-responsive product layout is allowed to differ. This produces sixteen managed
-locale/device sets and 96 final PNGs. BOUNTY needs one extra authentic active
-source for every set, so a complete capture contains 112 raw frames.
+responsive product layout is allowed to differ. This produces twenty-two managed
+locale/device sets and 132 final PNGs. BOUNTY needs one extra authentic active
+source for every set, so a complete capture contains 154 raw frames.
 
 ## Exact deterministic fixtures
 
@@ -93,8 +100,10 @@ production components must render every product pixel.
 ### 2 — COLUMN SHIELD orbit dial
 
 - Use the production mode-reveal overlay, not the mode library or a recreated
-  wheel. Show all seven registry-provided nodes and hold the landed state on
-  COLUMN SHIELD.
+  wheel. Show all seven registry-provided nodes in the shared canonical unlock
+  order—CLASSIC, SINGLE STRIKE, COLUMN SHIELD, BOUNTY, ROW MULTIPLY, ROW
+  SWITCH, LIMITED—and hold the landed state on COLUMN SHIELD. This presentation
+  order is deliberately independent of the seed-sensitive weighted draw.
 - Present `FrostLynx303 · 2,494` against `EmberCrow896 · 2,468` in the real
   ranked face-off.
 - The selected node, centre icon, and `COLUMN SHIELD` answer use the production
@@ -172,10 +181,12 @@ production components must render every product pixel.
 
 - Use the production online ladder renderer with deterministic fictional rows.
   Mock transport only; do not paint the list or league horizons by hand.
-- Use a population of 199. `PrismWolf771` is the only `NEON`/apex row at #1;
-  `NovaComet992` is #2; `CipherMoth440` is `GOLD · #3` at 2,550;
-  `FrostLynx303` is highlighted at `GOLD · #4` with 2,510; and
-  `EmberCrow896` follows at `GOLD · #5` with 2,431.
+- Use curve v2 and a population of 199. `PrismWolf771` is the only
+  `NEON`/apex row at #1 with 6,673; `NovaComet992` is `OBSIDIAN · #2` at
+  4,900; `CipherMoth440` is `GOLD · #3` at 3,240; `FrostLynx303` is
+  highlighted at `GOLD · #4` with 3,200; and `EmberCrow896` follows at
+  `GOLD · #5` with 3,085. `LunarFox118` and `OrbitHare662` are SILVER at
+  2,397 and 1,863; `GlitchRaven37` is IVORY at 1,394.
 - FrostLynx303's record is 35 wins, 18 losses, and 2 draws: 55 games in total.
   The next named rival is only 40 points ahead, so the visible `+40 on you`
   gap gives `WIN. CLIMB. REPEAT.` a concrete target rather than an abstract
@@ -217,10 +228,12 @@ production components must render every product pixel.
 | Local victory | Replaced in v2 by the production online result with identity plates and BEATEN stamp. |
 | Standalone ranked victory | Removed in v3 at the owner's direction; transfer `WIN. CLIMB. REPEAT.` to the ladder and use the freed slot for WARD. |
 
-The retired online-result fixture remains a documented alternate: a non-forfeit
-47–30 win by FrostLynx303 over EmberCrow896, `+83`, settled `GOLD · #3` and
-`GOLD · #5` plates, and the production `BEATEN` stamp. If revived, it must be
-regenerated from the current online result component and current product
+The retired online-result fixture is historical v1 evidence only: it used a
+non-forfeit 47–30 win by FrostLynx303 over EmberCrow896, a `+83` v1 delta,
+settled `GOLD · #3` and `GOLD · #5` plates, and the production `BEATEN` stamp.
+It is not a valid curve-v2 fixture because v2 derives a visible base plus
+finish-margin component. If revived, it needs a newly settled v2 result and
+must be regenerated from the current online result component and product
 design; the obsolete exported PNG is intentionally not part of this set.
 
 ## Truthfulness and draft caveats
@@ -235,8 +248,10 @@ design; the obsolete exported PNG is intentionally not part of this set.
    endorsements, or claimed leaderboard positions.
 4. **Rune contexts are explicit.** WARD and SUNDER visibly use `AI · NORMAL`;
    they carry no ranked names, ratings, or clock furniture. The armed,
-   face-up WARD in BOUNTY is planned ranked-rune artwork and keeps the whole
-   campaign in draft until that implementation ships.
+   face-up WARD in BOUNTY comes from the implemented ranked-rune flow, which
+   has been live in production since the 2026-09-04 activation of progression
+   v2. The campaign remains a draft until it is confirmed regenerated from that
+   released implementation.
 5. **The leave control is intentionally suppressed.** `#btnLeave` is hidden by
    the capture fixture in every preview so store art contains no exit affordance.
    No product stylesheet or runtime behavior is changed.
@@ -246,12 +261,12 @@ design; the obsolete exported PNG is intentionally not part of this set.
    visible `4` is a later legal roll; it is not restored inside the resolving
    move.
 7. **Draft synchronization is not release approval.** The exact campaign may
-   be staged in the editable App Store Connect draft. Ranked runes must ship
-   and the BOUNTY preview must be regenerated from that shipping implementation
-   before review submission.
+   be staged in the editable App Store Connect draft. Progression v2 activated
+   in production on 2026-09-04; before review submission this campaign must be
+   confirmed generated from that exact released implementation.
 8. **Store-name clearance remains unresolved.** “Knucklebones Neon,” its
    lockup, and name-bearing metadata are provisional. A cleared name change
-   affects all 96 previews and eight metadata localizations.
+   affects all 132 previews and eleven metadata localizations.
 9. **Listing ownership is narrow.** The campaign owns localized name,
    subtitle, promotional text, keywords, and description only. It does not
    invent support, privacy, privacy-choices, or marketing URLs while the
@@ -273,29 +288,29 @@ design; the obsolete exported PNG is intentionally not part of this set.
 4. Capture one full lossless raw frame for every locale/device/hero tuple.
    BOUNTY additionally requires complete `hero` and `active` frames for each
    tuple; the finalizer alone owns their manifest-ratio chronological
-   transition. A complete run therefore produces 112 raw frames and 96 finals.
+   transition. A complete run therefore produces 154 raw frames and 132 finals.
 5. Keep `source.html`, `manifest.json`, `metadata.json`, raw/export stems,
-   checksums, `capture-provenance.json`, sixteen contact sheets, README, and this
+   checksums, `capture-provenance.json`, twenty-two contact sheets, README, and this
    decision log synchronized with the locked order and locale/device matrix.
 6. Any product or campaign design change that affects one scene requires that
-   scene to be regenerated in all eight managed locales and both devices. Changes to
+   scene to be regenerated in all eleven managed locales and both devices. Changes to
    shared UI, layout, typography, localization plumbing, or capture/finalizer
    code require the complete matrix to be regenerated with
    `mise exec -- npm run appstore:screenshots:generate`. A BOUNTY change always
-   regenerates both sources in all sixteen locale/device sets.
+   regenerates both sources in all twenty-two locale/device sets.
 7. Commit affected raw frames, final PNGs, checksums, provenance, and contact
    sheets in the same change as their source. A stale generated preview is a
    failing handoff even when source tests pass. This rule is mirrored in
    `AGENTS.md` and `CLAUDE.md` so future coding agents see it before handoff.
-8. Validate all 96 opaque PNGs at 1320 × 2868 or 2064 × 2752, then review the
-   sixteen contact sheets and representative finals at full resolution for
+8. Validate all 132 opaque PNGs at 1320 × 2868 or 2064 × 2752, then review the
+   twenty-two contact sheets and representative finals at full resolution for
    clipping, seams, source-language leaks, stale scenes, colour drift,
    responsive defects, exit-button leakage, and AI/ranked mixing.
 
 ## Release acceptance
 
-The campaign is ready for editable-draft synchronization only when all 96
-exports and eight metadata localizations match this contract, focused checks
+The campaign is ready for editable-draft synchronization only when all 132
+exports and eleven metadata localizations match this contract, focused checks
 are green, every input is committed, the owner has reviewed the remote plan,
 and the confirmation token matches. That permission does not authorize review
 submission. Submission additionally requires shipping ranked runes,
@@ -315,21 +330,21 @@ Fastlane 2.238.0 is locked because the targeted implementation uses its
 Spaceship App Store Connect models. Generic Deliver overwrite was rejected:
 this is a universal iPhone/iPad app, and that action can clear or reorder all
 screenshot sets in an included locale. The selected workflow reads the exact
-app and editable iOS version, manages only `en-GB`, `de-DE`, `fr-FR`, `pl`,
-`tr`, `id`, `ja`, and `ko` plus
+app and editable iOS version, manages only `en-GB`, `pt-BR`, `es-ES`, `de-DE`,
+`fr-FR`, `it`, `pl`, `tr`, `id`, `ja`, and `ko` plus
 their `APP_IPHONE_67` and `APP_IPAD_PRO_3GEN_129` sets, snapshots every unowned
 field and other locale/device set, and verifies that protected snapshot after
 the operation.
 
 The workflow separates local check, remote read-only plan, and mutation. A
 confirmation token binds the app id, version, all localized owned metadata,
-ordered checksums for sixteen screenshot sets, and complete current remote
+ordered checksums for twenty-two screenshot sets, and complete current remote
 inventory; a changed file or remote edit invalidates it. A plan additionally
 requires the whole marketing input/export directory to be tracked and clean,
 along with the Fastlane implementation, package commands, Gemfile, and lock.
 An unreviewed local capture or uploader edit cannot run against the store.
 
-The mutation may create only missing localizations for the eight managed
+The mutation may create only missing localizations for the eleven managed
 locales, patch only `name`, `subtitle`, `promotionalText`, `keywords`, and
 `description`, and synchronize six ordered screenshots per managed target.
 Because Apple's current create schema requires an App Info `name`, a missing

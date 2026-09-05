@@ -10,12 +10,15 @@ validation run on Supabase.
 
 ## Load only the context the task needs
 
-Do not read every project document up front. **The `knucklebones-docs` skill
-is the router** — it carries this table plus what each document owns and the
-traps that recur across all of them, and it is the place to add a row when you
-learn something new. Invoke it when the area is unfamiliar or you need to know
-which document owns a decision. The short table below is kept here so routing
-works without loading anything:
+Do not read every project document up front. The table below routes a task to
+its owner and is kept here so routing works without loading anything. **The
+`knucklebones-docs` skill (`.claude/skills/knucklebones-docs/SKILL.md`) is its
+other half**: what each document owns section by section, what it does not,
+and the protocol for writing a new decision down. Invoke it when the area is
+unfamiliar or you need to know which document owns a decision; an agent that
+cannot invoke skills reads the file. `tests/docs-router.test.ts` fails if this
+table and the skill's map cover different documents, a routed path is missing,
+a `§ N` reference is ambiguous, or the skill is not tracked:
 
 | Task | Read first |
 |---|---|
@@ -24,20 +27,22 @@ works without loading anything:
 | CSS, responsive layout, game-state overrides, or widget isolation | `docs/architecture/styles.md` |
 | Locale detection, translated copy, language settings, or translation layout budgets | `docs/architecture/localization.md` |
 | Supabase, auth, RLS, migrations, RPCs, Realtime, or Edge Functions | `docs/architecture/backend.md`, `supabase/DESIGN.md`, `supabase/functions/README.md` (what each function is for), and the applicable Supabase skills |
+| Rolling a migration or Edge Function out to production, the database helpers, or diagnosing a live match | `tools/functions/README.md`, `tools/database/README.md`, `tools/debug/README.md` |
 | Build artifacts, PWA, service worker, widget packaging, native, or deploy | `docs/architecture/build.md` |
 | Tests, CI, browser harnesses, live probes, or verification policy | `docs/architecture/testing.md` |
-| Claude Design cards, study lifecycle, or DesignSync | `design/README.md`, then `README.md` → Design system |
+| Claude Design cards, study lifecycle, or DesignSync | `design/README.md`, then `README.md` → Design system; typeface candidates in `design/fonts/README.md` |
 | Game modes or their balance/odds | `docs/MODES.md` |
 | Spells or their balance/interaction rules | `docs/SPELLS.md`; for the ranked/equipped-rune decisions behind them, `docs/RUNE_MULTIPLAYER_INVESTIGATION.md` |
 | Ladder points, groups, seasons, or bots | `docs/LADDER.md` |
-| Matchmaking, the queue, abandonment, forfeits | `docs/LADDER.md` § 7 |
+| Matchmaking, the queue, abandonment, forfeits | `docs/LADDER.md` § 8 |
 | Accounts, guest upgrade, nickname, or Game Center identity | `docs/IDENTITY.md` |
 | Shipping a server change an installed app must understand — release phasing, capability negotiation, the UPDATE REQUIRED path | `docs/CLIENT_COMPATIBILITY.md` |
 | Impressum, privacy, consent, or anything shipping to a store listing | `docs/LEGAL.md` |
-| Historical August rationale or rejected alternatives | `docs/history/2026-08-sprint.md`, `docs/RUNE_CANDIDATE_STUDY.md` (exploratory runes, none shipped) |
+| App Store screenshots, listing metadata, or campaign locales | `marketing/app-store/ios/README.md`; fixtures in `marketing/app-store/ios/DECISIONS.md` |
+| Historical August rationale or rejected alternatives | `docs/history/2026-08-sprint.md`, `docs/RUNE_CANDIDATE_STUDY.md` (exploratory runes, none shipped), `supabase/snapshots/2026-08-20-pre-ladder-ratings.md` (ratings before the ladder cutover) |
 
-For a routine localized change, inspect its owners and tests; `STATUS.md` is
-not mandatory unless the task depends on current/open external state.
+For a routine localized change, inspect its owners and tests; `docs/STATUS.md`
+is not mandatory unless the task depends on current/open external state.
 
 ## One thing, one implementation
 
@@ -57,6 +62,13 @@ differs. A second near-copy is a design failure, not a shortcut.
 
 ## Universal engineering rules
 
+- **Derive, do not restate.** A number, list or section number that appears
+  twice will diverge: the App Store locale set was copied into five files and
+  a merge shrank the campaign while every guard agreed with it, because one
+  guard asserted the set had not *grown*. Read the owner (a config, a registry,
+  a heading) and assert that holders AGREE; at most one deliberate, named copy
+  may exist as a widen-guard, and a test must pin it to the source. This rule
+  guards the router itself (`tests/docs-router.test.ts`).
 - **Never push a known red gate.** Cloudflare deploys `main` immediately.
   Choose verification in proportion to the change: focused owner and
   specialized gates are sufficient for a well-contained, low-risk change;

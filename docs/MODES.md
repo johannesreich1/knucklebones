@@ -123,14 +123,13 @@ additions *are* the game's variety, and half of all matches seeing none of them
 made them feel rarer than intended. Any change here must be redeployed to the
 join function, which owns the real pick.
 
-### Implemented progression v2 — staged for production activation
+### Implemented progression v2 — active in production since 2026-09-04
 
 The v2 schedule, pace evidence, exact target odds, one-time debut matches,
 grandfathering rule, and rollout dependencies are authoritative in
-`docs/LADDER.md §7`. The repository now implements them in the shared registry,
-client, persistence, migration, and authoritative functions. Production remains
-on the table above until the guarded database/function rollout and explicit
-curve activation complete.
+`docs/LADDER.md §7`. The shared registry, client, persistence, migration, and
+authoritative functions implement them, and the table above is what production
+has run since the 2026-09-04 activation.
 
 From the mode-design side, the order is fixed:
 

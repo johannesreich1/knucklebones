@@ -2053,8 +2053,10 @@ The remaining risks are rollout and evidence risks:
 
 1. database, v2 Edge Function closures, web/PWA/native clients, and migrations
    must ship in the documented compatibility order;
-2. v1 standard matches must remain playable while old cached clients exist,
-   and no capability intersection may admit them to Trial;
+2. *(pre-2026-09-04)* v1 standard matches must remain playable while old cached
+   clients exist, and no capability intersection may admit them to Trial —
+   superseded by the hard curve cutover, which refuses old clients at enqueue
+   (`docs/CLIENT_COMPATIBILITY.md`);
 3. pgTAP/RLS/race/idempotency, browser reconnect/selection/cast, and live
    disposable-account verification must pass against the exact deployed
    versions;

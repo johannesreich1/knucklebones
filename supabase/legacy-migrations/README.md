@@ -9,8 +9,9 @@ history without changing production migration records or running SQL. The 29
 compact local files (`0001` through `0031`, with the historical gaps) and two
 locally mis-timestamped equipped-rune files moved here verbatim. Thirty-four
 production-only files were fetched from
-`supabase_migrations.schema_migrations`, leaving a 56-file timestamped prefix
-in `supabase/migrations/` that matches production.
+`supabase_migrations.schema_migrations`, leaving, at that moment, a 56-file
+timestamped prefix in `supabase/migrations/` that matched production (the
+pinned reconciled base is 59 files; `docs/STATUS.md` carries the live count).
 
 `supabase/migration-history.json` pins both the canonical production prefix and
 the complete archive. `tests/migration-ledger.test.ts` rejects a compact file

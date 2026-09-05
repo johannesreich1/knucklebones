@@ -73,6 +73,17 @@ visual parity first; semantic cleanup is a separate change.
   the rules they still demonstrate.
 - Do not use `!important` to repair ownership. Fix manifest order, specificity,
   or the selector boundary.
+- `:where()` contributes zero specificity. The online screens wrap their rules
+  in `:where(#kbroot)` so they stay at class weight, which means a shell rule
+  with a real id (`#ovOnline .panel`) outranks anything a screen file says
+  through `:where()`, silently. Check the computed value before believing a
+  declaration landed, and centre a row on properties nothing competes for
+  (`margin-inline`, `text-align`) rather than by raising specificity.
+- A full-width row's box is centred by definition, so its position proves
+  nothing about its text. Assert `text-align` for text-only rows and the row's
+  centre against the panel's for sized ones; the matchmaking clock read from
+  the left margin inside a centred panel from the day it was written until
+  2026-09-05 (`4c42107a`) because the test measured the box.
 
 Shared interactive controls expose at least a 44 × 44 px effective hit region,
 including compact back buttons, link-style actions, and visually small colour

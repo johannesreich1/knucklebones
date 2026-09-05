@@ -6,10 +6,11 @@ Since the 2026-08-30 reconciliation and ranked-rune rollouts,
 prefix as production, pinned by
 `supabase/migration-history.json` and `tests/migration-ledger.test.ts`. The
 guarded rollout manifest separately pins the applied 60th historical-SILVER
-and 61st eleven-locale player-settings stages. The repository's 62nd migration,
-`20260901162456_progression_v2.sql`, is the sole pending production stage; it
-installs a dormant, version-1-default contract and does not itself activate or
-remap the ladder.
+and 61st eleven-locale player-settings stages. The 62nd,
+`20260901162456_progression_v2.sql`, was applied and activated on 2026-09-04
+(see the callout below); `20260904145925_curve_v2_queue_admission.sql` and
+`20260905101500_queue_liveness_heartbeat.sql` followed, so repository and
+production hold the same 64 migrations and nothing is pending.
 The former compact aliases, obsolete 12-bot seed, and two wrong-stamped files live
 under `supabase/legacy-migrations/` and are never executable.
 

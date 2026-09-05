@@ -41,7 +41,7 @@ Apple's current format reference is
 
 - `raw/{locale}/{target}/` contains 154 lossless runtime captures: six hero
   states plus BOUNTY's separate active state, across eleven managed locales and two
-  devices.
+  devices, and one `checksums.txt` per set.
 - `exports/{locale}/{target}/` contains the 132 opaque final PNGs and one
   `checksums.txt` for each locale/device set. These are the upload assets.
 - `contact-sheets/{locale}-{target}.jpg` contains twenty-two review aids. Contact
@@ -52,39 +52,48 @@ Apple's current format reference is
 
 ## The locale set is written once
 
-It lives in `app-store-connect.json` and nowhere else. `capture.mjs`,
-`source.html` and `verify-exports.mjs` derive the supported *runtime* locales
-from `src/i18n/locale.ts` (`LOCALE_REGISTRY`) — the app's own list — and
-`verify-exports.mjs` asserts that config, manifest and metadata **agree with
-each other**.
+The campaign's locale set lives in `app-store-connect.json`. `capture.mjs`,
+`source.html` and `verify-exports.mjs` read it, derive the supported *runtime*
+locales from `src/i18n/locale.ts` (`LOCALE_REGISTRY`, the app's own list), and
+assert that config, manifest, metadata and provenance **agree with each
+other**. The one deliberate second copy is Fastlane's hard-bound
+`REQUIRED_LOCALES` (`fastlane/lib/screenshot_sync.rb`), which exists so that
+editing the config alone cannot widen an upload; `tests/appstore-delivery.test.ts`
+asserts that it equals the config's set rather than keeping a list of its own.
 
-That phrasing is deliberate, and it is the correction of a real failure. The
-check used to assert the campaign contained exactly eight *named* locales, and
-three further copies of that list were literals in code. On 2026-09-01 the
-campaign was expanded to eleven (`d1083ab0`, then `2150604e`, which regenerated
-all 132 screenshots and rewrote this file to match). A parallel branch from
-earlier the same day carried the eight-locale manifest, metadata and README,
-and the merge kept **those** while keeping the eleven-locale config and the
-eleven-locale exports.
+That phrasing is deliberate, and it is the correction of a real failure. Two
+branches grew from the same three-locale campaign on 2026-09-01: `e4bd54b4`
+added Polish, Turkish, Indonesian, Japanese and Korean (eight locales, exports
+not regenerated), and `d1083ab0` added those plus Brazilian Portuguese, Spanish
+and Italian (eleven), regenerated every screenshot and rewrote this file and
+`DECISIONS.md`; `2150604e` then re-captured the eleven for the curve-v2
+presentation. The merge `ebb96ded` (2026-09-02) kept the eleven-locale config
+and the eleven export directories but took the eight-locale side's manifest,
+metadata, README, `DECISIONS.md`, provenance, four code literals, the Fastlane
+list and both delivery contracts.
 
 Nothing looked broken: the exports for all eleven stayed committed and the
 config still listed eleven, so the campaign was merely un-regenerable — and
 every guard agreed with the regression, because every guard held its own stale
 copy of the list. `verify-exports` was the worst of them: asserting the set was
 *exactly* those eight meant it enforced the loss and would have rejected the
-recovery. It surfaced on 2026-09-05, the next time anyone ran the pipeline, and
-the fix was to restore the reviewed copy from `2150604e` and delete the
-duplicated lists.
+recovery. It surfaced on 2026-09-05, the next time anyone ran the pipeline.
+`e2d2d388` restored the manifest's localizations and the metadata from
+`2150604e`, deleted the four code literals and regenerated all 132 exports on
+one build; this file, `DECISIONS.md`, the manifest's fixture descriptions, the
+Fastlane list and both contracts were restored afterwards, once the
+credential-free check was actually run and found still red.
 
 **So: never restate the locale set.** Read `app-store-connect.json` for the
 campaign, `LOCALE_REGISTRY` for the runtime. Assert agreement, never a literal
 — an assertion that a set has not *grown* is not a safety check, it is a
 ratchet against your own product.
 
-Use the app's own translated mode and rune names in listing copy (`CAÇADA`,
-`TAGLIA`, `RECOMPENSA`…), never invented terminology: the screenshots show the
-running app underneath, and a listing that names things differently from the
-product reads as a different game.
+If listing copy ever names a mode or rune, use the app's own translation
+(BOUNTY is `CAÇADA` in Portuguese, `TAGLIA` in Italian, `RECOMPENSA` in
+Spanish), never invented terminology: the screenshots show the running app
+underneath, and a listing that names things differently from the product reads
+as a different game.
 
 ## Regenerate and verify
 
@@ -241,12 +250,13 @@ manifest status must be exactly
 upload or review-submission operation, and successful synchronization does not
 make the app public.
 
-The ranked-rune implementation is staged with progression v2, but that curve is
-not active in production yet. The BOUNTY image may be staged in the editable
-draft, but the app must not be submitted until the production database and
-authoritative functions activate v2 and the campaign still matches that exact
-released implementation. Store-name clearance and localized legal/support URLs
-are independent submission blockers as recorded in `docs/STATUS.md`.
+The ranked-rune implementation shipped with progression v2, active in
+production since 2026-09-04. The BOUNTY image may be staged in the editable
+draft, but the app must not be submitted until the campaign is confirmed to
+match that released implementation — the build the current exports came from
+is the `runtimeBuild` in `capture-provenance.json`. Store-name clearance and
+localized legal/support URLs are independent submission blockers as recorded in
+`docs/STATUS.md`.
 
 For credentials, keep the one-time `.p8` download outside this repository and
 point `ASC_KEY_PATH` at its absolute path. Set `ASC_KEY_ID`; set

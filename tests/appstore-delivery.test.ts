@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { APP_ID, NATIVE_STORE_NAME } from '../src/config.ts';
+import { LOCALE_REGISTRY } from '../src/i18n/locale.ts';
 
 const problems: string[] = [];
 const check = (ok: boolean, message: string) => { if (!ok) problems.push(message); };
@@ -45,33 +46,30 @@ check(appStore.bundleId === APP_ID && appStore.storeName === NATIVE_STORE_NAME,
   `${APP_STORE_CONFIG} must use the canonical bundle id and store name`);
 check(appStore.platform === 'IOS', `${APP_STORE_CONFIG} must target only iOS`);
 
-const expectedLocaleOrder = ['en-GB', 'de-DE', 'fr-FR', 'pl', 'tr', 'id', 'ja', 'ko'];
-const expectedLocales = sorted(expectedLocaleOrder);
-const configuredLocales = appStore.locales?.map((locale: { appStoreLocale: string }) =>
+/* THE LOCALE SET IS WRITTEN ONCE, in app-store-connect.json. Every check below
+   asserts AGREEMENT with it and never keeps a list of its own: this file used
+   to carry the campaign's locales as a literal, and on 2026-09-02 a merge
+   (ebb96ded) brought an eight-locale copy over an eleven-locale config — after
+   which this test enforced the regression it existed to catch, for three days
+   (marketing/app-store/ios/README.md, "The locale set is written once"). */
+const expectedLocaleOrder: string[] = appStore.locales?.map((locale: { appStoreLocale: string }) =>
   locale.appStoreLocale) ?? [];
-check(sameStrings(configuredLocales, expectedLocaleOrder),
-  `${APP_STORE_CONFIG} locales must be exactly ${expectedLocaleOrder.join(', ')} in campaign order`);
+const expectedLocales = sorted(expectedLocaleOrder);
+const configuredLocales = expectedLocaleOrder;
+check(configuredLocales.length > 0 && new Set(configuredLocales).size === configuredLocales.length,
+  `${APP_STORE_CONFIG} must list a non-empty, duplicate-free campaign locale set`);
 check(sameStrings(sorted(Object.keys(appStoreManifest.localizations ?? {})), expectedLocales)
   && sameStrings(sorted(Object.keys(appStoreMetadata.localizations ?? {})), expectedLocales),
 `${APP_STORE_MANIFEST} and ${APP_STORE_METADATA} must cover exactly the configured locales`);
 
-const expectedRuntimeLocales = new Map([
-  ['en-GB', 'en'],
-  ['pt-BR', 'pt'],
-  ['es-ES', 'es'],
-  ['de-DE', 'de'],
-  ['fr-FR', 'fr'],
-  ['it', 'it'],
-  ['pl', 'pl'],
-  ['tr', 'tr'],
-  ['id', 'id'],
-  ['ja', 'ja'],
-  ['ko', 'ko'],
-]);
+/* A store locale's runtime locale is its language, and the language must be
+   one the app ships — the registry decides, not a table kept here. */
+const shippedRuntimeLocales = new Set<string>(LOCALE_REGISTRY.map((locale) => locale.id));
 for (const locale of appStore.locales ?? []) {
-  check(locale.runtimeLocale === expectedRuntimeLocales.get(locale.appStoreLocale)
+  check(locale.runtimeLocale === locale.appStoreLocale.split('-')[0]
+    && shippedRuntimeLocales.has(locale.runtimeLocale)
     && locale.screenshotExportRoot === `exports/${locale.appStoreLocale}`,
-  `${locale.appStoreLocale} must use its canonical runtime locale and localized export root`);
+  `${locale.appStoreLocale} must use its language as a shipped runtime locale and a localized export root`);
   check(appStoreManifest.localizations?.[locale.appStoreLocale]?.runtimeLocale === locale.runtimeLocale,
     `${locale.appStoreLocale} runtime locale must agree between config and manifest`);
 }
@@ -125,8 +123,8 @@ check(appStore.draftSyncApproved === true
 
 const slides = appStoreManifest.slides ?? [];
 const screenshotSets = configuredLocales.length * expectedTargets.length;
-check(Array.isArray(slides) && slides.length === 6 && screenshotSets === 16,
-  `${APP_STORE_MANIFEST} must define six slides across exactly sixteen locale/device sets`);
+check(Array.isArray(slides) && slides.length === 6,
+  `${APP_STORE_MANIFEST} must define exactly six slides`);
 check(captureProvenance.schemaVersion === 1
   && captureProvenance.generator === APP_STORE_CAPTURE
   && sameStrings(captureProvenance.locales ?? [], expectedLocaleOrder)
@@ -201,11 +199,14 @@ check(/onLadderList/.test(captureFixtureSource) && !/onBoardList/.test(captureFi
 check((captureFixtureSource.match(/runtimeT\(['"]game['"], ['"]difficulty\.normal['"]\)/g) ?? []).length === 2,
   `${APP_STORE_SOURCE} must validate both AI Normal fixtures against localized runtime copy`);
 
-check(/REQUIRED_LOCALES\s*=\s*%w\[de-DE en-GB fr-FR id ja ko pl tr\]/.test(screenshotSync)
+/* Fastlane keeps the one deliberate second copy — hard-bound so that editing
+   the config alone cannot widen an upload — and it must equal the config. */
+const hardBoundLocales = /REQUIRED_LOCALES\s*=\s*%w\[([^\]]*)\]/.exec(screenshotSync)?.[1]?.trim().split(/\s+/) ?? [];
+check(sameStrings(hardBoundLocales, expectedLocales)
   && /REQUIRED_DISPLAY_TYPES\s*=\s*%w\[APP_IPAD_PRO_3GEN_129 APP_IPHONE_67\]/.test(screenshotSync)
   && /metadataFile must be metadata\.json/.test(screenshotSync)
   && /metadata ownedFields must be exactly/.test(screenshotSync),
-  'Fastlane sync must hard-bind the exact eight locales, two display types, and owned metadata file');
+  `Fastlane sync must hard-bind exactly the configured locales (${expectedLocales.join(', ')}), two display types, and the owned metadata file`);
 check(/ASC_APP_STORE_SYNC_CONFIRM/.test(fastfile)
   && /draftSyncApproved/.test(fastfile)
   && /reviewSubmissionApproved/.test(fastfile)

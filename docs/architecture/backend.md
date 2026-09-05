@@ -19,8 +19,8 @@ deployed function versions are not inferred from repository prose.
   limits the 0–7 applied value against the locked ladder snapshot. Settlement
   persists versioned signed base and finish components beside the total. The
   browser submits none of it, and SQL or individual Edge Function adapters do
-  not carry copied versions of the formula. Production keeps the v1 settlement
-  path until the curve-v2 activation described below.
+  not carry copied versions of the formula. Production has settled on the
+  curve-v2 path since the 2026-09-04 activation described below.
 - For Rune Trial, the server also owns the common offer, private choices,
   deterministic deadline auto-picks, revealed rune snapshots, and idempotent
   collection reward. Reward version 2 snapshots the offer first, chooses one of
@@ -77,13 +77,16 @@ applied `20260830155543_equipped_runes_ranked.sql`,
 prefix 59 files. The guarded rollout subsequently applied
 `20260831133000_historical_silver_ranked_runes.sql` and
 `20260901074059_expand_player_settings_locales_11.sql`, so the live ledger has
-61 files; `migration-history.json` pins the reconciled base and the rollout
-manifest pins those final stages' exact bytes. The repository's next migration,
-`20260901162456_progression_v2.sql`, is deliberately safe to apply while the
-runtime contract remains on curve/scoring version 1. It adds the v2 catalog,
+61 files at that point; `migration-history.json` pins the reconciled base and
+the rollout manifest pins those stages' exact bytes.
+`20260901162456_progression_v2.sql` was written to be safe to apply while the
+runtime contract stayed on curve/scoring version 1 — it adds the v2 catalog,
 durable entitlements, weekly/medal state, versioned settlement fields, and the
 owner-only activation transaction without remapping a player until that
-transaction is called. The archived `0007_bot_pool.sql` is an obsolete one-off
+transaction is called — and was applied and activated on 2026-09-04;
+`20260904145925_curve_v2_queue_admission.sql` and
+`20260905101500_queue_liveness_heartbeat.sql` followed, so repository and
+production hold the same 64 migrations. The archived `0007_bot_pool.sql` is an obsolete one-off
 12-account seed and must never become executable again.
 
 Normal linked history checks and dry runs can therefore use the repository
@@ -265,6 +268,11 @@ share its random consumption.
   behind the deletion barrier, synchronize seats on active/terminal changes,
   and remove both participants' queue claims. This also covers older service
   writers during a database-first rollout.
+- `matchmaking_queue` keeps two clocks: `created_at` is the position (a
+  re-join's `on conflict do nothing` never moves it) and `last_seen_at` the
+  pulse, stamped `clock_timestamp()` by the `matchmaking_queue_stamp_liveness`
+  before-update trigger on the UPDATE every re-join performs. `pvp-join` sweeps
+  rows silent for 30s before pairing; `docs/LADDER.md` § 8 owns the lifecycle.
 - `enqueue_ranked_player`, `start_ranked_match`, and `leave_ranked_queue` take
   the same profile locks. Starting consumes the requester and human-opponent
   queue rows in the match/seed/optional bot-opener transaction; leaving returns
@@ -297,13 +305,14 @@ share its random consumption.
   normally, and outcome/rune/weekly
   entitlements survive independently of the numeric mapping.
 
-  The rollout first deploys a client/server contract that understands both
-  curve versions while v1 remains active. At cutover, ranked admission pauses,
-  every active v1 match is finished or deterministically settled, one
-  transaction maps current/peak points and activates v2, and admission resumes
-  only for clients advertising v2. The migration aborts if an old-version match
-  remains active. An old client may remain usable offline but cannot enter
-  ranked or render v2 points against v1 floors.
+  The rollout first deployed a client/server contract that understood both
+  curve versions while v1 was active. At the 2026-09-04 cutover, ranked
+  admission paused, the drain read `active_matches=0` and `queue_entries=0`,
+  one transaction mapped 205 profiles and 203 season rows and activated v2,
+  and admission resumed only for clients advertising v2. The activation aborts
+  if an old-version match remains active. An old client may remain usable
+  offline but cannot enter ranked or render v2 points against v1 floors
+  (`docs/CLIENT_COMPATIBILITY.md` § 5 is the worked example).
 
 - Ranked settlement writes one owner-readable progression event for each human
   participant in the same transaction as the rating and permanent-pool writes.
@@ -385,7 +394,8 @@ share its random consumption.
   scheduled sweep, and none is wanted; the decision happens wherever a client
   asks the server to take a turn. Only a client that stopped calling home
   entirely in a bot match has no caller, and `pvp-join`'s
-  `forfeitStalledBotMatch` already settles that on their next queue attempt,
+  `settleAbandonedBotMatch` (`pvp-join/stalled-bot-match.ts`) already settles
+  that on their next queue attempt,
   which the one-active-match seat invariant forces them through.
 - `AUTO_MS` gates a RECOVERY only — one party placing for another. A client
   placing on its own expired turn clock sends `auto` with a null
@@ -439,8 +449,10 @@ Rune Trial is another database-first, forward-only rollout. Production records
 ordinary modifier allow-list and adds pool, format/phase, action, private-choice,
 and collection state. Its exact catalog/security/data/Realtime/cron audit and
 the byte-verified v2 join/select/action/settlement function rollout completed
-before the capable client release. Retain the v1 standard path throughout the
-compatibility window so old clients remain standard-only.
+before the capable client release. The v1 standard path was retained through
+the compatibility window and still serves legacy rune-free rows; since the
+2026-09-04 curve cutover an old client is refused at enqueue instead
+(`docs/CLIENT_COMPATIBILITY.md`).
 
 ## Verification
 

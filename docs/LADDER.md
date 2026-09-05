@@ -1,11 +1,11 @@
 # The Ladder — points, groups, seasons
 
-*Spec. Production still runs the curve-v1 rules in §1–§6. The curve-v2 score
-floors, finish-margin transfer, unlock schedule, CLAIM reward, weekly feature,
-and transition contract described below are implemented in the repository and
-version-gated behind the owner-controlled production activation. The migration
-may be applied while v1 remains active; deployed authoritative functions and
-the explicit cutover switch decide when players begin using v2.*
+*Spec. §1–§6 describe the curve-v1 rules the ladder was designed and measured
+on. The curve-v2 score floors, finish-margin transfer, unlock schedule, CLAIM
+reward, weekly feature, and transition contract in §7 replaced them in
+production on 2026-09-04, when the owner ran the count-guarded activation
+(`docs/STATUS.md`); where the two disagree, §7 is what players are on. §8
+owns the queue, which is the same under both curves.*
 
 *The original ladder numbers were measured rather than chosen — the simulations
 are in this document's appendix and were run against 800–900 simulated players
@@ -65,7 +65,7 @@ curve v2.
 | 1,000 below you | +38 | −91 | 0 |
 | 2,000 below you | +30 | −109 | 0 |
 
-### Implemented finish-margin transfer — staged with curve v2
+### Implemented finish-margin transfer — live with curve v2 since 2026-09-04
 
 *Decided, refined, and implemented 2026-09-01.* Keep opponent strength as the primary signal,
 then move a small, equal number of additional points from the loser to the
@@ -951,17 +951,17 @@ worse lie than a populated one.
 STONE · BONE · IVORY · SILVER · GOLD · OBSIDIAN · NEON — dice and bone
 materials climbing toward the game's own neon. **Agreed 2026-08-20.**
 
-## 7. Implemented progression v2 — staged for production activation
+## 7. Implemented progression v2 — active in production since 2026-09-04
 
 *Decided and implemented 2026-09-01. Owner: Johannes. After selecting the broad league
 placement and delegating the remaining choice with “You decide”, the owner
 accepted this section as the complete product contract, including the target
 score curve, collection tail, bot debuts, weekly cadence/rewards, and cutover
 behavior. The client, shared rules, authoritative functions, persistence,
-migration, presentation, and tests now implement that contract, but production
-continues to run v1 until the explicit rollout in
-`docs/architecture/backend.md` completes. The possible paid one-rune tail
-escape remains only an unapproved later example.*
+migration, presentation, and tests implement that contract, and production
+has run it since the explicit rollout in `docs/architecture/backend.md`
+completed on 2026-09-04. The possible paid one-rune tail escape remains only an
+unapproved later example.*
 
 ### Why the populated estimate is not today's content cadence
 
@@ -1024,8 +1024,8 @@ middle and late point bands.
 
 #### League-score decision: a late-weighted 3,890-point curve
 
-Production retains the curve-v1 floors in §2 until activation. The implemented
-curve-v2 schedule is:
+Production has run these floors since the 2026-09-04 activation; §2's curve-v1
+floors are kept as the measured baseline. The curve-v2 schedule is:
 
 | league | target floor | target width to next point-based league |
 |---|---:|---:|
@@ -1088,7 +1088,7 @@ curve still adds about 30% to the full climb without creating that wall.
 
 The STONE nudge deliberately follows the observed path rather than claiming
 false precision from the coarse model. Linear scaling maps the observed five
-games to `5 × 360 / 300 = 6`. The staged finish transfer may shave a
+games to `5 × 360 / 300 = 6`. The finish transfer may shave a
 fraction from a strong win-heavy path, and discrete opponent payouts plus
 promotion overhang can move it either way. The target therefore means **about
 one more observed STONE game**, subject to retained simulation—not a guarantee
@@ -1383,9 +1383,9 @@ Trial. Both humans must advertise it; bots support it in the v2 release. A human
 pairing with an older client simply excludes Trial from their shared eligible
 pool. Every already-active match retains its snapshotted reward version, so a
 v1 Trial always settles the selected rune and a CLAIM Trial can never be played
-without rendering its mark. Production-v1 Trials retain the selected-rune rule
-until curve-v2 activation; `docs/SPELLS.md §8` owns the interaction and reveal
-contract.
+without rendering its mark. Trials snapshotted before the 2026-09-04 activation
+retain the selected-rune rule; every Trial started since carries the CLAIM mark.
+`docs/SPELLS.md §8` owns the interaction and reveal contract.
 
 #### Presentation order follows unlock order
 
@@ -1631,20 +1631,129 @@ actual before/after grants:
   BONE → IVORY → SILVER → GOLD → OBSIDIAN order and their bot debuts use the
   order defined above.
 
-The current transition event, cached tier, and registry-derived slide plan do
-not yet represent all of those facts. Shipping the target requires durable
-per-outcome entitlements, one-time pending debut state, GOLD and OBSIDIAN
-transition facts, a versioned immutable CLAIM mark and atomic reward predicate,
-the current/peak point migration, version/capability gates for both disruptive
-contracts, a drained ranked maintenance boundary, and a server-owned bot draw
-override that still respects capability negotiation. It also requires
+Before activation the transition event, cached tier, and registry-derived
+slide plan did not represent all of those facts. Shipping the target required
+durable per-outcome entitlements, one-time pending debut state, GOLD and
+OBSIDIAN transition facts, a versioned immutable CLAIM mark and atomic reward
+predicate, the current/peak point migration, version/capability gates for both
+disruptive contracts, a drained ranked maintenance boundary, and a server-owned
+bot draw override that still respects capability negotiation. It also required
 outcome-aware offline locks and cache, all eleven locale catalogs, the ranked
 outcome and transition gates, Trial reward and cutover gates, random dial and
 local-option gates, browser transition coverage, production-weighted bot
 balance/progression measurement, a redesigned/regenerated LG1 card, and
-redeployment of every affected authoritative function. Those are implementation
-dependencies, not claims that the target is already live. The possible paid
-tail escape above is explicitly outside that implementation scope.
+redeployment of every affected authoritative function. All of that shipped
+ahead of the 2026-09-04 activation; the list is kept as the dependency record.
+The possible paid tail escape above is explicitly outside that scope.
+
+---
+
+## 8. The queue — position, liveness, and abandonment
+
+Written 2026-09-05, when the owner asked what happens if fifty players join and
+leave before a game. The answer was better than it looked and worse in one
+place nobody had named, because the queue's lifecycle was documented nowhere:
+its window lived only in an Edge Function constant and its ordering only in an
+`on conflict do nothing`.
+
+### Two clocks, deliberately
+
+`public.matchmaking_queue` carries two timestamps and they mean different
+things. Conflating them caused both defects below.
+
+| column | meaning | moves when |
+|---|---|---|
+| `created_at` | the player's **place in line** | never on a re-join |
+| `last_seen_at` | the client's **pulse** | every update, stamped by the table; the insert takes the column default |
+
+`findOldestEligiblePartner` (`pvp-join/matchmaking.ts`) reads the queue oldest
+first, so `created_at` is the fairness guarantee: `enqueue_ranked_player`'s
+`on conflict (player_id) do nothing` exists precisely so that re-polling cannot
+cost a player their position.
+
+### The wait is a poll, not a socket
+
+A waiting client re-calls `pvp-join` **every 2.5s** (`queue-screen.ts`), which
+is what makes a server-side pulse possible with no client cooperation at all:
+`matchmaking_queue_stamp_liveness` fires `before update` and stamps
+`last_seen_at`, so every installed build — including one built before the
+column existed — refreshes its own liveness on its next poll. A change of this
+shape needs no capability negotiation and no phased release
+(`docs/CLIENT_COMPATIBILITY.md`); that is a property of putting the stamp on
+the table rather than in a caller.
+
+The update stamp is `clock_timestamp()` — the instant of the write — rather
+than `now()`, the start of the transaction carrying it (the insert default is
+`now()`). In production the two never differ: `pvp-join` issues the sweep
+and the enqueue as separate PostgREST requests, so they are separate
+transactions and `now()` would already post-date the sweep. The wall clock
+is the stricter meaning of a pulse, and it is what keeps the heartbeat honest
+if a path ever sweeps and re-stamps inside one transaction. The migration's
+own comment describes a `pvp-join` request as one transaction; it is not,
+and the pgTAP suite pins only that the stamp is recent, not which clock made
+it.
+
+### Leaving
+
+Cancel and backgrounding both leave properly: `goHome()` calls `queue.stop()`,
+which calls `cancellation.cleanup()` → `leave_ranked_queue`, and
+`queue-waiting.ts` sends a backgrounded app home on `visibilitychange`. So the
+app switcher, the home button and screen lock all delete the row.
+
+**But the leave is fired un-awaited** (`void cleanup()`), and iOS can suspend
+the process before the request leaves the device. Do not try to make the
+goodbye bulletproof — a suspending app cannot be relied on to finish a network
+call. The right layer is a **detectable absence**, which is what the pulse is.
+
+### Abandonment, end to end
+
+A genuinely killed client leaves a row behind. What happens to it:
+
+1. **It is swept within 30s.** Every `pvp-join` that reaches the queue deletes rows whose
+   `last_seen_at` is older than `QUEUE_LIVENESS_MS`
+   (`pvp-join/queue-liveness.ts`), *before* looking for a partner.
+2. **Inside that window it can spoil at most one match**, because pairing
+   consumes both queue rows (`start_ranked_match`). The window bounds how
+   long each ghost lives, not how many there are: fifty abandoners are at most
+   fifty spoiled matches, each needing a live joiner inside that ghost's own
+   30s.
+3. **That match is not a dead end.** Once the away seat has been silent for
+   `AUTO_MS` (12s; the visible turn clock is 10s) the server will place for it
+   in a uniform legal column — the live client's watchdog asks from 13s on a
+   5s tick. Two such placements land; the third request settles the forfeit
+   instead (`AUTO_FORFEIT_STREAK = 3`; `_shared/match-timing.ts`,
+   `_shared/auto-forfeit.ts`). The live player wins in well under a minute:
+   three stalls of 13–18s interleaved with their own turns, not the 36s that
+   3 × 12s suggests.
+
+So the exposure is one wasted match per abandoner, bounded by the window, and
+never a hang.
+
+### Why the window is 30s and not the poll interval
+
+The two errors do not cost the same. A window too long leaves ghosts
+matchable; a window too short sweeps a live player — and it sweeps the one who
+has been waiting **longest**, which is exactly who a slow network produces.
+Twelve missed polls is a dead client, not a slow one. The same change cut the
+window from two minutes to 30s: a short window was only safe once it measured
+the pulse, because 30s on `created_at` would have swept every live waiter.
+
+### The bug this replaced, worth not re-introducing
+
+The sweep used to read `created_at` with a two-minute window. Two
+consequences, and the second is the one nobody had noticed:
+
+- A player killed 30s ago was **indistinguishable** from one who joined 30s
+  ago, so abandonment could not be detected at all before the full two
+  minutes.
+- The sweep runs *before* the caller is enqueued, so **a player waiting longer
+  than the window had their own row deleted by their own next poll** and
+  re-inserted with a fresh `created_at`. The longest waiter was sent to the
+  back of the line, repeatedly, and the queue could never age.
+
+`supabase/tests/database/queue-liveness.test.sql` pins both halves: a re-join
+moves the pulse and not the position, and the sweep takes the abandoned seat
+while leaving the waiting one. With the trigger dropped it fails 4 of 9.
 
 ---
 
@@ -1728,96 +1837,3 @@ opens, which is fair over a session — but `S.starter` used to begin at the
 player and is deliberately not persisted, so it reset on every reload and a
 one-game session always gave the player the first move. It is now drawn on a
 coin flip per app load and alternates from there (`src/state.ts`).
-
-## 7. The queue — position, liveness, and abandonment
-
-Written 2026-09-05, when the owner asked what happens if fifty players join and
-leave before a game. The answer was better than it looked and worse in one
-place nobody had named, because the queue's lifecycle was documented nowhere:
-its window lived only in an Edge Function constant and its ordering only in an
-`on conflict do nothing`.
-
-### Two clocks, deliberately
-
-`public.matchmaking_queue` carries two timestamps and they mean different
-things. Conflating them caused both defects below.
-
-| column | meaning | moves when |
-|---|---|---|
-| `created_at` | the player's **place in line** | never on a re-join |
-| `last_seen_at` | the client's **pulse** | every write, stamped by the table |
-
-`findOldestEligiblePartner` (`pvp-join/matchmaking.ts`) reads the queue oldest
-first, so `created_at` is the fairness guarantee: `enqueue_ranked_player`'s
-`on conflict (player_id) do nothing` exists precisely so that re-polling cannot
-cost a player their position.
-
-### The wait is a poll, not a socket
-
-A waiting client re-calls `pvp-join` **every 2.5s** (`queue-screen.ts`), which
-is what makes a server-side pulse possible with no client cooperation at all:
-`matchmaking_queue_stamp_liveness` fires `before update` and stamps
-`last_seen_at`, so every installed build — including one built before the
-column existed — refreshes its own liveness on its next poll. A change of this
-shape needs no capability negotiation and no phased release
-(`docs/CLIENT_COMPATIBILITY.md`); that is a property of putting the stamp on
-the table rather than in a caller.
-
-It is `clock_timestamp()`, not `now()`: the sweep runs earlier in the same
-request, and a transaction timestamp would date the heartbeat to before the
-sweep it exists to survive.
-
-### Leaving
-
-Cancel and backgrounding both leave properly: `goHome()` calls `queue.stop()`,
-which calls `cancellation.cleanup()` → `leave_ranked_queue`, and
-`queue-waiting.ts` sends a backgrounded app home on `visibilitychange`. So the
-app switcher, the home button and screen lock all delete the row.
-
-**But the leave is fired un-awaited** (`void cleanup()`), and iOS can suspend
-the process before the request leaves the device. Do not try to make the
-goodbye bulletproof — a suspending app cannot be relied on to finish a network
-call. The right layer is a **detectable absence**, which is what the pulse is.
-
-### Abandonment, end to end
-
-A genuinely killed client leaves a row behind. What happens to it:
-
-1. **It is swept within 30s.** Every `pvp-join` deletes rows whose
-   `last_seen_at` is older than `QUEUE_LIVENESS_MS`
-   (`pvp-join/queue-liveness.ts`), *before* looking for a partner.
-2. **Inside that window it can poison exactly one match**, because pairing
-   consumes both queue rows (`start_ranked_match`). Fifty abandoners cannot
-   stack into fifty poisoned matches unless all fifty die inside the same
-   window.
-3. **That match is not a dead end.** 12s turn clock (`AUTO_MS`) → the watchdog
-   asks the server → the server auto-places the away seat in a uniform legal
-   column → at `AUTO_FORFEIT_STREAK = 3` it settles as a forfeit
-   (`_shared/match-timing.ts`, `_shared/auto-forfeit.ts`). The live player wins
-   in roughly 36 seconds.
-
-So the exposure is one wasted match per abandoner, bounded by the window, and
-never a hang.
-
-### Why the window is 30s and not the poll interval
-
-The two errors do not cost the same. A window too long leaves ghosts
-matchable; a window too short sweeps a live player — and it sweeps the one who
-has been waiting **longest**, which is exactly who a slow network produces.
-Twelve missed polls is a dead client, not a slow one.
-
-### The bug this replaced, worth not re-introducing
-
-The sweep used to read `created_at`. Two consequences, and the second is the
-one nobody had noticed:
-
-- A player killed 30s ago was **indistinguishable** from one who joined 30s
-  ago, so abandonment could not be detected at all before the full window.
-- The sweep runs *before* the caller is enqueued, so **a player waiting longer
-  than the window had their own row deleted by their own next poll** and
-  re-inserted with a fresh `created_at`. The longest waiter was sent to the
-  back of the line, repeatedly, and the queue could never age.
-
-`supabase/tests/database/queue-liveness.test.sql` pins both halves: a re-join
-moves the pulse and not the position, and the sweep takes the abandoned seat
-while leaving the waiting one. With the trigger dropped it fails 4 of 9.

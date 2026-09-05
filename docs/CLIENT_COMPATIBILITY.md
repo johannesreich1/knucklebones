@@ -72,7 +72,8 @@ carries the exact commands for the progression-v2 case.
 
 **Phase 4 — the tail gets told.**
 Whatever is left gets refused, and the refusal must say *update*, not *check
-your connection*. See §3, which is currently a known defect.
+your connection*. See §3 — fixed 2026-09-04 (`749ecf69`); the store link in
+that modal is still owed.
 
 ### When phases are not enough
 
@@ -96,13 +97,13 @@ repaint. No bespoke modal exists or should.
 | state | title | when |
 |---|---|---|
 | `connection.offline` | YOU'RE OFFLINE | `navigator.onLine === false` |
-| `connection.unavailable` | CAN'T CONNECT | the server could not be reached |
+| `connection.unavailable` | CAN'T CONNECT | the server could not be reached, or answered anything the client does not classify — today that includes a deliberately paused ladder (503 `ranked-paused`) |
 | `connection.updateRequired` | UPDATE REQUIRED | this build cannot play the active rules |
 
 `queue-screen.ts` already routes them: `status === 'unavailable'` →
 `connectionUnavailable`, `status === 'incompatible'` → `updateRequired`.
 
-### The refusal defect (fixed 2026-09-05)
+### The refusal defect (fixed 2026-09-04)
 
 **A capability refusal used to reach the player as "check your connection."**
 
@@ -123,6 +124,8 @@ error and returns `incompatible-client` (409) for a capability refusal, 503 for
 a paused admission, and `queue-failed` (500) only for what is genuinely
 unclassified. The client already routed `incompatible` to UPDATE REQUIRED, so
 this needed no new modal, copy or state — only to stop discarding the reason.
+It reached production with pvp-join v46 (deployed 2026-09-05; the read-back
+closure carries `enqueue-refusal.ts` and `queue-liveness.ts`).
 
 The shape of that fix is the reusable part: **an Edge Function that collapses
 distinct server refusals into one status is lying to the player**, and the lie
@@ -200,6 +203,7 @@ Three lessons, in the order they cost time:
    `protocol_version = 2`. The phases in §2 exist so the next one does not
    depend on that.
 
-Related: the 16 pgTAP suites in `supabase/tests/database/` do not run in
-`npm test` at all, which is why a 103-suite green gate shipped a dead queue.
+Related: the pgTAP suites in `supabase/tests/database/` do not run in
+`npm test` at all, which is why a green gate (103 suites, that day) shipped a
+dead queue.
 Closing that is separate, open, and worth more than either fix above.

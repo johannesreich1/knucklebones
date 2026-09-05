@@ -915,7 +915,7 @@ replacement and produces no new-reward reveal. Collections start empty for
 new and existing players; Trial loans all six precisely so collection size
 cannot change ranked options.
 
-#### Implemented CLAIM reward — staged with progression v2
+#### Implemented CLAIM reward — live with progression v2 since 2026-09-04
 
 Progression v2 deliberately changes only the collection
 reward, not the loan or cast rules. One of the common three offered cards is
@@ -946,8 +946,9 @@ version wins over deployment time: an already-active v1 Trial grants the
 selected rune, and a CLAIM Trial cannot start for a client unable to render its
 mark. The exact coupon-collector pacing, expected games, OBSIDIAN distribution,
 and reason for retaining a one-to-three-rune long tail are in
-`docs/LADDER.md §7`. Until production activates curve v2, the selected-rune
-reward in the preceding paragraph remains the production runtime contract.
+`docs/LADDER.md §7`. Since the 2026-09-04 activation CLAIM is the production
+runtime contract; the selected-rune reward in the preceding paragraph applies
+only to Trials snapshotted before it.
 
 Offline CPU and local two-player Trial still grant no collection reward and
 therefore receive no CLAIM mark. The shared selector accepts the ranked mark as

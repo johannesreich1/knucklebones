@@ -135,7 +135,7 @@ platform :ios do
     UI.user_error!(error.message)
   end
 
-  desc "Apply one confirmed exact sync to owned metadata and sixteen locale/device screenshot sets"
+  desc "Apply one confirmed exact sync to owned metadata and twenty-two locale/device screenshot sets"
   lane :screenshots_upload do
     run_local_screenshot_check
     unless APP_STORE_CONFIG.fetch("reviewSubmissionApproved") == false

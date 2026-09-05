@@ -244,10 +244,13 @@ its full title.
 
 ### Release sequence
 
-1. Apply and validate the eleven-ID `player_settings.locale` expansion in
-   production before deploying a client that can persist `pt`, `es`, or `it`.
-2. Deploy the eleven-language client while `LEGAL_RELEASE.status` remains `draft`;
-   this release has neither public legal routes nor production legal links.
+1. *(Done 2026-09-01: `20260901074059_expand_player_settings_locales_11.sql`
+   is applied in production.)* Apply and validate the eleven-ID
+   `player_settings.locale` expansion in production before deploying a client
+   that can persist `pt`, `es`, or `it`.
+2. *(Done: the eleven-language client is live.)* Deploy the eleven-language
+   client while `LEGAL_RELEASE.status` remains `draft`; this release has
+   neither public legal routes nor production legal links.
 3. Complete the public contact channel, provider/processor/retention/transfer
    facts, deletion workflow, territory review, all translations, and German
    legal review. Change the status to `ready` only in a separately reviewed

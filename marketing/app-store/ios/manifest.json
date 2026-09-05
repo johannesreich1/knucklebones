@@ -47,7 +47,7 @@
       "index": 2,
       "slug": "ranked-mode-dial",
       "scene": "dial",
-      "fixture": "Production ranked orbit dial landed on COLUMN SHIELD; the selected label uses the production yellow"
+      "fixture": "Production ranked orbit dial in canonical unlock order (CLASSIC, SINGLE STRIKE, COLUMN SHIELD, BOUNTY, ROW MULTIPLY, ROW SWITCH, LIMITED), landed on COLUMN SHIELD; the selected label uses the production yellow"
     },
     {
       "index": 3,
@@ -79,7 +79,7 @@
       "index": 6,
       "slug": "neon-ladder",
       "scene": "ladder",
-      "fixture": "Production ranked ladder centered on FrostLynx303 at Gold rank 4 with a +40 next-rival gap"
+      "fixture": "Production curve-v2 ranked ladder centered on FrostLynx303 at GOLD rank 4 with a +40 next-rival gap and NEON, OBSIDIAN, GOLD, SILVER, and IVORY horizons"
     }
   ],
   "localizations": {

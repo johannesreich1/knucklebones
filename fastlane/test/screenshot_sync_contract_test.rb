@@ -93,7 +93,28 @@ sync = KnucklebonesAppStore::ScreenshotSync.new(
   repository_root: ROOT,
   screenshot_root: SCREENSHOT_ROOT
 )
-assert(sync.config.fetch("locales").length == 8, "the contract must own exactly eight locales")
+assert(
+  KnucklebonesAppStore::ScreenshotSync::SCREENSHOT_PROCESSING_TIMEOUT_SECONDS == 900,
+  "direct screenshot processing and screenshot-set propagation must share the fifteen-minute budget"
+)
+screenshot_sync_source = File.read(File.join(ROOT, "fastlane", "lib", "screenshot_sync.rb"))
+assert(
+  screenshot_sync_source.include?(
+    "def wait_complete!(id, seconds: SCREENSHOT_PROCESSING_TIMEOUT_SECONDS)"
+  ),
+  "direct screenshot completion must use the shared processing timeout"
+)
+assert(
+  screenshot_sync_source.include?(
+    "def wait_terminal_in_set!(set, id, seconds: SCREENSHOT_PROCESSING_TIMEOUT_SECONDS)"
+  ),
+  "screenshot-set checksum propagation must use the shared processing timeout"
+)
+assert(
+  sync.config.fetch("locales").map { |entry| entry.fetch("appStoreLocale") }.sort ==
+    KnucklebonesAppStore::ScreenshotSync::REQUIRED_LOCALES,
+  "the hard-bound locale list must agree with app-store-connect.json — never assert a count, it ratchets"
+)
 assert(sync.config.fetch("screenshotTargets").length == 2, "the contract must own exactly two device targets")
 
 app_info_creator = LocalizationCreationRecorder.new
@@ -315,7 +336,7 @@ assert(protected.fetch("appInfoLocalizations").first.keys.sort == %w[locale priv
 assert(protected.fetch("versionLocalizations").first.keys.sort == %w[locale supportUrl],
        "owned version values must be excluded from the protected snapshot")
 assert(protected.fetch("screenshotSets").map { |entry| entry.fetch("setId") } == %w[unmanaged italian],
-       "only the sixteen exact managed screenshot targets may be excluded from preservation")
+       "only the twenty-two exact managed screenshot targets may be excluded from preservation")
 
 with_whats_new = deep_copy(metadata)
 with_whats_new.fetch("localizations").fetch("en-GB")["whatsNew"] = "Initial release"
