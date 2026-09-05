@@ -37,6 +37,13 @@ them, so the gate suite `typecheck-tests` runs the dedicated
 `tsconfig.tests.json` project through the pinned compiler; the root
 `tsconfig.json` continues to gate `src/` inside `build.mjs`.
 
+The Edge-operation harness materializes deploy closures and imports them by
+computed temporary paths, so those modules are not automatically reachable by
+the TypeScript project. Direct tests for independently importable helpers also
+bring their imports into `typecheck-tests`; the queue sweep's invalid
+`EdgeClient` import is covered this way. Deno still checks every exact deploy
+closure through `tools/check-functions.mjs`.
+
 **So a focused run of a `.ts` suite proves it RUNS, never that it compiles.**
 Add `--suite typecheck-tests` whenever you write or edit one (the second
 example above does exactly that). Skipping it does not fail fast: the suite

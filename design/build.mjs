@@ -170,7 +170,11 @@ const chrome = `${retiredHero}
   background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);
   border-radius:14px;padding:11px 13px;box-sizing:border-box}
 .note b{color:var(--gold)}
-body{display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px 12px;overflow:auto}
+/* Small preview text otherwise wraps into extra lines on Linux even with the
+   bundled face loaded. Preserve precise glyph positioning instead of growing
+   the fixed DesignSync frames to fit that host's default rendering. */
+body{display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px 12px;overflow:auto;
+  text-rendering:geometricPrecision}
 .stage{position:relative;width:384px;border-radius:26px;overflow:hidden;flex:0 0 auto;
   border:1px solid rgba(255,255,255,.14);background:var(--bg);
   box-shadow:0 24px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04)}

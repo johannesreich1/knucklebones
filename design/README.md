@@ -23,3 +23,10 @@ Basenames are therefore globally unique and remain the durable card identity.
 The build sorts by basename, rejects cards outside the three classifications,
 and prunes stale generated cards. Rebuild before every DesignSync run so a
 promoted study retains its remote identity and the manifest stays authoritative.
+
+The preview chrome requests `text-rendering: geometricPrecision`. With the
+bundled face correctly loaded, Linux Chromium's default small-text positioning
+still wrapped notes and labels onto extra lines and clipped fixed frames. The
+existing `design-cards-render` geometry check reproduces this; precise positioning
+keeps the cards within their declared frames on both Linux and macOS. Diagnose
+the bound face and text layout before changing a card's dimensions.

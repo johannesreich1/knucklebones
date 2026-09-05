@@ -20,6 +20,7 @@ import {
 } from './support/edge-operations.ts';
 import { runTurnCommandTests } from './support/edge-turn-command.ts';
 import { emitReport } from './support/emit-report.mjs';
+import { sweepAbandonedSeats } from '../supabase/functions/pvp-join/queue-liveness.ts';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -29,6 +30,20 @@ const check = (ok: boolean, message: string, detail?: unknown): void => {
 
 const operations = await materializeEdgeOperations();
 try {
+  // Import the queue sweep directly so the ordinary TypeScript gate checks
+  // its types too: materialized dynamic imports erase them without checking.
+  for (const fails of [false, true]) {
+    const service = new EdgeOperationsService({
+      matchmaking_queue: () => ({ error: fails ? { message: 'db down' } : null }),
+    });
+    const swept = await sweepAbandonedSeats(edgeContext('player-1', service).service());
+    const [read] = service.reads;
+    const cutoff = read?.filters.find(([filter]) => filter === 'lt:last_seen_at')?.[1];
+    check(swept === !fails && service.reads.length === 1 && read?.kind === 'delete'
+      && typeof cutoff === 'string' && Date.parse(cutoff) < Date.now(),
+      'the queue sweep must delete stale heartbeats and report database failure', { fails, swept, read });
+  }
+
   // A failed match read is an infrastructure error, never a game answer.
   for (const [label, run] of [
     ['moveMatch', (s: EdgeOperationsService) => operations.moveMatch(edgeContext('player-1', s),

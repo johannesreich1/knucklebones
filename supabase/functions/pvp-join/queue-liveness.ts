@@ -1,4 +1,4 @@
-import type { EdgeClient } from "../_shared/types.ts";
+import type { EdgeClient } from "../_shared/http.ts";
 
 /* HOW LONG A SEAT OUTLIVES ITS PLAYER.
  *
