@@ -70,6 +70,10 @@ const SIZE_ALLOWLIST = new Map<string, string>([
     'one probe per page seam; split by surface (entry, result, account)'],
   ['tests/profile-back-navigation.mjs',
     'one line over after the identity stub; split the ladder walk out on the next touch'],
+  /* 2026-09-05: the data-flow alignment (8c34f5e6) added the retention and
+     receipt-age facts; 59 over. */
+  ['tests/legal.test.ts',
+    'one file per reviewed document; split by page (imprint, privacy, support, delete-account) on the next touch'],
 ]);
 
 const EXCLUDED_DIRS = /\/(?:fixtures|generated|snapshots|vendor)\//;

@@ -1,5 +1,4 @@
 import type { SupportedLocale } from '../i18n/locale.ts';
-import type { LegalSectionId } from './sections.ts';
 
 export const LEGAL_PAGE_IDS = [
   'imprint',
@@ -9,6 +8,23 @@ export const LEGAL_PAGE_IDS = [
 ] as const;
 
 export type LegalPageId = typeof LEGAL_PAGE_IDS[number];
+
+/** Every translation must cover the same reviewed legal subjects exactly once.
+ *  Lives beside LegalPageId, which keys it: kept in sections.ts it imported
+ *  LegalPageId from here while this file imported LegalSectionId from there —
+ *  a type-only cycle, which the architecture gate rightly refuses. */
+export const LEGAL_SECTION_IDS = {
+  imprint: ['provider', 'contact', 'project'],
+  privacy: [
+    'controller', 'scope', 'device-storage', 'accounts', 'apple', 'purposes',
+    'recipients', 'public-profile', 'retention', 'support', 'rights', 'objection',
+    'children', 'automated-decisions', 'changes',
+  ],
+  support: ['contact', 'help', 'details', 'credentials', 'handling'],
+  'delete-account': ['in-app', 'server-data', 'local-data', 'external', 'verification', 'apple'],
+} as const satisfies Readonly<Record<LegalPageId, readonly string[]>>;
+
+export type LegalSectionId = typeof LEGAL_SECTION_IDS[LegalPageId][number];
 export type LegalPublicationStatus = 'draft' | 'ready';
 
 export const LEGAL_FACT_KEYS = [
