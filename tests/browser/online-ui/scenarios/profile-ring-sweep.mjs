@@ -104,9 +104,11 @@ export async function runProfileRingSweepScenarios(suite) {
     'the profile ring leaves empty more than once for one cached open — it '
     + 'fills, snaps back to empty, and fills again',
     out.profileRingSweep);
-  /* Guards the other direction: a ring that snapped straight to its fill and
-     never animated would also report exactly one rise. */
-  check(distinct >= 8 && settled > 0,
+  /* A snap straight to the final fill also reports one rise. Require an
+     intermediate visible fill to distinguish it from a tween; counting a
+     minimum number of distinct frames instead measured the host's scheduling
+     (Ubuntu recorded a real sweep with seven distinct values and failed). */
+  check(settled > 0 && samples.some((value) => value > 0 && value < settled),
     'the profile ring did not sweep in at all on a cached open',
     out.profileRingSweep);
   check(opened.errs.length === 0,

@@ -167,6 +167,12 @@ invalidating its delayed callback. Tutorial pacing and LIMITED's real die bag
 stay authentic, and dedicated lifecycle suites retain opening-animation
 coverage; the spell suite therefore spends its time on the state it owns.
 
+Animation existence checks require observed intermediate progress rather than
+a minimum frame count. The Profile ring probe still requires exactly one
+departure from empty and rejects a snap directly to the final fill; it does not
+require the host to schedule eight distinct frames. Ubuntu produced seven
+distinct fills during a valid sweep, exposing that old frame-count assumption.
+
 `pwa-update` (`tests/pwa-update.mjs`) is the sole `exclusive-final` suite. It
 mutates `pwa/` through the shared server only after every pooled suite in its
 checkout has completed, and the runner restores generated output afterward.
