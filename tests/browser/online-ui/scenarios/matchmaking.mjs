@@ -170,6 +170,18 @@ export async function runMatchmakingScenarios(suite) {
     && queued.queueFloor.maxSink <= 0.5 && queued.queueFloor.maxFloat >= -0.5,
   'the waiting die no longer rolls ON the floor line', queued.queueFloor);
 
+  /* Every row of the wait sits on the panel's centre line. The clock reads as
+     a caption hanging off the left margin otherwise, and the tray drags the
+     whole animation off with it (owner report, 2026-09-05). */
+  out.matchmakingCentring = queued.queueCentring;
+  check(queued.queueCentring && ['tray', 'clock', 'label', 'cancel']
+    .every((row) => Math.abs(queued.queueCentring[row]) <= 1),
+  'the matchmaking panel is no longer centred', queued.queueCentring);
+  check(queued.queueCentring
+    && ['clockAlign', 'labelAlign', 'subAlign']
+      .every((row) => queued.queueCentring[row] === 'center'),
+  'a matchmaking readout is no longer centred inside its own row', queued.queueCentring);
+
   check(queued.queueCancel?.label === 'Cancel'
     && queued.queueCancel.textTransform === 'uppercase'
     && queued.queueCancel.clipped === false,

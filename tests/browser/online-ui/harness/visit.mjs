@@ -331,12 +331,12 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
     }
 
     if (door === 'play') {
-      const { samples, queueFloor, queueCancel } = await probeQueuePanel(page);
+      const { samples, queueFloor, queueCentring, queueCancel } = await probeQueuePanel(page);
       await page.click('#btnQueueCancel');
       await page.waitForTimeout(50);
       const rootLang = await page.locator('html').getAttribute('lang');
       await ctx.close();
-      return { queueLabel: samples, queueCancel, queueFloor, errs, loading, signupCalls: routes.signupCalls(),
+      return { queueLabel: samples, queueCancel, queueFloor, queueCentring, errs, loading, signupCalls: routes.signupCalls(),
                rootLang, probeResult, standingCallsBeforeOnline,
                homeStyles: { before: homeBeforeOnline, after: homeAfterOnline } };
     }

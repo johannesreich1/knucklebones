@@ -38,7 +38,16 @@
    from at both walls, so the pips read the same each time it arrives. The
    study this comes from spun one way throughout and looked fine only because
    it never stopped; here the return leg is half the animation. */
-:where(#kbroot) .online-queue .qdice{
+/* EACH ROW CENTRES ITSELF, because the panel does not centre its children:
+   #onQueue is also a .panel, and the shell's `#ovOnline .panel` rule (1 id,
+   1 class) outranks anything this file can say about #onQueue (1 id — :where
+   contributes nothing), so align-items computes `normal`. That was invisible
+   while every row was full width with its text centred; it showed the moment
+   the tray took a fixed width and sat at the start, dragging the whole
+   animation off the centre line, and it had ALWAYS left the clock reading from
+   the left margin (owner report, 2026-09-05). margin-inline and text-align are
+   uncontested, so they land where align-items cannot. */
+:where(#kbroot) .online-queue .qdice{margin-inline:auto;
   /* The VISIBLE die. The run is 4x it and the tray 5.25x, so a fixed size is a
      fixed tray, and this panel's column is only ~60px narrower than the
      viewport: 56px needs 354px of device and a 320px phone would push the roll
@@ -107,5 +116,5 @@
 /* The label sits still — the dice carry all the motion. Keep this explicit:
    the CSS ownership split once restored a dangling dots animation here. */
 :where(#kbroot) .online-queue .qmsg{font-size:11px;letter-spacing:.2em;color:var(--txt);text-transform:uppercase;text-align:center}
-:where(#kbroot) .online-queue .qtime{font-size:24px;font-weight:var(--fw-max);color:var(--p1);text-shadow:0 0 16px rgba(var(--p1-rgb),.5)}
+:where(#kbroot) .online-queue .qtime{text-align:center;font-size:24px;font-weight:var(--fw-max);color:var(--p1);text-shadow:0 0 16px rgba(var(--p1-rgb),.5)}
 :where(#kbroot) .online-queue .qsub{font-size:10px;letter-spacing:.14em;color:var(--dim);text-align:center;min-height:13px}

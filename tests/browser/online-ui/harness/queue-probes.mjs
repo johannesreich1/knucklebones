@@ -76,6 +76,34 @@ export async function probeQueuePanel(page) {
     }
     return { maxSink: +sink.toFixed(2), maxFloat: +float.toFixed(2) };
   });
+  /* IS EVERY ROW ON THE PANEL'S CENTRE LINE? The panel does NOT centre its
+     children — #onQueue's align-items loses to the shell's own .panel rule and
+     computes `normal` — so anything narrower than the column sits at the start
+     unless it centres itself. That is invisible while every row happens to be
+     full width, and it is exactly what a fixed-width tray broke. Measured as
+     offsets from the panel's centre, which is what the player is looking at. */
+  const queueCentring = await page.evaluate(() => {
+    const panel = document.getElementById('onQueue');
+    if (!panel) return null;
+    const box = panel.getBoundingClientRect();
+    const mid = box.left + box.width / 2;
+    const at = (sel) => {
+      const el = panel.querySelector(sel);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return Math.round(r.left + r.width / 2 - mid);
+    };
+    /* A full-width row's BOX is centred by definition — what the player reads
+       is the text inside it, so the rows that are only text report their
+       alignment too. The clock was left-aligned inside a centred box. */
+    const align = (sel) => {
+      const el = panel.querySelector(sel);
+      return el ? getComputedStyle(el).textAlign : null;
+    };
+    return { panelWidth: Math.round(box.width), tray: at('.qdice'), clock: at('.qtime'),
+             label: at('.qmsg'), cancel: at('#btnQueueCancel'),
+             clockAlign: align('.qtime'), labelAlign: align('.qmsg'), subAlign: align('.qsub') };
+  });
   const queueCancel = await page.evaluate(() => {
     const button = document.getElementById('btnQueueCancel');
     const style = button ? getComputedStyle(button) : null;
@@ -85,5 +113,5 @@ export async function probeQueuePanel(page) {
       clipped: button ? button.scrollWidth > button.clientWidth : null,
     };
   });
-  return { samples, queueFloor, queueCancel };
+  return { samples, queueFloor, queueCentring, queueCancel };
 }
