@@ -91,7 +91,7 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   production opt-in. Credential rotation is an owner action.
 - Confirm the ranked Edge Function closure state independently after each
   deploy; the reconciled migration history establishes database identity, not
-  deployed function bytes. Last read back 2026-09-05: pvp-join v46 matches the
+  deployed function bytes. Last read back 2026-09-05: pvp-join v47 matches the
   repository closure (`enqueue-refusal.ts`, `queue-liveness.ts` present).
 - The Apple/Game Center database migrations are recorded in the canonical
   production ledger. Keep the remaining rollout separate: deploy the
@@ -126,7 +126,7 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   `queue-failed` 500, so a client refused for the active curve saw CAN'T
   CONNECT and was sent to inspect its wifi; `pvp-join/enqueue-refusal.ts` now
   classifies the refusal and answers `incompatible-client` 409, which
-  `queue-screen.ts` routes to UPDATE REQUIRED; deployed pvp-join v46 carries
+  `queue-screen.ts` routes to UPDATE REQUIRED; deployed pvp-join v47 carries
   it and the queue liveness sweep (closure read back 2026-09-05). **Still owed
   before any App Store submission:** that modal carries no store link
   (`itms-apps://` on iOS, the Play listing on Android), and a build already in
