@@ -1,4 +1,4 @@
-<!-- meta name="PM — Eight marks for the play button" group="5b · The play mark" subtitle="The primary action's die, redrawn eight ways and judged where it actually lives: 25px of dark ink on the duel gradient, on the real button beside the mark the app carries today — and every one of them moving on the button's own 4.6s beat, a second of motion and then a long hold" width=412 height=2610 sizes="md" links="Home, Offline, Result" -->
+<!-- meta name="PM — Eight marks for the play button" group="5b · The play mark" subtitle="The primary action's die, redrawn eight ways and judged where it actually lives: 25px of dark ink on the duel gradient, on the real button beside the mark the app carries today — and every one of them moving on the button's own 4.6s beat, a second of motion and then a long hold" width=412 height=2635 sizes="md" links="Home, Offline, Result" -->
 
 <style>
   .pmhead{width:100%;margin:4px auto 0;text-align:left}
@@ -46,14 +46,24 @@
   .pmrisk b{color:rgba(255,157,102,.85);font-weight:800;letter-spacing:.12em}
 
   /* ============ THE BEAT ============
-     ONE CADENCE FOR THE WHOLE SET, and it is not a new number: 4.6s is
-     --primary-glint-cycle on .btn.primary.play-cta, the beat this button
-     already runs. Every mark moves inside the first ~22% of it — about one
-     second — and is then perfectly still for the remaining 3.6s, so the die
-     acts, waits, and acts again rather than fidgeting forever. The two beats
-     never collide either: the app's own primaryGlint holds the glass sweep
-     off until 72% of the same cycle, 2.3s after this one has finished.
-     Motion, pause, glint, pause.
+     ONE CADENCE FOR THE WHOLE SET: 9.2s, which is exactly TWO turns of
+     --primary-glint-cycle on .btn.primary.play-cta, so the mark still keeps
+     the button's own rhythm rather than inventing a second one. Every mark
+     moves inside the first ~22% of it — about two seconds — and is then
+     perfectly still for the remaining seven.
+     THE FIRST PASS WAS HALF THIS AND IT READ AS FLICKER (owner call). One
+     second of travel with a bounce at the end of it, six pips popping 60ms
+     apart, and a seam blinking to .15 opacity and back inside 320ms is not a
+     beat, it is a twitch — the eye reads anything that fast as a rendering
+     fault rather than as motion. So the cycle doubled, the travel roughly
+     doubled with it, the overshoots came down from 1.3 to about 1.06, the
+     pip ripple went to 130ms steps, and the two opacity BLINKS are gone: the
+     seam now draws itself down the die instead of flashing, and DROP's arrow
+     rises from .55 rather than dropping out. Slow enough to be read as an
+     intention is the whole requirement.
+     The glint still never collides: its sweep runs 72-93% of ITS 4.6s, which
+     inside this window is 3.31-4.28s and 7.91-8.88s, and every mark is at
+     rest by 2.4s.
      NOTHING EVER FADES OUT. A first pass flew the die in from opacity 0 and
      the button was left with no glyph at all for about 200ms of every cycle —
      04, 06 and 07 went to an empty gradient square. A play mark that blinks
@@ -61,59 +71,66 @@
      only TRAVELS, on a path short enough to stay inside its own 24-unit box.
      The pips of ACE and SIX and the seam of SPLIT still land, because their
      die outline is on screen the whole time to hold the shape. */
-  :root{--pm-cycle:4.6s}
+  :root{--pm-cycle:9.2s}
   .pmmark .pmpip,.pmmark .pmfly,.pmmark .pmfall,.pmmark .pmfront{
     transform-box:fill-box;transform-origin:50% 50%}
   .pmmark .pmhalf,.pmmark .pmchev,.pmmark .pmarrow,.pmmark .pmline{
     transform-box:view-box;transform-origin:50% 50%}
 
-  .m-ace .pmpip{animation:pmAce var(--pm-cycle) cubic-bezier(.2,.85,.3,1) infinite}
+  .m-ace .pmpip{animation:pmAce var(--pm-cycle) cubic-bezier(.25,.8,.35,1) infinite}
   /* SIX resolves pip by pip, down one column and then the other. The stagger is
      animation-delay, so all six still repeat on the shared 4.6s; backwards fill
      stops the very first cycle showing a face that is already there. */
-  .m-six .pmpip{animation:pmPop var(--pm-cycle) cubic-bezier(.2,.85,.3,1) infinite backwards}
-  .m-six .pmpip:nth-of-type(2){animation-delay:.06s}
-  .m-six .pmpip:nth-of-type(3){animation-delay:.12s}
-  .m-six .pmpip:nth-of-type(4){animation-delay:.18s}
-  .m-six .pmpip:nth-of-type(5){animation-delay:.24s}
-  .m-six .pmpip:nth-of-type(6){animation-delay:.3s}
+  .m-six .pmpip{animation:pmPop var(--pm-cycle) cubic-bezier(.25,.8,.35,1) infinite backwards}
+  .m-six .pmpip:nth-of-type(2){animation-delay:.13s}
+  .m-six .pmpip:nth-of-type(3){animation-delay:.26s}
+  .m-six .pmpip:nth-of-type(4){animation-delay:.39s}
+  .m-six .pmpip:nth-of-type(5){animation-delay:.52s}
+  .m-six .pmpip:nth-of-type(6){animation-delay:.65s}
   .m-split .pmhalf--l{animation:pmPartL var(--pm-cycle) ease-in-out infinite}
   .m-split .pmhalf--r{animation:pmPartR var(--pm-cycle) ease-in-out infinite}
-  .m-split .pmseam{animation:pmSeam var(--pm-cycle) ease-in-out infinite}
-  .m-lines .pmfly{animation:pmFly var(--pm-cycle) cubic-bezier(.2,.85,.3,1) infinite}
-  /* A WAKE, NOT A BLOCK. The two lines carry a 50ms offset so they arrive as
-     two strokes rather than one shape sliding sideways, which is the whole
-     difference between speed lines and a pair of dashes. */
-  .m-lines .pmline{animation:pmStream var(--pm-cycle) cubic-bezier(.2,.85,.3,1) infinite}
-  .m-lines .pmline--b{animation-delay:.05s}
+  /* The seam DRAWS down the die rather than blinking out of it. An opacity
+     flash on a 1-unit-wide line is the single most flicker-prone thing on
+     the card; a cut being made is the same idea, in motion the eye reads. */
+  .m-split .pmseam{stroke-dasharray:15.2;animation:pmCut var(--pm-cycle) ease-out infinite}
+  /* 04 MOVES HORIZONTALLY, because that is what its lines claim. It does not
+     share pmFly: a die tumbling up-right at -52 degrees while two horizontal
+     strokes slide beneath it is two different stories about the same throw.
+     The dart is short on purpose — the wake is undrawn at the start, so the
+     die is never near enough to its own lines to read as struck through. */
+  .m-lines .pmdart{animation:pmDart var(--pm-cycle) cubic-bezier(.25,.8,.35,1) infinite}
+  .m-lines .pmline--a{stroke-dasharray:2.7;animation:pmWakeA var(--pm-cycle) cubic-bezier(.3,.75,.35,1) infinite}
+  .m-lines .pmline--b{stroke-dasharray:2.1;animation:pmWakeB var(--pm-cycle) cubic-bezier(.3,.75,.35,1) infinite;
+    animation-delay:.16s}
   .m-forward .pmchev{animation:pmNudge var(--pm-cycle) ease-in-out infinite}
-  .m-throw .pmfly{animation:pmFly var(--pm-cycle) cubic-bezier(.2,.85,.3,1) infinite}
+  .m-throw .pmfly{animation:pmFly var(--pm-cycle) cubic-bezier(.25,.8,.35,1) infinite}
   .m-throw .pmdash{animation:pmMarch var(--pm-cycle) cubic-bezier(.3,.8,.4,1) infinite}
-  .m-drop .pmfall{animation:pmFall var(--pm-cycle) cubic-bezier(.35,.05,.4,1) infinite}
+  .m-drop .pmfall{animation:pmFall var(--pm-cycle) cubic-bezier(.4,.05,.35,1) infinite}
   .m-drop .pmarrow{animation:pmPoint var(--pm-cycle) ease-out infinite}
-  .m-stack .pmfront{animation:pmLand var(--pm-cycle) cubic-bezier(.2,.85,.3,1) infinite}
+  .m-stack .pmfront{animation:pmLand var(--pm-cycle) cubic-bezier(.25,.8,.35,1) infinite}
 
-  @keyframes pmAce{0%{transform:scale(.15);opacity:0}4%{opacity:1}
-    9%{transform:scale(1.3)}14%{transform:scale(.92)}20%,100%{transform:scale(1);opacity:1}}
-  @keyframes pmPop{0%{transform:scale(.2);opacity:0}3%{opacity:1}
-    8%{transform:scale(1.25)}13%,100%{transform:scale(1);opacity:1}}
-  @keyframes pmPartL{0%,2%{transform:none}9%{transform:translateX(-1.5px)}18%,100%{transform:none}}
-  @keyframes pmPartR{0%,2%{transform:none}9%{transform:translateX(1.5px)}18%,100%{transform:none}}
-  @keyframes pmSeam{0%,2%{opacity:1}5%{opacity:.15}12%,100%{opacity:1}}
+  @keyframes pmAce{0%{transform:scale(.34)}15%{transform:scale(1.07)}
+    22%,100%{transform:scale(1)}}
+  @keyframes pmPop{0%{transform:scale(.3);opacity:.35}13%{transform:scale(1.06);opacity:1}
+    19%,100%{transform:scale(1);opacity:1}}
+  @keyframes pmPartL{0%,3%{transform:none}12%{transform:translateX(-1.8px)}22%,100%{transform:none}}
+  @keyframes pmPartR{0%,3%{transform:none}12%{transform:translateX(1.8px)}22%,100%{transform:none}}
+  @keyframes pmCut{0%{stroke-dashoffset:15.2}15%,100%{stroke-dashoffset:0}}
   @keyframes pmFly{0%{transform:translate(-5px,4.2px) rotate(-52deg) scale(.62)}
-    17%{transform:translate(0,0) rotate(6deg) scale(1.05)}
+    16%{transform:translate(0,0) rotate(4deg) scale(1.04)}
     22%,100%{transform:none}}
-  @keyframes pmStream{0%{transform:translateX(-3.4px);opacity:.4}
-    17%{transform:translateX(0);opacity:1}22%,100%{transform:none;opacity:1}}
+  @keyframes pmDart{0%{transform:translateX(-1.3px) rotate(-5deg)}
+    16%{transform:translateX(.2px) rotate(.8deg)}22%,100%{transform:none}}
+  @keyframes pmWakeA{0%{stroke-dashoffset:2.7}17%,100%{stroke-dashoffset:0}}
+  @keyframes pmWakeB{0%{stroke-dashoffset:2.1}17%,100%{stroke-dashoffset:0}}
   @keyframes pmMarch{0%,2%{stroke-dashoffset:8.6}20%,100%{stroke-dashoffset:0}}
-  @keyframes pmNudge{0%,3%{transform:none}10%{transform:translateX(1.8px)}
-    16%{transform:translateX(-.4px)}21%,100%{transform:none}}
-  @keyframes pmFall{0%{transform:translateY(-2.6px)}
-    14%{transform:translateY(.9px)}20%,100%{transform:none}}
-  @keyframes pmPoint{0%,8%{opacity:.45;transform:translateY(-1.6px)}
-    18%,100%{opacity:1;transform:none}}
+  @keyframes pmNudge{0%,4%{transform:none}13%{transform:translateX(2px)}22%,100%{transform:none}}
+  @keyframes pmFall{0%{transform:translateY(-2.8px)}15%{transform:translateY(.7px)}
+    22%,100%{transform:none}}
+  @keyframes pmPoint{0%,7%{opacity:.55;transform:translateY(-1.4px)}
+    20%,100%{opacity:1;transform:none}}
   @keyframes pmLand{0%{transform:translate(-2.8px,2.2px) rotate(-15deg)}
-    17%{transform:translate(0,0) rotate(3deg)}22%,100%{transform:none}}
+    16%{transform:translate(0,0) rotate(2deg)}22%,100%{transform:none}}
 
   /* The app collapses every duration to .001ms under #kbroot.reduce-motion,
      which would leave these flashing a first frame — an empty die, a mark that
@@ -121,6 +138,7 @@
      honest answer is to hold it and not move at all. */
   @media (prefers-reduced-motion:reduce){
     .pmmark *{animation:none!important}
+    .m-split .pmseam,.m-lines .pmline{stroke-dasharray:none}
   }
 </style>
 
@@ -142,7 +160,7 @@
   <div class="pmhead">
     <div class="pmeyebrow">OPEN STUDY · PRIMARY ACTION · 25 PX</div>
     <h1>THE PLAY MARK</h1>
-    <p>Every door that starts a duel carries one glyph: Home's ranked CTA, NEXT DUEL on the result, and the two offline practice doors. It is 25px of dark ink on the duel gradient, so it has one job — read as this game, instantly, at that size. Every mark below also MOVES: about a second, then a long hold, then again.</p>
+    <p>Every door that starts a duel carries one glyph: Home's ranked CTA, NEXT DUEL on the result, and the two offline practice doors. It is 25px of dark ink on the duel gradient, so it has one job — read as this game, instantly, at that size. Every mark below also MOVES: about two seconds, then seven still, then again.</p>
   </div>
 
   <div class="pmbase">
@@ -156,14 +174,14 @@
     <span class="pmcell"><span class="pmchip"><svg class="cico pmmark m-ace" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect class="pmbody" x="4.4" y="4.4" width="15.2" height="15.2" rx="4.2"/><circle class="pmpip" cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/></svg></span><span class="pmcaplet">01</span></span>
     <span class="pmcell"><span class="pmchip"><svg class="cico pmmark m-six" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect class="pmbody" x="4.4" y="4.4" width="15.2" height="15.2" rx="4.2"/><g fill="currentColor" stroke="none"><circle class="pmpip" cx="9" cy="8.4" r="1.15"/><circle class="pmpip" cx="9" cy="12" r="1.15"/><circle class="pmpip" cx="9" cy="15.6" r="1.15"/><circle class="pmpip" cx="15" cy="8.4" r="1.15"/><circle class="pmpip" cx="15" cy="12" r="1.15"/><circle class="pmpip" cx="15" cy="15.6" r="1.15"/></g></svg></span><span class="pmcaplet">02</span></span>
     <span class="pmcell"><span class="pmchip"><svg class="cico pmmark m-split" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g transform="rotate(7 12 12)"><rect class="pmbody" x="4.4" y="4.4" width="15.2" height="15.2" rx="4.2"/><path class="pmseam" d="M12 4.4v15.2"/><g class="pmhalf pmhalf--l" fill="currentColor" stroke="none"><circle cx="8.6" cy="8.4" r="1.1"/><circle cx="8.6" cy="12" r="1.1"/><circle cx="8.6" cy="15.6" r="1.1"/></g><g class="pmhalf pmhalf--r" fill="currentColor" stroke="none"><circle cx="15.4" cy="8.4" r="1.1"/><circle cx="15.4" cy="12" r="1.1"/><circle cx="15.4" cy="15.6" r="1.1"/></g></g></svg></span><span class="pmcaplet">03</span></span>
-    <span class="pmcell"><span class="pmchip"><svg class="cico pmmark m-lines" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmfly"><g transform="rotate(-12 15 12)"><rect class="pmbody" x="9.3" y="6.3" width="11.4" height="11.4" rx="3.2"/><circle cx="15" cy="12" r="1.8" fill="currentColor" stroke="none"/></g></g><path class="pmline pmline--a" d="M1.9 9.2h2.7"/><path class="pmline pmline--b" d="M2.7 14.7h2.1"/></svg></span><span class="pmcaplet">04</span></span>
+    <span class="pmcell"><span class="pmchip"><svg class="cico pmmark m-lines" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmdart"><g transform="rotate(-12 15 12)"><rect class="pmbody" x="9.3" y="6.3" width="11.4" height="11.4" rx="3.2"/><circle cx="15" cy="12" r="1.8" fill="currentColor" stroke="none"/></g></g><path class="pmline pmline--a" d="M1.9 9.2h2.7"/><path class="pmline pmline--b" d="M2.7 14.7h2.1"/></svg></span><span class="pmcaplet">04</span></span>
     <span class="pmcell"><span class="pmchip"><svg class="cico pmmark m-forward" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect class="pmbody" x="2.9" y="6.5" width="11" height="11" rx="3.1"/><circle cx="8.4" cy="12" r="1.6" fill="currentColor" stroke="none"/><path class="pmchev" d="m16.9 7.7 4.3 4.3-4.3 4.3"/></svg></span><span class="pmcaplet">05</span></span>
     <span class="pmcell"><span class="pmchip"><svg class="cico pmmark m-throw" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmfly"><g transform="rotate(-16 15.8 8.8)"><rect class="pmbody" x="10.6" y="3.6" width="10.4" height="10.4" rx="2.9"/><circle cx="15.8" cy="8.8" r="1.7" fill="currentColor" stroke="none"/></g></g><path class="pmdash" d="M1.8 21.4c1-4.2 3-7 6.2-8.4" stroke-dasharray="2 2.3"/></svg></span><span class="pmcaplet">06</span></span>
     <span class="pmcell"><span class="pmchip"><svg class="cico pmmark m-drop" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmfall"><rect class="pmbody" x="6.6" y="2.6" width="10.8" height="10.8" rx="3"/><circle cx="12" cy="8" r="1.55" fill="currentColor" stroke="none"/></g><g class="pmarrow"><path d="M12 16.2v4.2"/><path d="m8.6 17.4 3.4 3.4 3.4-3.4"/></g></svg></span><span class="pmcaplet">07</span></span>
     <span class="pmcell"><span class="pmchip"><svg class="cico pmmark m-stack" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="pmback" d="M8.3 9V6a3.4 3.4 0 0 1 3.4-3.4h5.6A3.4 3.4 0 0 1 20.7 6v5.6a3.4 3.4 0 0 1-3.4 3.4h-1.6"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></svg></span><span class="pmcaplet">08</span></span>
   </div>
 
-  <p class="pmbeat">ONE CADENCE · 4.6s — the button's own <b>--primary-glint-cycle</b>. Roughly a second of motion, then 3.6s perfectly still. The glass glint crosses at 72% of the same cycle, long after every die has landed, so the two never talk over each other. TODAY's mark is the still one.</p>
+  <p class="pmbeat">ONE CADENCE &middot; 9.2s &mdash; two turns of the button's own <b>--primary-glint-cycle</b>. About two seconds of motion, then seven perfectly still. Half this was the first attempt and it read as flicker: anything under a second, with a bounce on the end of it, the eye files as a rendering fault rather than as movement. The glass glint still crosses at 3.3s and 7.9s, long after every die has landed. TODAY's mark is the still one.</p>
 
   <article class="pmopt">
     <div class="pmtop">
@@ -200,13 +218,13 @@
 
   <article class="pmopt">
     <div class="pmtop">
-      <span class="pmhero"><svg class="cico pmmark m-lines" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmfly"><g transform="rotate(-12 15 12)"><rect class="pmbody" x="9.3" y="6.3" width="11.4" height="11.4" rx="3.2"/><circle cx="15" cy="12" r="1.8" fill="currentColor" stroke="none"/></g></g><path class="pmline pmline--a" d="M1.9 9.2h2.7"/><path class="pmline pmline--b" d="M2.7 14.7h2.1"/></svg></span>
+      <span class="pmhero"><svg class="cico pmmark m-lines" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmdart"><g transform="rotate(-12 15 12)"><rect class="pmbody" x="9.3" y="6.3" width="11.4" height="11.4" rx="3.2"/><circle cx="15" cy="12" r="1.8" fill="currentColor" stroke="none"/></g></g><path class="pmline pmline--a" d="M1.9 9.2h2.7"/><path class="pmline pmline--b" d="M2.7 14.7h2.1"/></svg></span>
       <span class="pmtx"><b class="pmname"><i>04</i>THROW / LINES</b>
         <p class="pmdesc">The first idea, back: two speed lines to the left of a canted die. Not the path it travelled &mdash; a WAKE, read the way a comic strip reads one, and the only mark here that says speed without drawing a road.</p>
-        <p class="pmmotion"><b>BEAT</b> The lines stream in behind the die as it lands.</p>
+        <p class="pmmotion"><b>BEAT</b> The die darts forward and its wake lays down behind it.</p>
         <p class="pmrisk"><b>COST</b> Two horizontal strokes beside a die can read as a strikethrough. The clearance and the beat are what stop it &mdash; watch it moving before judging it.</p></span>
     </div>
-    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true"><svg class="cico pmmark m-lines" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmfly"><g transform="rotate(-12 15 12)"><rect class="pmbody" x="9.3" y="6.3" width="11.4" height="11.4" rx="3.2"/><circle cx="15" cy="12" r="1.8" fill="currentColor" stroke="none"/></g></g><path class="pmline pmline--a" d="M1.9 9.2h2.7"/><path class="pmline pmline--b" d="M2.7 14.7h2.1"/></svg></span><span class="btn-label">Play ranked match</span></button>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true"><svg class="cico pmmark m-lines" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmdart"><g transform="rotate(-12 15 12)"><rect class="pmbody" x="9.3" y="6.3" width="11.4" height="11.4" rx="3.2"/><circle cx="15" cy="12" r="1.8" fill="currentColor" stroke="none"/></g></g><path class="pmline pmline--a" d="M1.9 9.2h2.7"/><path class="pmline pmline--b" d="M2.7 14.7h2.1"/></svg></span><span class="btn-label">Play ranked match</span></button>
   </article>
 
   <article class="pmopt">
