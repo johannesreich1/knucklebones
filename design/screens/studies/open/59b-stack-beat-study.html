@@ -1,0 +1,193 @@
+<!-- meta name="PM/S — Six beats for the stacked bones" group="5b · The play mark" subtitle="Mark 08 read as broken the moment it moved, and the cause is its drawing rather than its timing: the back bone is an open path whose ends rest on the front one. Six replacement gestures, four that never separate the two and two that separate them properly" width=412 height=2061 sizes="md" links="Home, Offline, Result" -->
+
+<style>
+  .pmhead{width:100%;margin:4px auto 0;text-align:left}
+  .pmeyebrow{font-size:8px;font-weight:800;letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
+  .pmhead h1{font-size:18px;text-align:left;margin:5px 0 7px}
+  .pmhead p{font-size:10px;line-height:1.55;letter-spacing:.1em;color:var(--dim);margin:0}
+  .pmbase{width:100%;box-sizing:border-box;margin:14px auto 0;padding:11px 12px 12px;
+    border:1px solid rgba(255,157,102,.22);border-radius:16px;background:rgba(255,157,102,.045)}
+  .pmbase .pmeyebrow{display:block;margin-bottom:8px;color:rgba(255,157,102,.85)}
+  .pmbaseline{display:block;font-size:8.5px;line-height:1.5;letter-spacing:.07em;color:var(--dim);margin-top:9px}
+  .pmstrip{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;width:100%;margin:14px auto 0}
+  .pmcell{display:flex;flex-direction:column;align-items:center;gap:5px}
+  .pmchip{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;
+    color:#04101a;background:linear-gradient(100deg,var(--p1),var(--p1-hi) 40%,var(--p2));
+    box-shadow:0 6px 16px rgba(var(--p1-rgb),.22),0 0 0 1px rgba(255,255,255,.12) inset}
+  .pmchip.now{box-shadow:0 6px 16px rgba(var(--p1-rgb),.22),0 0 0 1px rgba(255,255,255,.12) inset,
+    0 0 0 2px rgba(255,157,102,.6)}
+  .pmcaplet{font-size:7px;font-weight:800;letter-spacing:.16em;color:rgba(233,241,255,.5)}
+  .pmbeat{width:100%;margin:12px auto 0;font-size:8px;line-height:1.6;letter-spacing:.1em;
+    color:rgba(233,241,255,.46);text-align:center}
+  .pmbeat b{color:rgba(40,232,255,.8);font-weight:800}
+  .pmopt{position:relative;box-sizing:border-box;width:100%;margin:10px auto 0;padding:12px 12px 13px;
+    border:1px solid rgba(255,255,255,.085);border-radius:16px;background:rgba(255,255,255,.025);
+    display:flex;flex-direction:column;gap:11px}
+  .pmtop{display:flex;align-items:center;gap:12px}
+  .pmhero{width:60px;height:60px;flex:0 0 auto;display:grid;place-items:center;border-radius:17px;
+    border:1px solid rgba(233,241,255,.12);background:rgba(5,7,17,.6);color:#e9f1ff;
+    box-shadow:inset 0 0 20px rgba(142,163,192,.035)}
+  .pmhero svg{filter:drop-shadow(0 0 7px rgba(233,241,255,.16))}
+  .pmtx{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .pmname{font-size:10px;font-weight:800;letter-spacing:.16em}
+  .pmname i{font-style:normal;font-weight:800;color:rgba(233,241,255,.42);margin-right:7px}
+  .pmname s{text-decoration:none;font-size:7px;letter-spacing:.14em;color:rgba(40,232,255,.6);margin-left:7px}
+  .pmdesc{font-size:8.5px;line-height:1.5;letter-spacing:.06em;color:var(--dim);margin:0}
+  .pmmotion{font-size:8px;line-height:1.5;letter-spacing:.06em;color:rgba(40,232,255,.62);margin:0}
+  .pmmotion b{color:rgba(40,232,255,.85);font-weight:800;letter-spacing:.12em}
+  .pmrisk{font-size:8px;line-height:1.5;letter-spacing:.06em;color:rgba(233,241,255,.42);margin:0}
+  .pmrisk b{color:rgba(255,157,102,.85);font-weight:800;letter-spacing:.12em}
+
+  /* ============ THE BEAT ============
+     Same contract as the parent study: 9.2s, two turns of the button's own
+     --primary-glint-cycle, about two seconds of motion and then seven still,
+     and every gesture is a ROUND TRIP that starts and ends on the resting
+     frame so the loop has no seam.
+     WHAT THIS CARD IS ACTUALLY ABOUT is a drawing problem, not a timing one.
+     The back bone is an OPEN PATH: it is drawn only along the edges the front
+     bone does not hide, and its two ends stop exactly on the front bone's top
+     and right edges. That is what makes the stack read as depth at rest — and
+     it is why moving the front bone alone broke it. The instant it leaves, the
+     back bone is an unfinished rectangle with two loose ends hanging in the
+     middle of the mark. Four of the six below never separate the two bones, so
+     the question cannot arise; the two that do (LIFT, DEAL) change the
+     drawing instead of patching it: the back bone is a whole rounded rect and
+     the front one is MASKED out of it, with the mask carrying the same
+     .pmfront class so it travels in lockstep. At rest that renders exactly the
+     open path it replaces; in motion the occlusion stays correct, which the
+     patch approach could not do — it closed the corner but flipped the depth
+     into two transparent squares crossing each other. */
+  :root{--pm-cycle:9.2s}
+  .smark .pmall{transform-box:view-box;transform-origin:50% 50%}
+  .smark .pmfront{transform-box:view-box;transform-origin:50% 50%}
+  .smark .pmpip{transform-box:fill-box;transform-origin:50% 50%}
+
+  .s-press .pmall{animation:sPress var(--pm-cycle) ease-in-out infinite}
+  .s-rock .pmall{transform-origin:4.5px 20px;animation:sRock var(--pm-cycle) ease-in-out infinite}
+  .s-stamp .pmall{transform-origin:12px 21.4px;animation:sStamp var(--pm-cycle) cubic-bezier(.4,0,.3,1) infinite}
+  .s-pip .pmpip{animation:sPip var(--pm-cycle) ease-in-out infinite}
+  .s-lift .pmfront{animation:sLift var(--pm-cycle) ease-in-out infinite}
+  .s-deal .pmfront{animation:sDeal var(--pm-cycle) ease-in-out infinite}
+  /* NOW: the beat 59a ships today, kept unfixed so the fault can be read in
+     the same conditions as its six replacements */
+  .s-now .pmfront{animation:sLift var(--pm-cycle) ease-in-out infinite}
+
+  @keyframes sPress{0%,4%{transform:none}13%{transform:scale(.92)}24%,100%{transform:none}}
+  @keyframes sRock{0%,4%{transform:none}13%{transform:rotate(-5deg)}24%,100%{transform:none}}
+  @keyframes sStamp{0%,4%{transform:none}11%{transform:translateY(1.2px) scale(1.05,.9)}
+    18%{transform:translateY(-.3px) scale(.99,1.02)}24%,100%{transform:none}}
+  @keyframes sPip{0%,4%{transform:none}13%{transform:scale(1.5)}24%,100%{transform:none}}
+  @keyframes sLift{0%,4%{transform:none}13%{transform:translate(-1.6px,-1.7px) rotate(-5deg)}
+    24%,100%{transform:none}}
+  @keyframes sDeal{0%,4%{transform:none}13%{transform:translate(-2px,1.4px)}24%,100%{transform:none}}
+
+  @media (prefers-reduced-motion:reduce){
+    .smark *{animation:none!important}
+  }
+</style>
+
+
+<!-- Same repetition, same reason as the parent card: a mark is drawn three
+     times because those are the three readings it must survive, and each copy
+     has to be a real element for its beat to run. Change one, change all three. -->
+
+<div class="stage"><div class="bgfx"></div><div class="scr">
+
+  <div class="pmhead">
+    <div class="pmeyebrow">OPEN STUDY · MARK 08 · THE BEAT</div>
+    <h1>THE STACKED BONES</h1>
+    <p>The drawing is settled; only its gesture is in question. The back bone is an OPEN path — drawn along the edges the front bone does not hide, its two ends stopping exactly on the front bone's top and right edges. That is what sells the depth standing still, and it is why moving the front bone alone left an unfinished rectangle behind.</p>
+  </div>
+
+  <div class="pmbase">
+    <span class="pmeyebrow">NOW &mdash; the fault</span>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true"><svg class="cico smark s-now" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="pmback" d="M8.3 9V6a3.4 3.4 0 0 1 3.4-3.4h5.6A3.4 3.4 0 0 1 20.7 6v5.6a3.4 3.4 0 0 1-3.4 3.4h-1.6"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle class="pmpip" cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></svg></span><span class="btn-label">Play ranked match</span></button>
+    <span class="pmbaseline">The front bone lifts and the back bone is left with two loose ends hanging in the middle of the mark: a stub below its top-left corner, and a bottom edge that stops in mid-air. Nothing is wrong with the timing. Watch it against any of the six below.</span>
+  </div>
+
+  <div class="pmstrip">
+    <span class="pmcell"><span class="pmchip now"><svg class="cico smark s-now" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="pmback" d="M8.3 9V6a3.4 3.4 0 0 1 3.4-3.4h5.6A3.4 3.4 0 0 1 20.7 6v5.6a3.4 3.4 0 0 1-3.4 3.4h-1.6"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle class="pmpip" cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></svg></span><span class="pmcaplet">NOW</span></span>
+    <span class="pmcell"><span class="pmchip"><svg class="cico smark s-press" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmall"><path class="pmback" d="M8.3 9V6a3.4 3.4 0 0 1 3.4-3.4h5.6A3.4 3.4 0 0 1 20.7 6v5.6a3.4 3.4 0 0 1-3.4 3.4h-1.6"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle class="pmpip" cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></g></svg></span><span class="pmcaplet">S1</span></span>
+    <span class="pmcell"><span class="pmchip"><svg class="cico smark s-rock" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmall"><path class="pmback" d="M8.3 9V6a3.4 3.4 0 0 1 3.4-3.4h5.6A3.4 3.4 0 0 1 20.7 6v5.6a3.4 3.4 0 0 1-3.4 3.4h-1.6"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle class="pmpip" cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></g></svg></span><span class="pmcaplet">S2</span></span>
+    <span class="pmcell"><span class="pmchip"><svg class="cico smark s-stamp" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmall"><path class="pmback" d="M8.3 9V6a3.4 3.4 0 0 1 3.4-3.4h5.6A3.4 3.4 0 0 1 20.7 6v5.6a3.4 3.4 0 0 1-3.4 3.4h-1.6"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle class="pmpip" cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></g></svg></span><span class="pmcaplet">S3</span></span>
+    <span class="pmcell"><span class="pmchip"><svg class="cico smark s-pip" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="pmback" d="M8.3 9V6a3.4 3.4 0 0 1 3.4-3.4h5.6A3.4 3.4 0 0 1 20.7 6v5.6a3.4 3.4 0 0 1-3.4 3.4h-1.6"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle class="pmpip" cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></svg></span><span class="pmcaplet">S4</span></span>
+    <span class="pmcell"><span class="pmchip"><svg class="cico smark s-lift" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><defs><mask id="sm1" maskUnits="userSpaceOnUse" x="-4" y="-4" width="32" height="32"><rect x="-4" y="-4" width="32" height="32" fill="#fff"/><g class="pmfront"><rect x="3.3" y="9" width="12.4" height="12.4" rx="3.4" fill="#000"/></g></mask></defs><rect class="pmbackfull" x="8.3" y="2.6" width="12.4" height="12.4" rx="3.4" mask="url(#sm1)"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle class="pmpip" cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></svg></span><span class="pmcaplet">S5</span></span>
+    <span class="pmcell"><span class="pmchip"><svg class="cico smark s-deal" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><defs><mask id="sm2" maskUnits="userSpaceOnUse" x="-4" y="-4" width="32" height="32"><rect x="-4" y="-4" width="32" height="32" fill="#fff"/><g class="pmfront"><rect x="3.3" y="9" width="12.4" height="12.4" rx="3.4" fill="#000"/></g></mask></defs><rect class="pmbackfull" x="8.3" y="2.6" width="12.4" height="12.4" rx="3.4" mask="url(#sm2)"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle class="pmpip" cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></svg></span><span class="pmcaplet">S6</span></span>
+  </div>
+
+  <p class="pmbeat">Same contract as the parent study &mdash; <b>9.2s</b>, two turns of the button's own <b>--primary-glint-cycle</b>, about two seconds of motion and then seven still, every gesture a ROUND TRIP that starts and ends on the resting frame. Only the gesture changes below.</p>
+
+  <article class="pmopt">
+    <div class="pmtop">
+      <span class="pmhero"><svg class="cico smark s-press" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmall"><path class="pmback" d="M8.3 9V6a3.4 3.4 0 0 1 3.4-3.4h5.6A3.4 3.4 0 0 1 20.7 6v5.6a3.4 3.4 0 0 1-3.4 3.4h-1.6"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle class="pmpip" cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></g></svg></span>
+      <span class="pmtx"><b class="pmname"><i>S1</i>PRESS<s>MOVES AS ONE</s></b>
+        <p class="pmdesc">Both bones move as ONE. The pair compresses a little and springs back, the way a stack of chips does when a thumb comes off it.</p>
+        <p class="pmmotion"><b>BEAT</b> The stack presses down and springs back.</p>
+        <p class="pmrisk"><b>COST</b> Nothing separates, so nothing can come apart &mdash; but nothing reads as two dice either.</p></span>
+    </div>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true"><svg class="cico smark s-press" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmall"><path class="pmback" d="M8.3 9V6a3.4 3.4 0 0 1 3.4-3.4h5.6A3.4 3.4 0 0 1 20.7 6v5.6a3.4 3.4 0 0 1-3.4 3.4h-1.6"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle class="pmpip" cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></g></svg></span><span class="btn-label">Play ranked match</span></button>
+  </article>
+
+  <article class="pmopt">
+    <div class="pmtop">
+      <span class="pmhero"><svg class="cico smark s-rock" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmall"><path class="pmback" d="M8.3 9V6a3.4 3.4 0 0 1 3.4-3.4h5.6A3.4 3.4 0 0 1 20.7 6v5.6a3.4 3.4 0 0 1-3.4 3.4h-1.6"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle class="pmpip" cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></g></svg></span>
+      <span class="pmtx"><b class="pmname"><i>S2</i>ROCK<s>MOVES AS ONE</s></b>
+        <p class="pmdesc">The pair tips on its bottom-left corner and rights itself. Weight and a table, in one gesture, with the two bones still locked together.</p>
+        <p class="pmmotion"><b>BEAT</b> The stack tips on its corner and rights itself.</p>
+        <p class="pmrisk"><b>COST</b> A rotation on a 25px mark is the easiest thing to make look like a wobbling bug.</p></span>
+    </div>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true"><svg class="cico smark s-rock" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmall"><path class="pmback" d="M8.3 9V6a3.4 3.4 0 0 1 3.4-3.4h5.6A3.4 3.4 0 0 1 20.7 6v5.6a3.4 3.4 0 0 1-3.4 3.4h-1.6"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle class="pmpip" cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></g></svg></span><span class="btn-label">Play ranked match</span></button>
+  </article>
+
+  <article class="pmopt">
+    <div class="pmtop">
+      <span class="pmhero"><svg class="cico smark s-stamp" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmall"><path class="pmback" d="M8.3 9V6a3.4 3.4 0 0 1 3.4-3.4h5.6A3.4 3.4 0 0 1 20.7 6v5.6a3.4 3.4 0 0 1-3.4 3.4h-1.6"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle class="pmpip" cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></g></svg></span>
+      <span class="pmtx"><b class="pmname"><i>S3</i>STAMP<s>MOVES AS ONE</s></b>
+        <p class="pmdesc">The pair lands: a drop with a squash on impact and a small rebound. The loudest of the six and the one that most says THROWN.</p>
+        <p class="pmmotion"><b>BEAT</b> The pair drops, squashes on impact, and rebounds.</p>
+        <p class="pmrisk"><b>COST</b> Squash and stretch on a geometric mark can read as a rendering glitch rather than as weight.</p></span>
+    </div>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true"><svg class="cico smark s-stamp" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmall"><path class="pmback" d="M8.3 9V6a3.4 3.4 0 0 1 3.4-3.4h5.6A3.4 3.4 0 0 1 20.7 6v5.6a3.4 3.4 0 0 1-3.4 3.4h-1.6"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle class="pmpip" cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></g></svg></span><span class="btn-label">Play ranked match</span></button>
+  </article>
+
+  <article class="pmopt">
+    <div class="pmtop">
+      <span class="pmhero"><svg class="cico smark s-pip" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="pmback" d="M8.3 9V6a3.4 3.4 0 0 1 3.4-3.4h5.6A3.4 3.4 0 0 1 20.7 6v5.6a3.4 3.4 0 0 1-3.4 3.4h-1.6"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle class="pmpip" cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></svg></span>
+      <span class="pmtx"><b class="pmname"><i>S4</i>PIP</b>
+        <p class="pmdesc">The dice never move at all. Only the front bone's pip swells and settles &mdash; the mark breathes rather than acts.</p>
+        <p class="pmmotion"><b>BEAT</b> The front pip swells once and settles.</p>
+        <p class="pmrisk"><b>COST</b> The quietest by far. On a 25px button it may read as no animation at all.</p></span>
+    </div>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true"><svg class="cico smark s-pip" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="pmback" d="M8.3 9V6a3.4 3.4 0 0 1 3.4-3.4h5.6A3.4 3.4 0 0 1 20.7 6v5.6a3.4 3.4 0 0 1-3.4 3.4h-1.6"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle class="pmpip" cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></svg></span><span class="btn-label">Play ranked match</span></button>
+  </article>
+
+  <article class="pmopt">
+    <div class="pmtop">
+      <span class="pmhero"><svg class="cico smark s-lift" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><defs><mask id="sm3" maskUnits="userSpaceOnUse" x="-4" y="-4" width="32" height="32"><rect x="-4" y="-4" width="32" height="32" fill="#fff"/><g class="pmfront"><rect x="3.3" y="9" width="12.4" height="12.4" rx="3.4" fill="#000"/></g></mask></defs><rect class="pmbackfull" x="8.3" y="2.6" width="12.4" height="12.4" rx="3.4" mask="url(#sm3)"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle class="pmpip" cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></svg></span>
+      <span class="pmtx"><b class="pmname"><i>S5</i>LIFT<s>SEPARATES</s></b>
+        <p class="pmdesc">The front bone is picked UP off the stack and set back down. The only gesture that shows the two as separable objects.</p>
+        <p class="pmmotion"><b>BEAT</b> The front bone lifts off the stack and settles back onto it.</p>
+        <p class="pmrisk"><b>COST</b> Only works because the back bone is masked by the front one; drawn as a plain outline it comes apart the instant it moves.</p></span>
+    </div>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true"><svg class="cico smark s-lift" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><defs><mask id="sm4" maskUnits="userSpaceOnUse" x="-4" y="-4" width="32" height="32"><rect x="-4" y="-4" width="32" height="32" fill="#fff"/><g class="pmfront"><rect x="3.3" y="9" width="12.4" height="12.4" rx="3.4" fill="#000"/></g></mask></defs><rect class="pmbackfull" x="8.3" y="2.6" width="12.4" height="12.4" rx="3.4" mask="url(#sm4)"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle class="pmpip" cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></svg></span><span class="btn-label">Play ranked match</span></button>
+  </article>
+
+  <article class="pmopt">
+    <div class="pmtop">
+      <span class="pmhero"><svg class="cico smark s-deal" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><defs><mask id="sm5" maskUnits="userSpaceOnUse" x="-4" y="-4" width="32" height="32"><rect x="-4" y="-4" width="32" height="32" fill="#fff"/><g class="pmfront"><rect x="3.3" y="9" width="12.4" height="12.4" rx="3.4" fill="#000"/></g></mask></defs><rect class="pmbackfull" x="8.3" y="2.6" width="12.4" height="12.4" rx="3.4" mask="url(#sm5)"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle class="pmpip" cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></svg></span>
+      <span class="pmtx"><b class="pmname"><i>S6</i>DEAL<s>SEPARATES</s></b>
+        <p class="pmdesc">The front bone slides DOWN-LEFT along the stack's own diagonal and back, the way a card is dealt off the top of a deck.</p>
+        <p class="pmmotion"><b>BEAT</b> The front bone slides off the stack and returns.</p>
+        <p class="pmrisk"><b>COST</b> Same masking cost as LIFT, and a slide is easier to mistake for the mark simply drifting.</p></span>
+    </div>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true"><svg class="cico smark s-deal" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><defs><mask id="sm6" maskUnits="userSpaceOnUse" x="-4" y="-4" width="32" height="32"><rect x="-4" y="-4" width="32" height="32" fill="#fff"/><g class="pmfront"><rect x="3.3" y="9" width="12.4" height="12.4" rx="3.4" fill="#000"/></g></mask></defs><rect class="pmbackfull" x="8.3" y="2.6" width="12.4" height="12.4" rx="3.4" mask="url(#sm6)"/><g class="pmfront"><rect class="pmbody" x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/><circle class="pmpip" cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/></g></svg></span><span class="btn-label">Play ranked match</span></button>
+  </article>
+
+  <div class="note" style="margin-top:14px">The four marked <b>MOVES AS ONE</b> wrap both bones in a
+    single group and gesture with it, so the open path and the shape that hides its ends never come apart &mdash;
+    there is no seam to get wrong. The two marked <b>SEPARATES</b> pay for the separation with one extra
+    stroke, <b>.pmjoin</b>, the corner the front bone normally hides; it sits at zero opacity at rest and is
+    only visible while the bone is genuinely off the stack. If one of those two wins, the shipped glyph should
+    use a mask rather than a second path, so the occlusion is correct for any motion instead of for one.</div>
+
+</div></div>
