@@ -30,6 +30,16 @@ export interface QueueScreen {
   stop(): void;
 }
 
+/* THE PULSE. Each pass of the wait loop is one pvp-join, and the server stamps
+   the queue row's last_seen_at on every one — so this interval is how quickly
+   a closed app stops being offered as a partner (pvp-join/matchmaking.ts,
+   PARTNER_FRESH_MS = 8s, sized for the 2.5s this used to be until every
+   installed build has this). The loop is SERIAL by construction: it awaits
+   each join before sleeping, so a slow request stretches the period and two
+   polls are never in flight at once. Keep it that way — a faster poll must
+   never become a concurrent one. */
+const QUEUE_POLL_MS = 1000;
+
 export interface QueueScreenPorts {
   goHome: () => void;
   startTutorial: () => void;
@@ -200,7 +210,7 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
         await enterMatch(match);
         return;
       }
-      await new Promise((resolve) => setTimeout(resolve, 2500));
+      await new Promise((resolve) => setTimeout(resolve, QUEUE_POLL_MS));
     }
   }
 

@@ -91,6 +91,19 @@ Release once the shards are green rather than learning through `main`. And
 because that gate is macOS while CI is Linux, a green local run says nothing
 about the pipeline: read `gh run list --branch main` before calling it green.
 
+The same PR route is mandatory for **anything inside an Edge Function
+closure** (`supabase/functions/**`). `ci-1` runs `node tools/check-functions.mjs`
+— `deno check` over the exact deployable closure, with its `deno.json` import
+map and the synthetic `./core` paths — and the local gate cannot reproduce
+that: `deno` is not installed on the release machine. What the gate *can* see
+is narrower: a helper that a Node test imports directly is typechecked through
+`typecheck-tests` (the paragraph above), which is how the queue sweep's bad
+`EdgeClient` import is caught today. It was not caught on 2026-09-05, when
+`6df55d37` shipped `pvp-join/queue-liveness.ts` importing `EdgeClient` from a
+module that does not export it: Deno's deploy bundler strips types, so v46
+went live and ran, and `ci-1` stayed red until `d53c317b` fixed the import and
+added that direct test. A module nothing imports directly still has only CI.
+
 Hosted CI selects four coverage-checked `--ci-shard` manifests. Each shard has
 its own checkout, build output, server, and kernel-assigned ports, while using
 one suite worker inside its two-core runner to avoid browser-contention flakes.

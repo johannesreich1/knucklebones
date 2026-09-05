@@ -10,9 +10,28 @@ const RUNE_TRIAL_CLAIM_CAPABILITY = "rune_trial_claim_v2";
 const usesRankedActionProtocol = (match: MatchRow): boolean =>
   match.protocol_version === 2 && match.rune_rules_version === 1;
 
+/* HOW RECENTLY A SEAT MUST HAVE BEEN HEARD FROM to be offered as a partner.
+ * The waiting client re-joins every second (2.5s on builds before 2026-09-05)
+ * and matchmaking_queue stamps last_seen_at on each, so a row silent this long
+ * has no app on the queue screen behind it. The two errors are not symmetric:
+ * offering a stale row costs a real player a ghost match — auto-placements
+ * until the seat forfeits, well under a minute, but a match they never wanted;
+ * skipping one costs nothing — it keeps its row and its place,
+ * and the next join reconsiders it. So this is tight where the SWEEP
+ * (queue-liveness.ts, 30s) is deliberately loose.
+ * 8s = three polls of the OLDEST installed cadence; it is the binding
+ * constraint until every build polls at 1s, then it can tighten toward ~4s
+ * (docs/CLIENT_COMPATIBILITY.md phases). The comparison is Postgres
+ * clock_timestamp() against Deno Date.now() on another host — 8s tolerates
+ * seconds of skew; at ~4s move the cutoff into SQL. */
+export const PARTNER_FRESH_MS = 8_000;
+
 export interface QueueCandidate {
   player_id: string;
   created_at: string;
+  /** The client's pulse, stamped by the table on every re-join. Required: a
+   *  missing pulse must read as silence, never as fresh. */
+  last_seen_at: string;
   /** Defaults keep rows queued by an older function safely on protocol v1. */
   protocol_version?: 1 | 2;
   capabilities?: string[];
@@ -97,8 +116,14 @@ export function oldestEligibleCandidate(
   ratings: ReadonlyMap<string, number>,
   playerRating: number,
   band: number,
+  now: number = Date.now(),
 ): QueueCandidate | null {
-  return [...queue]
+  /* Freshness first, THEN age: a silent seat is not in the line at all, so it
+     cannot hold a place ahead of a live one. Strictly-after, so a pulse exactly
+     PARTNER_FRESH_MS old already counts as silence. */
+  const heardSince = now - PARTNER_FRESH_MS;
+  return queue
+    .filter((candidate) => Date.parse(candidate.last_seen_at) > heardSince)
     .sort((a, b) => a.created_at.localeCompare(b.created_at))
     .find((candidate) => {
       const rating = ratings.get(candidate.player_id);
@@ -121,7 +146,7 @@ export async function findOldestEligiblePartner(
   weeklyRotationId: string | null = null,
 ): Promise<QueueCandidate | null> {
   let queueQuery = svc.from("matchmaking_queue")
-    .select("player_id, created_at, protocol_version, capabilities, pool_tier, curve_version, entry_kind, weekly_rotation_id")
+    .select("player_id, created_at, last_seen_at, protocol_version, capabilities, pool_tier, curve_version, entry_kind, weekly_rotation_id")
     .neq("player_id", playerId)
     .eq("curve_version", curveVersion)
     .eq("entry_kind", entryKind);

@@ -39,7 +39,8 @@ select player_id, created_at, last_seen_at from public.matchmaking_queue
                      '8a000000-0000-0000-0000-000000000002');
 
 /* THE POLL. Exactly the columns enqueue_ranked_player_v3 writes on every
-   re-join, which is what an installed client sends every 2.5 seconds. */
+   re-join, which an installed client sends every second (2.5s on builds
+   before 2026-09-05). */
 update public.matchmaking_queue
    set protocol_version = 2, capabilities = array['curve_v2']::text[],
        pool_tier = 'stone', entry_kind = 'ordinary'

@@ -5,6 +5,7 @@
 // no handler, no CORS — none of this is the Edge HTTP boundary.
 import { readFileSync } from 'node:fs';
 import {
+  PARTNER_FRESH_MS,
   negotiatedEquippedRuneProtocol,
   negotiatedProtocolVersion,
   oldestEligibleCandidate,
@@ -90,16 +91,43 @@ export function verifyJoinMatchmakingPolicy(check: Check): void {
     capabilities: ['rune_trial_v1', 'equipped_rune_v1'],
   }) === 'unsupported-rune-rules',
   'an unknown standard action-rules version did not fail closed');
+  /* `now` is a fixed instant so the freshness rule is deterministic: a pulse
+     is judged against the moment the join runs, never against wall clock. */
+  const now = Date.parse('2026-08-23T10:03:00.000Z');
+  const fresh = new Date(now - 2_000).toISOString();
   const queue = [
-    { player_id: 'old-outside', created_at: '2026-08-23T10:00:00.000Z' },
-    { player_id: 'new-inside', created_at: '2026-08-23T10:01:00.000Z' },
-    { player_id: 'newest-inside', created_at: '2026-08-23T10:02:00.000Z' },
+    { player_id: 'old-outside', created_at: '2026-08-23T10:00:00.000Z', last_seen_at: fresh },
+    { player_id: 'new-inside', created_at: '2026-08-23T10:01:00.000Z', last_seen_at: fresh },
+    { player_id: 'newest-inside', created_at: '2026-08-23T10:02:00.000Z', last_seen_at: fresh },
   ];
   const ratings = new Map([['old-outside', 1301], ['new-inside', 1150], ['newest-inside', 1050]]);
-  check(oldestEligibleCandidate(queue, ratings, 1000, 150)?.player_id === 'new-inside',
+  check(oldestEligibleCandidate(queue, ratings, 1000, 150, now)?.player_id === 'new-inside',
     'matchmaking does not choose the oldest player inside the computed rating band');
-  check(oldestEligibleCandidate(queue, ratings, 1000, 49) === null,
+  check(oldestEligibleCandidate(queue, ratings, 1000, 49, now) === null,
     'matchmaking accepts a player outside the computed rating band');
-  check(oldestEligibleCandidate([...queue].reverse(), ratings, 1000, 150)?.player_id === 'new-inside',
+  check(oldestEligibleCandidate([...queue].reverse(), ratings, 1000, 150, now)?.player_id === 'new-inside',
     'matchmaking eligibility depends on incidental query order instead of queue age');
+
+  /* NOBODY IS OFFERED A SEAT WHOSE APP IS NOT ON THE QUEUE SCREEN. A waiting
+     client re-joins every second (2.5s on builds before 2026-09-05), and the
+     table stamps last_seen_at on each; a row that has not been heard from for
+     PARTNER_FRESH_MS has no app behind it. Offering it costs a real player a
+     ghost match; skipping it costs nothing — the row keeps its position and
+     the next join reconsiders it. The sweep (30s) is a separate, slower rule. */
+  const stale = new Date(now - PARTNER_FRESH_MS - 1_000).toISOString();
+  const staleQueue = [
+    { player_id: 'new-inside', created_at: '2026-08-23T10:01:00.000Z', last_seen_at: stale },
+    { player_id: 'newest-inside', created_at: '2026-08-23T10:02:00.000Z', last_seen_at: fresh },
+  ];
+  check(oldestEligibleCandidate(staleQueue, ratings, 1000, 150, now)?.player_id === 'newest-inside',
+    'matchmaking offers a seat whose client has stopped polling');
+  check(oldestEligibleCandidate(staleQueue.map((row) => ({ ...row, last_seen_at: stale })),
+    ratings, 1000, 150, now) === null,
+  'matchmaking offers a seat when every candidate has gone silent');
+  /* The boundary is silence: a pulse exactly PARTNER_FRESH_MS old is one poll
+     too late, not one poll in time. */
+  const edge = new Date(now - PARTNER_FRESH_MS).toISOString();
+  check(oldestEligibleCandidate([{ ...staleQueue[0], last_seen_at: edge }], ratings, 1000, 150, now)
+    === null,
+  'a pulse exactly at the freshness window is still offered');
 }

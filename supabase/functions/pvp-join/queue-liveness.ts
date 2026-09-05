@@ -2,19 +2,20 @@ import type { EdgeClient } from "../_shared/http.ts";
 
 /* HOW LONG A SEAT OUTLIVES ITS PLAYER.
  *
- * The waiting client re-calls pvp-join every 2.5s (queue-screen.ts) and
- * matchmaking_queue stamps last_seen_at on every write, so a row that has been
- * silent this long has no app behind it: the tab is closed, the process was
- * killed, or the network is gone. Until it is swept it is MATCHABLE, and the
- * real player who pairs with it is made to play a ghost — twelve seconds a turn
- * of server auto-placements until it settles as a forfeit about 36s later
- * (_shared/match-timing.ts). The window IS that exposure, so it wants to be
- * small.
+ * The waiting client re-calls pvp-join every second (2.5s on builds before
+ * 2026-09-05; queue-screen.ts) and matchmaking_queue stamps last_seen_at on
+ * every write, so a row silent this long has no app behind it: the tab is
+ * closed, the process was killed or suspended, or the network is gone.
  *
- * 30s rather than the 2.5s poll, because the two errors do not cost the same.
- * Sweeping a live player only costs them their place in line — but it costs it
- * to whoever has been waiting LONGEST, and a slow network is exactly when that
- * happens. Twelve missed polls is a dead client, not a slow one.
+ * THIS IS THE SLOW RULE, AND IT IS NOT WHAT KEEPS GHOSTS OUT OF MATCHES.
+ * Deleting is the one thing that must be conservative: sweep a live player and
+ * they lose their place in line — and it is whoever has waited LONGEST who
+ * loses it, because a slow network is exactly when polls go missing. So this
+ * waits 30s, twelve polls of the oldest installed cadence. What actually stops
+ * a real player being paired with an empty seat is matchmaking.ts's
+ * PARTNER_FRESH_MS (8s): a seat not heard from that recently is simply not
+ * offered, which costs nobody anything. Between the two windows a ghost sits
+ * in the table unoffered until this removes it.
  *
  * This used to read created_at, which is the queue POSITION and which a re-join
  * deliberately never moves. It therefore measured time since JOINING and could

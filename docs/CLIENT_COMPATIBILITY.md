@@ -83,6 +83,14 @@ Most changes are not like this: prefer a server that accepts both shapes until
 adoption catches up, and retire the old one later. Reach for a hard cutover only
 when the data itself changes meaning.
 
+A **server rule that depends on client cadence** is set for the *oldest
+installed* cadence, not the newest. The queue's partner-freshness window
+(`docs/LADDER.md` § 8) is 8s because builds before 2026-09-05 poll every 2.5s;
+the 1s poll that shipped with it makes the same window ~8 polls wide, which is
+merely slack. Tightening it is a Phase 2 → 3 move: measure adoption of the
+1s build first, then lower the window. Reversed, a live player on the old
+cadence would be treated as a ghost.
+
 ---
 
 ## 3. The refusal, and the wiring defect

@@ -1673,7 +1673,8 @@ cost a player their position.
 
 ### The wait is a poll, not a socket
 
-A waiting client re-calls `pvp-join` **every 2.5s** (`queue-screen.ts`), which
+A waiting client re-calls `pvp-join` **every second** (`queue-screen.ts`; 2.5s on
+builds before 2026-09-05), which
 is what makes a server-side pulse possible with no client cooperation at all:
 `matchmaking_queue_stamp_liveness` fires `before update` and stamps
 `last_seen_at`, so every installed build — including one built before the
@@ -1729,14 +1730,55 @@ A genuinely killed client leaves a row behind. What happens to it:
 So the exposure is one wasted match per abandoner, bounded by the window, and
 never a hang.
 
+### Offered only while the app is on the queue screen
+
+The sweep above is the *slow* rule, and it is not what keeps a ghost out of a
+match. Deleting is the one thing that has to be conservative — sweep a live
+player and they lose their place in line, and it is whoever has waited
+**longest** who loses it, because a slow network is exactly when polls go
+missing. Offering has no such cost on either side of the error: skipping a
+stale candidate this round is free (the row keeps its position; the next join
+reconsiders it), while offering one costs a real player a match against nobody.
+
+So `oldestEligibleCandidate` (`pvp-join/matchmaking.ts`) drops any candidate
+not heard from within **`PARTNER_FRESH_MS` = 8s** *before* the age sort and the
+rating band — a silent seat is not in the line at all, so it cannot hold a
+place ahead of a live one. The boundary is silence: a pulse exactly 8s old is
+one poll too late. Callers are never filtered, only candidates, so a player on
+a bad network still pairs on their own join. Between the two windows a ghost
+sits in the table unoffered until the sweep removes it.
+
+| rule | threshold | cost of being wrong |
+|---|---|---|
+| **offer** a seat as a partner | heard from within 8s | a ghost match for a real player |
+| **sweep** a seat from the table | silent for 30s | the longest waiter loses their place |
+
+**8s is three polls of the oldest installed cadence.** Builds before
+2026-09-05 poll every 2.5s; current builds poll every second. The window is
+set for the slowest client still in the field and can tighten toward ~4s once
+adoption is there (`docs/CLIENT_COMPATIBILITY.md`, "When phases are not
+enough") — at which point the cutoff should move into SQL, because today it
+compares Postgres `clock_timestamp()` against Deno `Date.now()` on another
+host, and 8s is what makes that skew irrelevant.
+
+Why this cannot be "mark the row on close": the close is the message that does
+not arrive. Round A of the owner's live test on 2026-09-05 left the app
+suspended with its leave still pending; the leave reached the server five
+minutes later, when the app was reopened. Anything set "on close" rides that
+same request. The pulse is the only signal the server can trust.
+
 ### Why the window is 30s and not the poll interval
 
-The two errors do not cost the same. A window too long leaves ghosts
-matchable; a window too short sweeps a live player — and it sweeps the one who
+The two errors do not cost the same. A window too long leaves ghosts in the
+table; a window too short sweeps a live player — and it sweeps the one who
 has been waiting **longest**, which is exactly who a slow network produces.
-Twelve missed polls is a dead client, not a slow one. The same change cut the
+Thirty missed polls at the current 1s cadence (twelve at the 2.5s the older
+builds still use) is a dead client, not a slow one. The same change cut the
 window from two minutes to 30s: a short window was only safe once it measured
 the pulse, because 30s on `created_at` would have swept every live waiter.
+Note what this window is *not*: it is not what keeps a ghost out of a match —
+that is the 8s offer rule above, which can afford to be tight precisely
+because being wrong there costs nothing.
 
 ### The bug this replaced, worth not re-introducing
 
