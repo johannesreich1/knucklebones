@@ -161,6 +161,17 @@ await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(lo
       headSize: document.querySelector('.dhead').offsetWidth,
       nodeSize: document.querySelector('.dnode').offsetWidth,
       dialSize: document.querySelector('.dial').offsetWidth,
+      /* WHERE THE DASHED CIRCLE IS ACTUALLY PAINTED. It is a pseudo-element, so
+         there is no rect to take: its radius is .dring's PADDING box (inside
+         .dring's own border) less its inset, less half its own inward stroke.
+         Computed, not assumed — that chain is precisely where it drifted. */
+      dashed: (() => {
+        const ring = document.querySelector('.dring');
+        const rs = getComputedStyle(ring), as = getComputedStyle(ring, '::after');
+        const px = (v) => parseFloat(v) || 0;
+        const paddingHalf = ring.getBoundingClientRect().width / 2 - px(rs.borderTopWidth);
+        return paddingHalf - px(as.insetBlockStart || as.inset) - px(as.borderTopWidth) / 2;
+      })(),
     };
   });
   out.geom = Object.fromEntries(Object.entries(geom).map(([k, v]) => [k, +v.toFixed(1)]));
@@ -168,6 +179,15 @@ await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(lo
      at the chips it is pointing at. */
   check(Math.abs(geom.head - geom.ring * 0.74) < 2,
     'the comet is not on the inner circle', out.geom);
+  /* AND ON THE LINE ITSELF, not merely near the radius the line was meant to
+     have. The check above compares the head to a COMPUTED ideal with 2px of
+     slack, and that is how the dashed circle spent its life 1.5px inside the
+     comet without failing anything: .dring::after insets from .dring's padding
+     box, inside its 1px border, then draws its own 1px stroke inward too. The
+     player sees a comet running alongside its track. Half a pixel, because
+     "centred on the line" has no tolerance to spend. */
+  check(Math.abs(geom.head - geom.dashed) <= 0.5,
+    'the comet no longer runs centred on the dashed circle', out.geom);
   check(geom.head < geom.node - geom.nodeSize / 2,
     'the comet is running through the mode chips', out.geom);
   check(Math.abs(geom.node - geom.ring) < 1.5,

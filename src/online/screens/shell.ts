@@ -15,10 +15,6 @@ import { WARNING_NOTE_MARKUP } from './warning-note.ts';
 import { pageBackButton } from '../../ui/page-chrome.ts';
 import { changePagePanel } from '../../ui/page-motion.ts';
 
-/** A fallback only: matchmaking.css overrides --split-size from the tray, so
- *  the die's real size is written once, there. */
-const QUEUE_MARK_SIZE = 70;
-
 const OVERLAY = `
 <div class="ov paged" id="ovOnline">
   <div class="shead">
@@ -291,8 +287,10 @@ export function installOnlineShell(): void {
      waiting, without claiming to know when it ends. It is the SPLIT mark
      rather than a plain face because this wait is for an opponent: the two
      halves are the two seats, which is the same thing Home's mark says. */
+  /* no size argument: matchmaking.css sets --split-size from the tray, so the
+     die is measured once, where the geometry that depends on it lives. */
   $('#qDice').innerHTML = `<span class="qroll"><span class="qhop"><span class="qturn">`
-    + `${splitMarkMarkup(QUEUE_MARK_SIZE)}</span></span></span>`;
+    + `${splitMarkMarkup()}</span></span></span>`;
   $('#onLoading').appendChild(loaderWait(56));
 }
 

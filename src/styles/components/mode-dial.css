@@ -22,7 +22,17 @@
 :where(#kbroot) .dial{position:relative;width:var(--dial);height:var(--dial);flex:0 0 auto}
 :where(#kbroot) .dring{position:absolute;inset:calc(var(--node)/2);border-radius:50%;
   border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 0 40px rgba(var(--p1-rgb),.07)}
-:where(#kbroot) .dring::after{content:"";position:absolute;inset:calc(var(--r-out) - var(--r-in));
+/* THE DASHED CIRCLE IS THE COMET'S TRACK, so it must land on --r-in to the
+   pixel — the comet's head does (measured 95.45 against an ideal 95.44 on a
+   304px dial). Two borders stood between them and it: this pseudo insets from
+   .dring's PADDING box, inside .dring's own 1px border, and then draws its 1px
+   dashed stroke inward as well. That put the stroke 1.5px inside the track and
+   the comet read as running alongside the circle rather than on it. Both
+   borders are literals in this file; subtracting them here is exact, and
+   tests/random-mode-dial.mjs asserts the two painted radii agree to half a
+   pixel rather than trusting this sum. */
+:where(#kbroot) .dring::after{content:"";position:absolute;
+  inset:calc(var(--r-out) - var(--r-in) - 1.5px);
   border-radius:50%;border:1px dashed rgba(255,255,255,.07)}
 /* The comet, in two parts, because they cannot share a mask. The TRAIL is a
    conic gradient clipped to a band; the HEAD is a round cap that must NOT be
@@ -119,18 +129,24 @@
   padding:0 var(--pad-x);box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:6px}
 :where(#kbroot) #ovWheel .wtitle.has-owner .wtitlecopy{line-height:1}
 :where(#kbroot) #ovWheel .wtitle.has-owner .wowner{max-width:var(--w-col)}
+/* THE NODES TOUCH THE STAGE EDGE — the bottom chip's bottom IS 50% + stage/2,
+   because r_out + node/2 is exactly dial/2 — so these offsets are the whole
+   gap between the lowest icon and the readout, with nothing else in between.
+   10px let the title crowd the chip above it (owner call, 2026-09-05); the
+   blurb and the note move by the same 10 so the readout keeps its own
+   spacing rather than opening a hole under the title. */
 :where(#kbroot) #ovWheel .wname{position:absolute;left:0;right:0;margin:0;
-  top:calc(50% + var(--stage)/2 + 10px)}
+  top:calc(50% + var(--stage)/2 + 20px)}
 /* the DIRECT child is the readout under the stage; a settled answer keeps a
    .wblurb of its own up top, and it must not be dragged down here */
 :where(#kbroot) #ovWheel > .wblurb{position:absolute;left:50%;transform:translateX(-50%);margin:0;
-  width:calc(100% - 2 * var(--pad-x));top:calc(50% + var(--stage)/2 + 42px)}
+  width:calc(100% - 2 * var(--pad-x));top:calc(50% + var(--stage)/2 + 52px)}
 /* A WAIT, not an answer: the line the reveal shows while it is holding a beat
    open for someone else — the opponent still choosing a rune behind their own
    card. It hangs one line below the readout, is absent until there is something
    to wait for, and never moves the stage, like everything else on this screen. */
 :where(#kbroot) #ovWheel .wnote{position:absolute;left:50%;transform:translateX(-50%);
-  width:calc(100% - 2 * var(--pad-x));top:calc(50% + var(--stage)/2 + 68px);
+  width:calc(100% - 2 * var(--pad-x));top:calc(50% + var(--stage)/2 + 78px);
   font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
   text-align:center}
 :where(#kbroot) #ovWheel .wnote[hidden]{display:none}
