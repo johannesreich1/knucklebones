@@ -1,0 +1,207 @@
+<!-- meta name="PM — Eight marks for the play button" group="5b · The play mark" subtitle="The primary action's die, redrawn eight ways and judged where it actually lives: 25px of dark ink on the duel gradient, each one on the real button beside the mark the app carries today" width=412 height=2260 sizes="md" links="Home, Offline, Result" -->
+<style>
+  .pmhead{width:100%;margin:4px auto 0;text-align:left}
+  .pmeyebrow{font-size:8px;font-weight:800;letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
+  .pmhead h1{font-size:18px;text-align:left;margin:5px 0 7px}
+  .pmhead p{font-size:10px;line-height:1.55;letter-spacing:.1em;color:var(--dim);margin:0}
+
+  .pmbase{width:100%;box-sizing:border-box;margin:14px auto 0;padding:11px 12px 12px;
+    border:1px solid rgba(255,255,255,.085);border-radius:16px;background:rgba(255,255,255,.025)}
+  .pmbase .pmeyebrow{display:block;margin-bottom:8px}
+  .pmbaseline{display:block;font-size:8.5px;line-height:1.5;letter-spacing:.07em;color:var(--dim);margin-top:9px}
+
+  /* THE SCAN ROW. Icons are chosen by silhouette, and a silhouette is only
+     honest at the size it ships — 25px, dark ink, on the primary gradient.
+     Nine chips so the current mark is read in the same conditions as the
+     eight proposals rather than remembered from the block above. */
+  .pmstrip{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;margin:14px auto 0}
+  .pmcell{display:flex;flex-direction:column;align-items:center;gap:5px}
+  .pmchip{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;
+    color:#04101a;background:linear-gradient(100deg,var(--p1),var(--p1-hi) 40%,var(--p2));
+    box-shadow:0 6px 16px rgba(var(--p1-rgb),.22),0 0 0 1px rgba(255,255,255,.12) inset}
+  .pmchip.now{box-shadow:0 6px 16px rgba(var(--p1-rgb),.22),0 0 0 1px rgba(255,255,255,.12) inset,
+    0 0 0 2px rgba(233,241,255,.5)}
+  .pmcaplet{font-size:7px;font-weight:800;letter-spacing:.16em;color:rgba(233,241,255,.5)}
+
+  .pmopt{position:relative;box-sizing:border-box;width:100%;margin:10px auto 0;padding:12px 12px 13px;
+    border:1px solid rgba(255,255,255,.085);border-radius:16px;background:rgba(255,255,255,.025);
+    display:flex;flex-direction:column;gap:11px}
+  .pmtop{display:flex;align-items:center;gap:12px}
+  .pmhero{width:60px;height:60px;flex:0 0 auto;display:grid;place-items:center;border-radius:17px;
+    border:1px solid rgba(233,241,255,.12);background:rgba(5,7,17,.6);color:#e9f1ff;
+    box-shadow:inset 0 0 20px rgba(142,163,192,.035)}
+  .pmhero svg{filter:drop-shadow(0 0 7px rgba(233,241,255,.16))}
+  .pmtx{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .pmname{font-size:10px;font-weight:800;letter-spacing:.16em}
+  .pmname i{font-style:normal;font-weight:800;color:rgba(233,241,255,.42);margin-right:7px}
+  .pmdesc{font-size:8.5px;line-height:1.5;letter-spacing:.06em;color:var(--dim);margin:0}
+  .pmrisk{font-size:8px;line-height:1.5;letter-spacing:.06em;color:rgba(233,241,255,.42);margin:0}
+  .pmrisk b{color:rgba(255,157,102,.85);font-weight:800;letter-spacing:.12em}
+</style>
+
+<!-- The eight marks are deliberately LOCAL to this study. Whichever one is
+     picked replaces the `play` entry in src/ui/chromeicons.ts and this card
+     then reads it back through the registry token like every other card does — a study
+     that ships its drawing twice is the drift this library exists to prevent.
+     Each is authored once at 24x24 and read at both 60px and the real 25px. -->
+<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+  <defs>
+    <symbol id="pm-ace" viewBox="0 0 24 24">
+      <rect x="4.4" y="4.4" width="15.2" height="15.2" rx="4.2"/>
+      <circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/>
+    </symbol>
+    <symbol id="pm-six" viewBox="0 0 24 24">
+      <rect x="4.4" y="4.4" width="15.2" height="15.2" rx="4.2"/>
+      <g fill="currentColor" stroke="none">
+        <circle cx="9" cy="8.4" r="1.15"/><circle cx="15" cy="8.4" r="1.15"/>
+        <circle cx="9" cy="12" r="1.15"/><circle cx="15" cy="12" r="1.15"/>
+        <circle cx="9" cy="15.6" r="1.15"/><circle cx="15" cy="15.6" r="1.15"/>
+      </g>
+    </symbol>
+    <symbol id="pm-split" viewBox="0 0 24 24">
+      <g transform="rotate(7 12 12)">
+        <rect x="4.4" y="4.4" width="15.2" height="15.2" rx="4.2"/>
+        <path d="M12 4.4v15.2"/>
+        <g fill="currentColor" stroke="none">
+          <circle cx="8.6" cy="8.4" r="1.1"/><circle cx="15.4" cy="8.4" r="1.1"/>
+          <circle cx="8.6" cy="12" r="1.1"/><circle cx="15.4" cy="12" r="1.1"/>
+          <circle cx="8.6" cy="15.6" r="1.1"/><circle cx="15.4" cy="15.6" r="1.1"/>
+        </g>
+      </g>
+    </symbol>
+    <symbol id="pm-cast" viewBox="0 0 24 24">
+      <rect x="4.4" y="4.4" width="15.2" height="15.2" rx="4.2"/>
+      <path d="M10.1 8.6 15.1 12 10.1 15.4Z" fill="currentColor" stroke="none"/>
+    </symbol>
+    <symbol id="pm-forward" viewBox="0 0 24 24">
+      <rect x="2.9" y="6.5" width="11" height="11" rx="3.1"/>
+      <circle cx="8.4" cy="12" r="1.6" fill="currentColor" stroke="none"/>
+      <path d="m16.9 7.7 4.3 4.3-4.3 4.3"/>
+    </symbol>
+    <symbol id="pm-throw" viewBox="0 0 24 24">
+      <g transform="rotate(-16 15.8 8.8)">
+        <rect x="10.6" y="3.6" width="10.4" height="10.4" rx="2.9"/>
+        <circle cx="15.8" cy="8.8" r="1.7" fill="currentColor" stroke="none"/>
+      </g>
+      <path d="M1.8 21.4c1-4.2 3-7 6.2-8.4" stroke-dasharray="2 2.3"/>
+    </symbol>
+    <symbol id="pm-drop" viewBox="0 0 24 24">
+      <rect x="6.6" y="2.6" width="10.8" height="10.8" rx="3"/>
+      <circle cx="12" cy="8" r="1.55" fill="currentColor" stroke="none"/>
+      <path d="M12 16.2v4.2"/><path d="m8.6 17.4 3.4 3.4 3.4-3.4"/>
+    </symbol>
+    <symbol id="pm-stack" viewBox="0 0 24 24">
+      <path d="M8.3 9V6a3.4 3.4 0 0 1 3.4-3.4h5.6A3.4 3.4 0 0 1 20.7 6v5.6a3.4 3.4 0 0 1-3.4 3.4h-1.6"/>
+      <rect x="3.3" y="9" width="12.4" height="12.4" rx="3.4"/>
+      <circle cx="9.5" cy="15.2" r="1.8" fill="currentColor" stroke="none"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="pmhead">
+    <div class="pmeyebrow">OPEN STUDY · PRIMARY ACTION · 25 PX</div>
+    <h1>THE PLAY MARK</h1>
+    <p>Every door that starts a duel carries one glyph: Home's ranked CTA, NEXT DUEL on the result, and the two offline practice doors. It is 25px of dark ink on the duel gradient, so it has one job — read as this game, instantly, at that size.</p>
+  </div>
+
+  <div class="pmbase">
+    <span class="pmeyebrow">TODAY</span>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">{{ico:play:25}}</span><span class="btn-label">Play ranked match</span></button>
+    <span class="pmbaseline">A die canted 8°, carrying the three face on its diagonal. Three pips inside 15 units of a 2.1 stroke is the busiest the frame allows, the cant is small enough to read as a printing error rather than a throw, and the silhouette is the same rounded square FATE, NUDGE and ANVIL already wear.</span>
+  </div>
+
+  <div class="pmstrip">
+    <span class="pmcell"><span class="pmchip now">{{ico:play:25}}</span><span class="pmcaplet">NOW</span></span>
+    <span class="pmcell"><span class="pmchip"><svg class="cico" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-ace"/></svg></span><span class="pmcaplet">01</span></span>
+    <span class="pmcell"><span class="pmchip"><svg class="cico" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-six"/></svg></span><span class="pmcaplet">02</span></span>
+    <span class="pmcell"><span class="pmchip"><svg class="cico" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-split"/></svg></span><span class="pmcaplet">03</span></span>
+    <span class="pmcell"><span class="pmchip"><svg class="cico" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-cast"/></svg></span><span class="pmcaplet">04</span></span>
+    <span class="pmcell"><span class="pmchip"><svg class="cico" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-forward"/></svg></span><span class="pmcaplet">05</span></span>
+    <span class="pmcell"><span class="pmchip"><svg class="cico" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-throw"/></svg></span><span class="pmcaplet">06</span></span>
+    <span class="pmcell"><span class="pmchip"><svg class="cico" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-drop"/></svg></span><span class="pmcaplet">07</span></span>
+    <span class="pmcell"><span class="pmchip"><svg class="cico" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-stack"/></svg></span><span class="pmcaplet">08</span></span>
+  </div>
+
+  <article class="pmopt">
+    <div class="pmtop">
+      <span class="pmhero"><svg class="cico" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-ace"/></svg></span>
+      <span class="pmtx"><b class="pmname"><i>01</i>ACE</b>
+        <p class="pmdesc">The same die, standing straight, with the three pips collapsed into one big centre pip. Nothing to resolve at 25px: an outline and a dot.</p>
+        <p class="pmrisk"><b>COST</b> It says die, not go — the quietest mark of the eight.</p></span>
+    </div>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true"><svg class="cico" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-ace"/></svg></span><span class="btn-label">Play ranked match</span></button>
+  </article>
+
+  <article class="pmopt">
+    <div class="pmtop">
+      <span class="pmhero"><svg class="cico" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-six"/></svg></span>
+      <span class="pmtx"><b class="pmname"><i>02</i>SIX</b>
+        <p class="pmdesc">The face the launcher, the Home hero and the launch screen all wear. The button stops carrying a generic die and starts carrying THIS game's die.</p>
+        <p class="pmrisk"><b>COST</b> Six pips is the most detail the size will take; judge it on the button, not the hero.</p></span>
+    </div>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true"><svg class="cico" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-six"/></svg></span><span class="btn-label">Play ranked match</span></button>
+  </article>
+
+  <article class="pmopt">
+    <div class="pmtop">
+      <span class="pmhero"><svg class="cico" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-split"/></svg></span>
+      <span class="pmtx"><b class="pmname"><i>03</i>SPLIT</b>
+        <p class="pmdesc">The app icon itself, reduced to one stroke: the six face cut on its seam, at the launcher's own 7° tilt. The mark the player tapped to get here is the mark that starts the duel.</p>
+        <p class="pmrisk"><b>COST</b> Seam plus six pips is the densest option; it also spends the brand mark on a button.</p></span>
+    </div>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true"><svg class="cico" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-split"/></svg></span><span class="btn-label">Play ranked match</span></button>
+  </article>
+
+  <article class="pmopt">
+    <div class="pmtop">
+      <span class="pmhero"><svg class="cico" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-cast"/></svg></span>
+      <span class="pmtx"><b class="pmname"><i>04</i>CAST</b>
+        <p class="pmdesc">The die's face carries a play triangle instead of pips. One shape, two readings: the object is a die and the instruction is unmistakable.</p>
+        <p class="pmrisk"><b>COST</b> Triangle-in-a-square is every media player ever made; the die has to win that fight.</p></span>
+    </div>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true"><svg class="cico" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-cast"/></svg></span><span class="btn-label">Play ranked match</span></button>
+  </article>
+
+  <article class="pmopt">
+    <div class="pmtop">
+      <span class="pmhero"><svg class="cico" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-forward"/></svg></span>
+      <span class="pmtx"><b class="pmname"><i>05</i>FORWARD</b>
+        <p class="pmdesc">The die keeps its own face and the direction sits beside it. Both readings stay whole, and the chevron leans into the label the way the button already leans forward.</p>
+        <p class="pmrisk"><b>COST</b> Two objects instead of one, and the widest silhouette of the set.</p></span>
+    </div>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true"><svg class="cico" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-forward"/></svg></span><span class="btn-label">Play ranked match</span></button>
+  </article>
+
+  <article class="pmopt">
+    <div class="pmtop">
+      <span class="pmhero"><svg class="cico" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-throw"/></svg></span>
+      <span class="pmtx"><b class="pmname"><i>06</i>THROW</b>
+        <p class="pmdesc">The cant committed to, and given a reason: the die sits at the top of its own toss arc, so 16° reads as flight rather than as a die set down crookedly.</p>
+        <p class="pmrisk"><b>COST</b> The arc is the one line here that is not an object; it needs the space, so the die runs smaller than the rest.</p></span>
+    </div>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true"><svg class="cico" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-throw"/></svg></span><span class="btn-label">Play ranked match</span></button>
+  </article>
+
+  <article class="pmopt">
+    <div class="pmtop">
+      <span class="pmhero"><svg class="cico" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-drop"/></svg></span>
+      <span class="pmtx"><b class="pmname"><i>07</i>DROP</b>
+        <p class="pmdesc">The only mark that pictures the verb the game is actually made of: a die going down into a column. It promises the move, not the object.</p>
+        <p class="pmrisk"><b>COST</b> A downward arrow on a button usually means download or collapse.</p></span>
+    </div>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true"><svg class="cico" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-drop"/></svg></span><span class="btn-label">Play ranked match</span></button>
+  </article>
+
+  <article class="pmopt">
+    <div class="pmtop">
+      <span class="pmhero"><svg class="cico" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-stack"/></svg></span>
+      <span class="pmtx"><b class="pmname"><i>08</i>STACK</b>
+        <p class="pmdesc">Two bones, the front one whole and the back one open at the corner it hides behind. Plural, tactile, and the closest of the eight to the game's name.</p>
+        <p class="pmrisk"><b>COST</b> LIMITED already owns a pile of dice in the mode row; two versus three is a thin distinction.</p></span>
+    </div>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true"><svg class="cico" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#pm-stack"/></svg></span><span class="btn-label">Play ranked match</span></button>
+  </article>
+
+  <div class="note" style="margin-top:14px">Picking one is a <b>single-line change</b>: the winner replaces the <b>play</b> entry in <b>src/ui/chromeicons.ts</b> and every door that starts a duel takes it at once. The rendering suite pins today's geometry — the −8° cant, the 15×15 body and the three pip positions — so that assertion moves with the mark, and this card then reads the registry through <b>&#123;&#123;ico:play:25&#125;&#125;</b> instead of keeping its own drawing.</div>
+</div></div>
