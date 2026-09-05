@@ -154,6 +154,50 @@ check(axis.track !== null && axis.stage !== null && Math.abs(axis.track - axis.s
    it, so taking it out of flow did not simply hide it. */
 check(axis.numLeft >= axis.trackRight,
   'the countdown number no longer sits past the right end of the bar', axis);
+
+/* THE TURN LABEL BELONGS TO THE CLOCK, NOT TO THE DIE. Reported from a device:
+   "DU BIST DRAN" read as a caption hanging off the played die, with the
+   countdown bar adrift below it. The centre lane hands every child the same
+   gap, so the label sat 5px under the die and 9.5px over the bar's ink — the
+   3px track is centred in a 12px row, and only the ink is a thing the player
+   can see. Measured as painted boxes, because the DOM says nothing about it.
+
+   The lane's TOTAL is an invariant, not a budget to spend: the label is painted
+   lower without its layout box moving, so the die, both boards and every
+   clockless game keep the height they had. That total is DERIVED from the lane's
+   own gap rather than written down as a number, so it still describes the lane
+   after someone changes the gap — and it goes red if the shift is ever
+   reimplemented as spacing that fails to cancel. */
+const lane = await p.evaluate(() => {
+  const box = (selector) => {
+    const el = document.querySelector(selector);
+    return el ? el.getBoundingClientRect() : null;
+  };
+  const centre = document.querySelector('#kbroot .center');
+  const timer = box('#timerWrap'), track = box('#timerWrap .track');
+  return {
+    text: document.getElementById('status').textContent,
+    /* to the ink at each end, not to the boxes that carry it */
+    fromDie: box('#status').top - box('#dieStage').bottom,
+    toBar: track.top - box('#status').bottom,
+    span: track.top - box('#dieStage').bottom,
+    /* what the untouched lane spends between the same two edges */
+    unshifted: 2 * parseFloat(getComputedStyle(centre).rowGap)
+      + box('#status').height + (timer.height - track.height) / 2,
+  };
+});
+out.statusLane = lane;
+check(lane.text.trim() !== '', 'the turn label was empty, so this measured an invisible line', lane);
+check(lane.fromDie > lane.toBar,
+  'THE TURN LABEL IS NEARER THE DIE THAN THE COUNTDOWN BAR — it reads as a '
+  + 'caption under the played die instead of the heading of the clock it '
+  + 'belongs to', lane);
+/* a nudge, not a re-layout: it stays a single lane between the two */
+check(lane.fromDie - lane.toBar <= 6, 'the turn label was pushed far off the die rather than nudged', lane);
+check(lane.toBar > 2, 'the turn label is now crowding the countdown bar', lane);
+check(Math.abs(lane.span - lane.unshifted) <= 1,
+  'the nudged label COST THE STAGE HEIGHT — the pixels it took from the die '
+  + 'were not given back to the bar, so the boards moved', lane);
 await p.waitForTimeout(3000);
 const t1 = await p.evaluate(() => ({ width: document.getElementById('timerBar').style.width }));
 check(parseFloat(t1.width) < 90 && parseFloat(t1.width) > 40, 'timer bar not draining as expected', { t0, t1 });

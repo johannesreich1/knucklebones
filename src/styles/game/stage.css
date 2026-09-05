@@ -13,8 +13,25 @@
  50%{transform:rotate(180deg) scale(1)}75%{transform:rotate(270deg) scale(1.06)}100%{transform:rotate(360deg) scale(1)}}
 :where(#kbroot) #dieStage.pop .die{animation:popin .3s cubic-bezier(.2,1.5,.4,1)}
 @keyframes popin{0%{transform:scale(.5) rotate(-30deg)}100%{transform:scale(1) rotate(0)}}
-:where(#kbroot) .status{font-size:11px;letter-spacing:.16em;font-weight:var(--fw-quiet);color:var(--dim);text-transform:uppercase;
-  min-height:14px;line-height:14px;text-align:center;transition:color .2s}
+/* THE TURN LABEL IS THE CLOCK'S HEADING, NOT THE DIE'S CAPTION. The centre lane
+   hands every child the same gap, which left the line 5px under the played die
+   and 9.5px over the bar — the 3px track is centred in a 12px row, and the track
+   is the only part of that row a player can see. Reported from a device as a
+   label stuck to the die with the countdown adrift below it.
+
+   THE SHIFT IS A PAINT OFFSET, NOT SPACING, so the lane cannot lose or gain a
+   pixel: the die, both boards and every clockless game stay exactly where they
+   were, and tests/hud-timer.mjs measures both ends AND the total to hold that.
+   A `margin-block:3px -3px` pair reads more honestly and cancels here — .center
+   is a flex lane, so nothing collapses — but it only cancels while BOTH halves
+   survive the cascade, and a design card that wears .status may legitimately set
+   its own margin: 43c-sunder-toll's `.sustatus{margin-top:15px}` swallowed the
+   top half and left the card 3px shorter than the height it declares. A card
+   wears this class so it cannot drift from the game; half a nudge is drift. */
+:where(#kbroot) .status{--status-shift:3px;
+  font-size:11px;letter-spacing:.16em;font-weight:var(--fw-quiet);color:var(--dim);text-transform:uppercase;
+  min-height:14px;line-height:14px;text-align:center;transition:color .2s;
+  position:relative;top:var(--status-shift)}
 :where(#kbroot) .status.me{color:var(--p1);text-shadow:0 0 12px rgba(var(--p1-rgb),.5)}
 :where(#kbroot) .status.ai{color:var(--p2);text-shadow:0 0 12px rgba(var(--p2-rgb),.5)}
 
