@@ -178,8 +178,8 @@
     },
     {
       "path": "src/styles/game/stage.css",
-      "bytes": 5215,
-      "sha256": "ce0e7fa7eaff8548b866b71d14bada2c52f955cc012e621cee9154ec1fc12697"
+      "bytes": 6392,
+      "sha256": "7eea336ada912323f4793df9816c483970fea4b8da853bccd2d32ee4faee8bc4"
     },
     {
       "path": "src/styles/game/variants.css",
