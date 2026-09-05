@@ -1,4 +1,4 @@
-<!-- meta name="PM — Eight marks for the play button" group="5b · The play mark" subtitle="The primary action's die, redrawn eight ways and judged where it actually lives: 25px of dark ink on the duel gradient, on the real button beside the mark the app carries today — and every one of them moving on the button's own 4.6s beat, a second of motion and then a long hold" width=412 height=2585 sizes="md" links="Home, Offline, Result" -->
+<!-- meta name="PM — Eight marks for the play button" group="5b · The play mark" subtitle="The primary action's die, redrawn eight ways and judged where it actually lives: 25px of dark ink on the duel gradient, on the real button beside the mark the app carries today — and every one of them moving on the button's own 4.6s beat, a second of motion and then a long hold" width=412 height=2610 sizes="md" links="Home, Offline, Result" -->
 
 <style>
   .pmhead{width:100%;margin:4px auto 0;text-align:left}
@@ -64,7 +64,7 @@
   :root{--pm-cycle:4.6s}
   .pmmark .pmpip,.pmmark .pmfly,.pmmark .pmfall,.pmmark .pmfront{
     transform-box:fill-box;transform-origin:50% 50%}
-  .pmmark .pmhalf,.pmmark .pmchev,.pmmark .pmarrow{
+  .pmmark .pmhalf,.pmmark .pmchev,.pmmark .pmarrow,.pmmark .pmline{
     transform-box:view-box;transform-origin:50% 50%}
 
   .m-ace .pmpip{animation:pmAce var(--pm-cycle) cubic-bezier(.2,.85,.3,1) infinite}
@@ -80,8 +80,12 @@
   .m-split .pmhalf--l{animation:pmPartL var(--pm-cycle) ease-in-out infinite}
   .m-split .pmhalf--r{animation:pmPartR var(--pm-cycle) ease-in-out infinite}
   .m-split .pmseam{animation:pmSeam var(--pm-cycle) ease-in-out infinite}
-  .m-arc .pmfly{animation:pmFly var(--pm-cycle) cubic-bezier(.2,.85,.3,1) infinite}
-  .m-arc .pmtrail{stroke-dasharray:13;animation:pmDraw var(--pm-cycle) cubic-bezier(.3,.8,.4,1) infinite}
+  .m-lines .pmfly{animation:pmFly var(--pm-cycle) cubic-bezier(.2,.85,.3,1) infinite}
+  /* A WAKE, NOT A BLOCK. The two lines carry a 50ms offset so they arrive as
+     two strokes rather than one shape sliding sideways, which is the whole
+     difference between speed lines and a pair of dashes. */
+  .m-lines .pmline{animation:pmStream var(--pm-cycle) cubic-bezier(.2,.85,.3,1) infinite}
+  .m-lines .pmline--b{animation-delay:.05s}
   .m-forward .pmchev{animation:pmNudge var(--pm-cycle) ease-in-out infinite}
   .m-throw .pmfly{animation:pmFly var(--pm-cycle) cubic-bezier(.2,.85,.3,1) infinite}
   .m-throw .pmdash{animation:pmMarch var(--pm-cycle) cubic-bezier(.3,.8,.4,1) infinite}
@@ -99,7 +103,8 @@
   @keyframes pmFly{0%{transform:translate(-5px,4.2px) rotate(-52deg) scale(.62)}
     17%{transform:translate(0,0) rotate(6deg) scale(1.05)}
     22%,100%{transform:none}}
-  @keyframes pmDraw{0%,2%{stroke-dashoffset:13}18%,100%{stroke-dashoffset:0}}
+  @keyframes pmStream{0%{transform:translateX(-3.4px);opacity:.4}
+    17%{transform:translateX(0);opacity:1}22%,100%{transform:none;opacity:1}}
   @keyframes pmMarch{0%,2%{stroke-dashoffset:8.6}20%,100%{stroke-dashoffset:0}}
   @keyframes pmNudge{0%,3%{transform:none}10%{transform:translateX(1.8px)}
     16%{transform:translateX(-.4px)}21%,100%{transform:none}}
@@ -116,7 +121,6 @@
      honest answer is to hold it and not move at all. */
   @media (prefers-reduced-motion:reduce){
     .pmmark *{animation:none!important}
-    .m-arc .pmtrail{stroke-dasharray:none}
   }
 </style>
 
@@ -152,7 +156,7 @@
     <span class="pmcell"><span class="pmchip"><svg class="cico pmmark m-ace" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect class="pmbody" x="4.4" y="4.4" width="15.2" height="15.2" rx="4.2"/><circle class="pmpip" cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/></svg></span><span class="pmcaplet">01</span></span>
     <span class="pmcell"><span class="pmchip"><svg class="cico pmmark m-six" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect class="pmbody" x="4.4" y="4.4" width="15.2" height="15.2" rx="4.2"/><g fill="currentColor" stroke="none"><circle class="pmpip" cx="9" cy="8.4" r="1.15"/><circle class="pmpip" cx="9" cy="12" r="1.15"/><circle class="pmpip" cx="9" cy="15.6" r="1.15"/><circle class="pmpip" cx="15" cy="8.4" r="1.15"/><circle class="pmpip" cx="15" cy="12" r="1.15"/><circle class="pmpip" cx="15" cy="15.6" r="1.15"/></g></svg></span><span class="pmcaplet">02</span></span>
     <span class="pmcell"><span class="pmchip"><svg class="cico pmmark m-split" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g transform="rotate(7 12 12)"><rect class="pmbody" x="4.4" y="4.4" width="15.2" height="15.2" rx="4.2"/><path class="pmseam" d="M12 4.4v15.2"/><g class="pmhalf pmhalf--l" fill="currentColor" stroke="none"><circle cx="8.6" cy="8.4" r="1.1"/><circle cx="8.6" cy="12" r="1.1"/><circle cx="8.6" cy="15.6" r="1.1"/></g><g class="pmhalf pmhalf--r" fill="currentColor" stroke="none"><circle cx="15.4" cy="8.4" r="1.1"/><circle cx="15.4" cy="12" r="1.1"/><circle cx="15.4" cy="15.6" r="1.1"/></g></g></svg></span><span class="pmcaplet">03</span></span>
-    <span class="pmcell"><span class="pmchip"><svg class="cico pmmark m-arc" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmfly"><g transform="rotate(-16 15.6 9.2)"><rect class="pmbody" x="10.4" y="4" width="10.4" height="10.4" rx="2.9"/><circle cx="15.6" cy="9.2" r="1.7" fill="currentColor" stroke="none"/></g></g><path class="pmtrail" d="M2.2 20.8c.8-3.4 2.6-5.9 5.4-7.6"/></svg></span><span class="pmcaplet">04</span></span>
+    <span class="pmcell"><span class="pmchip"><svg class="cico pmmark m-lines" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmfly"><g transform="rotate(-12 15 12)"><rect class="pmbody" x="9.3" y="6.3" width="11.4" height="11.4" rx="3.2"/><circle cx="15" cy="12" r="1.8" fill="currentColor" stroke="none"/></g></g><path class="pmline pmline--a" d="M1.9 9.2h2.7"/><path class="pmline pmline--b" d="M2.7 14.7h2.1"/></svg></span><span class="pmcaplet">04</span></span>
     <span class="pmcell"><span class="pmchip"><svg class="cico pmmark m-forward" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect class="pmbody" x="2.9" y="6.5" width="11" height="11" rx="3.1"/><circle cx="8.4" cy="12" r="1.6" fill="currentColor" stroke="none"/><path class="pmchev" d="m16.9 7.7 4.3 4.3-4.3 4.3"/></svg></span><span class="pmcaplet">05</span></span>
     <span class="pmcell"><span class="pmchip"><svg class="cico pmmark m-throw" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmfly"><g transform="rotate(-16 15.8 8.8)"><rect class="pmbody" x="10.6" y="3.6" width="10.4" height="10.4" rx="2.9"/><circle cx="15.8" cy="8.8" r="1.7" fill="currentColor" stroke="none"/></g></g><path class="pmdash" d="M1.8 21.4c1-4.2 3-7 6.2-8.4" stroke-dasharray="2 2.3"/></svg></span><span class="pmcaplet">06</span></span>
     <span class="pmcell"><span class="pmchip"><svg class="cico pmmark m-drop" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmfall"><rect class="pmbody" x="6.6" y="2.6" width="10.8" height="10.8" rx="3"/><circle cx="12" cy="8" r="1.55" fill="currentColor" stroke="none"/></g><g class="pmarrow"><path d="M12 16.2v4.2"/><path d="m8.6 17.4 3.4 3.4 3.4-3.4"/></g></svg></span><span class="pmcaplet">07</span></span>
@@ -196,13 +200,13 @@
 
   <article class="pmopt">
     <div class="pmtop">
-      <span class="pmhero"><svg class="cico pmmark m-arc" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmfly"><g transform="rotate(-16 15.6 9.2)"><rect class="pmbody" x="10.4" y="4" width="10.4" height="10.4" rx="2.9"/><circle cx="15.6" cy="9.2" r="1.7" fill="currentColor" stroke="none"/></g></g><path class="pmtrail" d="M2.2 20.8c.8-3.4 2.6-5.9 5.4-7.6"/></svg></span>
-      <span class="pmtx"><b class="pmname"><i>04</i>THROW / ARC</b>
-        <p class="pmdesc">The same toss as 06 with a SOLID trail. One unbroken line reads as a heavier, more deliberate throw, and it draws itself in behind the die.</p>
-        <p class="pmmotion"><b>BEAT</b> The die flies in and the trail draws itself behind it.</p>
-        <p class="pmrisk"><b>COST</b> Standing still, a solid line touching the die can read as a handle rather than a path.</p></span>
+      <span class="pmhero"><svg class="cico pmmark m-lines" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmfly"><g transform="rotate(-12 15 12)"><rect class="pmbody" x="9.3" y="6.3" width="11.4" height="11.4" rx="3.2"/><circle cx="15" cy="12" r="1.8" fill="currentColor" stroke="none"/></g></g><path class="pmline pmline--a" d="M1.9 9.2h2.7"/><path class="pmline pmline--b" d="M2.7 14.7h2.1"/></svg></span>
+      <span class="pmtx"><b class="pmname"><i>04</i>THROW / LINES</b>
+        <p class="pmdesc">The first idea, back: two speed lines to the left of a canted die. Not the path it travelled &mdash; a WAKE, read the way a comic strip reads one, and the only mark here that says speed without drawing a road.</p>
+        <p class="pmmotion"><b>BEAT</b> The lines stream in behind the die as it lands.</p>
+        <p class="pmrisk"><b>COST</b> Two horizontal strokes beside a die can read as a strikethrough. The clearance and the beat are what stop it &mdash; watch it moving before judging it.</p></span>
     </div>
-    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true"><svg class="cico pmmark m-arc" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmfly"><g transform="rotate(-16 15.6 9.2)"><rect class="pmbody" x="10.4" y="4" width="10.4" height="10.4" rx="2.9"/><circle cx="15.6" cy="9.2" r="1.7" fill="currentColor" stroke="none"/></g></g><path class="pmtrail" d="M2.2 20.8c.8-3.4 2.6-5.9 5.4-7.6"/></svg></span><span class="btn-label">Play ranked match</span></button>
+    <button class="btn primary play-cta"><span class="btn-leading-icon" data-icon="play" aria-hidden="true"><svg class="cico pmmark m-lines" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="pmfly"><g transform="rotate(-12 15 12)"><rect class="pmbody" x="9.3" y="6.3" width="11.4" height="11.4" rx="3.2"/><circle cx="15" cy="12" r="1.8" fill="currentColor" stroke="none"/></g></g><path class="pmline pmline--a" d="M1.9 9.2h2.7"/><path class="pmline pmline--b" d="M2.7 14.7h2.1"/></svg></span><span class="btn-label">Play ranked match</span></button>
   </article>
 
   <article class="pmopt">
