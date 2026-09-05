@@ -1,4 +1,3 @@
-import { ME, AI } from '../../core/rules.ts';
 import {
   subscribeLocale,
   t,
@@ -6,15 +5,19 @@ import {
   type LocaleKey,
 } from '../../i18n/index.ts';
 import { $, byId, hide, settleGlass } from '../../ui/dom.ts';
-import { makeDie } from '../../ui/die.ts';
 import { appRoot } from '../../ui/embed.ts';
 import { loaderWait } from '../../ui/loader.ts';
+import { splitMarkMarkup } from '../../ui/split-mark.ts';
 import { refreshLegalUi } from '../../ui/legal.ts';
 import { ladderRingLayersMarkup } from '../../ui/ladder-ring.ts';
 import { LEGAL_AUTH_NAV_MARKUP } from '../../markup/legal.ts';
 import { WARNING_NOTE_MARKUP } from './warning-note.ts';
 import { pageBackButton } from '../../ui/page-chrome.ts';
 import { changePagePanel } from '../../ui/page-motion.ts';
+
+/** A fallback only: matchmaking.css overrides --split-size from the tray, so
+ *  the die's real size is written once, there. */
+const QUEUE_MARK_SIZE = 70;
 
 const OVERLAY = `
 <div class="ov paged" id="ovOnline">
@@ -282,9 +285,14 @@ export function installOnlineShell(): void {
     localeBound = true;
     subscribeLocale(paintOnlineShell);
   }
-  const dice = $('#qDice');
-  dice.appendChild(makeDie(2, ME));
-  dice.appendChild(makeDie(6, AI));
+  /* THE WAIT IS ONE DIE, ROLLING (owner call, 2026-09-05, from study LD6
+     "Roll across"). Two dice tilting in place said "something is happening";
+     a die that crosses a floor and comes back says how long you have been
+     waiting, without claiming to know when it ends. It is the SPLIT mark
+     rather than a plain face because this wait is for an opponent: the two
+     halves are the two seats, which is the same thing Home's mark says. */
+  $('#qDice').innerHTML = `<span class="qroll"><span class="qhop"><span class="qturn">`
+    + `${splitMarkMarkup(QUEUE_MARK_SIZE)}</span></span></span>`;
   $('#onLoading').appendChild(loaderWait(56));
 }
 

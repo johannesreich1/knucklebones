@@ -50,8 +50,8 @@ subscribeLocale(() => {
 });
 
 /* Only dice that are part of a live duel follow the pips/numerals setting.
-   Brand dice, avatars and matchmaking decoration use makeDie() directly;
-   loaders render the same fixed face through dieMarkup(). */
+   Brand dice and avatars use makeDie() directly; loaders render the same fixed
+   face through dieMarkup(), and the matchmaking wait rolls the split mark. */
 export function makeGameDie(v: number, who: Player): HTMLElement {
   const die = makeDie(v, who);
   die.classList.add('game-die');

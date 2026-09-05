@@ -1,9 +1,109 @@
-/* ---- matchmaking (design 21): bouncing pair, still label, big clock */
-:where(#kbroot) #onQueue{align-items:center;gap:22px}
-:where(#kbroot) .online-queue .qdice{display:flex;gap:14px}
-:where(#kbroot) .online-queue .qdice .die{width:58px;height:58px;--cell:58px;animation:qspin 2.2s ease-in-out infinite}
-:where(#kbroot) .online-queue .qdice .die:nth-child(2){animation-delay:.35s}
-@keyframes qspin{0%,100%{transform:rotate(-6deg) translateY(0)}50%{transform:rotate(6deg) translateY(-7px)}}
+/* ---- matchmaking (design 21, roll from study LD6): one die rolling a floor,
+   still label, big clock ----
+   THE ROLL IS THE WAIT. A pair tilting in place said only that something was
+   happening; a die that travels a floor and returns gives the wait a shape,
+   without a bar pretending to know when it ends.
+
+   IT ROLLS ON THE LINE, so the geometry is a physical claim and not a look:
+
+   · A SQUARE ROLLS 4 SIDES PER TURN. Rolling without slipping, one revolution
+     advances exactly 4x the side — so the run IS 4x the die and one leg is one
+     revolution. Any other ratio is a die skidding along a floor, which is what
+     a spin bolted onto an unrelated translate always looks like.
+   · IT NEVER SINKS THROUGH THE FLOOR. A square turning about its CENTRE with
+     its face on the line buries its corners in the floor twice per side. A
+     real one pivots about the corner it is standing on, and that lifts the
+     centre from S/2 to S/root2 and back, four times a revolution. Rotating
+     about the centre while raising it along that same curve is the identical
+     motion, and it is expressible in CSS: .qhop is that curve. Its peak,
+     .2071 x S, is (1/root2 - 1/2).
+   · EVERYTHING IS LINEAR. The hop is a function of ANGLE, so it only stays
+     under the corner if the angle advances at a constant rate. Ease the spin
+     and the die starts hopping where it has no corner down. One hop is an
+     eighth of the cycle (2.9s / 8 = .3625s) and the cycle holds exactly 8, so
+     the phases cannot drift apart.
+   · THE MARK IS NOT THE DIE. split-mark.css draws at 120 units and insets the
+     die to 96, so the element is 1.25x the die it shows and carries .125x of
+     padding on each edge. The box therefore hangs BELOW the line by that pad,
+     which is what puts the visible face on it.
+
+   Three nested jobs, because one element cannot carry them honestly:
+     .qdice  the tray, and the floor it rolls on
+     .qroll  travel — left wall to right wall and back
+     .qhop   the lift over each corner
+     .qturn  spin — one revolution per leg
+   THE SPIN UNWINDS ON THE WAY BACK. 0 -> 360 -> 0, not 0 -> 360 -> 720: a die
+   rolling right turns clockwise and the same die rolling left MUST turn the
+   other way, or it is skidding. That also lands it on the angle it started
+   from at both walls, so the pips read the same each time it arrives. The
+   study this comes from spun one way throughout and looked fine only because
+   it never stopped; here the return leg is half the animation. */
+:where(#kbroot) .online-queue .qdice{
+  /* The VISIBLE die. The run is 4x it and the tray 5.25x, so a fixed size is a
+     fixed tray, and this panel's column is only ~60px narrower than the
+     viewport: 56px needs 354px of device and a 320px phone would push the roll
+     out of the column. min() is a no-op at every width the app ships to (360
+     yields 57.1) and only bites below that. */
+  --q-die:min(56px, calc((100vw - 60px) / 5.25));
+  --q-mark:calc(var(--q-die) * 1.25);      /* the element drawing it */
+  --q-pad:calc(var(--q-die) * .125);       /* mark padding on one edge */
+  --q-run:calc(var(--q-die) * 4);          /* one revolution of a square */
+  --q-cycle:2.9s;
+  position:relative;height:84px;           /* clears the diagonal, S x root2 */
+  width:calc(var(--q-run) + var(--q-mark))}
+/* the floor: brightest under the middle of the run, gone at the walls */
+:where(#kbroot) .online-queue .qdice::after{content:"";position:absolute;left:0;right:0;bottom:0;
+  height:1px;background:linear-gradient(90deg,transparent,rgba(var(--p1-rgb),.45),transparent)}
+:where(#kbroot) .online-queue .qroll{position:absolute;left:0;
+  bottom:calc(var(--q-pad) * -1);          /* the FACE on the line, not the box */
+  width:var(--q-mark);height:var(--q-mark);
+  animation:qroll var(--q-cycle) linear infinite}
+:where(#kbroot) .online-queue .qhop{display:block;width:100%;height:100%;
+  animation:qhop calc(var(--q-cycle) / 8) linear infinite}
+:where(#kbroot) .online-queue .qturn{display:block;width:100%;height:100%;
+  animation:qturn var(--q-cycle) linear infinite}
+:where(#kbroot) .online-queue .qturn .splitmark{display:block;
+  /* THE TRAY SIZES THE MARK, so --q-die is the only place the size is written.
+     The markup's own number would otherwise have to be kept in step here and
+     in every design card that wears this panel, and a mark a few px off its
+     box does not look wrong — it just quietly stops touching the floor.
+     !important because splitMarkMarkup() writes --split-size as an INLINE
+     style, which no selector can outrank. The layout owns the size here; the
+     markup's number is only a fallback for consumers that do not. */
+  --split-size:var(--q-mark) !important;
+  /* Home's 7deg logo tilt is a flourish on a mark that never moves. Inside an
+     element turning a full revolution it is invisible in flight and shows only
+     at the walls, where it reads as leaning rather than landed. Flat here. */
+  --split-tilt:0deg}
+@keyframes qroll{
+  0%{transform:translateX(0)}
+  50%{transform:translateX(var(--q-run))}
+  100%{transform:translateX(0)}
+}
+/* The centre's height over one corner, sampled every 7.5deg of the pivot:
+   h/S = (1/root2) x sin(45deg + angle) - 1/2. It is a SINE ARC, not an ease —
+   it climbs to half its height in the first sixth and then flattens, where
+   ease-in-out is still barely moving. Two keyframes and an ease sank the die
+   3.6px into the floor mid-pivot; thirteen points and linear do not. */
+@keyframes qhop{
+  0%,100%{transform:translateY(0)}
+  8.333%,91.667%{transform:translateY(calc(var(--q-die) * -.0610))}
+  16.667%,83.333%{transform:translateY(calc(var(--q-die) * -.1124))}
+  25%,75%{transform:translateY(calc(var(--q-die) * -.1533))}
+  33.333%,66.667%{transform:translateY(calc(var(--q-die) * -.1830))}
+  41.667%,58.333%{transform:translateY(calc(var(--q-die) * -.2011))}
+  50%{transform:translateY(calc(var(--q-die) * -.2071))}
+}
+@keyframes qturn{0%{transform:rotate(0)}50%{transform:rotate(360deg)}100%{transform:rotate(0)}}
+/* Reduced motion keeps the mark and drops the journey: it sits mid-floor and
+   breathes, so the panel is not simply inert. */
+@media (prefers-reduced-motion:reduce){
+  :where(#kbroot) .online-queue .qroll{
+    animation:none;transform:translateX(calc(var(--q-run) / 2))}
+  :where(#kbroot) .online-queue .qhop{animation:none}
+  :where(#kbroot) .online-queue .qturn{animation:qwait 2.6s ease-in-out infinite}
+  @keyframes qwait{0%,100%{opacity:.62}50%{opacity:1}}
+}
 /* The label sits still — the dice carry all the motion. Keep this explicit:
    the CSS ownership split once restored a dangling dots animation here. */
 :where(#kbroot) .online-queue .qmsg{font-size:11px;letter-spacing:.2em;color:var(--txt);text-transform:uppercase;text-align:center}

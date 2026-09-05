@@ -143,8 +143,33 @@ export async function runMatchmakingScenarios(suite) {
     'the matchmaking label is animating again', samples);
   check(samples.every((sample) => !sample.pseudoContent.includes('.')),
     'the matchmaking label is generating trailing dots again', samples);
-  check(samples.every((sample) => sample.dieAnimation === 'qspin'),
-    'removing the label animation also stopped the waiting dice', samples);
+  check(samples.every((sample) => sample.dieAnimation === 'qturn'
+      && sample.rollAnimation === 'qroll'),
+    'removing the label animation also stopped the waiting die', samples);
+  /* The wait is the SPLIT mark: two halves, because the thing being waited for
+     is a second seat. */
+  check(samples.every((sample) => sample.splitHalves === 2),
+    'the matchmaking wait is not the two-coloured split die', samples);
+  /* AND IT ROLLS BOTH WAYS. 0 -> 360 -> 0 means the spin unwinds on the return
+     leg, so the die turns the way it travels and arrives on the angle it left
+     from. A one-way 0 -> 360 -> 720 would keep the same animation NAME while
+     skidding backwards across the floor, which is the whole thing this
+     replaced the tilting pair to avoid. */
+  check(samples.every(({ turnFrames }) => {
+    if (!turnFrames || turnFrames.length !== 3) return false;
+    const at = (key) => turnFrames.find((frame) => frame.keyText === key || frame.at === key);
+    const start = at('0%'), middle = at('50%'), end = at('100%');
+    const zero = (value) => /rotate\(0(deg)?\)/.test(value ?? '');
+    return zero(start?.transform) && zero(end?.transform)
+      && /rotate\(360deg\)/.test(middle?.transform ?? '');
+  }), 'the waiting die no longer unwinds on its return leg', samples[0]?.turnFrames);
+  /* The owner's whole ask for this animation, in one number each way: "it must
+     roll on the line like on the floor." */
+  out.matchmakingFloor = queued.queueFloor;
+  check(queued.queueFloor
+    && queued.queueFloor.maxSink <= 0.5 && queued.queueFloor.maxFloat >= -0.5,
+  'the waiting die no longer rolls ON the floor line', queued.queueFloor);
+
   check(queued.queueCancel?.label === 'Cancel'
     && queued.queueCancel.textTransform === 'uppercase'
     && queued.queueCancel.clipped === false,

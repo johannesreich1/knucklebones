@@ -35,10 +35,15 @@ export const MARKUP = `${BOARD_MARKUP}
     <div class="sub2" data-i18n="common:app.tagline">Dice duels</div>
   </div>
   <div class="homestack">
-    <!-- the plate IS the account: ring, avatar, name and points, docked on the
-         button that moves them (design 13d). boot's refreshHomeChip fills it. -->
-    <button class="pplate anon" id="homeChip">NOT SIGNED IN</button>
+    <!-- THE DUEL LEADS (owner call, 2026-09-05). The plate used to sit above
+         it, because the account is what the duel spends; but the account is
+         context and the duel is the errand, and the errand goes first. The
+         plate keeps its place directly under the button that moves it, so the
+         pairing design 13d asks for survives the swap — it now reads as the
+         seat you are about to play from rather than a sign-in prompt standing
+         between Home and its purpose. boot's refreshHomeChip fills it. -->
     <button class="btn primary play-cta" id="btnOnline"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">${chromeIcon('play', 25)}</span><span class="btn-label" data-i18n="game:home.playRanked">Play ranked match</span></button>
+    <button class="pplate anon" id="homeChip">NOT SIGNED IN</button>
     <button class="btn weekly-cta" id="btnWeekly" hidden><span aria-hidden="true">✦</span><span class="btn-label" id="weeklyHomeLabel"></span></button>
     <div class="hrow">
       <button class="btn" id="btnBoardHome" data-i18n="game:home.ladder">Ladder</button>

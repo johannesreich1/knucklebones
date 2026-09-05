@@ -4,7 +4,7 @@
      src/online/styles/matchmaking.css scopes every rule as
      `.online-queue .qdice / .qmsg / .qtime / .qsub`, so this card wears the
      runtime's own `<div class="panel online-queue" id="onQueue">` and inherits
-     the real 58px dice, the deliberately still 11px label, the 24px cyan clock
+     the real rolling die, the deliberately still 11px label, the 24px cyan clock
      and the 13px reserved sub lane rather than restating any of them. The rune
      card is the DECK's own object (styles/components/rune-deal.css .rdealt /
      .rback / .rface, emitted by ui/runefelt.ts through the runefaces token),
@@ -23,13 +23,16 @@
   .shead{margin-bottom:10px}
   .scr{gap:6px}                  /* chrome's `.stage .scr` never sets gap */
 
-  /* THE DICE ARE NOT FROZEN — and .dice-static could not freeze them anyway.
-     matchmaking.css:4 is `:where(#kbroot) .online-queue .qdice .die` at
-     (0,3,0); the chrome's `.dice-static .die{animation:none}` is (0,2,0), so
-     the app wins the cascade and qspin keeps bouncing whatever the wrapper
-     wears. That is the correct answer here rather than a workaround: the spin
-     is this screen's shipped hero and the idea changes nothing about it. The
-     frozen frame lives in the stills row below, which holds no dice at all. */
+  /* THE ROLL IS FROZEN NOW, and the reason it used not to be is gone. While
+     the wait was a pair bouncing in place, an unfrozen card was harmless: any
+     frame put the dice in the same spot. The 2026-09-05 roll TRAVELS 212px, so
+     an unfrozen card lands the die somewhere new on every render and this
+     study's composition — a rune card read against the queue — stops being
+     the same picture twice. Same 30deg frame as card 21, so the two cards
+     agree, and .qhop is held with them or the die lifts off its corner.
+     (.dice-static was never the lever: it targets .die at (0,2,0) and lost to
+     the app's own rule anyway.) */
+  .qroll,.qhop,.qturn{animation-play-state:paused;animation-delay:-.12083s}
 
   /* ===== THE IDEA. The queue is the last calm second before a duel and the
      only screen in ranked whose whole job is to say "hold on". The obvious
@@ -44,8 +47,8 @@
      the dealt card is --card*1.4 by --card*1.92 = 67 x 92, and the face icon
      the build's runefaces token hard-codes at 21px is then 31% of the card
      width, the same proportion the reveal draws at --card:96 (44/134). Larger
-     and the card out-measures the two 58px dice above it, which are the
-     screen's subject; this one has to sit under them. ===== */
+     and the card out-measures the 56px rolling die above it, which is the
+     screen's subject; this one has to sit under it. ===== */
   .eq7seat{position:relative;width:100%;display:flex;justify-content:center}
   /* the tap affordance while the search is still running: a hairline seat, the
      board's empty-slot idea at card scale. It is drawn OUTSIDE the card so the
@@ -181,10 +184,13 @@
 
   <div id="ovOnline">
     <div class="panel online-queue" id="onQueue">
-      <!-- the shipped pair: makeDie(2, ME) and makeDie(6, AI) in installOnlineShell().
-           No size on the token — matchmaking.css sizes them 58px and sets
-           --cell, so the card proves the app rule instead of restating it. -->
-      <div class="qdice">{{die:2:p1}}{{die:6:p2}}</div>
+      <!-- the shipped wait: one split mark rolling a floor, exactly the markup
+           installOnlineShell() writes. matchmaking.css owns the tray, the
+           travel and the spin, so the card proves the app rule rather than
+           restating it. -->
+      <div class="qdice">
+        <span class="qroll"><span class="qhop"><span class="qturn">{{splitmark:56}}</span></span></span>
+      </div>
       <div class="qmsg eq7msg"><span class="eq7swap">
         <span class="eq7m1">Looking for an opponent</span>
         <span class="eq7m2">Rune locked — waiting for your opponent</span>
@@ -252,5 +258,5 @@
 </div></div>
 <div class="note"><b>What it says:</b> <b>this is what you are bringing.</b> The queue is ranked's only calm second and the only screen whose whole job is to say hold on, so it is the one place a loadout can be shown without competing with a board. The rune sits there as the deck's own face-up card — the same <code>.rdealt</code> the reveal turns over a moment later — so choice, lock and reveal are three views of one object rather than a settings row that reappears as a chip mid-match.<br>
 <b>Why it survives:</b> it is the only idea on this board where the choice is made where it starts to matter and is then visibly carried into the duel. Three shipped objects, verbatim: the dealt card, the picker's <code>.choice-lock</code>, and <code>matchmaking.trialLocked</code>. And it answers the state the others have to argue about — a player with no runes at all — by not drawing.<br>
-<b>Cost:</b> the queue is the worst place in the app to ask for a decision. The median wait is a handful of seconds, so a tappable control turns waiting into fidgeting — and this one punishes the tap: changing the rune re-submits the join intent so the server can validate and snapshot the loadout, which means <b>the search genuinely restarts and the clock goes back to 0:00</b>. Tap at second six, lose your place, and the feature reads as a trap. Borrowing <code>matchmaking.trialLocked</code> also loads one sentence with two jobs — today it means "your Ritual rune is committed", here it would also mean "your equipped rune is committed" on a screen where nothing was chosen — and the frosted bar takes a third meaning below SILVER. That bar is near-opaque across its middle third, so it covers the icon it crosses — below SILVER the name under it is all that still says <i>which</i> rune is waiting. The card also competes for vertical band with two 58px dice that are the screen's hero, and the message lane grows a line at the find because the app reserves no height for the longer sentence.<br>
+<b>Cost:</b> the queue is the worst place in the app to ask for a decision. The median wait is a handful of seconds, so a tappable control turns waiting into fidgeting — and this one punishes the tap: changing the rune re-submits the join intent so the server can validate and snapshot the loadout, which means <b>the search genuinely restarts and the clock goes back to 0:00</b>. Tap at second six, lose your place, and the feature reads as a trap. Borrowing <code>matchmaking.trialLocked</code> also loads one sentence with two jobs — today it means "your Ritual rune is committed", here it would also mean "your equipped rune is committed" on a screen where nothing was chosen — and the frosted bar takes a third meaning below SILVER. That bar is near-opaque across its middle third, so it covers the icon it crosses — below SILVER the name under it is all that still says <i>which</i> rune is waiting. The card also competes for vertical band with the rolling die that is the screen's hero, and the message lane grows a line at the find because the app reserves no height for the longer sentence.<br>
 <b>The state easiest to get wrong:</b> below SILVER. The temptation is to hide the card until the choice does something, which teaches nothing. It stays <i>face-up</i> under the picker's own covered-choice banner instead, so the player spends every search watching their rune wait on a named group — louder than a dim icon on a screen they may never open. The picker row is not drawn here: it opens from the card, and <b>EQ2</b> pictures it whole.</div>

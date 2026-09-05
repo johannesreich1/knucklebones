@@ -1,6 +1,6 @@
-<!-- meta name="Matchmaking" group="2 · Online flow" subtitle="Rolling dice while searching; Cancel is the ONLY exit and truly leaves the queue" width=412 height=742 links="Mode dial, Home" -->
+<!-- meta name="Matchmaking" group="2 · Online flow" subtitle="One die rolling the floor while searching; Cancel is the ONLY exit and truly leaves the queue" width=412 height=742 links="Mode dial, Home" -->
 <style>
-  /* Everything the queue looks like — .qdice, its bounce, the still .qmsg,
+  /* Everything the queue looks like — .qdice, its roll, the still .qmsg,
      .qsub, .qtime — already reaches this card: design/build.mjs inlines
      src/online/online.css, and this card wears the same semantic
      .online-queue root as the app. The card used
@@ -12,13 +12,21 @@
      22px: #onQueue is a .panel too, and (1 id, 1 class) outranks (1 id), so
      the 22px at src/online/styles/matchmaking.css:2 never lands in production either. */
   .qwrap{display:flex;flex-direction:column;align-items:center;gap:16px;margin:auto;width:100%;max-width:var(--w-col)}
+  /* A card is one frame of a 2.9s roll, so it has to CHOOSE one. A negative
+     delay on a paused animation lands an exact offset instead of whatever the
+     screenshot happened to catch. -.12083s is 30deg — a third of the way over
+     the first corner, so the die is visibly tipping and its corner is on the
+     line, and both halves still read in their Home order. It must cover .qhop
+     as well: hold the lift at a different phase from the spin and the die
+     rises where it has no corner down. Do not use the 180deg frame, where the
+     halves are swapped and a reviewer sees a colour bug. */
+  .qroll,.qhop,.qturn{animation-play-state:paused;animation-delay:-.12083s}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
   <div class="shead"><button class="ico page-back" data-page-back style="visibility:hidden">{{ico:back:30}}</button><span class="ttl">MATCHMAKING</span><span class="pad"></span></div>
   <div class="qwrap online-queue">
-    <div class="qdice dice-static">
-      {{die:2:p1:58}}
-      {{die:6:p2:58}}
+    <div class="qdice">
+      <span class="qroll"><span class="qhop"><span class="qturn">{{splitmark:56}}</span></span></span>
     </div>
     <div class="qmsg">Looking for an opponent</div>
     <div class="qtime">0:07</div>
