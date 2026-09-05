@@ -3,8 +3,8 @@ import { legalDocument } from '../../../src/legal/documents.ts';
 import { renderLegalDocumentBody } from '../../../src/legal/render.ts';
 import { LEGAL_PAGE_IDS } from '../../../src/legal/types.ts';
 
-export function expectedLegalBody(locale, page, facts) {
-  return renderLegalDocumentBody(legalDocument(locale, page, facts));
+export function expectedLegalBody(locale, page, facts, status = 'ready') {
+  return renderLegalDocumentBody(legalDocument(locale, page, facts, status));
 }
 
 export async function inspectStaticLegalMatrix({
@@ -87,7 +87,7 @@ export async function inspectStaticLegalMatrix({
         localeId: locale.id,
         languageTag: locale.languageTag,
         legalPage,
-        bodyHtml: expectedLegalBody(locale.id, legalPage, fixture.facts),
+        bodyHtml: expectedLegalBody(locale.id, legalPage, fixture.facts, fixture.status),
         longUrl,
         canonicalOrigin: fixture.canonicalOrigin,
         localeCount: LOCALE_REGISTRY.length,

@@ -52,7 +52,9 @@ function renderPage(page: LegalPageId, preserveScroll = false): HTMLElement {
   overlay.querySelector<HTMLElement>('[data-legal-title]')!.textContent = content.pages[page].shortTitle;
   overlay.querySelector<HTMLElement>('[data-legal-close]')!
     .setAttribute('aria-label', content.backLabel);
-  body.innerHTML = renderLegalDocumentBody(legalDocument(locale, page, LEGAL_RELEASE.facts))
+  body.innerHTML = renderLegalDocumentBody(
+    legalDocument(locale, page, LEGAL_RELEASE.facts, LEGAL_RELEASE.status),
+  )
     + renderRelatedNavigation(page);
   const heading = body.querySelector('h1')!;
   heading.id = `legal-${page}-heading`;

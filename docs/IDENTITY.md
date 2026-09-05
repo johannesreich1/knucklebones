@@ -173,11 +173,18 @@ archive, device authentication, or production backend rollout succeeded.
 
 - [x] **Anonymous sign-ins → ON** — done 2026-08-19.
 - [ ] **GO-LIVE BLOCKER — production SMTP:** configure Supabase Auth mail
-      delivery (planned provider: Resend), including DNS/sender identity,
+      delivery through the owner-purchased IONOS Mail Basic 5 service for
+      `knucklebones.gg`, including DNS/sender identity,
       credentials, rate limits, and the intended confirmation setting. Verify
       attach-email, confirmation, and recovery end to end. Until then "Keep it
-      forever" can only get as far as *"confirm the link we sent"* — and no link
-      is sent. Guest play is unaffected, but the account rollout must not ship.
+      forever" cannot reliably deliver confirmation to the public: Supabase's
+      default sender is restricted to project-team addresses. The September 5
+      read-only audit confirmed no custom SMTP or send-email hook; see
+      `docs/LEGAL.md`. Guest play is unaffected, but the account rollout must not ship.
+- [x] **Auth sender mailbox created:** Johannes confirmed
+      `noreply@knucklebones.gg` at IONOS on 2026-09-05. Supabase SMTP activation
+      and auth-message delivery are separate, still-unverified steps. The public
+      contact address selected for the legal pages is `support@knucklebones.gg`.
 - [x] **Paid Apple Developer Program membership** for team `4RKFC79X48` — owner
       confirmed active 2026-08-25.
 - [x] **Apple App ID capabilities:** Sign in with Apple is enabled and configured
@@ -300,8 +307,10 @@ the Game Center row.
    `KB_ALLOW_PRODUCTION_IDENTITY_FUNCTIONS=1 … -- --apply`. It deploys
    `identity-status`, `apple-token-register` and `apple-revocation-retry`. The
    updated `account-delete` is **not** in that set — it belongs to the ranked
-   plan and ships through `functions:production:ranked-runes`. Then schedule
-   `apple-revocation-retry` with its cron secret.
+   plan and ships through `functions:production:ranked-runes`. Keep
+   `apple-revocation-retry` scheduled with its cron secret. The September 5
+   read-only audit confirmed the active schedule; successful scheduling alone
+   does not establish successful Apple revocation (see `docs/LEGAL.md`).
 2. **The auth boundary, alone.** Preview
    `mise exec -- npm run functions:production:game-center`, then apply it with
    `KB_ALLOW_PRODUCTION_GAME_CENTER_FUNCTIONS=1 … -- --apply`. That plan

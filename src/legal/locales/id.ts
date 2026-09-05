@@ -10,135 +10,67 @@ export const ID_LEGAL: LegalLocaleContent = {
   languageNavigationLabel: 'Bahasa yang tersedia',
   homeLabel: 'Kembali ke permainan',
   backLabel: 'Kembali',
-  pendingFact: 'Menunggu verifikasi sebelum dipublikasikan',
+  pendingFact: 'Perlu diverifikasi sebelum dipublikasikan',
   pages: {
     imprint: {
       title: 'Informasi penyedia',
       shortTitle: 'Informasi hukum',
-      description: 'Informasi penyedia dan kontak untuk Knucklebones Neon.',
-      intro: 'Informasi tentang pihak yang bertanggung jawab atas proyek permainan pribadi dan nonkomersial ini.',
+      description: 'Identitas penyedia dan kontak Knucklebones Neon.',
+      intro: 'Knucklebones Neon disediakan oleh orang perseorangan berikut.',
       sections: [
-        {
-          heading: 'Penyedia berdasarkan § 18(1) MStV',
-          blocks: [p('{{controllerName}}\n{{controllerStreet}}\n{{controllerPostalCity}}\n{{controllerCountry}}')],
-        },
-        {
-          heading: 'Kontak',
-          blocks: [p('Email: {{publicEmail}}')],
-        },
-        {
-          heading: 'Status proyek',
-          blocks: [p('Ini adalah proyek hobi pribadi dan gratis yang dijalankan oleh orang perseorangan. Tidak ada perusahaan, pencatatan dalam register komersial, nomor identifikasi PPN, profesi yang diatur, iklan, atau penawaran berbayar yang perlu dicantumkan di sini.')],
-        },
+        { id: 'provider', heading: 'Penyedia berdasarkan Pasal 18 ayat (1) MStV', blocks: [p('{{controllerName}}\n{{controllerStreet}}\n{{controllerPostalCity}}\n{{controllerCountry}}')] },
+        { id: 'contact', heading: 'Kontak', blocks: [p('Email: {{publicEmail}}')] },
+        { id: 'project', heading: 'Tentang proyek ini', blocks: [p('Knucklebones Neon adalah permainan hobi gratis dan nonkomersial. Tidak ada iklan, pembelian, langganan, atau donasi.')] },
       ],
     },
     privacy: {
       title: 'Pemberitahuan privasi',
       shortTitle: 'Privasi',
-      description: 'Cara Knucklebones Neon memproses data perangkat, akun, dan pertandingan peringkat.',
-      intro: 'Pemberitahuan ini menjelaskan data yang digunakan untuk permainan offline, PWA yang dihosting, dan permainan peringkat opsional.',
+      description: 'Cara Knucklebones Neon memproses data perangkat, akun, dan permainan online.',
+      intro: 'Anda dapat bermain secara lokal tanpa akun peringkat. Permainan online memerlukan akun untuk menyimpan kemajuan dan mempertemukan Anda dengan lawan. Pemberitahuan ini menjelaskan data yang digunakan, siapa yang menerimanya, dan cara menghapusnya.',
       sections: [
-        {
-          heading: 'Pengendali dan kontak',
-          blocks: [p('{{controllerName}}, {{controllerStreet}}, {{controllerPostalCity}}, {{controllerCountry}}. Email: {{publicEmail}}.')],
-        },
-        {
-          heading: 'Data di perangkat Anda',
-          blocks: [p('Preferensi, statistik lokal, sesi, dan status profil dalam cache tetap berada di penyimpanan lokal browser atau WebView. PWA yang dihosting juga menggunakan Cache Storage untuk aset aplikasi offline dan nilai sesi sementara guna memulihkan kegagalan pemuatan bagian aplikasi. Kami tidak menggunakan cookie iklan atau pemasaran.')],
-        },
-        {
-          heading: 'Data akun dan pertandingan peringkat',
-          blocks: [p('Memulai permainan peringkat akan membuat akun anonim Supabase. Kami kemudian memproses pengenal akun, nama panggilan yang dibuat atau diklaim, kode avatar, pengaturan, poin atau peringkat saat ini dan tertinggi, statistik papan peringkat, waktu pembuatan profil, serta riwayat pertandingan dan langkah. Jika Anda memilih pemulihan melalui email, Supabase Auth juga menyimpan alamat email tersebut dan {{smtpProvider}} mengirimkan pesan terkait.')],
-        },
-        {
-          heading: 'Tujuan dan dasar hukum',
-          blocks: [
-            p('Kami memproses data akun, pencarian lawan, pertandingan, pengaturan, dan papan peringkat untuk menyediakan layanan permainan yang diminta serta menyimpan hasilnya (Pasal 6(1)(b) GDPR).'),
-            p('Kami memproses data operasional dan keamanan secara terbatas untuk mencegah penyalahgunaan, menerapkan batas permintaan, mendiagnosis kegagalan, serta melindungi layanan dan pemain lain (Pasal 6(1)(f) GDPR).'),
-          ],
-        },
-        {
-          heading: 'Penerima, wilayah, dan transfer',
-          blocks: [
-            p('Supabase menyediakan layanan autentikasi, basis data, Edge Function, dan Realtime. Wilayah basis data adalah {{supabaseDatabaseRegion}} dan wilayah Edge Function adalah {{supabaseFunctionsRegion}}.'),
-            p('Cloudflare Pages menyediakan PWA yang dihosting. Cakupan pemrosesan yang relevan adalah: {{cloudflareProcessingScope}}.'),
-            p('Di iOS, fitur opsional Masuk dengan Apple dan Game Center mengirimkan pengenal akun Apple atau team-player serta materi verifikasi bertanda tangan melalui layanan Apple. Verifikasi Game Center melewati Cloudflare Worker dengan batas permintaan sebelum mencapai Supabase; aplikasi tidak menerima detail profil Game Center selain pengenal team-player stabil yang diperlukan untuk memulihkan atau melindungi akun peringkat.'),
-            p('Perlindungan yang digunakan untuk transfer internasional terkait adalah: {{transferSafeguards}}. Aplikasi native memuat aset web yang disertakan dalam bundel, bukan mengunduhnya dari Cloudflare.'),
-            p('Kami tidak mengintegrasikan SDK periklanan atau analitik perilaku maupun skrip pemasaran atau analitik yang dihosting dari jarak jauh. Penyedia infrastruktur tetap dapat membuat log operasional, keamanan, dan akses.'),
-          ],
-        },
-        {
-          heading: 'Yang dapat dilihat pemain lain',
-          blocks: [p('Nama panggilan, avatar, poin atau peringkat saat ini dan tertinggi, posisi atau puncak peringkat, jumlah kemenangan, kekalahan, pertandingan, rentetan terbaik, waktu bergabung, dan hasil pertandingan peringkat dapat dilihat oleh lawan atau pengguna papan peringkat dan kartu pemain dalam game. Riwayat terperinci hanya dapat dilihat oleh pemiliknya; peserta pertandingan dapat membaca catatan pertandingan dan langkah yang mereka jalani bersama.')],
-        },
-        {
-          heading: 'Penyimpanan dan penghapusan',
-          blocks: [p('Akun tamu dan akun yang dipulihkan tetap tersimpan sampai dihapus. Setelah pertandingan aktif diselesaikan, penghapusan akun akan menghapus profil yang dihosting, pengaturan, baris papan peringkat, baris antrean, serta riwayat pertandingan dan langkah. Jika Masuk dengan Apple terhubung, kredensial pencabutan yang tersimpan digunakan untuk menghapus akses Apple; kegagalan sementara akan dicoba lagi, dan aplikasi memberikan petunjuk penghapusan manual jika pencabutan otomatis tidak dapat diselesaikan. Preferensi dan statistik lokal tetap berada di perangkat sampai Anda menghapus data aplikasi atau situs. Log keamanan disimpan selama {{securityLogRetention}} dan cadangan selama {{backupRetention}}.')],
-        },
-        {
-          heading: 'Hak Anda',
-          blocks: [
-            p('Anda dapat meminta akses, perbaikan, penghapusan, pembatasan, portabilitas, atau mengajukan keberatan atas pemrosesan dengan menulis ke {{publicEmail}}. Anda juga dapat mengajukan pengaduan kepada otoritas pengawas.'),
-            p('Otoritas yang berwenang: {{authorityName}}, {{authorityStreet}}, {{authorityPostalCity}}, {{authorityCountry}}.'),
-          ],
-        },
-        {
-          heading: 'Anak-anak dan informasi usia',
-          blocks: [p('Saat ini permainan tidak memiliki batasan usia serta tidak meminta atau menyimpan tanggal lahir. Pernyataan ini mencatat perilaku produk saat ini; ini bukan klaim bahwa persyaratan privasi anak di setiap negara otomatis telah dipenuhi.')],
-        },
+        { id: 'controller', heading: 'Pihak yang bertanggung jawab', blocks: [p('{{controllerName}}, {{controllerStreet}}, {{controllerPostalCity}}, {{controllerCountry}}. Untuk pertanyaan atau permintaan terkait privasi, kirim email ke {{publicEmail}}.')] },
+        { id: 'scope', heading: 'Cakupan pemberitahuan ini', blocks: [p('Pemberitahuan ini mencakup situs web, aplikasi web yang dipasang, permainan mandiri, widget yang disematkan, serta aplikasi native Knucklebones Neon. Cloudflare menyediakan situs web dan berkasnya. Aplikasi native memuat berkas permainan dari paket yang telah dipasang, tetapi fungsi online tetap menghubungi penyedia layanannya. Jika Anda bermain melalui widget di situs web lain, situs tersebut mungkin juga memproses data sesuai pemberitahuan privasinya sendiri.'), p('Kami tidak mengintegrasikan SDK iklan, analisis perilaku, atau pelacakan. Permainan ini tidak meminta lokasi, kontak, akses kamera atau foto Anda, serta tidak memiliki obrolan antarpemain atau unggahan gambar. Data operasional dan keamanan yang diproses oleh penyedia infrastruktur kami dijelaskan di bawah.')] },
+        { id: 'device-storage', heading: 'Data yang disimpan di perangkat Anda', blocks: [p('Browser atau aplikasi menyimpan pilihan bahasa, pengaturan aksesibilitas dan permainan, serta skor dan statistik lokal Anda. Untuk akun online, browser atau aplikasi juga menyimpan kredensial sesi serta salinan lokal profil, informasi akun yang ditautkan, pertandingan terbaru, rune, dan kemajuan Anda. Salinan data akun ini juga disimpan di server; data tersebut tidak hanya tersimpan secara lokal.'), p('Aplikasi web menyimpan berkas permainan dalam cache agar dapat digunakan secara offline. Aplikasi juga menyimpan penanda pemulihan sementara jika suatu berkas program gagal dimuat. Penggunaan ini meliputi penyimpanan lokal browser, penyimpanan sesi, dan cache berkas aplikasi; semuanya bukan cookie iklan.'), p('Penyimpanan dan akses yang diperlukan untuk menyediakan fungsi yang Anda minta didasarkan pada Pasal 25 ayat (2) angka 2 TDDDG. Pemrosesan data pribadi untuk fungsi tersebut mengikuti tujuan dan dasar hukum di bawah. Untuk menghapus data lokal, ikuti langkah yang sesuai untuk perangkat Anda di bagian Hapus akun. Menghapus sesi tamu yang tidak memiliki cara pemulihan dapat membuat Anda tidak bisa mengakses akun itu lagi.')] },
+        { id: 'accounts', heading: 'Akun tamu, email, dan kemajuan permainan', blocks: [p('Saat Anda meminta bermain dalam mode peringkat, permainan menggunakan atau memulihkan akun Anda yang sudah ada. Di iOS, jika memungkinkan, permainan menggunakan identitas Game Center yang ditautkan. Jika tidak, permainan membuat akun tamu tanpa meminta nama atau email Anda. “Tamu” tidak berarti datanya anonim: akun tersebut memiliki pengenal tetap.'), p('Data akun mencakup pengenal, nama panggilan yang dibuat otomatis atau dipilih, avatar bawaan, pengaturan, poin saat ini dan tertinggi, hasil pertandingan peringkat, kemenangan, kekalahan, rentetan kemenangan, waktu pembuatan profil, pertandingan, dan langkah permainan. Rune, konten yang telah dibuka, pencapaian, tantangan mingguan, dan kemajuan lainnya juga disimpan.'), p('Pendaftaran, masuk, dan pemulihan menggunakan email dan kata sandi bersifat opsional. Supabase Auth memproses alamat email dan kredensial kata sandi untuk fungsi tersebut. {{smtpProvider}} mengirimkan pesan konfirmasi akun dan pemulihan. Anda dapat bermain sebagai tamu tanpa memberikan email, tetapi pilihan pemulihannya menjadi terbatas. Data akun online dan langkah permainan yang wajib tidak dapat ditiadakan saat menggunakan mode peringkat.')] },
+        { id: 'apple', heading: 'Masuk dengan Apple dan Game Center', blocks: [p('Di iOS, autentikasi Game Center diinisialisasi saat aplikasi dibuka. Karena itu, Apple dapat memproses data Game Center sebelum Anda memulai pertandingan peringkat. Permainan menggunakan status autentikasi Apple dan pengenal pemain yang berlaku dalam lingkup tim pengembang untuk memulihkan atau menautkan akun peringkat Anda, serta melindunginya ketika akun Game Center di perangkat berubah. Data verifikasi bertanda tangan dikirim melalui gateway Cloudflare ke Supabase. Melalui integrasi ini, kami tidak menerima daftar teman, foto profil, atau nama profil publik Game Center Anda.'), p('Jika Anda memilih Masuk dengan Apple, Apple memberikan pengenal akun, data autentikasi bertanda tangan, serta, jika tersedia, alamat email asli atau alamat relay privat Apple Anda. Kode otorisasi ditukarkan agar akses dapat dicabut di kemudian hari. Kredensial penyegaran yang dihasilkan dienkripsi di Supabase Vault dan hanya digunakan untuk mencabut koneksi Apple saat Anda menghapus akun.'), p('Apple mengoperasikan layanan akun dan Game Center berdasarkan ketentuan dan informasi privasinya sendiri: https://www.apple.com/legal/privacy/ dan https://www.apple.com/legal/privacy/data/en/game-center/. Anda dapat mengatur Game Center melalui pengaturan perangkat Apple Anda.')] },
+        { id: 'purposes', heading: 'Tujuan pemrosesan dan dasar hukumnya', blocks: [p('Kami memproses data yang diperlukan untuk permainan gratis yang Anda minta, akses dan pemulihan akun, penyimpanan kemajuan, pencarian lawan, validasi permainan, dan hasil peringkat berdasarkan kepentingan yang sah (Pasal 6 ayat (1) huruf f GDPR). Kepentingan kami adalah menyediakan fungsi yang Anda pilih, menjaga kemajuan permainan Anda, serta menjalankan permainan yang adil dan andal. Informasi profil publik dibatasi pada informasi permainan yang dijelaskan di bawah; kami tidak memerlukan nama asli Anda.'), p('Kami juga memproses data permintaan dan keamanan yang diperlukan, seperti alamat IP, waktu permintaan, informasi browser atau aplikasi, status respons, dan informasi kesalahan, untuk menyediakan layanan, mencegah penyalahgunaan, membatasi permintaan berlebihan, serta menyelidiki gangguan (Pasal 6 ayat (1) huruf f GDPR). Untuk permintaan terkait hak privasi, pemrosesan yang diperlukan untuk memenuhi kewajiban kami didasarkan pada Pasal 6 ayat (1) huruf c GDPR bersama dengan Pasal 12–22 GDPR.')] },
+        { id: 'recipients', heading: 'Penyedia layanan dan pemrosesan internasional', blocks: [p('Supabase menyediakan autentikasi yang dihosting, basis data, koneksi permainan waktu nyata, dan fungsi server. Wilayah basis data: {{supabaseDatabaseRegion}}. {{supabaseFunctionsRegion}}'), p('{{cloudflareProcessingScope}}'), p('Email akun dikirim melalui {{smtpProvider}}. Apple juga memproses data untuk layanan Apple yang dijelaskan di atas. {{supportProcessing}}'), p('{{transferSafeguards}}')] },
+        { id: 'public-profile', heading: 'Informasi yang dapat dilihat orang lain', blocks: [p('Dengan bermain dalam mode peringkat, Anda ikut dalam pemeringkatan publik. Nama panggilan, avatar bawaan, poin saat ini dan tertinggi, posisi peringkat atau status apex, kemenangan, kekalahan, jumlah permainan, rentetan kemenangan terbaik, waktu bergabung, dan hasil peringkat Anda dapat ditampilkan di papan peringkat dan kartu pemain. Ringkasan profil publik ini juga dapat diakses tanpa masuk ke akun. Pilih nama panggilan yang tidak mengungkapkan nama asli atau detail kontak Anda.'), p('Email, kredensial kata sandi, dan data autentikasi Apple Anda tidak dipublikasikan. Riwayat akun terperinci hanya dapat dilihat oleh pemilik akun; kedua peserta pertandingan dapat mengakses riwayat pertandingan dan langkah permainan yang mereka jalani bersama.')] },
+        { id: 'retention', heading: 'Lama penyimpanan data', blocks: [p('Akun tamu dan akun yang dapat dipulihkan saat ini tidak kedaluwarsa secara otomatis karena tidak aktif. Data akun dan permainan tetap tersimpan sampai akun dihapus. Penghapusan menyelesaikan pertandingan yang sedang berlangsung dan menghapus akun, profil, pengaturan, entri antrean dan papan peringkat, riwayat pertandingan dan langkah permainan, rune, serta kemajuan. Catatan teknis yang digunakan untuk mencegah perintah permainan diproses dua kali memenuhi syarat untuk dibersihkan setiap jam setelah waktu pembuatan catatan dan waktu berakhirnya pertandingan terkait sama-sama telah berlalu lebih dari {{commandReceiptRetentionDays}} hari.'), p('Setelah akun yang ditautkan ke Apple dihapus, kredensial yang masih diperlukan untuk pencabutan otomatis tetap disimpan dalam bentuk terenkripsi selama masa percobaan ulang hingga {{appleRevocationRetryDays}} hari, lalu dihapus melalui pemrosesan terjadwal. Proses terjadwal memeriksa percobaan ulang yang tertunda setiap {{appleRevocationScheduleMinutes}} menit. Jika pencabutan tidak dapat diselesaikan secara otomatis, gunakan petunjuk manual di bagian Hapus akun.'), p('{{securityLogRetention}}'), p('{{backupRetention}}'), p('{{smtpRetention}}'), p('Pengaturan offline lokal, statistik, dan berkas permainan dalam cache tetap tersimpan sampai Anda menghapus data aplikasi atau data situs di browser. Menghapus akun server saja tidak menghapus data offline tersebut.')] },
+        { id: 'support', heading: 'Dukungan dan permintaan privasi', blocks: [p('Jika Anda menghubungi kami, kami memproses alamat pengirim, pesan, serta informasi yang Anda pilih untuk disertakan, seperti versi aplikasi, nama panggilan, atau tangkapan layar. Kami hanya menggunakan informasi yang diperlukan untuk menangani pertanyaan atau menyelidiki masalah yang dilaporkan (Pasal 6 ayat (1) huruf f GDPR); dasar hukum untuk permintaan privasi menurut undang-undang dijelaskan di atas. Jangan mengirim kata sandi atau tautan autentikasi.'), p('{{supportRetention}}')] },
+        { id: 'rights', heading: 'Hak Anda', blocks: [p('Dengan memenuhi persyaratan hukum yang berlaku, Anda dapat meminta akses ke data pribadi, perbaikan, penghapusan, atau pembatasan pemrosesan. Hak portabilitas data berlaku jika pemrosesan dilakukan secara otomatis dan didasarkan pada persetujuan atau kontrak. Jika pemrosesan didasarkan pada persetujuan, Anda dapat menarik persetujuan tersebut untuk masa mendatang tanpa memengaruhi keabsahan pemrosesan sebelumnya.'), p('Hubungi {{publicEmail}}. Kami biasanya menanggapi tanpa penundaan yang tidak semestinya dan dalam waktu satu bulan. Jika perpanjangan yang diizinkan hukum diperlukan, kami menjelaskan alasannya dalam bulan pertama tersebut. {{deletionVerification}}'), p('Anda dapat mengajukan pengaduan kepada otoritas perlindungan data, termasuk di tempat Anda tinggal, bekerja, atau menduga terjadi pelanggaran. Otoritas yang bertanggung jawab atas penyedia ini adalah {{authorityName}}, {{authorityStreet}}, {{authorityPostalCity}}, {{authorityCountry}}. Informasi dan kontak pengaduan: https://www.lda.bayern.de/.')] },
+        { id: 'objection', heading: 'Hak untuk menyatakan keberatan', blocks: [p('Jika pemrosesan didasarkan pada Pasal 6 ayat (1) huruf f GDPR, Anda dapat menyatakan keberatan kapan saja dengan alasan yang berkaitan dengan keadaan khusus Anda. Kirim email ke {{publicEmail}}. Kami akan menghentikan pemrosesan tersebut kecuali kami dapat menunjukkan alasan sah yang kuat yang mengesampingkan kepentingan, hak, dan kebebasan Anda, atau pemrosesan diperlukan untuk mengajukan, menjalankan, atau membela tuntutan hukum.')] },
+        { id: 'children', heading: 'Anak-anak dan orang tua', blocks: [p('Knucklebones Neon adalah permainan untuk khalayak umum. Permainan ini tidak menanyakan usia atau tanggal lahir. Permainan lokal tidak memerlukan akun peringkat. Permainan online menyimpan informasi akun dan permainan yang dijelaskan di sini, termasuk untuk pemain yang lebih muda.'), p('Untuk pemain muda: gunakan nama panggilan buatan, rahasiakan kata sandi, dan minta bantuan orang dewasa yang kamu percayai untuk pertanyaan akun atau privasi. Orang lain dapat melihat nama panggilan dan hasil permainanmu. Permainan ini tidak memiliki obrolan antarpemain, iklan, atau pembayaran.'), p('Orang tua dan wali dapat menghubungi {{publicEmail}} mengenai akun anak, akses ke data, atau penghapusan. Kami hanya meminta informasi yang diperlukan untuk mengidentifikasi akun dan memastikan kewenangan bertindak. Jika hukum yang berlaku mewajibkan izin orang tua, penggunaan akun Apple atau keputusan untuk terus bermain tidak menggantikan izin tersebut.')] },
+        { id: 'automated-decisions', heading: 'Pencarian lawan dan perhitungan otomatis', blocks: [p('Permainan secara otomatis menghitung skor, peringkat, konten yang dibuka, dan lawan yang sesuai dari data permainan, serta dapat mempertemukan Anda dengan lawan yang dikendalikan komputer. Fungsi permainan tersebut tidak membuat keputusan yang memiliki akibat hukum atau dampak signifikan serupa terhadap Anda dalam pengertian Pasal 22 GDPR.')] },
+        { id: 'changes', heading: 'Tanggal dan perubahan', blocks: [p('Terakhir diperbarui: {{noticeDate}}. Kami memperbarui pemberitahuan ini ketika permainan atau pemrosesan datanya berubah. Versi terkini tersedia di aplikasi dan halaman privasi publik. Perubahan penting dijelaskan sebelum pemrosesan yang berubah dimulai.')] },
       ],
     },
     support: {
       title: 'Dukungan dan kontak',
       shortTitle: 'Dukungan',
-      description: 'Cara meminta dukungan permainan, privasi, atau akun untuk Knucklebones Neon.',
-      intro: 'Gunakan kontak di bawah ini untuk bantuan teknis, permintaan privasi, atau pertanyaan akun.',
+      description: 'Bantuan untuk Knucklebones Neon, privasi, dan akun.',
+      intro: 'Hubungi kami untuk masalah permainan, bantuan akun, atau permintaan privasi.',
       sections: [
-        { heading: 'Kontak', blocks: [p('Email: {{publicEmail}}')] },
-        {
-          heading: 'Hal yang dapat kami bantu',
-          blocks: [list('Masalah teknis dan aksesibilitas', 'Pertanyaan tentang akun peringkat atau nama panggilan', 'Permintaan hak privasi dan penghapusan akun', 'Laporan penyalahgunaan atau masalah keamanan')],
-        },
-        {
-          heading: 'Informasi yang perlu disertakan',
-          blocks: [p('Jelaskan apa yang terjadi, versi web atau aplikasi yang digunakan, dan—hanya jika diperlukan—nama panggilan atau email terkonfirmasi yang terhubung ke akun. Tangkapan layar dapat membantu selama tidak mengungkapkan informasi pribadi orang lain.')],
-        },
-        {
-          heading: 'Jaga kerahasiaan kredensial',
-          blocks: [p('Jangan pernah mengirim kata sandi, tautan masuk, token akses, token pemulihan, atau data pribadi orang lain. Kami tidak akan meminta kredensial tersebut melalui email.')],
-        },
-        {
-          heading: 'Penanganan permintaan',
-          blocks: [p('Kami hanya menggunakan informasi minimum yang diperlukan untuk menyelidiki permintaan. Permintaan privasi dan penghapusan memerlukan pemeriksaan kepemilikan yang sepadan: {{deletionVerification}}.')],
-        },
+        { id: 'contact', heading: 'Kontak', blocks: [p('Email: {{publicEmail}}')] },
+        { id: 'help', heading: 'Bantuan yang tersedia', blocks: [list('Masalah teknis dan aksesibilitas', 'Akun peringkat dan nama panggilan', 'Hak privasi dan penghapusan akun', 'Laporan keamanan atau penyalahgunaan', 'Pertanyaan orang tua tentang akun anak')] },
+        { id: 'details', heading: 'Informasi yang perlu disertakan', blocks: [p('Jelaskan apa yang terjadi dan sebutkan versi aplikasi atau browser. Sertakan nama panggilan atau email akun yang telah dikonfirmasi hanya jika diperlukan untuk menemukan akun. Hapus informasi pribadi orang lain dari tangkapan layar.')] },
+        { id: 'credentials', heading: 'Rahasiakan kredensial', blocks: [p('Jangan pernah mengirim kata sandi, tautan masuk atau pemulihan, token akses, kode otorisasi Apple, atau data pribadi orang lain. Kami tidak meminta kredensial tersebut melalui email.')] },
+        { id: 'handling', heading: 'Cara menangani permintaan', blocks: [p('{{deletionVerification}}'), p('{{supportProcessing}}'), p('{{supportRetention}}'), p('Permintaan privasi menurut undang-undang biasanya dijawab dalam waktu satu bulan; setiap perpanjangan yang diizinkan beserta alasannya dijelaskan dalam jangka waktu tersebut.')] },
       ],
     },
     'delete-account': {
       title: 'Hapus akun Anda',
       shortTitle: 'Hapus akun',
-      description: 'Petunjuk di dalam aplikasi dan dari luar aplikasi untuk menghapus akun peringkat Knucklebones Neon.',
-      intro: 'Penghapusan akun peringkat bersifat permanen. Data offline lokal dihapus secara terpisah.',
+      description: 'Cara menghapus akun peringkat Knucklebones Neon dari dalam atau luar aplikasi.',
+      intro: 'Penghapusan akun peringkat bersifat permanen. Anda tetap dapat bermain secara lokal tanpa akun tersebut.',
       sections: [
-        {
-          heading: 'Hapus di dalam aplikasi',
-          blocks: [list('Buka Profil dari Beranda.', 'Buka kontrol akun.', 'Pilih Hapus akun dan baca peringatannya.', 'Konfirmasikan penghapusan permanen.')],
-        },
-        {
-          heading: 'Data yang dihosting akan dihapus',
-          blocks: [p('Setelah pertandingan aktif diselesaikan, penghapusan akan menghapus pengguna Supabase dan secara berantai menghapus profil, pengaturan, baris papan peringkat dan antrean, serta riwayat pertandingan dan langkah. Identitas, nilai peringkat, dan riwayat permainan peringkat tersebut tidak dapat dipulihkan setelahnya.')],
-        },
-        {
-          heading: 'Data lokal tetap tersimpan',
-          blocks: [p('Penghapusan akan mengeluarkan Anda serta membersihkan sesi akun lokal dan profil dalam cache. Tindakan ini tidak menghapus preferensi lokal, statistik offline, atau aset aplikasi dalam cache di perangkat ini. Untuk menghapus data yang tersisa, bersihkan penyimpanan aplikasi di pengaturan perangkat atau hapus data tersimpan situs ini di browser.')],
-        },
-        {
-          heading: 'Minta penghapusan dari luar aplikasi',
-          blocks: [p('Tulis ke {{publicEmail}} menggunakan email akun yang telah dikonfirmasi jika memungkinkan. Nyatakan bahwa Anda ingin menghapus akun peringkat Knucklebones Neon dan sertakan nama panggilan hanya jika diperlukan untuk menemukan akun.')],
-        },
-        {
-          heading: 'Verifikasi, log, dan cadangan',
-          blocks: [p('Sebelum menindaklanjuti permintaan eksternal, kami memverifikasi kepemilikan sebagai berikut: {{deletionVerification}}. Log keamanan penyedia dapat tetap tersimpan selama {{securityLogRetention}} dan salinan cadangan selama {{backupRetention}} sampai masa penyimpanan rutinnya berakhir.')],
-        },
+        { id: 'in-app', heading: 'Hapus dari dalam aplikasi', blocks: [list('Buka profil Anda dari Beranda.', 'Buka pengaturan akun.', 'Pilih Hapus akun dan baca penjelasannya.', 'Konfirmasikan penghapusan permanen.')] },
+        { id: 'server-data', heading: 'Data yang dihapus', blocks: [p('Permainan menyelesaikan pertandingan yang sedang berlangsung dan menghapus akun yang dihosting, profil, pengaturan, entri antrean dan papan peringkat, riwayat pertandingan dan langkah permainan, rune, serta kemajuan Anda. Identitas peringkat tersebut dan hasilnya tidak dapat dipulihkan melalui aplikasi.')] },
+        { id: 'local-data', heading: 'Data offline di perangkat Anda', blocks: [p('Penghapusan akun mengeluarkan Anda dari akun dan menghapus sesi akun lokal serta profil dalam cache. Pengaturan offline, statistik, dan berkas permainan dalam cache tetap tersimpan. Untuk menghapusnya juga, hapus data situs web ini di browser. Di Android, hapus penyimpanan atau data aplikasi melalui pengaturan perangkat. Di iOS, hapus aplikasi; melepas aplikasi tanpa menghapus datanya (offload) tetap menyimpan dokumen dan datanya. Menghapus data perangkat saja tidak menghapus akun server.')] },
+        { id: 'external', heading: 'Minta penghapusan tanpa aplikasi', blocks: [p('Kirim email ke {{publicEmail}} dan nyatakan bahwa Anda ingin menghapus akun peringkat Knucklebones Neon. Gunakan email akun yang telah dikonfirmasi jika Anda masih dapat mengaksesnya. Sertakan nama panggilan hanya jika diperlukan untuk menemukan akun. Jangan mengirim kredensial masuk. Orang tua atau wali juga dapat menghubungi kami mengenai akun anak.')] },
+        { id: 'verification', heading: 'Pemeriksaan kepemilikan dan salinan yang tersisa', blocks: [p('{{deletionVerification}}'), p('{{securityLogRetention}}'), p('{{backupRetention}}'), p('{{supportRetention}}')] },
+        { id: 'apple', heading: 'Akun yang ditautkan ke Apple', blocks: [p('Penghapusan juga mencoba mencabut koneksi Masuk dengan Apple. Kegagalan sementara dicoba kembali selama hingga {{appleRevocationRetryDays}} hari. Jika pencabutan otomatis tidak dapat diselesaikan, ikuti petunjuk dalam aplikasi atau hapus koneksi aplikasi di pengaturan akun Apple Anda. Tindakan ini tidak menghapus akun Apple Anda. Akun Game Center Anda yang terpisah juga tidak dihapus.')] },
       ],
     },
   },

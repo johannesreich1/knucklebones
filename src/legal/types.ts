@@ -1,4 +1,5 @@
 import type { SupportedLocale } from '../i18n/locale.ts';
+import type { LegalSectionId } from './sections.ts';
 
 export const LEGAL_PAGE_IDS = [
   'imprint',
@@ -11,6 +12,10 @@ export type LegalPageId = typeof LEGAL_PAGE_IDS[number];
 export type LegalPublicationStatus = 'draft' | 'ready';
 
 export const LEGAL_FACT_KEYS = [
+  'noticeDate',
+  'commandReceiptRetentionDays',
+  'appleRevocationRetryDays',
+  'appleRevocationScheduleMinutes',
   'controllerName',
   'controllerStreet',
   'controllerPostalCity',
@@ -27,6 +32,9 @@ export const LEGAL_FACT_KEYS = [
   'backupRetention',
   'transferSafeguards',
   'smtpProvider',
+  'smtpRetention',
+  'supportProcessing',
+  'supportRetention',
   'deletionVerification',
 ] as const;
 
@@ -34,6 +42,10 @@ export type LegalFactKey = typeof LEGAL_FACT_KEYS[number];
 export type LocalizedLegalFact = Readonly<Record<SupportedLocale, string>>;
 
 export interface LegalFacts {
+  readonly noticeDate: string;
+  readonly commandReceiptRetentionDays: string;
+  readonly appleRevocationRetryDays: string;
+  readonly appleRevocationScheduleMinutes: string;
   readonly controllerName: string;
   readonly controllerStreet: string;
   readonly controllerPostalCity: string;
@@ -44,12 +56,15 @@ export interface LegalFacts {
   readonly authorityPostalCity: string;
   readonly authorityCountry: LocalizedLegalFact;
   readonly supabaseDatabaseRegion: string | null;
-  readonly supabaseFunctionsRegion: string | null;
+  readonly supabaseFunctionsRegion: LocalizedLegalFact | null;
   readonly cloudflareProcessingScope: LocalizedLegalFact | null;
-  readonly securityLogRetention: string | null;
-  readonly backupRetention: string | null;
+  readonly securityLogRetention: LocalizedLegalFact | null;
+  readonly backupRetention: LocalizedLegalFact | null;
   readonly transferSafeguards: LocalizedLegalFact | null;
   readonly smtpProvider: string | null;
+  readonly smtpRetention: LocalizedLegalFact | null;
+  readonly supportProcessing: LocalizedLegalFact | null;
+  readonly supportRetention: LocalizedLegalFact | null;
   readonly deletionVerification: LocalizedLegalFact | null;
 }
 
@@ -75,6 +90,7 @@ export interface LegalContentBlock {
 }
 
 export interface LegalContentSection {
+  readonly id: LegalSectionId;
   readonly heading: string;
   readonly blocks: readonly LegalContentBlock[];
 }

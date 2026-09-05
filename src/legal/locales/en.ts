@@ -10,135 +10,67 @@ export const EN_LEGAL: LegalLocaleContent = {
   languageNavigationLabel: 'Available languages',
   homeLabel: 'Back to the game',
   backLabel: 'Back',
-  pendingFact: 'Pending verification before publication',
+  pendingFact: 'To be verified before publication',
   pages: {
     imprint: {
       title: 'Provider information',
       shortTitle: 'Imprint',
-      description: 'Provider and contact information for Knucklebones Neon.',
-      intro: 'Information about the person responsible for this private, non-commercial game project.',
+      description: 'Provider and contact details for Knucklebones Neon.',
+      intro: 'The provider of Knucklebones Neon is the following private individual.',
       sections: [
-        {
-          heading: 'Provider under § 18(1) MStV',
-          blocks: [p('{{controllerName}}\n{{controllerStreet}}\n{{controllerPostalCity}}\n{{controllerCountry}}')],
-        },
-        {
-          heading: 'Contact',
-          blocks: [p('Email: {{publicEmail}}')],
-        },
-        {
-          heading: 'Project status',
-          blocks: [p('This is a free, private hobby project operated by a natural person. There is no company, commercial register entry, VAT identification number, regulated profession, advertising, or paid offer to publish here.')],
-        },
+        { id: 'provider', heading: 'Provider under section 18(1) MStV', blocks: [p('{{controllerName}}\n{{controllerStreet}}\n{{controllerPostalCity}}\n{{controllerCountry}}')] },
+        { id: 'contact', heading: 'Contact', blocks: [p('Email: {{publicEmail}}')] },
+        { id: 'project', heading: 'About this project', blocks: [p('Knucklebones Neon is a free, non-commercial hobby game. It has no advertising, purchases, subscriptions or donations.')] },
       ],
     },
     privacy: {
       title: 'Privacy notice',
       shortTitle: 'Privacy',
-      description: 'How Knucklebones Neon processes device, account, and ranked-match data.',
-      intro: 'This notice describes the data used by offline play, the hosted PWA, and optional ranked play.',
+      description: 'How Knucklebones Neon processes device, account and online game data.',
+      intro: 'You can play locally without a ranked account. Online play needs an account to save your progress and match you with opponents. This notice explains which data is used, who receives it and how you can delete it.',
       sections: [
-        {
-          heading: 'Controller and contact',
-          blocks: [p('{{controllerName}}, {{controllerStreet}}, {{controllerPostalCity}}, {{controllerCountry}}. Email: {{publicEmail}}.')],
-        },
-        {
-          heading: 'Data on your device',
-          blocks: [p('Preferences, local statistics, session and cached profile state remain in browser or WebView local storage. The hosted PWA also uses Cache Storage for offline app assets and a temporary session value for failed-chunk recovery. We use no advertising or marketing cookies.')],
-        },
-        {
-          heading: 'Ranked account and match data',
-          blocks: [p('Starting ranked play creates a Supabase anonymous account. We then process an account identifier, generated or claimed nickname, avatar code, settings, current and peak points or rating, ladder statistics, profile creation time, and match and move history. If you choose email recovery, Supabase Auth also stores that email address and {{smtpProvider}} delivers the related messages.')],
-        },
-        {
-          heading: 'Purposes and legal bases',
-          blocks: [
-            p('We process account, matchmaking, match, settings, and ladder data to provide the requested game service and preserve its results (Article 6(1)(b) GDPR).'),
-            p('We process limited operational and security data to prevent abuse, enforce rate limits, diagnose failures, and protect the service and other players (Article 6(1)(f) GDPR).'),
-          ],
-        },
-        {
-          heading: 'Recipients, regions, and transfers',
-          blocks: [
-            p('Supabase provides authentication, database, Edge Function, and Realtime services. The database region is {{supabaseDatabaseRegion}} and the Edge Function region is {{supabaseFunctionsRegion}}.'),
-            p('Cloudflare Pages delivers the hosted PWA. Its relevant processing scope is: {{cloudflareProcessingScope}}.'),
-            p('On iOS, optional Sign in with Apple and Game Center send Apple account or team-player identifiers and signed verification material through Apple services. Game Center verification passes through a rate-limited Cloudflare Worker before Supabase; the app does not receive Game Center profile details beyond the stable team-player identifier needed to restore or protect the ranked account.'),
-            p('The safeguards used for relevant international transfers are: {{transferSafeguards}}. The native app loads its bundled web assets instead of downloading them from Cloudflare.'),
-            p('We integrate no advertising or behavioral-analytics SDK and no remotely hosted marketing or analytics script. Infrastructure providers may still create operational, security, and access logs.'),
-          ],
-        },
-        {
-          heading: 'What other players can see',
-          blocks: [p('Nickname, avatar, current and peak points or rating, rank or apex, wins, losses, games, best streak, member-since time, and ranked results can appear to opponents or people using the in-game ladder and player cards. Detailed history is limited to its owner; match participants can read their shared match and move log.')],
-        },
-        {
-          heading: 'Retention and deletion',
-          blocks: [p('Guest and recovered accounts remain until deletion. Account deletion removes the hosted profile, settings, ladder rows, queue rows, and match and move history after any active match is settled. If Sign in with Apple is linked, its stored revocation credential is used to remove Apple access; transient failures are retried, and the app gives manual removal instructions if automatic revocation cannot complete. Local preferences and statistics stay on the device until you clear the app or site data. Security logs are retained for {{securityLogRetention}} and backups for {{backupRetention}}.')],
-        },
-        {
-          heading: 'Your rights',
-          blocks: [
-            p('You may request access, correction, erasure, restriction, portability, or object to processing by writing to {{publicEmail}}. You may also complain to a supervisory authority.'),
-            p('Competent authority: {{authorityName}}, {{authorityStreet}}, {{authorityPostalCity}}, {{authorityCountry}}.'),
-          ],
-        },
-        {
-          heading: 'Children and age information',
-          blocks: [p('The game currently has no age gate and does not ask for or store a birth date. This statement records current product behavior; it is not a claim that every country’s child-privacy requirements are automatically satisfied.')],
-        },
+        { id: 'controller', heading: 'Who is responsible', blocks: [p('{{controllerName}}, {{controllerStreet}}, {{controllerPostalCity}}, {{controllerCountry}}. For privacy questions or requests, email {{publicEmail}}.')] },
+        { id: 'scope', heading: 'Where this notice applies', blocks: [p('This notice covers the website, installed web app, standalone game, embedded widget and native Knucklebones Neon apps. Cloudflare delivers the website and its files. Native apps load their game files from the installed bundle, but online functions still contact their service providers. If you play a widget on another website, that website may also process data under its own privacy notice.'), p('We do not integrate advertising, behavioral analytics or tracking SDKs. The game does not request your location, contacts, camera or photos, and has no player chat or image uploads. Operational and security data processed by our infrastructure providers is described below.')] },
+        { id: 'device-storage', heading: 'Data stored on your device', blocks: [p('The browser or app stores your selected language, accessibility and game settings, local scores and statistics. For online accounts it also stores session credentials and local copies of your profile, linked account information, recent matches, runes and progress. These account copies are also held on the server; they are not exclusively local data.'), p('The web app caches game files so it can work offline. It also briefly stores a recovery flag when a program file fails to load. These uses include browser local storage, session storage and the app file cache; they are not advertising cookies.'), p('Storage and access needed to provide a function you request are based on section 25(2)(2) TDDDG. Processing of personal data for those functions follows the purposes and legal bases below. To remove local data, follow the device-specific steps under Delete account. Clearing an unrecoverable guest session can prevent you from accessing that account again.')] },
+        { id: 'accounts', heading: 'Guest accounts, email and game progress', blocks: [p('When you request ranked play, the game uses or restores your existing account. Where possible on iOS, it uses your linked Game Center identity. Otherwise it creates a guest account without asking for your name or email. “Guest” does not mean the data is anonymous: the account has a persistent identifier.'), p('Account data includes the identifier, a generated or chosen nickname, a preset avatar, settings, current and peak points, ranked results, wins, losses, streaks, profile creation time, matches and moves. Runes, unlocked content, achievements, weekly challenges and other progress are also saved.'), p('Email and password sign-up, sign-in and recovery are optional. Supabase Auth processes the email address and password credentials for these functions. {{smtpProvider}} delivers account confirmation and recovery messages. You can use guest play without supplying an email, but recovery options are then limited. Required online account and move data cannot be omitted while using ranked play.')] },
+        { id: 'apple', heading: 'Apple sign-in and Game Center', blocks: [p('On iOS, Game Center authentication is initialized when the app starts. Apple may therefore process Game Center data before you start a ranked match. The game uses Apple’s authentication state and a team-scoped player identifier to restore or link your ranked account and protect it when the device’s Game Center account changes. Signed verification data passes through a Cloudflare gateway to Supabase. We do not receive your Game Center friends, profile photo or public profile name through this integration.'), p('If you choose Sign in with Apple, Apple supplies an account identifier, signed authentication data and, when provided, your real email address or Apple’s private relay address. An authorization code is exchanged to enable later revocation. The resulting refresh credential is encrypted in Supabase Vault and used only to revoke the Apple connection when you delete the account.'), p('Apple operates its account and Game Center services under its own terms and privacy information: https://www.apple.com/legal/privacy/ and https://www.apple.com/legal/privacy/data/en/game-center/. You control Game Center in your Apple device settings.')] },
+        { id: 'purposes', heading: 'Why we process data and the legal bases', blocks: [p('We process the data necessary for the requested free game, account access and recovery, saved progress, matchmaking, game validation and ranked results on the basis of legitimate interests (Article 6(1)(f) GDPR). Our interests are to provide the functions you choose, preserve your game progress and operate a fair, reliable game. Public profile information is limited to the game information described below; we do not need your real name.'), p('We also process necessary request and security data, such as IP addresses, request times, browser or app information, response status and error information, to deliver the service, prevent misuse, limit excessive requests and investigate faults (Article 6(1)(f) GDPR). For privacy-rights requests, processing needed to comply with our obligations is based on Article 6(1)(c) GDPR in conjunction with Articles 12–22 GDPR.')] },
+        { id: 'recipients', heading: 'Service providers and international processing', blocks: [p('Supabase provides hosted authentication, database, realtime game connections and server functions. Database region: {{supabaseDatabaseRegion}}. {{supabaseFunctionsRegion}}'), p('{{cloudflareProcessingScope}}'), p('Account emails are sent through {{smtpProvider}}. Apple additionally processes data for the Apple services described above. {{supportProcessing}}'), p('{{transferSafeguards}}')] },
+        { id: 'public-profile', heading: 'What other people can see', blocks: [p('By playing ranked games, you participate in a public ranking. Your nickname, preset avatar, current and peak points, rank or apex, wins, losses, games played, best streak, member-since time and ranked results may be displayed in the ladder and player cards. These public profile summaries can also be retrieved without a signed-in account. Choose a nickname that does not reveal your real name or contact details.'), p('Your email, password credentials and Apple authentication data are not public. Detailed account history is visible only to the account holder; the two participants can access their shared match and move history.')] },
+        { id: 'retention', heading: 'How long data is stored', blocks: [p('Guest and recoverable accounts currently have no automatic inactivity expiry. Account and game data remains until account deletion. Deletion settles any active match and removes the account, profile, settings, queue and ladder entries, match and move history, runes and progress. Technical receipts used to prevent duplicate game commands become eligible for hourly cleanup once both the receipt’s creation and the end of its corresponding match are more than {{commandReceiptRetentionDays}} days in the past.'), p('After an Apple-linked account is deleted, any credential still needed for automatic revocation is kept encrypted for a retry window of up to {{appleRevocationRetryDays}} days and is then removed by the scheduled processing. A scheduled worker checks for pending retries every {{appleRevocationScheduleMinutes}} minutes; individual retries may occur later. If revocation cannot complete automatically, use the manual instructions described under Delete account.'), p('{{securityLogRetention}}'), p('{{backupRetention}}'), p('{{smtpRetention}}'), p('Local offline settings, statistics and cached game files remain until you clear the app or browser site data. Deleting the server account alone does not remove those offline items.')] },
+        { id: 'support', heading: 'Support and privacy requests', blocks: [p('If you contact us, we process your sender address, message and the information you choose to include, such as the app version, nickname or a screenshot. We use only what is needed to handle your question or investigate the reported problem (Article 6(1)(f) GDPR); the legal basis for statutory privacy requests is described above. Do not send passwords or authentication links.'), p('{{supportRetention}}')] },
+        { id: 'rights', heading: 'Your rights', blocks: [p('Subject to the applicable legal conditions, you can request access to your personal data, correction, deletion or restriction of processing. Data portability applies where processing is automated and based on consent or a contract. If processing is based on consent, you can withdraw that consent for the future without affecting the lawfulness of earlier processing.'), p('Contact {{publicEmail}}. We normally respond without undue delay and within one month. If a legally permitted extension is necessary, we explain the reason within that first month. {{deletionVerification}}'), p('You may complain to a data protection authority, including one where you live, work or believe an infringement occurred. The authority responsible for this provider is {{authorityName}}, {{authorityStreet}}, {{authorityPostalCity}}, {{authorityCountry}}. Information and complaint contact: https://www.lda.bayern.de/.')] },
+        { id: 'objection', heading: 'Your right to object', blocks: [p('Where processing is based on Article 6(1)(f) GDPR, you may object at any time for reasons relating to your particular situation. Email {{publicEmail}}. We will stop that processing unless we can demonstrate compelling legitimate grounds that override your interests, rights and freedoms, or processing is needed to establish, exercise or defend legal claims.')] },
+        { id: 'children', heading: 'Children and parents', blocks: [p('Knucklebones Neon is a general-audience game. It has no age question and does not ask for a date of birth. Local play does not require a ranked account. Online play does store the account and game information described here, including for younger players.'), p('If you are young: use a made-up nickname, keep your password secret and ask a trusted adult for help with account or privacy questions. Your nickname and game results can be seen by other people. There is no player chat, advertising or payment in this game.'), p('Parents and guardians can contact {{publicEmail}} about a child’s account, access to data or deletion. We request only the information needed to identify the account and establish authority to act. Where parental authorization is required by applicable law, using an Apple account or continuing to play does not replace that authorization.')] },
+        { id: 'automated-decisions', heading: 'Matchmaking and automatic calculations', blocks: [p('The game automatically calculates scores, ranks, unlocks and suitable opponents from game data, and may match you with a computer-controlled opponent. These game functions do not make decisions with legal or similarly significant effects on you within the meaning of Article 22 GDPR.')] },
+        { id: 'changes', heading: 'Date and changes', blocks: [p('Last updated: {{noticeDate}}. We update this notice when the game or its data processing changes. The current version is available in the app and on the public privacy page. Material changes are explained before the changed processing starts.')] },
       ],
     },
     support: {
       title: 'Support and contact',
       shortTitle: 'Support',
-      description: 'How to request game, privacy, or account support for Knucklebones Neon.',
-      intro: 'Use the contact below for technical help, privacy requests, or account questions.',
+      description: 'Help with Knucklebones Neon, privacy and accounts.',
+      intro: 'Contact us for game problems, account help or privacy requests.',
       sections: [
-        { heading: 'Contact', blocks: [p('Email: {{publicEmail}}')] },
-        {
-          heading: 'What we can help with',
-          blocks: [list('Technical problems and accessibility issues', 'Ranked account or nickname questions', 'Privacy-rights and account-deletion requests', 'Reports of abuse or security concerns')],
-        },
-        {
-          heading: 'What to include',
-          blocks: [p('Describe what happened, which web or app version you used, and—only when needed—the nickname or confirmed email attached to the account. Screenshots are useful when they do not reveal another person’s private information.')],
-        },
-        {
-          heading: 'Keep credentials private',
-          blocks: [p('Never send a password, sign-in link, access token, recovery token, or another person’s private data. We will not ask for those credentials by email.')],
-        },
-        {
-          heading: 'Handling requests',
-          blocks: [p('We use the minimum information necessary to investigate the request. Privacy and deletion requests require a proportionate ownership check: {{deletionVerification}}.')],
-        },
+        { id: 'contact', heading: 'Contact', blocks: [p('Email: {{publicEmail}}')] },
+        { id: 'help', heading: 'What we can help with', blocks: [list('Technical problems and accessibility', 'Ranked accounts and nicknames', 'Privacy rights and account deletion', 'Security or abuse reports', 'Parents’ questions about a child’s account')] },
+        { id: 'details', heading: 'What to include', blocks: [p('Describe what happened and give the app or browser version. Include your nickname or confirmed account email only if needed to find the account. Remove other people’s private information from screenshots.')] },
+        { id: 'credentials', heading: 'Keep credentials private', blocks: [p('Never send your password, sign-in or recovery link, access token, Apple authorization code or someone else’s private data. We do not ask for those credentials by email.')] },
+        { id: 'handling', heading: 'How requests are handled', blocks: [p('{{deletionVerification}}'), p('{{supportProcessing}}'), p('{{supportRetention}}'), p('Statutory privacy requests are normally answered within one month; any permitted extension and its reason are explained within that period.')] },
       ],
     },
     'delete-account': {
       title: 'Delete your account',
       shortTitle: 'Delete account',
-      description: 'In-app and external instructions for deleting a Knucklebones Neon ranked account.',
-      intro: 'Deleting the ranked account is permanent. Local offline data is cleared separately.',
+      description: 'How to delete a Knucklebones Neon ranked account inside or outside the app.',
+      intro: 'Deleting your ranked account is permanent. You can continue local play without it.',
       sections: [
-        {
-          heading: 'Delete inside the app',
-          blocks: [list('Open Profile from Home.', 'Open the account controls.', 'Choose Delete account and review the warning.', 'Confirm the permanent deletion.')],
-        },
-        {
-          heading: 'Hosted data removed',
-          blocks: [p('After an active match is settled, deletion removes the Supabase user and cascades the profile, settings, ladder and queue rows, and match and move history. You cannot restore that ranked identity, rating, or history afterward.')],
-        },
-        {
-          heading: 'Local data remains',
-          blocks: [p('Deletion signs you out and clears the local account session and cached profile. It does not clear local preferences, offline statistics, or cached app assets on this device. Clear the app’s storage in device settings, or clear this site’s stored data in the browser, to remove those remaining items.')],
-        },
-        {
-          heading: 'Request deletion outside the app',
-          blocks: [p('Write to {{publicEmail}} from the confirmed account email when possible. State that you want the Knucklebones Neon ranked account deleted and include the nickname only if needed to locate it.')],
-        },
-        {
-          heading: 'Verification, logs, and backups',
-          blocks: [p('Before acting on an external request, we verify ownership as follows: {{deletionVerification}}. Provider security logs may remain for {{securityLogRetention}} and backup copies for {{backupRetention}} before routine expiry.')],
-        },
+        { id: 'in-app', heading: 'Delete inside the app', blocks: [list('Open your profile from Home.', 'Open the account controls.', 'Choose Delete account and read the explanation.', 'Confirm the permanent deletion.')] },
+        { id: 'server-data', heading: 'What is deleted', blocks: [p('The game settles any active match and deletes your hosted account, profile, settings, queue and ladder entries, match and move history, runes and progress. That ranked identity and its results cannot be restored through the app.')] },
+        { id: 'local-data', heading: 'Offline data on your device', blocks: [p('Account deletion signs you out and clears the local account session and cached profile. Your offline settings, statistics and cached game files remain. To remove those too, clear this website’s data in the browser. On Android, clear the app’s storage or data in device settings. On iOS, delete the app; offloading keeps its documents and data. Clearing device data alone does not delete the server account.')] },
+        { id: 'external', heading: 'Request deletion without the app', blocks: [p('Email {{publicEmail}} and state that you want your Knucklebones Neon ranked account deleted. Use the confirmed account email if you still have access to it. Include a nickname only if needed to locate the account. Do not send login credentials. A parent or guardian can also contact us about a child’s account.')] },
+        { id: 'verification', heading: 'Ownership checks and remaining copies', blocks: [p('{{deletionVerification}}'), p('{{securityLogRetention}}'), p('{{backupRetention}}'), p('{{supportRetention}}')] },
+        { id: 'apple', heading: 'An account linked to Apple', blocks: [p('Deletion also attempts to revoke the Sign in with Apple connection. Transient failures are retried for up to {{appleRevocationRetryDays}} days. If automatic revocation cannot finish, follow the in-app instructions or remove the app’s connection in your Apple account settings. This does not delete your Apple account. Your separate Game Center account is not deleted either.')] },
       ],
     },
   },

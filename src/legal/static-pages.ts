@@ -38,7 +38,7 @@ export function renderStaticLegalPage(
 ): string {
   assertLegalPublicationReady(config);
   const content = legalLocaleContent(locale);
-  const document = legalDocument(locale, page, config.facts);
+  const document = legalDocument(locale, page, config.facts, config.status);
   const canonical = legalPageUrl(config.canonicalOrigin, locale, page);
   const alternateLinks = LOCALE_REGISTRY.map((entry) =>
     `<link rel="alternate" hreflang="${escapeHtml(entry.languageTag)}" href="${escapeHtml(legalPageUrl(config.canonicalOrigin, entry.id, page))}">`).join('');

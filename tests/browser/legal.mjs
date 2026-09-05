@@ -278,7 +278,7 @@ async function inspectOpenLocaleRepaint(page, viewport) {
     document.documentElement.dataset.locale === locale
       && document.documentElement.lang === tag,
   { locale: to.id, tag: to.languageTag });
-  const expected = legalDocument(to.id, legalPage, LEGAL_RELEASE.facts);
+  const expected = legalDocument(to.id, legalPage, LEGAL_RELEASE.facts, LEGAL_RELEASE.status);
   const after = await page.evaluate(({ bodyHtml, longUrl }) => {
     const overlay = document.querySelector('[data-legal-page="privacy"]');
     const body = overlay.querySelector('.pbody');
@@ -320,7 +320,7 @@ async function inspectOpenLocaleRepaint(page, viewport) {
     anchor.previousSibling?.remove();
     anchor.remove();
     return result;
-  }, { bodyHtml: expectedLegalBody(to.id, legalPage, LEGAL_RELEASE.facts),
+  }, { bodyHtml: expectedLegalBody(to.id, legalPage, LEGAL_RELEASE.facts, LEGAL_RELEASE.status),
     longUrl: LONG_URL });
   after.closed = await closeLegalPage(page, legalPage);
   check(before.locale === from.id && after.locale === to.id,
@@ -473,7 +473,7 @@ try {
         }, {
           locale: locale.id,
           legalPage,
-          sharedBody: expectedLegalBody(locale.id, legalPage, LEGAL_RELEASE.facts),
+          sharedBody: expectedLegalBody(locale.id, legalPage, LEGAL_RELEASE.facts, LEGAL_RELEASE.status),
         });
         observation.closed = await closeLegalPage(page, legalPage);
         observations.push(observation);

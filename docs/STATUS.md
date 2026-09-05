@@ -162,7 +162,7 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   the dashboard build. Not verifiable in the repository: no CI run can execute
   this job until the variable exists.
 - **Go-live blocker — production SMTP:** configure Supabase Auth mail delivery
-  through Resend and verify the complete attach-email, confirmation, and
+  through the purchased IONOS Mail Basic 5 service and verify the complete attach-email, confirmation, and
   recovery loops. DNS, sender identity, provider credentials, rate limits, and
   dashboard settings are owner actions. Do not publish the account rollout or
   mark the Legal release ready while this remains open.
@@ -183,12 +183,12 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   44-page static generator and isolated service-worker routes. Publication is
   fail-closed at `draft`: no public routes or Home door ship yet. By owner
   decision, Settings/auth expose the localized placeholder Imprint/Privacy
-  documents in-app while the public
-  verified provider regions/retention/transfer facts, deletion verification
-  workflow, translation and German legal review, and
-  territory review remain open. The interim development policy is all ages
-  with no gate; mandatory
-  child/privacy and store-audience reconsideration remains a release blocker
+  documents in-app. The September 5 audit updates every translation to the
+  actual data flows and adds section, paragraph and release-check completeness
+  guards. Read-only provider findings and the remaining mail, retention,
+  transfer, deletion and legal-review work are owned by `docs/LEGAL.md`.
+  Johannes reconfirmed general-audience, all-ages play with no blanket age gate;
+  the corresponding child/privacy and store-audience review remains open
   before App Store or Play production submission. Mainland China and Vietnam
   require game approvals and are excluded from the initial App Store scope
   until those approvals exist. See `docs/LEGAL.md`.

@@ -43,8 +43,8 @@ Public legal pages are generated from `src/legal/`, never maintained as a
 second prose copy under `public/`. The checked-in publication state is `draft`,
 which emits no legal files or Home door; Settings/auth deliberately expose the
 same document with pending-fact placeholders. A `ready`
-build validates every required fact and review flag, then writes the 24
-locale/page routes into `dist/pwa/` before the hosted file snapshot, build hash,
+build validates every required fact and review flag, then writes the
+registry-derived locale/page routes into `dist/pwa/` before the hosted file snapshot, build hash,
 and worker precache list are calculated. A missing fact, locale chrome label,
 page introduction, or structured body block makes the build fail; it cannot
 produce an empty or partially populated policy.
