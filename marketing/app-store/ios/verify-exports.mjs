@@ -4,6 +4,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from '../../../native/node_modules/sharp/lib/index.js';
 
+import { LOCALE_REGISTRY } from '../../../src/i18n/locale.ts';
+
+/* the app's own registry, not a fourth copy of it — see capture.mjs */
+const SHIPPED_RUNTIME_LOCALES = new Set(LOCALE_REGISTRY.map((locale) => locale.id));
+
+
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fail = (message) => { throw new Error(message); };
 const requireFact = (ok, message) => { if (!ok) fail(message); };
@@ -110,10 +116,15 @@ requireFact(config.reviewSubmissionApproved === false,
 requireFact(manifest.status === 'approved for draft App Store Connect synchronization',
   `draftSyncApproved requires the reviewed draft-sync manifest status; found ${JSON.stringify(manifest.status)}`);
 
-const expectedLocales = ['de-DE', 'en-GB', 'fr-FR', 'id', 'ja', 'ko', 'pl', 'tr'];
+/* THE CAMPAIGN CONFIG IS THE LOCALE SET. Restating it here as a literal made
+   this check assert that the campaign had not grown — the opposite of the
+   invariant wanted, which is that the three files AGREE. It went stale the day
+   the app reached eleven languages: pt-BR, es-ES and it were added to the
+   config and could then never pass verification, so they shipped no
+   screenshots and no listing at all. The runtime side has the same shape and
+   the same single source (SHIPPED_RUNTIME_LOCALES, from the app's registry). */
 const actualLocales = config.locales.map((locale) => locale.appStoreLocale);
-requireFact(JSON.stringify(sorted(actualLocales)) === JSON.stringify(expectedLocales),
-  `config locales must be exactly ${expectedLocales.join(', ')}`);
+const expectedLocales = sorted(actualLocales);
 requireFact(new Set(actualLocales).size === actualLocales.length, 'config contains duplicate locales');
 requireFact(JSON.stringify(sorted(Object.keys(manifest.localizations))) === JSON.stringify(expectedLocales),
   'manifest screenshot localizations must exactly match config locales');
@@ -122,7 +133,7 @@ requireFact(JSON.stringify(sorted(Object.keys(metadata.localizations))) === JSON
 
 const runtimeLocales = new Map(config.locales.map((locale) => [locale.appStoreLocale, locale.runtimeLocale]));
 for (const locale of expectedLocales) {
-  requireFact(['en', 'de', 'fr', 'pl', 'tr', 'id', 'ja', 'ko'].includes(runtimeLocales.get(locale)),
+  requireFact(SHIPPED_RUNTIME_LOCALES.has(runtimeLocales.get(locale)),
     `${locale} has unsupported runtime locale ${JSON.stringify(runtimeLocales.get(locale))}`);
   requireFact(manifest.localizations[locale].runtimeLocale === runtimeLocales.get(locale),
     `${locale} runtime locale differs between config and manifest`);

@@ -118,6 +118,76 @@
         }
       }
     },
+    "pt-BR": {
+      "runtimeLocale": "pt",
+      "slides": {
+        "ranked-row-multiply": {
+          "eyebrow": "Bônus de Linhas ranqueado",
+          "headlineLines": ["ALINHE OS DADOS.", "MULTIPLIQUE."],
+          "subhead": "Monte duas linhas de pontuação, acumule os multiplicadores e vire o jogo."
+        },
+        "ranked-mode-dial": {
+          "eyebrow": "Sete modos de jogo",
+          "headlineLines": ["SETE MODOS.", "UM GIRO."],
+          "subhead": "Cada duelo ranqueado pode mudar as regras antes mesmo do primeiro lançamento."
+        },
+        "ward-runic-seal": {
+          "eyebrow": "Seis runas táticas",
+          "headlineLines": ["UM SELO.", "DANO ZERO."],
+          "subhead": "Proteja uma coluna: o próximo golpe rival que destruiria seus dados quebra o selo no lugar deles."
+        },
+        "sunder-overload": {
+          "eyebrow": "Runa RUPTURA",
+          "headlineLines": ["UM DADO.", "TODAS AS COLUNAS."],
+          "subhead": "Ative RUPTURA para atingir de uma só vez todas as colunas rivais com dados do mesmo valor."
+        },
+        "ranked-bounty": {
+          "eyebrow": "Modo Caçada",
+          "headlineLines": ["CADA GOLPE", "RENDE."],
+          "subhead": "Destrua dados iguais e acumule +1 permanente para cada um."
+        },
+        "neon-ladder": {
+          "eyebrow": "Ranking Neon",
+          "headlineLines": ["VENÇA. SUBA.", "REPITA."],
+          "subhead": "Ganhe pontos a cada vitória, persiga seus rivais e dispute um lugar no top 1%."
+        }
+      }
+    },
+    "es-ES": {
+      "runtimeLocale": "es",
+      "slides": {
+        "ranked-row-multiply": {
+          "eyebrow": "Bono de filas clasificatorio",
+          "headlineLines": ["DADOS IGUALES.", "MULTIPLICA."],
+          "subhead": "Forma dos filas que puntúan, acumula multiplicadores y da la vuelta a la partida."
+        },
+        "ranked-mode-dial": {
+          "eyebrow": "Siete modos de juego",
+          "headlineLines": ["SIETE MODOS.", "UN GIRO."],
+          "subhead": "Cada duelo clasificatorio puede cambiar las reglas antes de la primera tirada."
+        },
+        "ward-runic-seal": {
+          "eyebrow": "Seis runas tácticas",
+          "headlineLines": ["UN SELLO.", "CERO DAÑO."],
+          "subhead": "Protege una columna: el siguiente ataque rival que destruiría sus dados rompe la GUARDA en vez de los dados."
+        },
+        "sunder-overload": {
+          "eyebrow": "Runa RUPTURA",
+          "headlineLines": ["UN DADO.", "CADA COLUMNA."],
+          "subhead": "Activa RUPTURA para golpear a la vez todas las columnas rivales con la misma cara."
+        },
+        "ranked-bounty": {
+          "eyebrow": "Modo Recompensa",
+          "headlineLines": ["CADA GOLPE", "RECOMPENSA."],
+          "subhead": "Destruye dados iguales y acumula un +1 permanente por cada uno."
+        },
+        "neon-ladder": {
+          "eyebrow": "Clasificación Neón",
+          "headlineLines": ["GANA. ASCIENDE.", "REPITE."],
+          "subhead": "Suma puntos con cada victoria, persigue a tus rivales y alcanza el 1 % superior."
+        }
+      }
+    },
     "de-DE": {
       "runtimeLocale": "de",
       "slides": {
@@ -185,6 +255,41 @@
           "eyebrow": "Classement Néon",
           "headlineLines": ["GAGNEZ. GRIMPEZ.", "RECOMMENCEZ."],
           "subhead": "Gagnez des points à chaque victoire, pourchassez vos rivaux et visez le top 1 %."
+        }
+      }
+    },
+    "it": {
+      "runtimeLocale": "it",
+      "slides": {
+        "ranked-row-multiply": {
+          "eyebrow": "Bonus righe classificato",
+          "headlineLines": ["ABBINA I DADI.", "MOLTIPLICA."],
+          "subhead": "Crea due righe bonus, accumula i moltiplicatori e ribalta la partita."
+        },
+        "ranked-mode-dial": {
+          "eyebrow": "Sette modalità di gioco",
+          "headlineLines": ["SETTE MODALITÀ.", "UN GIRO."],
+          "subhead": "Ogni duello classificato può cambiare le regole prima del primo lancio."
+        },
+        "ward-runic-seal": {
+          "eyebrow": "Sei rune tattiche",
+          "headlineLines": ["UN SIGILLO.", "ZERO DANNI."],
+          "subhead": "Sigilla una colonna: il prossimo colpo avversario che distruggerebbe i dadi spezza la GUARDIA al loro posto."
+        },
+        "sunder-overload": {
+          "eyebrow": "Runa FRATTURA",
+          "headlineLines": ["UN DADO.", "OGNI COLONNA."],
+          "subhead": "Attiva FRATTURA per colpire insieme tutte le colonne avversarie con la stessa faccia."
+        },
+        "ranked-bounty": {
+          "eyebrow": "Modalità Taglia",
+          "headlineLines": ["OGNI COLPO", "PAGA."],
+          "subhead": "Distruggi dadi uguali e accumula un +1 permanente per ognuno."
+        },
+        "neon-ladder": {
+          "eyebrow": "Classifica Neon",
+          "headlineLines": ["VINCI. SALI.", "RIPETI."],
+          "subhead": "Guadagna punti a ogni vittoria, insegui i rivali e conquista un posto nell’1% migliore."
         }
       }
     },

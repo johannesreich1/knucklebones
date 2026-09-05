@@ -3,6 +3,15 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { startCaptureServer } from './capture-server.mjs';
+import { LOCALE_REGISTRY } from '../../../src/i18n/locale.ts';
+
+/* WHICH LOCALES THE RUNTIME ACTUALLY SHIPS — read from the app's own registry,
+   not restated here. This was a hard-coded list of eight, and it silently went
+   stale when the app grew to eleven: pt-BR, es-ES and it were added to
+   app-store-connect.json but the campaign could not capture them, so three
+   store languages have never had screenshots. A list that has to be edited in
+   step with another file eventually is not. */
+const SHIPPED_RUNTIME_LOCALES = new Set(LOCALE_REGISTRY.map((locale) => locale.id));
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(here, '../../..');
@@ -38,7 +47,7 @@ for (const [appStoreLocale, localization] of Object.entries(manifest.localizatio
   const configured = appStoreConfig.locales.find((locale) => locale.appStoreLocale === appStoreLocale);
   requireFact(configured?.runtimeLocale === localization.runtimeLocale,
     `${appStoreLocale} runtime locale differs from app-store-connect.json`);
-  requireFact(['en', 'de', 'fr', 'pl', 'tr', 'id', 'ja', 'ko'].includes(localization.runtimeLocale),
+  requireFact(SHIPPED_RUNTIME_LOCALES.has(localization.runtimeLocale),
     `${appStoreLocale} has unsupported runtime locale ${JSON.stringify(localization.runtimeLocale)}`);
   const copySlugs = Object.keys(localization.slides ?? {}).sort();
   const slideSlugs = manifest.slides.map((slide) => slide.slug).sort();

@@ -298,7 +298,7 @@
   <div class="error" id="error">The production game rendering did not initialize.</div>
 
   <script type="module">
-    import { localeLanguageTag } from '/src/i18n/locale.ts';
+    import { localeLanguageTag, LOCALE_REGISTRY } from '/src/i18n/locale.ts';
 
     const failSource = (error) => {
       console.error(error);
@@ -382,7 +382,8 @@
       throw error;
     }
     const runtimeLocale = localization.runtimeLocale;
-    if (!['en', 'de', 'fr', 'pl', 'tr', 'id', 'ja', 'ko'].includes(runtimeLocale)) {
+    /* the app's own registry, not a copy of it — see capture.mjs */
+    if (!LOCALE_REGISTRY.some((entry) => entry.id === runtimeLocale)) {
       const error = new Error(`Unsupported runtime locale ${JSON.stringify(runtimeLocale)} for ${localeId}`);
       failSource(error);
       throw error;
