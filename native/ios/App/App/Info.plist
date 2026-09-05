@@ -37,6 +37,11 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>LSSupportsGameMode</key>
+	<true/>
+	<!-- Retain the original opt-in for iOS 18. -->
+	<key>GCSupportsGameMode</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

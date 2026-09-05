@@ -125,6 +125,13 @@ export function verifyIosShellContract(check: Check): {
     + `found ${normalizedEntitlementPayload}`);
 
   const info = readFileSync(INFO, 'utf8');
+  const uncommentedInfo = info.replace(/<!--[\s\S]*?-->/g, '');
+  for (const key of ['LSSupportsGameMode', 'GCSupportsGameMode']) {
+    const declarations = [...uncommentedInfo.matchAll(new RegExp(`<key>${key}</key>`, 'g'))];
+    check(declarations.length === 1
+      && new RegExp(`<key>${key}</key>\\s*<true\\s*/>`).test(uncommentedInfo),
+      `${INFO} must declare ${key} exactly once as Boolean true for current and iOS 18 Game Mode support`);
+  }
   check(info.includes('<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>'),
     `${INFO} must derive CFBundleIdentifier from Xcode's PRODUCT_BUNDLE_IDENTIFIER`);
   const displayName = (info.match(/<key>CFBundleDisplayName<\/key>\s*<string>([^<]+)<\/string>/) || [])[1] ?? null;

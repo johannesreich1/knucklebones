@@ -115,6 +115,29 @@ CSS shadow, because either path truncates the glow into a visible square. The
 same source feeds every tracked Android portrait/landscape and normal/night
 splash rendition.
 
+### iOS Game Mode
+
+The iOS shell opts into the system's Game Mode through Boolean
+`LSSupportsGameMode` in `App/Info.plist`, retaining Boolean
+`GCSupportsGameMode` for the original iOS 18 opt-in. Both are true and the iOS
+shipping contract requires each exactly once. Apple's
+[current key reference](https://developer.apple.com/documentation/bundleresources/information-property-list/lssupportsgamemode)
+replaces the older key used in its
+[iOS 18 guidance](https://developer.apple.com/videos/play/wwdc2024/10089/).
+The installation floor remains iOS 15; Game Mode is available on supported
+iPhone/iPad systems from version 18. It is independent of Game Center identity
+and requires no additional entitlement, native plugin, or in-app setting.
+
+Game Mode can prioritize CPU/GPU work and reduce wireless accessory latency;
+the expected gain for this turn-based WebView game is modest and unmeasured.
+Keep support enabled unless it causes a regression; a measured speedup is not
+an acceptance requirement. Players control it through the system Game Mode
+controls, and their choice must be respected. Physical-device acceptance checks
+those controls, local/ranked play, sound, and background/resume. Only claim a
+performance benefit supported by a device comparison. A plist-only change can
+leave the web `data-build` tag unchanged: verify the compiled app's plist and
+system Game Mode controls after a clean Xcode rebuild and reinstall.
+
 ### The split-die launcher and its colour-pair variants
 
 The app icon is the split die (design 56b, chosen 2026-09-02): one six-face

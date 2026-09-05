@@ -240,8 +240,8 @@
     },
     {
       "path": "native/ios/App/App/Info.plist",
-      "bytes": 2325,
-      "sha256": "70ea8d5d424c05b6a8b00512e1974c9c4a5848a0f495f58790c3d4d1e5af3b8f"
+      "bytes": 2454,
+      "sha256": "3b4b9474b355e8c9f684b0aea810797bf42388a3f2c0a0dd941e71c202eb3989"
     },
     {
       "path": "native/plugins/appicon/ios/Sources/AppIconPlugin/AppIconPlugin.swift",
